@@ -1,0 +1,187 @@
+{/* DesignTokens.stories.mdx — Design system token reference page */}
+
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Design System/Design Tokens" />
+
+# Premium Design Tokens
+
+> Last updated: July 22, 2026
+> Source: `src/app/globals.css`
+
+---
+
+## Quick Reference
+
+| Category | Tokens |
+|----------|--------|
+| **Core Colors** | `--background`, `--foreground`, `--card`, `--border`, `--ring`, `--destructive` |
+| **Surfaces** | `--surface-base`, `--surface-raised`, `--surface-strong`, `--border-muted`, `--text-inverse` |
+| **Glow Colors** | `--glow-indigo`, `--glow-emerald`, `--glow-purple`, `--glow-blue` |
+| **Premiums** | `--radius-xl`, `--card-shadow`, `--glass-bg`, `--glass-border`, `--gradient-premium` |
+| **Gradients** | `--gradient-warm`, `--gradient-cool`, `--gradient-earth` |
+
+---
+
+## Semantic Tokens
+
+| Token | Light | Dark | Used By |
+|-------|-------|------|---------|
+| `--background` | `hsl(222 20% 97%)` | `hsl(225 25% 7%)` | `body` background |
+| `--foreground` | `hsl(225 25% 7%)` | `hsl(210 40% 98%)` | Primary text |
+| `--card` | `hsl(0 0% 100%)` | `hsl(225 20% 12%)` | Card backgrounds |
+| `--card-foreground` | `hsl(225 25% 7%)` | `hsl(210 40% 98%)` | Card headings |
+| `--border` | `hsl(225 15% 90%)` | `hsl(225 15% 26%)` | Default borders |
+| `--input` | `hsl(225 15% 90%)` | `hsl(225 12% 22%)` | Form inputs |
+| `--ring` | `hsl(225 25% 7%)` | `hsl(210 40% 90%)` | Focus rings |
+| `--destructive` | `hsl(0 84% 60%)` | `hsl(0 63% 31%)` | Delete/danger |
+
+## Surface Tokens
+
+| Token | Light | Dark | Purpose |
+|-------|-------|------|---------|
+| `--surface-base` | `hsl(0 0% 100%)` | `hsl(225 25% 7%)` | Base marketing surface |
+| `--surface-raised` | `hsl(220 20% 97%)` | `hsl(224 20% 11%)` | Elevated cards |
+| `--surface-strong` | `hsl(220 15% 93%)` | `hsl(224 18% 14%)` | Strong surfaces |
+| `--border-muted` | `hsl(220 10% 88%)` | `hsl(225 12% 22%)` | Subtle borders |
+| `--text-inverse` | `hsl(220 10% 40%)` | `hsl(225 10% 80%)` | Low-contrast text |
+
+## Glow Colors
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--glow-indigo` | `hsl(226 70% 55%)` | Feature cards, accents, spotlights |
+| `--glow-emerald` | `hsl(160 84% 39%)` | Success and growth metrics |
+| `--glow-purple` | `hsl(271 81% 56%)` | CRM, user features |
+| `--glow-blue` | `hsl(221 83% 53%)` | Security, info features |
+
+## Premium Tokens
+
+| Token | Light | Dark | Used By |
+|-------|-------|------|---------|
+| `--card-shadow` | `0 1px 3px rgba(0,0,0,0.04)` | `0 1px 3px rgba(0,0,0,0.4)` | Cards, stats |
+| `--card-shadow-hover` | `0 8px 30px rgba(0,0,0,0.08)` | `0 8px 32px rgba(0,0,0,0.5)` | Hover states |
+| `--glass-bg` | `rgba(255,255,255,0.6)` | `rgba(10,11,16,0.8)` | Glass panels |
+| `--glass-border` | `rgba(0,0,0,0.06)` | `rgba(255,255,255,0.07)` | Glass borders |
+| `--gradient-premium` | `#6366f1 → #a855f7 → #ec4899` | `#818cf8 → #c084fc → #f472b6` | Premium buttons, headings |
+
+## CSS Class Catalog
+
+### Cards
+
+| Class | File | Description |
+|-------|------|-------------|
+| `.dashboard-card` | `card.tsx` | Base card with hover indigo glow |
+| `.stat-card-premium` | `dashboard/page.tsx` | Stat card with gradient top bar on hover |
+| `.vengeance-card` | `marketing/page.tsx` | Hover-lift card with animated gradient border |
+| `.gradient-border-card` | `marketing/page.tsx` | Mask-composite gradient border on hover |
+| `.spotlight-card` | `marketing/page.tsx` | Mouse-tracking radial spotlight |
+| `.double-bezel` / `...-inner` | `marketing/page.tsx` | Nested outer/inner inset card |
+
+### Glass & Surface
+
+| Class | Description |
+|-------|-------------|
+| `.vengeance-glass` | Frosted glass: `blur(24px) saturate(1.8)` |
+| `.glass-panel` | Standard glass: `blur(24px)` + inner shine |
+
+### Buttons
+
+| Variant | Style | Use Case |
+|---------|-------|----------|
+| `default` | `bg-indigo-600` → `dark:bg-indigo-500` | Primary actions |
+| `secondary` | `bg-gray-100` → `dark:bg-gray-800` | Medium emphasis |
+| `destructive` | `bg-red-600` | Delete/danger |
+| `outline` | `border-gray-300` → `dark:border-gray-600` | Secondary actions |
+| `ghost` | Transparent hover | Toolbar/icon |
+| `link` | `text-indigo-600` → `dark:text-indigo-400` | Inline actions |
+| `premium` | `--gradient-premium` | Hero CTAs |
+| `glass` | `--glass-bg` + backdrop blur | Overlay/nav bars |
+
+### Badges
+
+| Class | Description |
+|-------|-------------|
+| `.badge-premium` | Indigo-tinted pill badge (8% → 18% dark alpha) |
+
+### Typography
+
+| Class | Gradient | Use Case |
+|-------|----------|----------|
+| `.text-gradient-premium` | `--gradient-premium` | Hero headings |
+| `.text-gradient-warm` | `#f59e0b → #ef4444` | Alerts/promotions |
+| `.text-gradient-cool` | `#3b82f6 → #06b6d4` | Technical features |
+| `.text-gradient-earth` | `#10b981 → #6366f1` | Growth metrics |
+
+### Motion Utilities
+
+| Class | Curve | Duration |
+|-------|-------|----------|
+| `.motion-spring` | `cubic-bezier(0.16, 1, 0.3, 1)` | 0.5s |
+| `.motion-spring-fast` | `cubic-bezier(0.16, 1, 0.3, 1)` | 0.3s |
+| `.motion-spring-slow` | `cubic-bezier(0.32, 0.72, 0, 1)` | 0.7s |
+| `.press-scale` | scale(0.96) on active | 0.15s |
+
+### Effects
+
+| Class | Description |
+|-------|-------------|
+| `.ambient-glow-indigo` | Section-scale indigo ambient light |
+| `.ambient-glow-purple` | Section-scale purple ambient light |
+| `.glow-border` | Shimmering gradient border on hover |
+| `.pulse-dot` | Broadcasting status indicator |
+| `.shimmer` | Loading skeleton shimmer animation |
+| `.feature-card` | Lift + icon scale + arrow slide on hover |
+| `.sidebar-item` / `-active` | Nav item with hover overlay + left accent bar |
+
+---
+
+## Usage Patterns
+
+### Creating a Premium CTA Section
+
+```tsx
+<div className="gradient-border-card !rounded-[2rem] p-[1px]">
+  <div className="rounded-[calc(2rem-1px)] bg-white dark:bg-zinc-900 p-8">
+    <h2 className="text-gradient-premium text-4xl font-bold mb-4">
+      Ready for scale.
+    </h2>
+    <Button variant="premium" size="xl">
+      Get Started <ArrowRight className="h-4 w-4" />
+    </Button>
+  </div>
+</div>
+```
+
+### Dashboard Stat Card
+
+```tsx
+<div className="stat-card-premium">
+  <div className="flex items-center justify-between">
+    <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
+      <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+    </div>
+    <span className="flex items-center gap-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full">
+      <TrendingUp className="h-3 w-3" /> 12%
+    </span>
+  </div>
+  <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">Active Users</p>
+  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">2,847</p>
+</div>
+```
+
+---
+
+## Dark Mode Behavior
+
+All tokens have `.dark` overrides in `globals.css`. The theme is toggled by adding/removing `.dark` class on `<html>` via `next-themes`.
+
+**Key dark mode differences:**
+- Surfaces: Lighter gray → richer near-black (`225 20% 11%`)
+- Borders: Lighter gray → muted gray-white (`225 15% 26%`)
+- Glass: 60% white → 80% near-black
+- Glows: 6-8% opacity → 10-18% opacity (brighter on dark)
+- Premium gradient: Indigo-500 → Indigo-400 (lighter for dark bg)
+- Shadows: Subtle → deep (40-50% black opacity)
+
+**Smooth transitions:** Theme toggles animate over 350ms via the `.theme-transitioning` CSS class, which transitions `background-color`, `border-color`, `color`, `box-shadow`, `background-image`, `fill`, and `stroke` across all elements using `cubic-bezier(0.16, 1, 0.3, 1)`.
