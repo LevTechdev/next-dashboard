@@ -25,8 +25,7 @@
     "coverage:merge": "node scripts/merge-coverage.js",
     "doctor": "npx react-doctor@latest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "prepare": "husky"
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.16",
@@ -79,6 +78,14 @@
     "xlsx": "^0.18.5",
     "zod": "^3.24.0"
   },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{mjs,js,jsx}": [
+      "eslint --fix"
+    ]
+  },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.2.1",
     "@commitlint/cli": "^21.2.1",
@@ -110,6 +117,7 @@
     "eslint-plugin-storybook": "^10.5.3",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.1.1",
     "playwright": "^1.61.1",
     "postcss": "^8.5.16",
     "prisma": "^6.19.3",
