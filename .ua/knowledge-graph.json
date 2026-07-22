@@ -1,0 +1,1491 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Next Dashboard",
+    "languages": ["TypeScript", "CSS", "JSON", "Prisma", "JavaScript", "Shell"],
+    "frameworks": ["Next.js 16", "React 19", "Prisma ORM", "Tailwind CSS 3", "Next-Intl", "Auth0", "Vitest"],
+    "description": "Full-featured admin dashboard built with Next.js 16 App Router. Features include authentication with 2FA/TOTP, role-based access control, real-time data streaming, internationalization (EN/ID/JA/ZH), billing/subscriptions, analytics, PWA support, AI analytics copilot, and comprehensive testing.",
+    "analyzedAt": "2026-07-21T00:00:00.000Z",
+    "gitCommitHash": "779a3b57297408bab625f9353ebad94b2604d18a"
+  },
+  "nodes": [
+    {
+      "id": "config:next.config.ts",
+      "type": "config",
+      "name": "Next.js Configuration",
+      "filePath": "next.config.ts",
+      "summary": "Next.js 16 configuration with internationalization, image optimization, webpack, headers, and experimental features.",
+      "tags": ["config", "nextjs", "build"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tailwind.config.ts",
+      "type": "config",
+      "name": "Tailwind CSS Configuration",
+      "filePath": "tailwind.config.ts",
+      "summary": "Tailwind CSS 3 configuration with custom color palette, animations, dark mode, and content paths.",
+      "tags": ["config", "styling", "tailwind"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:tsconfig.json",
+      "type": "config",
+      "name": "TypeScript Configuration",
+      "filePath": "tsconfig.json",
+      "summary": "TypeScript 5 configuration with strict mode, path aliases, and ES module settings.",
+      "tags": ["config", "typescript"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "Package Manifest",
+      "filePath": "package.json",
+      "summary": "Project dependencies including Next.js 16, React 19, Prisma, Radix UI, Framer Motion, Recharts, AI SDK, and dev tooling.",
+      "tags": ["config", "dependencies", "scripts"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:postcss.config.mjs",
+      "type": "config",
+      "name": "PostCSS Configuration",
+      "filePath": "postcss.config.mjs",
+      "summary": "PostCSS with Tailwind CSS and autoprefixer plugins.",
+      "tags": ["config", "css", "build"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:eslint.config.mjs",
+      "type": "config",
+      "name": "ESLint Configuration",
+      "filePath": "eslint.config.mjs",
+      "summary": "ESLint flat config with TypeScript, React, and Next.js rules.",
+      "tags": ["config", "linting"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:vercel.json",
+      "type": "config",
+      "name": "Vercel Deployment Config",
+      "filePath": "vercel.json",
+      "summary": "Vercel deployment configuration with framework preset.",
+      "tags": ["config", "deployment"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:railway.json",
+      "type": "config",
+      "name": "Railway Deployment Config",
+      "filePath": "railway.json",
+      "summary": "Railway deployment configuration with Docker and health checks.",
+      "tags": ["config", "deployment"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:playwright.config.ts",
+      "type": "config",
+      "name": "Playwright E2E Config",
+      "filePath": "playwright.config.ts",
+      "summary": "Playwright configuration for end-to-end testing with multiple browsers.",
+      "tags": ["config", "testing", "e2e"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:components.json",
+      "type": "config",
+      "name": "shadcn/ui Configuration",
+      "filePath": "components.json",
+      "summary": "shadcn/ui component registry configuration with VengenceUI and Tailwind CSS.",
+      "tags": ["config", "ui", "components"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:prisma/schema.prisma",
+      "type": "schema",
+      "name": "Prisma Database Schema",
+      "filePath": "prisma/schema.prisma",
+      "summary": "PostgreSQL schema with User, Customer, Product, Order, SalesChannel, and related models. Includes relationships, enums, and indexes.",
+      "tags": ["database", "schema", "prisma", "postgresql"],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:prisma/seed.ts",
+      "type": "script",
+      "name": "Database Seeder",
+      "filePath": "prisma/seed.ts",
+      "summary": "Seeds the database with sample data including users, customers, products, orders, and sales channels.",
+      "tags": ["database", "seed", "development"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.env",
+      "type": "config",
+      "name": "Environment Variables",
+      "filePath": ".env",
+      "summary": "Environment configuration for database URL, Auth0, and other secrets.",
+      "tags": ["config", "environment", "secrets"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "Project README",
+      "filePath": "README.md",
+      "summary": "Project documentation covering features, tech stack, setup, and development commands.",
+      "tags": ["documentation", "onboarding"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:DESIGN.md",
+      "type": "document",
+      "name": "Design Documentation",
+      "filePath": "DESIGN.md",
+      "summary": "Design system documentation with UI/UX principles and component guidelines.",
+      "tags": ["documentation", "design"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/layout.tsx",
+      "type": "file",
+      "name": "Root Layout",
+      "filePath": "src/app/layout.tsx",
+      "summary": "Next.js root layout with Inter font, global CSS, and Providers wrapper.",
+      "tags": ["app", "layout", "nextjs"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/page.tsx",
+      "type": "file",
+      "name": "Root Page Redirect",
+      "filePath": "src/app/page.tsx",
+      "summary": "Root page that redirects to locale-based route.",
+      "tags": ["app", "redirect"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/providers.tsx",
+      "type": "file",
+      "name": "Application Providers",
+      "filePath": "src/app/providers.tsx",
+      "summary": "Provider chain wrapping the app: PostHog analytics, ThemeProvider, LocaleProvider, Realtime, Auth, Toaster, and PWA registration.",
+      "tags": ["app", "providers", "context"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/app/globals.css",
+      "type": "file",
+      "name": "Global Styles",
+      "filePath": "src/app/globals.css",
+      "summary": "CSS custom properties for light/dark themes, Tailwind base styles, animations, scrollbar styling, and utility classes.",
+      "tags": ["css", "theming", "styles"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/manifest.ts",
+      "type": "file",
+      "name": "PWA Manifest",
+      "filePath": "src/app/manifest.ts",
+      "summary": "Progressive Web App manifest with icons, colors, and app metadata.",
+      "tags": ["pwa", "manifest", "app"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/middleware.ts",
+      "type": "file",
+      "name": "Next.js Middleware",
+      "filePath": "src/middleware.ts",
+      "summary": "Middleware for i18n routing, authentication checks, and request preprocessing.",
+      "tags": ["middleware", "auth", "i18n"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/[locale]/layout.tsx",
+      "type": "file",
+      "name": "Locale Layout",
+      "filePath": "src/app/[locale]/layout.tsx",
+      "summary": "Locale-scoped layout providing NextIntlClientProvider for translation support.",
+      "tags": ["app", "layout", "i18n"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/[locale]/(dashboard)/layout.tsx",
+      "type": "file",
+      "name": "Dashboard Layout",
+      "filePath": "src/app/[locale]/(dashboard)/layout.tsx",
+      "summary": "Dashboard shell with Sidebar, Header, MobileNav, ViewTransitions, and AI Analytics Copilot (button + panel).",
+      "tags": ["dashboard", "layout", "sidebar", "ai"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/[locale]/(marketing)/layout.tsx",
+      "type": "file",
+      "name": "Marketing Layout",
+      "filePath": "src/app/[locale]/(marketing)/layout.tsx",
+      "summary": "Marketing site layout with navigation bar and footer for the landing page.",
+      "tags": ["marketing", "layout", "landing"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/[locale]/(marketing)/page.tsx",
+      "type": "file",
+      "name": "Marketing Home Page",
+      "filePath": "src/app/[locale]/(marketing)/page.tsx",
+      "summary": "Landing page with hero, features grid, stats, testimonials, pricing, CTA sections, and animated backgrounds.",
+      "tags": ["marketing", "landing", "page"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/lib/db.ts",
+      "type": "file",
+      "name": "Prisma Database Client",
+      "filePath": "src/lib/db.ts",
+      "summary": "Singleton PrismaClient instance for database access.",
+      "tags": ["lib", "database", "prisma"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/auth.ts",
+      "type": "file",
+      "name": "Authentication Utilities",
+      "filePath": "src/lib/auth.ts",
+      "summary": "Password hashing (bcrypt), JWT token management, cookie extraction, and AuthUser type.",
+      "tags": ["lib", "auth", "security"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/auth0.ts",
+      "type": "file",
+      "name": "Auth0 Integration",
+      "filePath": "src/lib/auth0.ts",
+      "summary": "Auth0 authentication provider with social login (Google), session management, and token handling.",
+      "tags": ["lib", "auth", "auth0", "oauth"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/api-guard.ts",
+      "type": "file",
+      "name": "API Authorization Guard",
+      "filePath": "src/lib/api-guard.ts",
+      "summary": "Middleware for API route protection with role-based permission checks (requireAuth, requirePermission).",
+      "tags": ["lib", "auth", "security", "api"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/permissions.ts",
+      "type": "file",
+      "name": "Role-Based Permissions",
+      "filePath": "src/lib/permissions.ts",
+      "summary": "Permission definitions, role hierarchy, and access control functions for dashboard pages.",
+      "tags": ["lib", "auth", "rbac", "permissions"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/utils.ts",
+      "type": "file",
+      "name": "Core Utilities",
+      "filePath": "src/lib/utils.ts",
+      "summary": "Utility functions: cn() class merging, currency formatting, date formatting, status colors, ID generation, and sales channel definitions.",
+      "tags": ["lib", "utils", "helpers"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/csv.ts",
+      "type": "file",
+      "name": "CSV Export Utility",
+      "filePath": "src/lib/csv.ts",
+      "summary": "CSV generation and data export functions for downloading reports.",
+      "tags": ["lib", "export", "csv"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/ai/tools.ts",
+      "type": "file",
+      "name": "AI Copilot Tools",
+      "filePath": "src/lib/ai/tools.ts",
+      "summary": "7 AI tool definitions for the Analytics Copilot: dashboard stats, orders, products, sales channels, revenue data, search, customer/order details.",
+      "tags": ["ai", "tools", "analytics", "copilot"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/i18n/routing.ts",
+      "type": "file",
+      "name": "i18n Routing Config",
+      "filePath": "src/i18n/routing.ts",
+      "summary": "Next-Intl routing configuration with locale detection, pathnames, and language options.",
+      "tags": ["i18n", "routing", "config"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/i18n/request.ts",
+      "type": "file",
+      "name": "i18n Request Handler",
+      "filePath": "src/i18n/request.ts",
+      "summary": "Server-side locale detection and message loading for internationalization.",
+      "tags": ["i18n", "request", "server"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src/i18n/locales/en.json",
+      "type": "config",
+      "name": "English Locale",
+      "filePath": "src/i18n/locales/en.json",
+      "summary": "English translations for all dashboard UI strings.",
+      "tags": ["i18n", "locale", "translations"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:src/i18n/locales/id.json",
+      "type": "config",
+      "name": "Indonesian Locale",
+      "filePath": "src/i18n/locales/id.json",
+      "summary": "Bahasa Indonesia translations for dashboard UI.",
+      "tags": ["i18n", "locale", "translations"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:src/i18n/locales/ja.json",
+      "type": "config",
+      "name": "Japanese Locale",
+      "filePath": "src/i18n/locales/ja.json",
+      "summary": "Japanese translations for dashboard UI.",
+      "tags": ["i18n", "locale", "translations"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:src/i18n/locales/zh.json",
+      "type": "config",
+      "name": "Chinese Locale",
+      "filePath": "src/i18n/locales/zh.json",
+      "summary": "Simplified Chinese translations for dashboard UI.",
+      "tags": ["i18n", "locale", "translations"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/layout/sidebar.tsx",
+      "type": "file",
+      "name": "Dashboard Sidebar",
+      "filePath": "src/components/layout/sidebar.tsx",
+      "summary": "Collapsible sidebar with navigation groups (Main, Management, System), role-based access, and active state highlighting.",
+      "tags": ["layout", "sidebar", "navigation"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/components/layout/header.tsx",
+      "type": "file",
+      "name": "Dashboard Header",
+      "filePath": "src/components/layout/header.tsx",
+      "summary": "Top header bar with search, theme toggle, language selector, notifications, user menu, and mobile menu trigger.",
+      "tags": ["layout", "header", "navigation"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/components/layout/mobile-nav.tsx",
+      "type": "file",
+      "name": "Mobile Bottom Navigation",
+      "filePath": "src/components/layout/mobile-nav.tsx",
+      "summary": "Fixed bottom navigation bar for mobile devices with key dashboard links.",
+      "tags": ["layout", "mobile", "navigation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/layout/language-toggle.tsx",
+      "type": "file",
+      "name": "Language Switcher",
+      "filePath": "src/components/layout/language-toggle.tsx",
+      "summary": "Dropdown for switching between English, Indonesian, Japanese, and Chinese locales.",
+      "tags": ["layout", "i18n", "language"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/button.tsx",
+      "type": "file",
+      "name": "Button Component",
+      "filePath": "src/components/ui/button.tsx",
+      "summary": "shadcn/ui Button with variants, sizes, and polymorphic 'asChild' support.",
+      "tags": ["ui", "button", "primitive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/card.tsx",
+      "type": "file",
+      "name": "Card Component",
+      "filePath": "src/components/ui/card.tsx",
+      "summary": "shadcn/ui Card with header, content, footer, title, and description subcomponents.",
+      "tags": ["ui", "card", "primitive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/avatar.tsx",
+      "type": "file",
+      "name": "Avatar Component",
+      "filePath": "src/components/ui/avatar.tsx",
+      "summary": "Radix UI Avatar with fallback initials display.",
+      "tags": ["ui", "avatar", "primitive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/badge.tsx",
+      "type": "file",
+      "name": "Badge Component",
+      "filePath": "src/components/ui/badge.tsx",
+      "summary": "shadcn/ui Badge with variants (default, secondary, outline, destructive).",
+      "tags": ["ui", "badge", "primitive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/dropdown-menu.tsx",
+      "type": "file",
+      "name": "Dropdown Menu Component",
+      "filePath": "src/components/ui/dropdown-menu.tsx",
+      "summary": "Radix UI DropdownMenu with items, separators, checkboxes, and submenus.",
+      "tags": ["ui", "dropdown", "primitive"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/dialog.tsx",
+      "type": "file",
+      "name": "Dialog Component",
+      "filePath": "src/components/ui/dialog.tsx",
+      "summary": "Radix UI Dialog with overlay, content, header, footer, and close button.",
+      "tags": ["ui", "dialog", "primitive", "modal"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/input.tsx",
+      "type": "file",
+      "name": "Input Component",
+      "filePath": "src/components/ui/input.tsx",
+      "summary": "shadcn/ui Input with consistent styling and focus states.",
+      "tags": ["ui", "input", "primitive", "form"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/select.tsx",
+      "type": "file",
+      "name": "Select Component",
+      "filePath": "src/components/ui/select.tsx",
+      "summary": "Radix UI Select with trigger, content, items, groups, and scroll buttons.",
+      "tags": ["ui", "select", "primitive", "form"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/table.tsx",
+      "type": "file",
+      "name": "Table Component",
+      "filePath": "src/components/ui/table.tsx",
+      "summary": "shadcn/ui Table with header, body, row, cell, and caption subcomponents.",
+      "tags": ["ui", "table", "primitive", "data"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/tabs.tsx",
+      "type": "file",
+      "name": "Tabs Component",
+      "filePath": "src/components/ui/tabs.tsx",
+      "summary": "Radix UI Tabs with list, trigger, and content subcomponents.",
+      "tags": ["ui", "tabs", "primitive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/skeleton.tsx",
+      "type": "file",
+      "name": "Skeleton Component",
+      "filePath": "src/components/ui/skeleton.tsx",
+      "summary": "Loading skeleton placeholder component.",
+      "tags": ["ui", "skeleton", "loading"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/animated-counter.tsx",
+      "type": "file",
+      "name": "Animated Counter",
+      "filePath": "src/components/ui/animated-counter.tsx",
+      "summary": "Framer Motion animated number counter for dashboard stat displays.",
+      "tags": ["ui", "animation", "counter"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ui/animated-rays.tsx",
+      "type": "file",
+      "name": "Animated Rays Background",
+      "filePath": "src/components/ui/animated-rays.tsx",
+      "summary": "VengenceUI animated light ray background effect for hero sections.",
+      "tags": ["ui", "animation", "background", "vengenceui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/spotlight-navbar.tsx",
+      "type": "file",
+      "name": "Spotlight Navbar",
+      "filePath": "src/components/ui/spotlight-navbar.tsx",
+      "summary": "VengenceUI navigation bar with mouse-tracking spotlight effect.",
+      "tags": ["ui", "navbar", "animation", "vengenceui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/flip-fade-text.tsx",
+      "type": "file",
+      "name": "Flip Fade Text",
+      "filePath": "src/components/ui/flip-fade-text.tsx",
+      "summary": "VengenceUI animated text with cycling 3D flip transitions.",
+      "tags": ["ui", "animation", "text", "vengenceui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/logo-slider.tsx",
+      "type": "file",
+      "name": "Logo Slider",
+      "filePath": "src/components/ui/logo-slider.tsx",
+      "summary": "VengenceUI infinite marquee slider for brand logo showcases.",
+      "tags": ["ui", "animation", "slider", "vengenceui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/pop-button.tsx",
+      "type": "file",
+      "name": "Pop Button",
+      "filePath": "src/components/ui/pop-button.tsx",
+      "summary": "VengenceUI 3D pop-out button with shadow depth effect.",
+      "tags": ["ui", "button", "animation", "vengenceui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/ui/faq-accordion.tsx",
+      "type": "file",
+      "name": "FAQ Accordion",
+      "filePath": "src/components/ui/faq-accordion.tsx",
+      "summary": "VengenceUI accessible FAQ accordion with smooth animations.",
+      "tags": ["ui", "accordion", "faq", "vengenceui"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/view-transition-provider.tsx",
+      "type": "file",
+      "name": "View Transition Provider",
+      "filePath": "src/components/view-transition-provider.tsx",
+      "summary": "React View Transitions API provider for smooth page transitions.",
+      "tags": ["animation", "transitions", "provider"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/transition-link.tsx",
+      "type": "file",
+      "name": "Transition Link",
+      "filePath": "src/components/transition-link.tsx",
+      "summary": "Next.js Link wrapper with view transition support.",
+      "tags": ["navigation", "transitions", "link"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/page-transition.tsx",
+      "type": "file",
+      "name": "Page Transition Wrapper",
+      "filePath": "src/components/page-transition.tsx",
+      "summary": "Framer Motion page transition wrapper with fade/slide animations.",
+      "tags": ["animation", "transitions", "page"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/page-progress-bar.tsx",
+      "type": "file",
+      "name": "Page Progress Bar",
+      "filePath": "src/components/page-progress-bar.tsx",
+      "summary": "Next.js navigation progress bar component (NProgress-style).",
+      "tags": ["navigation", "progress", "ux"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/realtime-provider.tsx",
+      "type": "file",
+      "name": "Realtime Data Provider",
+      "filePath": "src/components/realtime-provider.tsx",
+      "summary": "Context provider for real-time data streaming via Server-Sent Events (SSE).",
+      "tags": ["realtime", "provider", "sse"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/realtime-indicator.tsx",
+      "type": "file",
+      "name": "Realtime Connection Indicator",
+      "filePath": "src/components/realtime-indicator.tsx",
+      "summary": "Visual indicator showing WebSocket/realtime connection status.",
+      "tags": ["realtime", "status", "indicator"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/notification-panel.tsx",
+      "type": "file",
+      "name": "Notification Panel",
+      "filePath": "src/components/notification-panel.tsx",
+      "summary": "Dropdown notification panel showing user alerts and system messages.",
+      "tags": ["notifications", "panel", "ui"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/command-palette.tsx",
+      "type": "file",
+      "name": "Command Palette",
+      "filePath": "src/components/command-palette.tsx",
+      "summary": "Command+K quick search and navigation palette for the dashboard.",
+      "tags": ["search", "navigation", "command-palette", "ux"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/components/activity-feed.tsx",
+      "type": "file",
+      "name": "Activity Feed",
+      "filePath": "src/components/activity-feed.tsx",
+      "summary": "Real-time activity feed showing recent events and actions with relative timestamps.",
+      "tags": ["activity", "feed", "realtime"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/data-export-button.tsx",
+      "type": "file",
+      "name": "Data Export Button",
+      "filePath": "src/components/data-export-button.tsx",
+      "summary": "Button for exporting dashboard data to CSV format.",
+      "tags": ["export", "csv", "button"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/pwa-register.tsx",
+      "type": "file",
+      "name": "PWA Service Worker Register",
+      "filePath": "src/components/pwa-register.tsx",
+      "summary": "Service worker registration component for Progressive Web App support.",
+      "tags": ["pwa", "service-worker", "offline"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/unsupported-browser-banner.tsx",
+      "type": "file",
+      "name": "Unsupported Browser Banner",
+      "filePath": "src/components/unsupported-browser-banner.tsx",
+      "summary": "Notice displayed for unsupported or outdated browsers.",
+      "tags": ["ux", "browser", "notice"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/order-tracking-timeline.tsx",
+      "type": "file",
+      "name": "Order Tracking Timeline",
+      "filePath": "src/components/order-tracking-timeline.tsx",
+      "summary": "Timeline component showing order status progression and history.",
+      "tags": ["orders", "timeline", "tracking"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/motion.tsx",
+      "type": "file",
+      "name": "Motion Components (Re-exports)",
+      "filePath": "src/components/motion.tsx",
+      "summary": "Re-exports Framer Motion components as client components for Next.js SSR compatibility.",
+      "tags": ["animation", "framer-motion", "re-export"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/charts/revenue-chart.tsx",
+      "type": "file",
+      "name": "Revenue Chart",
+      "filePath": "src/components/charts/revenue-chart.tsx",
+      "summary": "Recharts-based bar/line chart for monthly revenue visualization.",
+      "tags": ["charts", "revenue", "recharts", "data-viz"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/charts/sales-channel-chart.tsx",
+      "type": "file",
+      "name": "Sales Channel Chart",
+      "filePath": "src/components/charts/sales-channel-chart.tsx",
+      "summary": "Recharts-based pie/donut chart for sales by channel distribution.",
+      "tags": ["charts", "sales", "recharts", "data-viz"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/components/charts/index.ts",
+      "type": "file",
+      "name": "Charts Barrel Export",
+      "filePath": "src/components/charts/index.ts",
+      "summary": "Barrel export for chart components.",
+      "tags": ["charts", "export"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ai/ai-copilot-provider.tsx",
+      "type": "file",
+      "name": "AI Copilot Context Provider",
+      "filePath": "src/components/ai/ai-copilot-provider.tsx",
+      "summary": "Context provider managing AI copilot panel open/close state.",
+      "tags": ["ai", "copilot", "provider", "context"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ai/ai-copilot-button.tsx",
+      "type": "file",
+      "name": "AI Copilot Floating Button",
+      "filePath": "src/components/ai/ai-copilot-button.tsx",
+      "summary": "Floating action button with pulse animation to toggle the AI Analytics Copilot.",
+      "tags": ["ai", "copilot", "button", "fab"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/ai/ai-copilot-panel.tsx",
+      "type": "file",
+      "name": "AI Copilot Chat Panel",
+      "filePath": "src/components/ai/ai-copilot-panel.tsx",
+      "summary": "Chat panel with suggested questions, streaming responses, thinking indicator, and error handling.",
+      "tags": ["ai", "copilot", "chat", "panel"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/components/ai/index.ts",
+      "type": "file",
+      "name": "AI Copilot Barrel Export",
+      "filePath": "src/components/ai/index.ts",
+      "summary": "Barrel export for all AI copilot components.",
+      "tags": ["ai", "export"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/analytics/posthog-provider.tsx",
+      "type": "file",
+      "name": "PostHog Analytics Provider",
+      "filePath": "src/components/analytics/posthog-provider.tsx",
+      "summary": "PostHog analytics integration with page view tracking and user identification.",
+      "tags": ["analytics", "posthog", "provider"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/components/backgrounds/LightPillar.tsx",
+      "type": "file",
+      "name": "Light Pillar Background",
+      "filePath": "src/components/backgrounds/LightPillar.tsx",
+      "summary": "Animated ambient light pillar effect for hero/marketing sections.",
+      "tags": ["background", "animation", "3d"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/hooks/use-auth.tsx",
+      "type": "file",
+      "name": "Auth Hook",
+      "filePath": "src/hooks/use-auth.tsx",
+      "summary": "Authentication context and hook providing user state, login, logout, and role checks.",
+      "tags": ["hooks", "auth", "context"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/hooks/use-ai-chat.ts",
+      "type": "file",
+      "name": "AI Chat Hook",
+      "filePath": "src/hooks/use-ai-chat.ts",
+      "summary": "Custom streaming chat hook with abort support, ref-based state management, and error handling.",
+      "tags": ["hooks", "ai", "streaming", "chat"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/hooks/use-analytics.ts",
+      "type": "file",
+      "name": "Analytics Hook",
+      "filePath": "src/hooks/use-analytics.ts",
+      "summary": "Dashboard analytics data fetching and state management hook.",
+      "tags": ["hooks", "analytics", "data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/hooks/use-animated-counter.ts",
+      "type": "file",
+      "name": "Animated Counter Hook",
+      "filePath": "src/hooks/use-animated-counter.ts",
+      "summary": "Custom hook for number animation (count-up effect).",
+      "tags": ["hooks", "animation", "counter"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/hooks/use-data-export.ts",
+      "type": "file",
+      "name": "Data Export Hook",
+      "filePath": "src/hooks/use-data-export.ts",
+      "summary": "Hook for handling data export operations (CSV download).",
+      "tags": ["hooks", "export", "csv"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/hooks/use-realtime-data.ts",
+      "type": "file",
+      "name": "Realtime Data Hook",
+      "filePath": "src/hooks/use-realtime-data.ts",
+      "summary": "Hook for subscribing to and consuming real-time data streams.",
+      "tags": ["hooks", "realtime", "data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/hooks/use-saas.ts",
+      "type": "file",
+      "name": "SaaS Features Hook",
+      "filePath": "src/hooks/use-saas.ts",
+      "summary": "SaaS billing and subscription state management hook.",
+      "tags": ["hooks", "saas", "billing"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/api/dashboard/route.ts",
+      "type": "endpoint",
+      "name": "Dashboard API (GET)",
+      "filePath": "src/app/api/dashboard/route.ts",
+      "summary": "Aggregated dashboard data endpoint returning stats, revenue, orders, products, and channel breakdowns.",
+      "tags": ["api", "dashboard", "data"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/orders/route.ts",
+      "type": "endpoint",
+      "name": "Orders API (GET/POST)",
+      "filePath": "src/app/api/orders/route.ts",
+      "summary": "Orders CRUD with filtering, pagination, and order creation.",
+      "tags": ["api", "orders", "crud"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/customers/route.ts",
+      "type": "endpoint",
+      "name": "Customers API (GET/POST)",
+      "filePath": "src/app/api/customers/route.ts",
+      "summary": "Customers listing and creation with pagination.",
+      "tags": ["api", "customers", "crud"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/products/route.ts",
+      "type": "endpoint",
+      "name": "Products API (GET/POST)",
+      "filePath": "src/app/api/products/route.ts",
+      "summary": "Products listing and creation with category filtering.",
+      "tags": ["api", "products", "crud"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/categories/route.ts",
+      "type": "endpoint",
+      "name": "Categories API (GET)",
+      "filePath": "src/app/api/categories/route.ts",
+      "summary": "Product categories listing.",
+      "tags": ["api", "categories"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/sales/route.ts",
+      "type": "endpoint",
+      "name": "Sales Data API (GET)",
+      "filePath": "src/app/api/sales/route.ts",
+      "summary": "Sales analytics data endpoint.",
+      "tags": ["api", "sales", "analytics"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/search/route.ts",
+      "type": "endpoint",
+      "name": "Search API (GET)",
+      "filePath": "src/app/api/search/route.ts",
+      "summary": "Global search endpoint across orders, customers, and products.",
+      "tags": ["api", "search"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/marketing/route.ts",
+      "type": "endpoint",
+      "name": "Marketing API (GET/POST)",
+      "filePath": "src/app/api/marketing/route.ts",
+      "summary": "Marketing campaigns CRUD endpoint.",
+      "tags": ["api", "marketing", "campaigns"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/discounts/route.ts",
+      "type": "endpoint",
+      "name": "Discounts API (GET/POST)",
+      "filePath": "src/app/api/discounts/route.ts",
+      "summary": "Discount and promotion management endpoint.",
+      "tags": ["api", "discounts", "promotions"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/realtime/route.ts",
+      "type": "endpoint",
+      "name": "Realtime SSE API (GET)",
+      "filePath": "src/app/api/realtime/route.ts",
+      "summary": "Server-Sent Events endpoint for real-time data streaming.",
+      "tags": ["api", "realtime", "sse"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/billing/subscription/route.ts",
+      "type": "endpoint",
+      "name": "Subscription API (GET/POST)",
+      "filePath": "src/app/api/billing/subscription/route.ts",
+      "summary": "User subscription management with plan changes.",
+      "tags": ["api", "billing", "subscription"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/billing/invoices/route.ts",
+      "type": "endpoint",
+      "name": "Invoices API (GET)",
+      "filePath": "src/app/api/billing/invoices/route.ts",
+      "summary": "Invoice history listing and details.",
+      "tags": ["api", "billing", "invoices"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/billing/plans/route.ts",
+      "type": "endpoint",
+      "name": "Plans API (GET)",
+      "filePath": "src/app/api/billing/plans/route.ts",
+      "summary": "Available subscription plans listing.",
+      "tags": ["api", "billing", "plans"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/api-keys/route.ts",
+      "type": "endpoint",
+      "name": "API Keys API (GET/POST/DELETE)",
+      "filePath": "src/app/api/api-keys/route.ts",
+      "summary": "API key management for external integrations.",
+      "tags": ["api", "keys", "security"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/webhooks/route.ts",
+      "type": "endpoint",
+      "name": "Webhooks API (GET/POST/DELETE)",
+      "filePath": "src/app/api/webhooks/route.ts",
+      "summary": "Webhook endpoint management for external integrations.",
+      "tags": ["api", "webhooks", "integrations"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/audit-log/route.ts",
+      "type": "endpoint",
+      "name": "Audit Log API (GET)",
+      "filePath": "src/app/api/audit-log/route.ts",
+      "summary": "System audit log listing with filtering.",
+      "tags": ["api", "audit", "logging"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/notifications/route.ts",
+      "type": "endpoint",
+      "name": "Notifications API (GET/POST)",
+      "filePath": "src/app/api/notifications/route.ts",
+      "summary": "User notifications listing and management.",
+      "tags": ["api", "notifications"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/profile/route.ts",
+      "type": "endpoint",
+      "name": "Profile API (GET/PUT)",
+      "filePath": "src/app/api/profile/route.ts",
+      "summary": "User profile management endpoint.",
+      "tags": ["api", "profile", "user"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/team/route.ts",
+      "type": "endpoint",
+      "name": "Team API (GET/POST)",
+      "filePath": "src/app/api/team/route.ts",
+      "summary": "Team member management with role assignment.",
+      "tags": ["api", "team", "rbac"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "endpoint:src/app/api/roles/route.ts",
+      "type": "endpoint",
+      "name": "Roles API (GET)",
+      "filePath": "src/app/api/roles/route.ts",
+      "summary": "Role definitions and permissions listing.",
+      "tags": ["api", "roles", "permissions"],
+      "complexity": "simple"
+    },
+    {
+      "id": "endpoint:src/app/api/ai/chat/route.ts",
+      "type": "endpoint",
+      "name": "AI Chat API (POST)",
+      "filePath": "src/app/api/ai/chat/route.ts",
+      "summary": "AI Analytics Copilot streaming chat endpoint using OpenAI GPT-4o with tool calling.",
+      "tags": ["api", "ai", "chat", "streaming"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src/app/api/auth/register/route.ts",
+      "type": "endpoint",
+      "name": "Register API (POST)",
+      "filePath": "src/app/api/auth/register/route.ts",
+      "summary": "User registration with password hashing.",
+      "tags": ["api", "auth", "register"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/api/auth/me/route.ts",
+      "type": "endpoint",
+      "name": "Current User API (GET)",
+      "filePath": "src/app/api/auth/me/route.ts",
+      "summary": "Current authenticated user profile.",
+      "tags": ["api", "auth", "profile"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/api/auth/totp/setup/route.ts",
+      "type": "endpoint",
+      "name": "TOTP Setup API (GET)",
+      "filePath": "src/app/api/auth/totp/setup/route.ts",
+      "summary": "Two-factor authentication setup with QR code generation.",
+      "tags": ["api", "auth", "2fa", "totp"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/app/api/auth/totp/verify/route.ts",
+      "type": "endpoint",
+      "name": "TOTP Verify API (POST)",
+      "filePath": "src/app/api/auth/totp/verify/route.ts",
+      "summary": "Two-factor authentication verification.",
+      "tags": ["api", "auth", "2fa", "verify"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/api/auth/totp/disable/route.ts",
+      "type": "endpoint",
+      "name": "TOTP Disable API (POST)",
+      "filePath": "src/app/api/auth/totp/disable/route.ts",
+      "summary": "Two-factor authentication disable/enable.",
+      "tags": ["api", "auth", "2fa"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/app/api/auth/google/route.ts",
+      "type": "endpoint",
+      "name": "Google OAuth API (GET)",
+      "filePath": "src/app/api/auth/google/route.ts",
+      "summary": "Google OAuth authentication flow endpoint.",
+      "tags": ["api", "auth", "oauth", "google"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "pipeline:.github/workflows/ci.yml",
+      "type": "pipeline",
+      "name": "CI Pipeline",
+      "filePath": ".github/workflows/ci.yml",
+      "summary": "GitHub Actions CI: lint, typecheck, test (unit/components/API), merge coverage, build.",
+      "tags": ["ci", "github-actions", "testing", "build"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "service:public/sw.js",
+      "type": "service",
+      "name": "Service Worker (PWA)",
+      "filePath": "public/sw.js",
+      "summary": "Service worker for offline support and caching strategies.",
+      "tags": ["pwa", "service-worker", "offline", "caching"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/test-utils/i18n-mock.ts",
+      "type": "file",
+      "name": "i18n Test Mock",
+      "filePath": "src/test-utils/i18n-mock.ts",
+      "summary": "Mock utilities for testing internationalized components.",
+      "tags": ["testing", "i18n", "mock"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:memory.md",
+      "type": "document",
+      "name": "Project Memory/Context",
+      "filePath": "memory.md",
+      "summary": "Development memory and context document for agent collaboration.",
+      "tags": ["documentation", "context", "agents"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    { "source": "config:next.config.ts", "target": "config:package.json", "type": "depends_on", "weight": 0.6 },
+    { "source": "config:tailwind.config.ts", "target": "config:postcss.config.mjs", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/app/layout.tsx", "target": "file:src/app/providers.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/layout.tsx", "target": "file:src/app/globals.css", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/providers.tsx", "target": "file:src/components/analytics/posthog-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/providers.tsx", "target": "file:src/components/realtime-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/providers.tsx", "target": "file:src/hooks/use-auth.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/providers.tsx", "target": "file:src/components/pwa-register.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/layout/sidebar.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/layout/header.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/layout/mobile-nav.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/view-transition-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/ai/ai-copilot-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/ai/ai-copilot-button.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(dashboard)/layout.tsx", "target": "file:src/components/ai/ai-copilot-panel.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/middleware.ts", "target": "file:src/i18n/routing.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/middleware.ts", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.6 },
+    { "source": "file:src/components/layout/sidebar.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/layout/sidebar.tsx", "target": "file:src/lib/permissions.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/layout/header.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/layout/header.tsx", "target": "file:src/hooks/use-auth.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/components/layout/header.tsx", "target": "file:src/components/realtime-provider.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/layout/header.tsx", "target": "file:src/components/notification-panel.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/layout/header.tsx", "target": "file:src/components/command-palette.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/button.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/card.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/dropdown-menu.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/dialog.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/tabs.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ui/animated-counter.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/charts/revenue-chart.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/charts/sales-channel-chart.tsx", "target": "file:src/lib/utils.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/ai/ai-copilot-panel.tsx", "target": "file:src/hooks/use-ai-chat.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/components/ai/ai-copilot-panel.tsx", "target": "file:src/components/ai/ai-copilot-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/components/ai/ai-copilot-button.tsx", "target": "file:src/components/ai/ai-copilot-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "endpoint:src/app/api/ai/chat/route.ts", "target": "file:src/lib/ai/tools.ts", "type": "imports", "weight": 0.8 },
+    { "source": "endpoint:src/app/api/ai/chat/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/lib/ai/tools.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/dashboard/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/orders/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/customers/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/products/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/search/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/dashboard/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/orders/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "endpoint:src/app/api/customers/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/lib/api-guard.ts", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/lib/api-guard.ts", "target": "file:src/lib/permissions.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/hooks/use-auth.tsx", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/hooks/use-auth.tsx", "target": "file:src/lib/auth0.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/hooks/use-data-export.ts", "target": "file:src/lib/csv.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/realtime-provider.tsx", "target": "endpoint:src/app/api/realtime/route.ts", "type": "depends_on", "weight": 0.7 },
+    { "source": "file:src/hooks/use-saas.ts", "target": "endpoint:src/app/api/billing/subscription/route.ts", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/hooks/use-analytics.ts", "target": "endpoint:src/app/api/dashboard/route.ts", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/hooks/use-realtime-data.ts", "target": "file:src/components/realtime-provider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "config:prisma/schema.prisma", "target": "file:src/lib/db.ts", "type": "configures", "weight": 0.7 },
+    { "source": "file:src/lib/db.ts", "target": "config:prisma/schema.prisma", "type": "depends_on", "weight": 0.7 },
+    { "source": "config:prisma/seed.ts", "target": "config:prisma/schema.prisma", "type": "depends_on", "weight": 0.6 },
+    { "source": "pipeline:.github/workflows/ci.yml", "target": "config:package.json", "type": "depends_on", "weight": 0.6 },
+    { "source": "service:public/sw.js", "target": "file:src/app/manifest.ts", "type": "related", "weight": 0.5 },
+    { "source": "file:src/components/command-palette.tsx", "target": "endpoint:src/app/api/search/route.ts", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/animated-rays.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/spotlight-navbar.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/logo-slider.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/flip-fade-text.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/faq-accordion.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/ui/pop-button.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/page.tsx", "target": "file:src/components/backgrounds/LightPillar.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/[locale]/(marketing)/layout.tsx", "target": "file:src/components/ui/spotlight-navbar.tsx", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/lib/auth.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/hooks/use-auth.tsx", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.6 },
+    { "source": "file:src/components/activity-feed.tsx", "target": "file:src/hooks/use-realtime-data.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/components/notification-panel.tsx", "target": "file:src/components/realtime-provider.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/page-transition.tsx", "target": "file:src/components/motion.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/components/view-transition-provider.tsx", "target": "file:src/components/page-transition.tsx", "type": "imports", "weight": 0.6 },
+    { "source": "file:src/components/charts/index.ts", "target": "file:src/components/charts/revenue-chart.tsx", "type": "exports", "weight": 0.8 },
+    { "source": "file:src/components/charts/index.ts", "target": "file:src/components/charts/sales-channel-chart.tsx", "type": "exports", "weight": 0.8 },
+    { "source": "file:src/components/ai/index.ts", "target": "file:src/components/ai/ai-copilot-provider.tsx", "type": "exports", "weight": 0.8 },
+    { "source": "file:src/components/ai/index.ts", "target": "file:src/components/ai/ai-copilot-button.tsx", "type": "exports", "weight": 0.8 },
+    { "source": "file:src/components/ai/index.ts", "target": "file:src/components/ai/ai-copilot-panel.tsx", "type": "exports", "weight": 0.8 },
+    { "source": "file:src/test-utils/i18n-mock.ts", "target": "file:src/i18n/routing.ts", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/app/api/auth/register/route.ts", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/auth/register/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/auth/me/route.ts", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/auth/totp/setup/route.ts", "target": "file:src/lib/auth.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/auth/totp/setup/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/auth/google/route.ts", "target": "file:src/lib/auth0.ts", "type": "imports", "weight": 0.8 },
+    { "source": "file:src/app/api/team/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/team/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/audit-log/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/notifications/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/api-keys/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/api-keys/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/webhooks/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/webhooks/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/billing/subscription/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/billing/subscription/route.ts", "target": "file:src/lib/api-guard.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/billing/invoices/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/app/api/realtime/route.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.6 },
+    { "source": "file:src/components/analytics/posthog-provider.tsx", "target": "config:package.json", "type": "depends_on", "weight": 0.6 },
+    { "source": "file:src/hooks/use-analytics.ts", "target": "file:src/components/realtime-provider.tsx", "type": "imports", "weight": 0.7 },
+    { "source": "file:src/hooks/use-saas.ts", "target": "file:src/lib/db.ts", "type": "imports", "weight": 0.6 },
+    { "source": "file:src/components/data-export-button.tsx", "target": "file:src/hooks/use-data-export.ts", "type": "imports", "weight": 0.8 }
+  ],
+  "layers": [
+    {
+      "id": "layer:infrastructure-config",
+      "name": "Infrastructure & Configuration",
+      "description": "Root-level configuration files for Next.js, TypeScript, Tailwind CSS, ESLint, deployment (Vercel/Railway), testing (Playwright), and CI/CD pipelines.",
+      "nodeIds": [
+        "config:next.config.ts",
+        "config:tailwind.config.ts",
+        "config:tsconfig.json",
+        "config:package.json",
+        "config:postcss.config.mjs",
+        "config:eslint.config.mjs",
+        "config:vercel.json",
+        "config:railway.json",
+        "config:playwright.config.ts",
+        "config:components.json",
+        "config:.env",
+        "pipeline:.github/workflows/ci.yml"
+      ]
+    },
+    {
+      "id": "layer:database",
+      "name": "Database Layer",
+      "description": "Prisma ORM schema defining the PostgreSQL database models (User, Customer, Product, Order, SalesChannel) and the database client singleton.",
+      "nodeIds": [
+        "config:prisma/schema.prisma",
+        "config:prisma/seed.ts",
+        "file:src/lib/db.ts"
+      ]
+    },
+    {
+      "id": "layer:internationalization",
+      "name": "Internationalization (i18n)",
+      "description": "Next-Intl based internationalization with routing, request handling, and translation files for English, Indonesian, Japanese, and Chinese.",
+      "nodeIds": [
+        "file:src/i18n/routing.ts",
+        "file:src/i18n/request.ts",
+        "config:src/i18n/locales/en.json",
+        "config:src/i18n/locales/id.json",
+        "config:src/i18n/locales/ja.json",
+        "config:src/i18n/locales/zh.json",
+        "file:src/test-utils/i18n-mock.ts"
+      ]
+    },
+    {
+      "id": "layer:authentication",
+      "name": "Authentication & Authorization",
+      "description": "Authentication system with JWT tokens, bcrypt password hashing, Auth0 social login, TOTP 2FA, role-based access control, API route guards, and Next.js middleware.",
+      "nodeIds": [
+        "file:src/middleware.ts",
+        "file:src/lib/auth.ts",
+        "file:src/lib/auth0.ts",
+        "file:src/lib/api-guard.ts",
+        "file:src/lib/permissions.ts",
+        "file:src/hooks/use-auth.tsx",
+        "file:src/app/api/auth/register/route.ts",
+        "file:src/app/api/auth/me/route.ts",
+        "file:src/app/api/auth/totp/setup/route.ts",
+        "file:src/app/api/auth/totp/verify/route.ts",
+        "file:src/app/api/auth/totp/disable/route.ts",
+        "file:src/app/api/auth/google/route.ts"
+      ]
+    },
+    {
+      "id": "layer:core-utilities",
+      "name": "Core Utilities & Hooks",
+      "description": "Shared utility functions, custom React hooks, and library code used across the application.",
+      "nodeIds": [
+        "file:src/lib/utils.ts",
+        "file:src/lib/csv.ts",
+        "file:src/lib/ai/tools.ts",
+        "file:src/hooks/use-ai-chat.ts",
+        "file:src/hooks/use-analytics.ts",
+        "file:src/hooks/use-animated-counter.ts",
+        "file:src/hooks/use-data-export.ts",
+        "file:src/hooks/use-realtime-data.ts",
+        "file:src/hooks/use-saas.ts"
+      ]
+    },
+    {
+      "id": "layer:ui-components",
+      "name": "UI Component Library",
+      "description": "Base UI primitives (shadcn/ui + Radix UI) and animated components (VengenceUI) used throughout the application.",
+      "nodeIds": [
+        "file:src/components/ui/button.tsx",
+        "file:src/components/ui/card.tsx",
+        "file:src/components/ui/avatar.tsx",
+        "file:src/components/ui/badge.tsx",
+        "file:src/components/ui/dropdown-menu.tsx",
+        "file:src/components/ui/dialog.tsx",
+        "file:src/components/ui/input.tsx",
+        "file:src/components/ui/select.tsx",
+        "file:src/components/ui/table.tsx",
+        "file:src/components/ui/tabs.tsx",
+        "file:src/components/ui/skeleton.tsx",
+        "file:src/components/ui/animated-counter.tsx",
+        "file:src/components/ui/animated-rays.tsx",
+        "file:src/components/ui/spotlight-navbar.tsx",
+        "file:src/components/ui/flip-fade-text.tsx",
+        "file:src/components/ui/logo-slider.tsx",
+        "file:src/components/ui/pop-button.tsx",
+        "file:src/components/ui/faq-accordion.tsx",
+        "file:src/components/motion.tsx"
+      ]
+    },
+    {
+      "id": "layer:layout-shell",
+      "name": "Layout & Navigation",
+      "description": "Dashboard layout shell with sidebar, header, mobile navigation, view transitions, and page transition animations.",
+      "nodeIds": [
+        "file:src/app/layout.tsx",
+        "file:src/app/[locale]/layout.tsx",
+        "file:src/app/[locale]/(dashboard)/layout.tsx",
+        "file:src/app/[locale]/(marketing)/layout.tsx",
+        "file:src/app/providers.tsx",
+        "file:src/app/globals.css",
+        "file:src/app/manifest.ts",
+        "file:src/components/layout/sidebar.tsx",
+        "file:src/components/layout/header.tsx",
+        "file:src/components/layout/mobile-nav.tsx",
+        "file:src/components/layout/language-toggle.tsx",
+        "file:src/components/view-transition-provider.tsx",
+        "file:src/components/transition-link.tsx",
+        "file:src/components/page-transition.tsx",
+        "file:src/components/page-progress-bar.tsx"
+      ]
+    },
+    {
+      "id": "layer:realtime-ux",
+      "name": "Realtime & User Experience",
+      "description": "Real-time data streaming via SSE, connection indicator, notification panel, activity feed, command palette, and PWA support.",
+      "nodeIds": [
+        "file:src/components/realtime-provider.tsx",
+        "file:src/components/realtime-indicator.tsx",
+        "file:src/components/notification-panel.tsx",
+        "file:src/components/command-palette.tsx",
+        "file:src/components/activity-feed.tsx",
+        "file:src/components/data-export-button.tsx",
+        "file:src/components/pwa-register.tsx",
+        "file:src/components/unsupported-browser-banner.tsx",
+        "file:src/components/order-tracking-timeline.tsx",
+        "service:public/sw.js"
+      ]
+    },
+    {
+      "id": "layer:charts-analytics",
+      "name": "Charts & Analytics",
+      "description": "Data visualization components using Recharts (revenue bar chart, sales channel donut chart) and PostHog analytics integration.",
+      "nodeIds": [
+        "file:src/components/charts/revenue-chart.tsx",
+        "file:src/components/charts/sales-channel-chart.tsx",
+        "file:src/components/charts/index.ts",
+        "file:src/components/analytics/posthog-provider.tsx"
+      ]
+    },
+    {
+      "id": "layer:ai-copilot",
+      "name": "AI Analytics Copilot",
+      "description": "AI-powered chat assistant that answers questions about business data using OpenAI GPT-4o with tool calling against the Prisma database.",
+      "nodeIds": [
+        "file:src/components/ai/ai-copilot-provider.tsx",
+        "file:src/components/ai/ai-copilot-button.tsx",
+        "file:src/components/ai/ai-copilot-panel.tsx",
+        "file:src/components/ai/index.ts",
+        "endpoint:src/app/api/ai/chat/route.ts"
+      ]
+    },
+    {
+      "id": "layer:api-routes",
+      "name": "API Routes",
+      "description": "REST API endpoints for all business entities, auth flows, billing, and data operations.",
+      "nodeIds": [
+        "endpoint:src/app/api/dashboard/route.ts",
+        "endpoint:src/app/api/orders/route.ts",
+        "endpoint:src/app/api/customers/route.ts",
+        "endpoint:src/app/api/products/route.ts",
+        "endpoint:src/app/api/categories/route.ts",
+        "endpoint:src/app/api/sales/route.ts",
+        "endpoint:src/app/api/search/route.ts",
+        "endpoint:src/app/api/marketing/route.ts",
+        "endpoint:src/app/api/discounts/route.ts",
+        "endpoint:src/app/api/realtime/route.ts",
+        "endpoint:src/app/api/billing/subscription/route.ts",
+        "endpoint:src/app/api/billing/invoices/route.ts",
+        "endpoint:src/app/api/billing/plans/route.ts",
+        "endpoint:src/app/api/api-keys/route.ts",
+        "endpoint:src/app/api/webhooks/route.ts",
+        "endpoint:src/app/api/audit-log/route.ts",
+        "endpoint:src/app/api/notifications/route.ts",
+        "endpoint:src/app/api/profile/route.ts",
+        "endpoint:src/app/api/team/route.ts",
+        "endpoint:src/app/api/roles/route.ts"
+      ]
+    },
+    {
+      "id": "layer:marketing",
+      "name": "Marketing & Landing Pages",
+      "description": "Marketing site with landing page featuring hero, features, stats, testimonials, pricing tables, and animated backgrounds using VengenceUI components.",
+      "nodeIds": [
+        "file:src/app/[locale]/(marketing)/page.tsx",
+        "file:src/components/backgrounds/LightPillar.tsx",
+        "document:README.md",
+        "document:DESIGN.md",
+        "document:memory.md"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project Overview",
+      "description": "Start by understanding the project's purpose: a full-featured admin dashboard built with Next.js 16 App Router. It includes auth with 2FA, role-based access control, real-time data, internationalization, billing, and an AI analytics copilot.",
+      "nodeIds": ["document:README.md", "config:package.json", "document:DESIGN.md"]
+    },
+    {
+      "order": 2,
+      "title": "Application Entry Point",
+      "description": "The app boots from src/app/layout.tsx which loads global styles, fonts, and wraps everything in Providers. The providers chain includes PostHog analytics, theming, i18n locale detection, real-time data, authentication, and PWA registration.",
+      "nodeIds": ["file:src/app/layout.tsx", "file:src/app/providers.tsx", "file:src/app/globals.css"]
+    },
+    {
+      "order": 3,
+      "title": "Database Schema",
+      "description": "The Prisma schema defines the PostgreSQL database with models for User, Customer, Product (with catalog/categories), Order (with items/channels), SalesChannel, and billing entities (subscriptions, invoices, payment methods).",
+      "nodeIds": ["config:prisma/schema.prisma", "file:src/lib/db.ts", "config:prisma/seed.ts"]
+    },
+    {
+      "order": 4,
+      "title": "Authentication & Authorization",
+      "description": "The auth system supports multiple authentication methods: JWT tokens with bcrypt password hashing, Auth0 social login (Google), and TOTP-based two-factor authentication. Role-based access control provides granular permission checks for API routes and UI pages.",
+      "nodeIds": ["file:src/lib/auth.ts", "file:src/lib/auth0.ts", "file:src/lib/permissions.ts", "file:src/lib/api-guard.ts", "file:src/middleware.ts", "file:src/hooks/use-auth.tsx"]
+    },
+    {
+      "order": 5,
+      "title": "Dashboard Shell & Navigation",
+      "description": "The dashboard layout provides the main application shell with a collapsible sidebar (organized into Main, Management, System groups), top header bar with search/theme/user menu, and a mobile bottom navigation. Layout components use view transitions for smooth page changes.",
+      "nodeIds": ["file:src/app/[locale]/(dashboard)/layout.tsx", "file:src/components/layout/sidebar.tsx", "file:src/components/layout/header.tsx", "file:src/components/layout/mobile-nav.tsx", "file:src/components/view-transition-provider.tsx"]
+    },
+    {
+      "order": 6,
+      "title": "UI Component Library",
+      "description": "The UI is built on shadcn/ui primitives (Button, Card, Dialog, DropdownMenu, Input, Select, Table, Tabs) and Radix UI accessible components. VengenceUI provides animated components (AnimatedRays, SpotlightNavbar, FlipFadeText, LogoSlider, PopButton, FAQAccordion) for premium visual effects.",
+      "nodeIds": ["file:src/components/ui/button.tsx", "file:src/components/ui/dialog.tsx", "file:src/components/ui/dropdown-menu.tsx", "file:src/components/ui/table.tsx"]
+    },
+    {
+      "order": 7,
+      "title": "API Layer & Data Flow",
+      "description": "25+ API routes handle all business operations: dashboard aggregation, orders, customers, products, search, marketing, discounts, billing (subscriptions/invoices/plans), API keys, webhooks, audit logs, notifications, team management, and real-time SSE streaming.",
+      "nodeIds": ["endpoint:src/app/api/dashboard/route.ts", "endpoint:src/app/api/orders/route.ts", "endpoint:src/app/api/search/route.ts", "endpoint:src/app/api/realtime/route.ts", "endpoint:src/app/api/billing/subscription/route.ts"]
+    },
+    {
+      "order": 8,
+      "title": "Real-Time Data & User Experience",
+      "description": "The real-time system uses Server-Sent Events for live data streaming. Components include a real-time connection indicator, activity feed with relative timestamps, notification panel, and a Command+K search palette for quick navigation.",
+      "nodeIds": ["file:src/components/realtime-provider.tsx", "endpoint:src/app/api/realtime/route.ts", "file:src/components/command-palette.tsx", "file:src/components/activity-feed.tsx", "file:src/components/notification-panel.tsx"]
+    },
+    {
+      "order": 9,
+      "title": "AI Analytics Copilot (New)",
+      "description": "The AI Analytics Copilot is a floating chat assistant that answers natural language questions about business data. Uses OpenAI GPT-4o with 7 custom tools that query the Prisma database for dashboard stats, orders, products, sales channels, revenue trends, and customer details.",
+      "nodeIds": ["file:src/components/ai/ai-copilot-button.tsx", "file:src/components/ai/ai-copilot-panel.tsx", "endpoint:src/app/api/ai/chat/route.ts", "file:src/lib/ai/tools.ts", "file:src/hooks/use-ai-chat.ts"]
+    },
+    {
+      "order": 10,
+      "title": "Internationalization",
+      "description": "The app supports English, Indonesian, Japanese, and Chinese through next-intl. Locale detection happens in middleware, routing is configured for locale-based paths, and all UI strings are loaded from JSON translation files.",
+      "nodeIds": ["file:src/i18n/routing.ts", "file:src/i18n/request.ts", "config:src/i18n/locales/en.json", "file:src/components/layout/language-toggle.tsx"]
+    },
+    {
+      "order": 11,
+      "title": "Testing Infrastructure",
+      "description": "Comprehensive testing with Vitest (unit, component, API) and Playwright E2E tests. Three separate Vitest configs for different test types with coverage thresholds. CI pipeline runs linting, typechecking, all test suites, and production build.",
+      "nodeIds": ["config:playwright.config.ts", "pipeline:.github/workflows/ci.yml", "file:src/test-utils/i18n-mock.ts"]
+    }
+  ]
+}
