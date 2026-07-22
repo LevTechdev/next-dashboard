@@ -1,0 +1,391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("STAFF") // ADMIN, MANAGER, STAFF
+  avatar        String?
+  phone         String?
+  position      String?
+  totpSecret     String?  // Encrypted TOTP secret for 2FA
+  totpEnabled    Boolean  @default(false)
+  emailVerified  DateTime?
+  verificationToken String?
+  verificationTokenExpires DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders          Order[]
+  activities      ActivityLog[]
+  subscription    Subscription?
+  apiKeys         ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
+  invoices        Invoice[]
+  paymentMethods  PaymentMethod[]
+  notifications   Notification[]
+  notificationPref NotificationPreference?
+}
+
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  avatar         String?
+  city           String?
+  country        String?
+  segment        String?  // VIP, REGULAR, NEW
+  totalSpent     Float    @default(0)
+  totalOrders    Int      @default(0)
+  lastOrderDate  DateTime?
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orders         Order[]
+}
+
+model ProductCategory {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  price         Float
+  costPrice     Float    @default(0)
+  stock         Int      @default(0)
+  sku           String?
+  image         String?
+  categoryId    String?
+  category      ProductCategory? @relation(fields: [categoryId], references: [id])
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orderItems    OrderItem[]
+  inventoryItems InventoryRecord[]
+}
+
+model SalesChannel {
+  id        String   @id @default(cuid())
+  name      String   @unique // Online Store, Facebook, Facebook Shop, Instagram, TikTok, Shopify
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  icon      String?
+  orders    Order[]
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  channelId       String?
+  channel         SalesChannel? @relation(fields: [channelId], references: [id])
+  status          String   @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  totalAmount     Float    @default(0)
+  discountAmount  Float    @default(0)
+  shippingAmount  Float    @default(0)
+  taxAmount       Float    @default(0)
+  grandTotal      Float    @default(0)
+  paymentMethod   String?  // CREDIT_CARD, BANK_TRANSFER, E_WALLET, COD
+  paymentStatus   String   @default("UNPAID") // UNPAID, PAID, REFUNDED
+  shippingAddress String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  items           OrderItem[]
+  discount        OrderDiscount?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  name      String
+  quantity  Int
+  price     Float
+  total     Float
+}
+
+model Discount {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  type        String   @default("PERCENTAGE") // PERCENTAGE, FIXED
+  value       Float
+  minPurchase Float    @default(0)
+  maxUses     Int      @default(0)
+  usedCount   Int      @default(0)
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  orders      OrderDiscount[]
+}
+
+model OrderDiscount {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  discountId String?
+  discount   Discount? @relation(fields: [discountId], references: [id])
+  amount     Float
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   @default("EMAIL") // EMAIL, SOCIAL, ADS, SMS, OTHER
+  status      String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED, COMPLETED
+  budget      Float    @default(0)
+  spent       Float    @default(0)
+  channel     String?  // facebook, instagram, tiktok, email, google
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InventoryRecord {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  type        String   // IN, OUT, ADJUSTMENT
+  quantity    Int
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model RoleSetting {
+  id        String   @id @default(cuid())
+  role      String   // ADMIN, MANAGER, STAFF
+  resource  String   // page or resource name
+  action    String   // access, create, read, update, delete
+  allowed   Boolean  @default(true)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([role, resource, action])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique // hashed API key
+  prefix      String             // visible prefix like "dash_abc..."
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  permissions String    @default("read") // comma-separated: read, write, admin
+  status      String    @default("ACTIVE") // ACTIVE, REVOKED
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model WebhookEndpoint {
+  id               String    @id @default(cuid())
+  name             String
+  url              String
+  secret           String    // HMAC signing secret
+  subscribedEvents String[]  // event types to listen for
+  status           String    @default("ACTIVE") // ACTIVE, PAUSED, FAILED
+  description      String?
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lastTriggeredAt  DateTime?
+  lastStatus       String?   // success, failed
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deliveries       WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  endpointId String
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  event      String
+  payload    String   // JSON payload sent
+  status     String   @default("PENDING") // PENDING, DELIVERED, FAILED
+  statusCode Int?
+  response   String?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  price       Float
+  yearlyPrice Float?             // yearly billing price (optional)
+  interval    String   @default("MONTHLY") // MONTHLY, YEARLY, ONETIME
+  features    String[] // Array of feature keys or strings
+  // Feature limits (null = unlimited)
+  maxOrders   Int?
+  maxTeamMembers Int?
+  hasAnalytics   Boolean @default(false)
+  hasReports     Boolean @default(false)
+  hasMultiChannel Boolean @default(false)
+  hasApiAccess   Boolean @default(false)
+  hasRoleBasedAccess Boolean @default(false)
+  supportLevel   String  @default("email") // email, priority, dedicated
+  isActive    Boolean  @default(true)
+  popular     Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+  invoices      Invoice[]
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  planId          String?
+  plan            Plan?    @relation(fields: [planId], references: [id])
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subscriptionId  String?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  amount          Float
+  currency        String   @default("USD")
+  status          String   @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED, REFUNDED
+  description     String?
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  paidAt          DateTime?
+  paymentMethod   String?  // credit_card, bank_transfer, paypal
+  invoiceFile     String?  // URL to generated PDF
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type       String   // credit_card, paypal, bank_account
+  last4      String?
+  brand      String?  // visa, mastercard, etc.
+  expMonth   Int?
+  expYear    Int?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model UsageRecord {
+  id         String   @id @default(cuid())
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  metric     String   // orders, team_members, api_calls
+  value      Int      @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // order, customer, product, revenue, inventory, discount, campaign, milestone, alert
+  title       String
+  description String?
+  link        String?  // optional link to relevant page
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model NotificationPreference {
+  id              String  @id @default(cuid())
+  userId          String? @unique
+  user            User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Per-category email preferences
+  emailOnOrder    Boolean @default(true)
+  emailOnCustomer Boolean @default(true)
+  emailOnProduct  Boolean @default(true)
+  emailOnRevenue  Boolean @default(true)
+  emailOnInventory Boolean @default(true)
+  emailOnDiscount Boolean @default(true)
+  emailOnCampaign Boolean @default(true)
+  emailOnAlert    Boolean @default(true)
+  // Alert rule thresholds
+  lowStockThreshold      Int  @default(10)  // Alert when stock falls below
+  pendingOrderThreshold  Int  @default(5)   // Alert when pending orders exceed
+  campaignBudgetPercent  Int  @default(80)  // Alert when campaign exceeds % budget
+  // In-app notification toggles
+  inAppOnOrder    Boolean @default(true)
+  inAppOnCustomer Boolean @default(true)
+  inAppOnProduct  Boolean @default(true)
+  inAppOnRevenue  Boolean @default(true)
+  inAppOnInventory Boolean @default(true)
+  inAppOnDiscount Boolean @default(true)
+  inAppOnCampaign Boolean @default(true)
+  inAppOnAlert    Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            Plan     @relation(fields: [planId], references: [id])
+  status          String   @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  invoices        Invoice[]
+  usageRecords    UsageRecord[]
+}
