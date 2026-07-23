@@ -80,10 +80,15 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix"
+      "eslint --fix",
+      "prettier --write"
     ],
     "*.{mjs,js,jsx}": [
-      "eslint --fix"
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.css": [
+      "prettier --write"
     ]
   },
   "devDependencies": {
@@ -120,6 +125,7 @@
     "lint-staged": "^17.1.1",
     "playwright": "^1.61.1",
     "postcss": "^8.5.16",
+    "prettier": "^3.9.6",
     "prisma": "^6.19.3",
     "react-doctor": "^0.7.2",
     "semantic-release": "^25.0.8",
