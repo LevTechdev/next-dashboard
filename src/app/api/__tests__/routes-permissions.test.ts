@@ -24,17 +24,14 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }>
       >(),
 
-      mockRequireAuth:
-        vi.fn<
-          (
-            req?: Request,
-          ) => Promise<{
-            session: {
-              user: { id: string; sub: string; name: string; email: string; role: string };
-            };
-            response: Response | null;
-          }>
-        >(),
+      mockRequireAuth: vi.fn<
+        (req?: Request) => Promise<{
+          session: {
+            user: { id: string; sub: string; name: string; email: string; role: string };
+          };
+          response: Response | null;
+        }>
+      >(),
 
       mockGetSession: vi.fn<() => Promise<unknown>>(),
 

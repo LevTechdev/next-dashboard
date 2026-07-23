@@ -151,17 +151,14 @@ const { mockGetSession, mockPrisma, mockRequirePermission, mockRequireAuth, mock
           ) => Promise<{ role: string | null; response: Response | null }>
         >(),
 
-      mockRequireAuth:
-        vi.fn<
-          (
-            req?: Request,
-          ) => Promise<{
-            session: {
-              user: { id: string; sub: string; name: string; email: string; role: string };
-            };
-            response: Response | null;
-          }>
-        >(),
+      mockRequireAuth: vi.fn<
+        (req?: Request) => Promise<{
+          session: {
+            user: { id: string; sub: string; name: string; email: string; role: string };
+          };
+          response: Response | null;
+        }>
+      >(),
 
       mockFormatDateTime: vi.fn<(d: Date) => string>(),
 

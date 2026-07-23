@@ -36,17 +36,15 @@ const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = v
     mockRequirePermission: vi.fn<() => Promise<unknown>>(),
     mockPrisma: {
       order: deepModel({
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            {
-              id: "o-1",
-              orderNumber: "ORD-001",
-              grandTotal: 100,
-              customer: { id: "c-1", name: "John" },
-              channel: { id: "ch-1", name: "Store" },
-            },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "o-1",
+            orderNumber: "ORD-001",
+            grandTotal: 100,
+            customer: { id: "c-1", name: "John" },
+            channel: { id: "ch-1", name: "Store" },
+          },
+        ]),
         aggregate: vi.fn().mockResolvedValue({ _sum: { grandTotal: 5000 } }),
         count: vi.fn().mockResolvedValue(10),
       }),

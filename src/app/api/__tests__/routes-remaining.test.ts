@@ -167,17 +167,15 @@ const {
       }),
 
       discount: deepModel({
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            {
-              id: "disc-1",
-              code: "SAVE10",
-              name: "10% Off",
-              value: 10,
-              endsAt: new Date("2024-12-31"),
-            },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "disc-1",
+            code: "SAVE10",
+            name: "10% Off",
+            value: 10,
+            endsAt: new Date("2024-12-31"),
+          },
+        ]),
         count: vi.fn().mockResolvedValue(5),
       }),
 
