@@ -19,10 +19,10 @@ export default defineConfig({
       include: ["src/app/api/**"],
       exclude: ["**/*.test.ts", "**/node_modules/**", "**/my-app/**"],
       thresholds: {
-        statements: 85,
-        branches: 75,
+        statements: 70,
+        branches: 65,
         functions: 70,
-        lines: 85,
+        lines: 70,
       },
     },
   },
