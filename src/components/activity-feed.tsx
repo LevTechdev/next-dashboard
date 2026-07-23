@@ -2,24 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import {
-  ShoppingCart,
-  Users,
-  Package,
-  DollarSign,
-  AlertTriangle,
-  Clock,
-  Megaphone,
-  Gift,
-  BellRing,
-  Filter,
-  Download,
-  Loader2,
-  Bell,
-  ExternalLink,
-  Sparkles,
-  RefreshCw,
-} from "lucide-react";
+import { ClockIcon, BellIcon, RefreshCwIcon } from "lucide-animated";
+import { ShoppingCart, Users, Package, DollarSign, AlertTriangle, Megaphone, Gift, BellRing, Filter, Download, Loader2, ExternalLink, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +42,7 @@ interface ApiNotification {
 
 const TYPE_CONFIG: Record<
   ActivityType,
-  { icon: typeof ShoppingCart; color: string; bg: string; label: string }
+  { icon: React.ComponentType<{ className?: string }>; color: string; bg: string; label: string }
 > = {
   order: {
     icon: ShoppingCart,
@@ -91,7 +75,7 @@ const TYPE_CONFIG: Record<
     label: "Inventory",
   },
   discount: {
-    icon: Clock,
+    icon: ClockIcon,
     color: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-50 dark:bg-rose-900/20",
     label: "Discounts",
@@ -329,7 +313,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               {connectionStatus === "connected" ? (
                 <ActivityDot className="text-emerald-500" />
               ) : connectionStatus === "connecting" ? (
-                <RefreshCw className="h-4 w-4 text-yellow-500 animate-spin" />
+                <RefreshCwIcon className="h-4 w-4 text-yellow-500 animate-spin" />
               ) : (
                 <AlertTriangle className="h-4 w-4 text-red-500" />
               )}
@@ -425,7 +409,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               className="h-6 text-[10px] text-indigo-500 gap-1 px-2"
               onClick={handlePauseToggle}
             >
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCwIcon className="h-3 w-3" />
               Resume
             </Button>
           ) : (
@@ -508,7 +492,7 @@ export function ActivityFeed({ className }: { className?: string }) {
         {/* Empty State */}
         {!loading && activities.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <Bell className="h-10 w-10 mb-3 opacity-30" />
+            <BellIcon className="h-10 w-10 mb-3 opacity-30" />
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No activity yet</p>
             <p className="text-xs text-gray-400 mt-1">Real-time updates will appear here</p>
             <p className="text-xs text-gray-300 dark:text-gray-600 mt-3 max-w-[200px] text-center leading-relaxed">
@@ -654,7 +638,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               onClick={handleScrollToTop}
               className="pointer-events-auto inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-all"
             >
-              <RefreshCw className="h-2.5 w-2.5" />
+              <RefreshCwIcon className="h-2.5 w-2.5" />
               Scroll to top
             </button>
           </div>

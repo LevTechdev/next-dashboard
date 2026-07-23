@@ -6,28 +6,8 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import {
-  ArrowRight,
-  BarChart3,
-  ShoppingCart,
-  Users,
-  Package,
-  TrendingUp,
-  Shield,
-  Download,
-  Zap,
-  LayoutDashboard,
-  RefreshCw,
-  FileText,
-  Megaphone,
-  Tag,
-  UserCheck,
-  Clock,
-  PieChart,
-  CheckCircle,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { RefreshCwIcon, ClockIcon } from "lucide-animated";
+import { ArrowRight, BarChart3, ShoppingCart, Users, Package, TrendingUp, Shield, Download, Zap, LayoutDashboard, FileText, Megaphone, Tag, UserCheck, PieChart, CheckCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
@@ -43,7 +23,7 @@ interface FeatureGroup {
   items: {
     title: string;
     description: string;
-    icon: LucideIcon;
+    icon: React.ComponentType<{ className?: string; [key: string]: unknown }>;
     color: string;
     gradient: string;
     testId: string;
@@ -128,7 +108,7 @@ const featureGroups: FeatureGroup[] = [
         title: "Order Tracking",
         description:
           "Track order fulfillment from placement to delivery with a visual timeline showing each status change.",
-        icon: Clock,
+        icon: ClockIcon,
         color: "text-cyan-500 dark:text-cyan-400",
         gradient: "from-cyan-500/20 to-cyan-500/5",
         testId: "icon-clock",
@@ -199,7 +179,7 @@ const featureGroups: FeatureGroup[] = [
       {
         title: "Real-Time Updates",
         description: "Server-Sent Events deliver instant updates across all connected clients.",
-        icon: RefreshCw,
+        icon: RefreshCwIcon,
         color: "text-indigo-500 dark:text-indigo-400",
         gradient: "from-indigo-500/20 to-indigo-500/5",
         testId: "icon-refreshcw",
@@ -207,7 +187,7 @@ const featureGroups: FeatureGroup[] = [
       {
         title: "Audit Log",
         description: "Complete activity log tracking every action taken in the system.",
-        icon: Clock,
+        icon: ClockIcon,
         color: "text-zinc-500 dark:text-zinc-400",
         gradient: "from-zinc-500/20 to-zinc-500/5",
         testId: "icon-clock",
@@ -234,7 +214,7 @@ const performanceHighlights = [
   {
     title: "Real-Time Data Sync",
     desc: "Server-Sent Events push updates across all connected clients instantly.",
-    icon: RefreshCw,
+    icon: RefreshCwIcon,
     color: "text-indigo-500 dark:text-indigo-400",
     glowColor: "rgba(99,102,241,0.12)",
   },
