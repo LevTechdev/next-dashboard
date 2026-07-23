@@ -67,7 +67,7 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
                 "flex items-center gap-3 cursor-pointer group",
                 isSelected
                   ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                  : "text-gray-700 dark:text-gray-300"
+                  : "text-gray-700 dark:text-gray-300",
               )}
             >
               <span className="text-base shrink-0">{lang.flag}</span>

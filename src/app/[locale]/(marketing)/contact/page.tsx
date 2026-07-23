@@ -112,7 +112,13 @@ export default function ContactPage() {
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-50 dark:bg-[#0b0c11]">
         <div className="absolute inset-0">
           <AnimatedRays />
-          <AnimatedGridPattern numSquares={40} maxOpacity={0.04} duration={4} repeatDelay={1} className="opacity-40" />
+          <AnimatedGridPattern
+            numSquares={40}
+            maxOpacity={0.04}
+            duration={4}
+            repeatDelay={1}
+            className="opacity-40"
+          />
         </div>
         <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-[150px] pointer-events-none" />
 
@@ -128,8 +134,8 @@ export default function ContactPage() {
             Message Sent! 🎉
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-8">
-            Thanks for reaching out! Our team will review your message and get back
-            to you within 24 hours.
+            Thanks for reaching out! Our team will review your message and get back to you within 24
+            hours.
           </p>
           <Link
             href="/en"
@@ -284,9 +290,13 @@ export default function ContactPage() {
                   disabled={!name || !email || !message || isLoading}
                 >
                   {isLoading ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...
+                    </>
                   ) : (
-                    <><Send className="h-4 w-4" /> Send Message</>
+                    <>
+                      <Send className="h-4 w-4" /> Send Message
+                    </>
                   )}
                 </Button>
               </form>
@@ -308,12 +318,21 @@ export default function ContactPage() {
                   key={info.label}
                   className="glow-border flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-all duration-300 group"
                 >
-                  <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110 duration-300", info.bg)}>
+                  <div
+                    className={cn(
+                      "p-3 rounded-xl transition-transform group-hover:scale-110 duration-300",
+                      info.bg,
+                    )}
+                  >
                     <Icon className={cn("h-5 w-5", info.color)} />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{info.label}</p>
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white mt-0.5">{info.value}</p>
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      {info.label}
+                    </p>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white mt-0.5">
+                      {info.value}
+                    </p>
                     <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{info.sub}</p>
                   </div>
                 </div>
@@ -363,8 +382,8 @@ export default function ContactPage() {
               Prefer a live demo?
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-8">
-              See Dashboard in action with a personalized walkthrough from our team.
-              We'll show you exactly how it fits your business.
+              See Dashboard in action with a personalized walkthrough from our team. We'll show you
+              exactly how it fits your business.
             </p>
             <Link
               href="/en/dashboard"

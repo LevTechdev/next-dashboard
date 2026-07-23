@@ -68,12 +68,7 @@ describe("AnimatedCounter", () => {
   });
 
   it("renders with a custom formatter", () => {
-    render(
-      <AnimatedCounter
-        end={2500}
-        formatter={(v) => `${(v / 1000).toFixed(1)}K`}
-      />
-    );
+    render(<AnimatedCounter end={2500} formatter={(v) => `${(v / 1000).toFixed(1)}K`} />);
 
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -193,9 +188,7 @@ describe("AnimatedCounter", () => {
         vi.advanceTimersByTime(2000);
       });
 
-      expect(
-        screen.getByText(Number.MAX_SAFE_INTEGER.toString())
-      ).toBeInTheDocument();
+      expect(screen.getByText(Number.MAX_SAFE_INTEGER.toString())).toBeInTheDocument();
     });
 
     it("handles very small decimal end value with decimals prop", () => {

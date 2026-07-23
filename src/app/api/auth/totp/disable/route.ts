@@ -14,10 +14,7 @@ export async function POST(req: Request) {
   const { password } = body;
 
   if (!password) {
-    return NextResponse.json(
-      { error: "Password is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Password is required" }, { status: 400 });
   }
 
   // Find the user

@@ -146,7 +146,9 @@ export const headerMessages: TranslationMessages = {
  * Merge multiple TranslationMessages into one.
  * Later sources override earlier ones for the same namespace+key.
  */
-export function mergeMessages(...sources: (TranslationMessages | undefined)[]): TranslationMessages {
+export function mergeMessages(
+  ...sources: (TranslationMessages | undefined)[]
+): TranslationMessages {
   const result: TranslationMessages = {};
   for (const source of sources) {
     if (!source) continue;

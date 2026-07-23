@@ -15,11 +15,7 @@ import {
   Sparkles,
   Download,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +76,7 @@ export default function ProductsPage() {
     refresh,
   } = useRealtimeData<{ products: any[]; categories: any[] }>(
     "/api/products?includeCategories=true",
-    { interval: 30000 }
+    { interval: 30000 },
   );
 
   const products = productsData?.products || [];
@@ -88,9 +84,7 @@ export default function ProductsPage() {
 
   const role = (user as any)?.role;
 
-  const filtered = products.filter((p: any) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleSave = async () => {
     const body = editProduct ? { ...form, id: editProduct.id } : form;
@@ -141,20 +135,31 @@ export default function ProductsPage() {
   };
 
   const getStockBadge = (stock: number) => {
-    if (stock <= 0)
-      return <Badge variant="danger">{tproducts("outOfStock")}</Badge>;
+    if (stock <= 0) return <Badge variant="danger">{tproducts("outOfStock")}</Badge>;
     if (stock < 10)
-      return <Badge variant="warning">{tproducts("lowStock")} ({stock})</Badge>;
-    return <Badge variant="success">{tproducts("inStock")} ({stock})</Badge>;
+      return (
+        <Badge variant="warning">
+          {tproducts("lowStock")} ({stock})
+        </Badge>
+      );
+    return (
+      <Badge variant="success">
+        {tproducts("inStock")} ({stock})
+      </Badge>
+    );
   };
 
   // Compute derived stats
   const totalProducts = products.length;
   const categoryCount = categories.length;
-  const avgPrice = totalProducts > 0
-    ? products.reduce((sum: number, p: any) => sum + p.price, 0) / totalProducts
-    : 0;
-  const totalStockValue = products.reduce((sum: number, p: any) => sum + (p.price * (p.stock || 0)), 0);
+  const avgPrice =
+    totalProducts > 0
+      ? products.reduce((sum: number, p: any) => sum + p.price, 0) / totalProducts
+      : 0;
+  const totalStockValue = products.reduce(
+    (sum: number, p: any) => sum + p.price * (p.stock || 0),
+    0,
+  );
 
   // Skeleton loading
   if (loading) {
@@ -196,38 +201,30 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tproducts("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {tproducts("subtitle")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{tproducts("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
-          <Dialog
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-          >
+          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             {can(role, "create", "products") && (
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => {
-                  setEditProduct(null);
-                  setForm({
-                    name: "",
-                    description: "",
-                    price: "",
-                    costPrice: "",
-                    stock: "",
-                    sku: "",
-                    categoryId: "",
-                  });
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
-              </Button>
-            </DialogTrigger>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => {
+                    setEditProduct(null);
+                    setForm({
+                      name: "",
+                      description: "",
+                      price: "",
+                      costPrice: "",
+                      stock: "",
+                      sku: "",
+                      categoryId: "",
+                    });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
+                </Button>
+              </DialogTrigger>
             )}
             <DialogContent>
               <DialogHeader>
@@ -239,33 +236,25 @@ export default function ProductsPage() {
                 <Input
                   placeholder={tproducts("name")}
                   value={form.name}
-                  onChange={(e) =>
-                    setForm({ ...form, name: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
                 <Input
                   placeholder={tcommon("description")}
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     placeholder={tproducts("price")}
                     type="number"
                     value={form.price}
-                    onChange={(e) =>
-                      setForm({ ...form, price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
                   />
                   <Input
                     placeholder={tproducts("costPrice")}
                     type="number"
                     value={form.costPrice}
-                    onChange={(e) =>
-                      setForm({ ...form, costPrice: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -273,23 +262,17 @@ export default function ProductsPage() {
                     placeholder={tproducts("stock")}
                     type="number"
                     value={form.stock}
-                    onChange={(e) =>
-                      setForm({ ...form, stock: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
                   />
                   <Input
                     placeholder={tproducts("sku")}
                     value={form.sku}
-                    onChange={(e) =>
-                      setForm({ ...form, sku: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
                   />
                 </div>
                 <Select
                   value={form.categoryId}
-                  onValueChange={(v) =>
-                    setForm({ ...form, categoryId: v })
-                  }
+                  onValueChange={(v) => setForm({ ...form, categoryId: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={tproducts("category")} />
@@ -314,10 +297,36 @@ export default function ProductsPage() {
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: tproducts("title") || "Total Products", end: totalProducts, icon: Package, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: tproducts("category") || "Categories", end: categoryCount, icon: Layers, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/20" },
-          { label: tproducts("price") || "Avg Price", end: avgPrice, icon: DollarSign, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", format: (v: number) => formatCurrency(v) },
-          { label: tproducts("stock") || "Stock Value", end: totalStockValue, icon: BarChart3, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20", format: (v: number) => formatCurrency(v) },
+          {
+            label: tproducts("title") || "Total Products",
+            end: totalProducts,
+            icon: Package,
+            color: "text-blue-600 dark:text-blue-400",
+            bg: "bg-blue-50 dark:bg-blue-900/20",
+          },
+          {
+            label: tproducts("category") || "Categories",
+            end: categoryCount,
+            icon: Layers,
+            color: "text-indigo-600 dark:text-indigo-400",
+            bg: "bg-indigo-50 dark:bg-indigo-900/20",
+          },
+          {
+            label: tproducts("price") || "Avg Price",
+            end: avgPrice,
+            icon: DollarSign,
+            color: "text-emerald-600 dark:text-emerald-400",
+            bg: "bg-emerald-50 dark:bg-emerald-900/20",
+            format: (v: number) => formatCurrency(v),
+          },
+          {
+            label: tproducts("stock") || "Stock Value",
+            end: totalStockValue,
+            icon: BarChart3,
+            color: "text-purple-600 dark:text-purple-400",
+            bg: "bg-purple-50 dark:bg-purple-900/20",
+            format: (v: number) => formatCurrency(v),
+          },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -328,14 +337,23 @@ export default function ProductsPage() {
             <Card className="group hover:shadow-md transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className={cn("p-2.5 rounded-lg transition-transform group-hover:scale-110 duration-300", stat.bg)}>
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-lg transition-transform group-hover:scale-110 duration-300",
+                      stat.bg,
+                    )}
+                  >
                     <stat.icon className={cn("h-5 w-5", stat.color)} />
                   </div>
                   <Sparkles className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                  <AnimatedCounter end={stat.end} duration={1400} {...(stat.format ? { formatter: stat.format } : {})} />
+                  <AnimatedCounter
+                    end={stat.end}
+                    duration={1400}
+                    {...(stat.format ? { formatter: stat.format } : {})}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -362,12 +380,7 @@ export default function ProductsPage() {
               disabled={isRefreshing}
               className="gap-1"
             >
-              <RefreshCw
-                className={cn(
-                  "h-3.5 w-3.5",
-                  isRefreshing && "animate-spin"
-                )}
-              />
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             </Button>
             <DataExportButton
               columns={[
@@ -375,10 +388,14 @@ export default function ProductsPage() {
                 { key: (p: any) => p.category?.name || "-", header: "Category" },
                 { key: (p: any) => p.price, header: "Price" },
                 { key: (p: any) => p.costPrice, header: "Cost Price" },
-                { key: (p: any) => {
-                    const margin = p.price > 0 ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : "0";
+                {
+                  key: (p: any) => {
+                    const margin =
+                      p.price > 0 ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : "0";
                     return `${margin}%`;
-                  }, header: "Margin" },
+                  },
+                  header: "Margin",
+                },
                 { key: (p: any) => p.stock, header: "Stock" },
                 { key: "sku", header: "SKU" },
                 { key: (p: any) => p.description || "", header: "Description" },
@@ -393,99 +410,71 @@ export default function ProductsPage() {
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tproducts("name")}</TableHead>
-                <TableHead>{tproducts("category")}</TableHead>
-                <TableHead>{tproducts("price")}</TableHead>
-                <TableHead>{tproducts("costPrice")}</TableHead>
-                <TableHead>{tcommon("filter")}</TableHead>
-                <TableHead>{tproducts("stock")}</TableHead>
-                <TableHead>{tproducts("sku")}</TableHead>
-                <TableHead className="text-right">{tcommon("actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((p: any) => {
-                const margin =
-                  p.price > 0
-                    ? (
-                        ((p.price - p.costPrice) / p.price) *
-                        100
-                      ).toFixed(0)
-                    : "0";
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">
-                      {p.name}
-                    </TableCell>
-                    <TableCell>
-                      {p.category?.name || "-"}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(p.price)}
-                    </TableCell>
-                    <TableCell className="text-gray-500">
-                      {formatCurrency(p.costPrice)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          parseInt(margin) > 50
-                            ? "success"
-                            : parseInt(margin) > 20
-                            ? "default"
-                            : "warning"
-                        }
-                      >
-                        {margin}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {getStockBadge(p.stock)}
-                    </TableCell>
-                    <TableCell className="text-xs text-gray-500">
-                      {p.sku || "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {can(role, "update", "products") && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEdit(p)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {can(role, "delete", "products") && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(p.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        )}
-                      </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tproducts("name")}</TableHead>
+                  <TableHead>{tproducts("category")}</TableHead>
+                  <TableHead>{tproducts("price")}</TableHead>
+                  <TableHead>{tproducts("costPrice")}</TableHead>
+                  <TableHead>{tcommon("filter")}</TableHead>
+                  <TableHead>{tproducts("stock")}</TableHead>
+                  <TableHead>{tproducts("sku")}</TableHead>
+                  <TableHead className="text-right">{tcommon("actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((p: any) => {
+                  const margin =
+                    p.price > 0 ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : "0";
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.name}</TableCell>
+                      <TableCell>{p.category?.name || "-"}</TableCell>
+                      <TableCell>{formatCurrency(p.price)}</TableCell>
+                      <TableCell className="text-gray-500">{formatCurrency(p.costPrice)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            parseInt(margin) > 50
+                              ? "success"
+                              : parseInt(margin) > 20
+                                ? "default"
+                                : "warning"
+                          }
+                        >
+                          {margin}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getStockBadge(p.stock)}</TableCell>
+                      <TableCell className="text-xs text-gray-500">{p.sku || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          {can(role, "update", "products") && (
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {can(role, "delete", "products") && (
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      {tproducts("noProducts")}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-8 text-gray-500"
-                  >
-                    <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    {tproducts("noProducts")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

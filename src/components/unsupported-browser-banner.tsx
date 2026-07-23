@@ -22,9 +22,7 @@ export default function UnsupportedBrowserBanner() {
   useEffect(() => {
     setMounted(true);
     try {
-      setDismissed(
-        localStorage.getItem(DISMISSED_KEY) === "true"
-      );
+      setDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
     } catch {
       // localStorage may be blocked (e.g. private browsing, permissions)
       setDismissed(false);
@@ -56,8 +54,7 @@ export default function UnsupportedBrowserBanner() {
         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
         <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
           <strong className="font-semibold">Smooth page transitions aren&apos;t supported</strong>{" "}
-          in this browser. Upgrade to{" "}
-          <span className="font-medium">Chrome 111+</span>,{" "}
+          in this browser. Upgrade to <span className="font-medium">Chrome 111+</span>,{" "}
           <span className="font-medium">Edge 111+</span>,{" "}
           <span className="font-medium">Firefox 128+</span>,{" "}
           <span className="font-medium">Safari 18+</span>, or{" "}

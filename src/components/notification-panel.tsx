@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  Bell,
-  BellRing,
-  X,
-  CheckCheck,
-  FlaskConical,
-  Filter,
-} from "lucide-react";
+import { Bell, BellRing, X, CheckCheck, FlaskConical, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -70,14 +63,10 @@ export function NotificationPanel() {
   }, []);
 
   const filtered =
-    filter === "all"
-      ? notifications
-      : notifications.filter((n) => n.type === filter);
+    filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
 
   const unreadByType = (type: FilterType) =>
-    type === "all"
-      ? unreadCount
-      : notifications.filter((n) => n.type === type && !n.read).length;
+    type === "all" ? unreadCount : notifications.filter((n) => n.type === type && !n.read).length;
 
   const handleSimulateNotification = () => {
     const types: NotificationType[] = [
@@ -178,16 +167,16 @@ export function NotificationPanel() {
                   connectionStatus === "connected"
                     ? "bg-emerald-500"
                     : connectionStatus === "connecting"
-                    ? "bg-yellow-500 animate-pulse"
-                    : "bg-red-500"
+                      ? "bg-yellow-500 animate-pulse"
+                      : "bg-red-500",
                 )}
               />
               <span className="text-[10px] text-gray-400">
                 {connectionStatus === "connected"
                   ? "Live"
                   : connectionStatus === "connecting"
-                  ? "Connecting..."
-                  : "Disconnected"}
+                    ? "Connecting..."
+                    : "Disconnected"}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -211,7 +200,17 @@ export function NotificationPanel() {
 
           {/* Type filter pills */}
           <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none">
-            {(["all", "order", "customer", "inventory", "campaign", "discount", "alert"] as FilterType[]).map((t) => {
+            {(
+              [
+                "all",
+                "order",
+                "customer",
+                "inventory",
+                "campaign",
+                "discount",
+                "alert",
+              ] as FilterType[]
+            ).map((t) => {
               const count = unreadByType(t);
               return (
                 <button
@@ -221,7 +220,7 @@ export function NotificationPanel() {
                     "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all",
                     filter === t
                       ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
                   )}
                 >
                   {t !== "all" && <span>{notificationIcons[t as NotificationType]}</span>}
@@ -232,7 +231,7 @@ export function NotificationPanel() {
                         "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
                         filter === t
                           ? "bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                          : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                       )}
                     >
                       {count}
@@ -263,7 +262,9 @@ export function NotificationPanel() {
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                 <Filter className="h-8 w-8 mb-2 opacity-30" />
-                <p className="text-sm font-medium">No {typeLabels[filter]?.toLowerCase() || ""} notifications</p>
+                <p className="text-sm font-medium">
+                  No {typeLabels[filter]?.toLowerCase() || ""} notifications
+                </p>
                 <p className="text-xs mt-1">Try a different filter</p>
               </div>
             ) : (
@@ -273,7 +274,7 @@ export function NotificationPanel() {
                     key={n.id}
                     className={cn(
                       "flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
-                      !n.read && "bg-indigo-50/50 dark:bg-indigo-900/10"
+                      !n.read && "bg-indigo-50/50 dark:bg-indigo-900/10",
                     )}
                   >
                     <span className="text-lg shrink-0 mt-0.5">
@@ -294,9 +295,7 @@ export function NotificationPanel() {
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                         {n.description}
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {formatTimeAgo(n.timestamp)}
-                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">{formatTimeAgo(n.timestamp)}</p>
                     </div>
                     {!n.read && (
                       <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />

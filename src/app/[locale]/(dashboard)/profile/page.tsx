@@ -68,7 +68,11 @@ export default function ProfilePage() {
 
   // Password form
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Delete account
@@ -124,7 +128,9 @@ export default function ProfilePage() {
         // Refresh profile data
         fetch("/api/profile")
           .then((r) => r.json())
-          .then((data) => setProfile((prev) => prev ? { ...prev, emailVerified: data.emailVerified } : null));
+          .then((data) =>
+            setProfile((prev) => (prev ? { ...prev, emailVerified: data.emailVerified } : null)),
+          );
         // Clean URL
         window.history.replaceState({}, "", window.location.pathname);
       }
@@ -142,12 +148,13 @@ export default function ProfilePage() {
     setHasChanges(changed);
   }, [form, profile]);
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -162,7 +169,7 @@ export default function ProfilePage() {
         throw new Error(err.error || tprofile("failedToLoad"));
       }
       const updated = await res.json();
-      setProfile((prev) => prev ? { ...prev, ...updated } : null);
+      setProfile((prev) => (prev ? { ...prev, ...updated } : null));
       setHasChanges(false);
       toast.success(tprofile("saved"));
       // await updateSession(); // Refresh via context or page reload
@@ -197,7 +204,7 @@ export default function ProfilePage() {
         });
         if (!res.ok) throw new Error(tprofile("failedUploadAvatar"));
         const updated = await res.json();
-        setProfile((prev) => prev ? { ...prev, avatar: updated.avatar } : null);
+        setProfile((prev) => (prev ? { ...prev, avatar: updated.avatar } : null));
         toast.success(tprofile("photoUpdated"));
         // await updateSession();
       };
@@ -216,7 +223,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/profile/avatar", { method: "DELETE" });
       if (!res.ok) throw new Error(tprofile("failedRemoveAvatar"));
-      setProfile((prev) => prev ? { ...prev, avatar: null } : null);
+      setProfile((prev) => (prev ? { ...prev, avatar: null } : null));
       toast.success(tprofile("photoRemoved"));
       // await updateSession();
     } catch (err: any) {
@@ -333,7 +340,7 @@ export default function ProfilePage() {
 
       toast.success(tprofile("twoFAEnabledToast"));
       setTwoFADialogOpen(false);
-      setProfile((prev) => prev ? { ...prev, totpEnabled: true } : null);
+      setProfile((prev) => (prev ? { ...prev, totpEnabled: true } : null));
       setQrCode("");
       setTotpSecret("");
       setTotpCode("");
@@ -366,7 +373,7 @@ export default function ProfilePage() {
       toast.success(tprofile("twoFADisabledToast"));
       setDisable2FADialog(false);
       setDisablePassword("");
-      setProfile((prev) => prev ? { ...prev, totpEnabled: false } : null);
+      setProfile((prev) => (prev ? { ...prev, totpEnabled: false } : null));
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -419,9 +426,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{tprofile("title")}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {tprofile("subtitle")}
-        </p>
+        <p className="text-sm text-gray-500 mt-1">{tprofile("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -461,7 +466,9 @@ export default function ProfilePage() {
             </div>
 
             <h3 className="text-lg font-semibold">{profile?.name || tprofile("userFallback")}</h3>
-            <p className="text-sm text-gray-500 capitalize">{profile?.role?.toLowerCase() || tprofile("staffFallback")}</p>
+            <p className="text-sm text-gray-500 capitalize">
+              {profile?.role?.toLowerCase() || tprofile("staffFallback")}
+            </p>
 
             {profile?.avatar && (
               <Button
@@ -478,9 +485,7 @@ export default function ProfilePage() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">{tprofile("memberSince")}</span>
                 <span className="font-medium">
-                  {profile?.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString()
-                    : "-"}
+                  {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "-"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -493,7 +498,9 @@ export default function ProfilePage() {
               {/* Email Verification Status */}
               <div className="flex justify-between text-sm items-center pt-2 border-t">
                 <span className="text-gray-500">{tprofile("emailStatus")}</span>
-                <span className={`flex items-center gap-1 text-xs font-medium ${profile?.emailVerified ? "text-green-600" : "text-amber-600"}`}>
+                <span
+                  className={`flex items-center gap-1 text-xs font-medium ${profile?.emailVerified ? "text-green-600" : "text-amber-600"}`}
+                >
                   {profile?.emailVerified ? (
                     <>
                       <MailCheck className="h-3.5 w-3.5" /> {tprofile("verified")}
@@ -509,7 +516,9 @@ export default function ProfilePage() {
               {/* 2FA Status */}
               <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-500">{tprofile("twoFA")}</span>
-                <span className={`flex items-center gap-1 text-xs font-medium ${profile?.totpEnabled ? "text-green-600" : "text-gray-400"}`}>
+                <span
+                  className={`flex items-center gap-1 text-xs font-medium ${profile?.totpEnabled ? "text-green-600" : "text-gray-400"}`}
+                >
                   {profile?.totpEnabled ? (
                     <>
                       <ShieldCheck className="h-3.5 w-3.5" /> {tprofile("enabled")}
@@ -538,20 +547,45 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("name")}</label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tprofile("namePlaceholder")} />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("name")}
+                  </label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder={tprofile("namePlaceholder")}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("email")}</label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={tprofile("emailPlaceholder")} />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("email")}
+                  </label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder={tprofile("emailPlaceholder")}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("phone")}</label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={tprofile("phonePlaceholder")} />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("phone")}
+                  </label>
+                  <Input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder={tprofile("phonePlaceholder")}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("position")}</label>
-                  <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder={tprofile("positionPlaceholder")} />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("position")}
+                  </label>
+                  <Input
+                    value={form.position}
+                    onChange={(e) => setForm({ ...form, position: e.target.value })}
+                    placeholder={tprofile("positionPlaceholder")}
+                  />
                 </div>
               </div>
 
@@ -564,14 +598,32 @@ export default function ProfilePage() {
                 )}
                 <div className="flex items-center gap-2 ml-auto">
                   {hasChanges && (
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      if (profile) setForm({ name: profile.name || "", email: profile.email || "", phone: profile.phone || "", position: profile.position || "" });
-                    }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (profile)
+                          setForm({
+                            name: profile.name || "",
+                            email: profile.email || "",
+                            phone: profile.phone || "",
+                            position: profile.position || "",
+                          });
+                      }}
+                    >
                       {tprofile("reset")}
                     </Button>
                   )}
                   <Button onClick={handleSaveProfile} disabled={!hasChanges || saving}>
-                    {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tcommon("save")}...</> : <><Save className="h-4 w-4 mr-2" /> {tprofile("saveChanges")}</>}
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tcommon("save")}...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" /> {tprofile("saveChanges")}
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -582,7 +634,11 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                {profile?.emailVerified ? <MailCheck className="h-5 w-5 text-green-600" /> : <Mail className="h-5 w-5" />}
+                {profile?.emailVerified ? (
+                  <MailCheck className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Mail className="h-5 w-5" />
+                )}
                 <CardTitle>{tprofile("emailVerification")}</CardTitle>
               </div>
             </CardHeader>
@@ -591,9 +647,13 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
                   <Check className="h-5 w-5 text-green-600 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-green-800 dark:text-green-300">{tprofile("emailVerified")}</p>
+                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                      {tprofile("emailVerified")}
+                    </p>
                     <p className="text-xs text-green-600 dark:text-green-400">
-                      {tprofile("verifiedOn", { date: new Date(profile.emailVerified).toLocaleDateString() })}
+                      {tprofile("verifiedOn", {
+                        date: new Date(profile.emailVerified).toLocaleDateString(),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -602,7 +662,9 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
                     <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{tprofile("emailNotVerified")}</p>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                        {tprofile("emailNotVerified")}
+                      </p>
                       <p className="text-xs text-amber-600 dark:text-amber-400">
                         {tprofile("verifyPrompt")}
                       </p>
@@ -611,7 +673,9 @@ export default function ProfilePage() {
 
                   {verificationUrl ? (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("verificationLink")}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {tprofile("verificationLink")}
+                      </p>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 p-2 text-xs bg-gray-50 dark:bg-gray-800 border rounded-lg truncate">
                           {verificationUrl}
@@ -621,12 +685,14 @@ export default function ProfilePage() {
                           size="sm"
                           onClick={() => copyToClipboard(verificationUrl)}
                         >
-                          {copied ? <CheckCheck className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                          {copied ? (
+                            <CheckCheck className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        {tprofile("verificationNote")}
-                      </p>
+                      <p className="text-xs text-gray-500">{tprofile("verificationNote")}</p>
                     </div>
                   ) : (
                     <Button
@@ -635,9 +701,13 @@ export default function ProfilePage() {
                       disabled={sendingVerification}
                     >
                       {sendingVerification ? (
-                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("sending")}</>
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("sending")}
+                        </>
                       ) : (
-                        <><Mail className="h-4 w-4 mr-2" /> {tprofile("sendVerification")}</>
+                        <>
+                          <Mail className="h-4 w-4 mr-2" /> {tprofile("sendVerification")}
+                        </>
                       )}
                     </Button>
                   )}
@@ -650,7 +720,11 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                {profile?.totpEnabled ? <ShieldCheck className="h-5 w-5 text-green-600" /> : <Shield className="h-5 w-5" />}
+                {profile?.totpEnabled ? (
+                  <ShieldCheck className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Shield className="h-5 w-5" />
+                )}
                 <CardTitle>{tprofile("twoFATitle")}</CardTitle>
               </div>
             </CardHeader>
@@ -660,17 +734,15 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
                     <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">{tprofile("twoFAActive")}</p>
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                        {tprofile("twoFAActive")}
+                      </p>
                       <p className="text-xs text-green-600 dark:text-green-400">
                         {tprofile("twoFAActiveDesc")}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDisable2FADialog(true)}
-                  >
+                  <Button variant="destructive" size="sm" onClick={() => setDisable2FADialog(true)}>
                     <ShieldOff className="h-4 w-4 mr-2" /> {tprofile("disable2FA")}
                   </Button>
                 </div>
@@ -679,20 +751,21 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                     <Smartphone className="h-5 w-5 text-gray-400 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("enhanceSecurity")}</p>
-                      <p className="text-xs text-gray-500">
-                        {tprofile("enhanceSecurityDesc")}
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {tprofile("enhanceSecurity")}
                       </p>
+                      <p className="text-xs text-gray-500">{tprofile("enhanceSecurityDesc")}</p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={handleSetup2FA}
-                    disabled={settingUp2FA}
-                  >
-                    {settingUp2FA ? (                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("preparing")}</>
-                      ) : (
-                        <><Smartphone className="h-4 w-4 mr-2" /> {tprofile("setup2FA")}</>
+                  <Button variant="outline" onClick={handleSetup2FA} disabled={settingUp2FA}>
+                    {settingUp2FA ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("preparing")}
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone className="h-4 w-4 mr-2" /> {tprofile("setup2FA")}
+                      </>
                     )}
                   </Button>
                 </div>
@@ -702,10 +775,16 @@ export default function ProfilePage() {
 
           {/* Change Password */}
           <Card>
-            <CardHeader>                <CardTitle>{tprofile("changePassword")}</CardTitle>
+            <CardHeader>
+              {" "}
+              <CardTitle>{tprofile("changePassword")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("currentPassword")}</label>
+              <div className="space-y-2">
+                {" "}
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {tprofile("currentPassword")}
+                </label>
                 <div className="relative">
                   <Input
                     type={showPasswords.current ? "text" : "password"}
@@ -714,15 +793,27 @@ export default function ProfilePage() {
                     placeholder={tprofile("currentPasswordPlaceholder")}
                     className="pr-10"
                   />
-                  <button type="button" onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPasswords({ ...showPasswords, current: !showPasswords.current })
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswords.current ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("newPassword")}</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("newPassword")}
+                  </label>
                   <div className="relative">
                     <Input
                       type={showPasswords.new ? "text" : "password"}
@@ -731,37 +822,84 @@ export default function ProfilePage() {
                       placeholder={tprofile("newPasswordPlaceholder")}
                       className="pr-10"
                     />
-                    <button type="button" onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswords({ ...showPasswords, new: !showPasswords.new })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPasswords.new ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("confirmPassword")}</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {tprofile("confirmPassword")}
+                  </label>
                   <div className="relative">
                     <Input
                       type={showPasswords.confirm ? "text" : "password"}
                       value={passwordForm.confirm}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                      onChange={(e) =>
+                        setPasswordForm({ ...passwordForm, confirm: e.target.value })
+                      }
                       placeholder={tprofile("confirmPasswordPlaceholder")}
-                      className={cn("pr-10", passwordForm.confirm && passwordForm.new !== passwordForm.confirm && "border-red-400 focus:ring-red-400")}
+                      className={cn(
+                        "pr-10",
+                        passwordForm.confirm &&
+                          passwordForm.new !== passwordForm.confirm &&
+                          "border-red-400 focus:ring-red-400",
+                      )}
                     />
-                    <button type="button" onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPasswords.confirm ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   {passwordForm.confirm && passwordForm.new !== passwordForm.confirm && (
                     <p className="text-xs text-red-500 mt-1">{tprofile("passwordsDoNotMatch")}</p>
                   )}
                   {passwordForm.confirm && passwordForm.new === passwordForm.confirm && (
-                    <p className="text-xs text-green-500 mt-1 flex items-center gap-1"><Check className="h-3 w-3" /> {tprofile("passwordsMatch")}</p>
+                    <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> {tprofile("passwordsMatch")}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button onClick={handleChangePassword} disabled={!passwordForm.current || !passwordForm.new || !passwordForm.confirm || passwordForm.new !== passwordForm.confirm || changingPassword} variant="outline">
-                  {changingPassword ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("changing")}</> : tprofile("changePasswordBtn")}
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={
+                    !passwordForm.current ||
+                    !passwordForm.new ||
+                    !passwordForm.confirm ||
+                    passwordForm.new !== passwordForm.confirm ||
+                    changingPassword
+                  }
+                  variant="outline"
+                >
+                  {changingPassword ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("changing")}
+                    </>
+                  ) : (
+                    tprofile("changePasswordBtn")
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -772,7 +910,9 @@ export default function ProfilePage() {
             <CardHeader>
               <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <AlertTriangle className="h-5 w-5" />
-                <CardTitle className="text-red-600 dark:text-red-400">{tprofile("dangerZone")}</CardTitle>
+                <CardTitle className="text-red-600 dark:text-red-400">
+                  {tprofile("dangerZone")}
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -788,18 +928,24 @@ export default function ProfilePage() {
       </div>
 
       {/* 2FA Setup Dialog */}
-      <Dialog open={twoFADialogOpen} onOpenChange={(open) => {
-        if (!open) { setTwoFADialogOpen(false); setQrCode(""); setTotpSecret(""); setTotpCode(""); }
-      }}>
+      <Dialog
+        open={twoFADialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTwoFADialogOpen(false);
+            setQrCode("");
+            setTotpSecret("");
+            setTotpCode("");
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Smartphone className="h-5 w-5 text-indigo-600" />
               {tprofile("setup2FATitle")}
             </DialogTitle>
-            <DialogDescription>
-              {tprofile("setup2FADesc")}
-            </DialogDescription>
+            <DialogDescription>{tprofile("setup2FADesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
@@ -818,9 +964,7 @@ export default function ProfilePage() {
             {/* Manual setup key */}
             {totpSecret && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 text-center">
-                  {tprofile("manualEntry")}
-                </p>
+                <p className="text-xs text-gray-500 text-center">{tprofile("manualEntry")}</p>
                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-2 border">
                   <code className="flex-1 text-center text-sm font-mono tracking-wider">
                     {totpSecret.match(/.{1,4}/g)?.join(" ")}
@@ -859,27 +1003,47 @@ export default function ProfilePage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setTwoFADialogOpen(false); setQrCode(""); setTotpSecret(""); setTotpCode(""); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTwoFADialogOpen(false);
+                setQrCode("");
+                setTotpSecret("");
+                setTotpCode("");
+              }}
+            >
               {tcommon("cancel")}
             </Button>
             <Button onClick={handleVerify2FA} disabled={totpCode.length < 6 || verifying2FA}>
-              {verifying2FA ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("verifying")}</> : tprofile("enable2FA")}
+              {verifying2FA ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("verifying")}
+                </>
+              ) : (
+                tprofile("enable2FA")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Disable 2FA Dialog */}
-      <Dialog open={disable2FADialog} onOpenChange={(open) => { if (!open) { setDisable2FADialog(false); setDisablePassword(""); } }}>
+      <Dialog
+        open={disable2FADialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDisable2FADialog(false);
+            setDisablePassword("");
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
               <AlertTriangle className="h-5 w-5" />
               {tprofile("disabledesc")}
             </DialogTitle>
-            <DialogDescription>
-              {tprofile("disable2FADesc")}
-            </DialogDescription>
+            <DialogDescription>{tprofile("disable2FADesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
@@ -888,7 +1052,9 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("enterPassword")}</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {tprofile("enterPassword")}
+              </label>
               <Input
                 type="password"
                 value={disablePassword}
@@ -898,11 +1064,27 @@ export default function ProfilePage() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setDisable2FADialog(false); setDisablePassword(""); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDisable2FADialog(false);
+                setDisablePassword("");
+              }}
+            >
               {tcommon("cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleDisable2FA} disabled={!disablePassword || disabling2FA}>
-              {disabling2FA ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("disabling")}</> : tprofile("disable2FA")}
+            <Button
+              variant="destructive"
+              onClick={handleDisable2FA}
+              disabled={!disablePassword || disabling2FA}
+            >
+              {disabling2FA ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("disabling")}
+                </>
+              ) : (
+                tprofile("disable2FA")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -916,9 +1098,7 @@ export default function ProfilePage() {
               <AlertTriangle className="h-5 w-5" />
               {tprofile("deleteAccount")}
             </DialogTitle>
-            <DialogDescription>
-              {tprofile("deleteAccountDesc")}
-            </DialogDescription>
+            <DialogDescription>{tprofile("deleteAccountDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
@@ -927,14 +1107,42 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tprofile("enterPasswordConfirm")}</label>
-              <Input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder={tprofile("yourCurrentPassword")} className="border-red-300 dark:border-red-700 focus:ring-red-500" />
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {tprofile("enterPasswordConfirm")}
+              </label>
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder={tprofile("yourCurrentPassword")}
+                className="border-red-300 dark:border-red-700 focus:ring-red-500"
+              />
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeletePassword(""); }}>{tcommon("cancel")}</Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={!deletePassword || deleting}>
-              {deleting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("deleting")}</> : <><Trash2 className="h-4 w-4 mr-2" /> {tprofile("deleteAccount")}</>}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletePassword("");
+              }}
+            >
+              {tcommon("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={!deletePassword || deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("deleting")}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" /> {tprofile("deleteAccount")}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

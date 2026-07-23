@@ -7,9 +7,28 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,14 +44,24 @@ export default function MarketingPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCampaign, setEditCampaign] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", description: "", type: "EMAIL", channel: "", budget: "", spent: "", status: "DRAFT" });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    type: "EMAIL",
+    channel: "",
+    budget: "",
+    spent: "",
+    status: "DRAFT",
+  });
 
   const loadData = async () => {
     const res = await fetch("/api/marketing");
     setCampaigns(await res.json());
     setLoading(false);
   };
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   if (loading) {
     return (
@@ -57,17 +86,33 @@ export default function MarketingPage() {
   const handleSave = async () => {
     const method = editCampaign ? "PUT" : "POST";
     const body = editCampaign ? { ...form, id: editCampaign.id } : form;
-    await fetch("/api/marketing", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    await fetch("/api/marketing", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     toast.success(editCampaign ? tmarketing("updated") : tmarketing("added"));
     setDialogOpen(false);
     setEditCampaign(null);
-    setForm({ name: "", description: "", type: "EMAIL", channel: "", budget: "", spent: "", status: "DRAFT" });
+    setForm({
+      name: "",
+      description: "",
+      type: "EMAIL",
+      channel: "",
+      budget: "",
+      spent: "",
+      status: "DRAFT",
+    });
     loadData();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm(tmarketing("confirmDelete"))) return;
-    await fetch("/api/marketing", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    await fetch("/api/marketing", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
     toast.success(tmarketing("deleted"));
     loadData();
   };
@@ -81,18 +126,48 @@ export default function MarketingPage() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           {can(role, "create", "marketing") && (
-          <DialogTrigger asChild>
-            <Button onClick={() => { setEditCampaign(null); setForm({ name: "", description: "", type: "EMAIL", channel: "", budget: "", spent: "", status: "DRAFT" }); }}>                <Plus className="h-4 w-4 mr-2" /> {tmarketing("addCampaign")}
-            </Button>
-          </DialogTrigger>
-          )}            <DialogContent>
-            <DialogHeader><DialogTitle>{editCampaign ? tmarketing("editCampaign") : tmarketing("addCampaign")}</DialogTitle></DialogHeader>
+            <DialogTrigger asChild>
+              <Button
+                onClick={() => {
+                  setEditCampaign(null);
+                  setForm({
+                    name: "",
+                    description: "",
+                    type: "EMAIL",
+                    channel: "",
+                    budget: "",
+                    spent: "",
+                    status: "DRAFT",
+                  });
+                }}
+              >
+                {" "}
+                <Plus className="h-4 w-4 mr-2" /> {tmarketing("addCampaign")}
+              </Button>
+            </DialogTrigger>
+          )}{" "}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editCampaign ? tmarketing("editCampaign") : tmarketing("addCampaign")}
+              </DialogTitle>
+            </DialogHeader>
             <div className="space-y-4 pt-4">
-              <Input placeholder={tmarketing("name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <Input placeholder={tcommon("description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Input
+                placeholder={tmarketing("name")}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+              <Input
+                placeholder={tcommon("description")}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
               <div className="grid grid-cols-2 gap-3">
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                  <SelectTrigger><SelectValue placeholder={tmarketing("type")} /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder={tmarketing("type")} />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="EMAIL">Email</SelectItem>
                     <SelectItem value="SOCIAL">Social Media</SelectItem>
@@ -100,8 +175,13 @@ export default function MarketingPage() {
                     <SelectItem value="SMS">SMS</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={form.channel} onValueChange={(v) => setForm({ ...form, channel: v })}>
-                  <SelectTrigger><SelectValue placeholder={tmarketing("channel")} /></SelectTrigger>
+                <Select
+                  value={form.channel}
+                  onValueChange={(v) => setForm({ ...form, channel: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={tmarketing("channel")} />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="facebook">Facebook</SelectItem>
                     <SelectItem value="instagram">Instagram</SelectItem>
@@ -112,10 +192,22 @@ export default function MarketingPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input placeholder={tmarketing("budget")} type="number" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} />
-                <Input placeholder={tmarketing("spent")} type="number" value={form.spent} onChange={(e) => setForm({ ...form, spent: e.target.value })} />
+                <Input
+                  placeholder={tmarketing("budget")}
+                  type="number"
+                  value={form.budget}
+                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                />
+                <Input
+                  placeholder={tmarketing("spent")}
+                  type="number"
+                  value={form.spent}
+                  onChange={(e) => setForm({ ...form, spent: e.target.value })}
+                />
               </div>
-              <Button onClick={handleSave} className="w-full">{editCampaign ? tmarketing("editCampaign") : tmarketing("addCampaign")}</Button>
+              <Button onClick={handleSave} className="w-full">
+                {editCampaign ? tmarketing("editCampaign") : tmarketing("addCampaign")}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -124,43 +216,83 @@ export default function MarketingPage() {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tmarketing("name")}</TableHead>
-                <TableHead>{tmarketing("type")}</TableHead>
-                <TableHead>{tmarketing("channel")}</TableHead>
-                <TableHead>{tmarketing("budget")}</TableHead>
-                <TableHead>{tmarketing("spent")}</TableHead>
-                <TableHead>{tmarketing("roi")}</TableHead>
-                <TableHead>{tmarketing("status")}</TableHead>
-                <TableHead className="text-right">{tcommon("actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map((c: any) => {
-                const roi = c.spent > 0 ? ((c.budget - c.spent) / c.spent * 100).toFixed(0) : "0";
-                return (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell><Badge variant="outline">{c.type}</Badge></TableCell>
-                    <TableCell className="capitalize">{c.channel || "-"}</TableCell>
-                    <TableCell>{formatCurrency(c.budget)}</TableCell>
-                    <TableCell>{formatCurrency(c.spent)}</TableCell>
-                    <TableCell><Badge variant={parseInt(roi) > 0 ? "success" : "danger"}>{roi}%</Badge></TableCell>
-                    <TableCell><Badge className={getStatusColor(c.status)}>{c.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      {can(role, "update", "marketing") && <Button variant="ghost" size="sm" onClick={() => { setEditCampaign(c); setForm({ name: c.name, description: c.description || "", type: c.type, channel: c.channel || "", budget: c.budget.toString(), spent: c.spent.toString(), status: c.status }); setDialogOpen(true); }}>{tcommon("edit")}</Button>}
-                      {can(role, "delete", "marketing") && <Button variant="ghost" size="sm" onClick={() => handleDelete(c.id)} className="text-red-500">{tcommon("delete")}</Button>}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tmarketing("name")}</TableHead>
+                  <TableHead>{tmarketing("type")}</TableHead>
+                  <TableHead>{tmarketing("channel")}</TableHead>
+                  <TableHead>{tmarketing("budget")}</TableHead>
+                  <TableHead>{tmarketing("spent")}</TableHead>
+                  <TableHead>{tmarketing("roi")}</TableHead>
+                  <TableHead>{tmarketing("status")}</TableHead>
+                  <TableHead className="text-right">{tcommon("actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {campaigns.map((c: any) => {
+                  const roi =
+                    c.spent > 0 ? (((c.budget - c.spent) / c.spent) * 100).toFixed(0) : "0";
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{c.type}</Badge>
+                      </TableCell>
+                      <TableCell className="capitalize">{c.channel || "-"}</TableCell>
+                      <TableCell>{formatCurrency(c.budget)}</TableCell>
+                      <TableCell>{formatCurrency(c.spent)}</TableCell>
+                      <TableCell>
+                        <Badge variant={parseInt(roi) > 0 ? "success" : "danger"}>{roi}%</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(c.status)}>{c.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {can(role, "update", "marketing") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditCampaign(c);
+                              setForm({
+                                name: c.name,
+                                description: c.description || "",
+                                type: c.type,
+                                channel: c.channel || "",
+                                budget: c.budget.toString(),
+                                spent: c.spent.toString(),
+                                status: c.status,
+                              });
+                              setDialogOpen(true);
+                            }}
+                          >
+                            {tcommon("edit")}
+                          </Button>
+                        )}
+                        {can(role, "delete", "marketing") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(c.id)}
+                            className="text-red-500"
+                          >
+                            {tcommon("delete")}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {campaigns.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" /> {tcommon("noData")}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {campaigns.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-gray-500"><Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" /> {tcommon("noData")}</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

@@ -11,20 +11,9 @@ import {
   Eye,
   RefreshCw,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
@@ -67,10 +56,12 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const tdash = useTranslations("dashboard");
   const tcommon = useTranslations("common");
-  const { data, loading, lastUpdated, isRefreshing, refresh } =
-    useRealtimeData<AnalyticsData>("/api/dashboard", {
+  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<AnalyticsData>(
+    "/api/dashboard",
+    {
       interval: 20000,
-    });
+    },
+  );
 
   if (loading) {
     return (
@@ -109,15 +100,10 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tdash("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {tdash("insights")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{tdash("insights")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
+          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button
             variant="ghost"
             size="sm"
@@ -125,9 +111,7 @@ export default function AnalyticsPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
         </div>
@@ -189,9 +173,7 @@ export default function AnalyticsPage() {
                 <span
                   className={cn(
                     "flex items-center text-xs font-medium",
-                    metric.positive
-                      ? "text-emerald-600"
-                      : "text-red-600"
+                    metric.positive ? "text-emerald-600" : "text-red-600",
                   )}
                 >
                   {metric.positive ? (
@@ -204,8 +186,13 @@ export default function AnalyticsPage() {
               </div>
               <p className="text-sm text-gray-500 mt-3">{metric.label}</p>
               <p className="text-2xl font-bold mt-1 tabular-nums">
-              <AnimatedCounter end={metric.endValue} duration={metric.duration || 1600} formatter={metric.formatter} suffix={metric.suffix} />
-            </p>
+                <AnimatedCounter
+                  end={metric.endValue}
+                  duration={metric.duration || 1600}
+                  formatter={metric.formatter}
+                  suffix={metric.suffix}
+                />
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -239,12 +226,8 @@ export default function AnalyticsPage() {
                     <insight.icon className={cn("h-5 w-5", insight.color)} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {insight.title}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {insight.description}
-                    </p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{insight.title}</p>
+                    <p className="text-sm text-gray-500 mt-1">{insight.description}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -281,14 +264,10 @@ export default function AnalyticsPage() {
                       </span>
                       <div>
                         <p className="text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {p.orderCount || 0} orders
-                        </p>
+                        <p className="text-xs text-gray-500">{p.orderCount || 0} orders</p>
                       </div>
                     </div>
-                    <span className="text-sm font-medium">
-                      {formatCurrency(p.price)}
-                    </span>
+                    <span className="text-sm font-medium">{formatCurrency(p.price)}</span>
                   </div>
                 ))}
               </div>

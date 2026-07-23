@@ -34,10 +34,7 @@ export async function POST(req: Request) {
   });
 
   // Compute HMAC signature
-  const signature = crypto
-    .createHmac("sha256", endpoint.secret)
-    .update(testPayload)
-    .digest("hex");
+  const signature = crypto.createHmac("sha256", endpoint.secret).update(testPayload).digest("hex");
 
   const startTime = Date.now();
   let statusCode = 0;

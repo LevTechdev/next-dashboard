@@ -21,8 +21,16 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string, totpToken?: string) => Promise<{ success: boolean; requires2FA?: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string,
+    totpToken?: string,
+  ) => Promise<{ success: boolean; requires2FA?: boolean; error?: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -71,61 +79,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
 
-  const login = useCallback(async (email: string, password: string, totpToken?: string) => {
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, totpToken }),
-      });
+  const login = useCallback(
+    async (email: string, password: string, totpToken?: string) => {
+      setError(null);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, totpToken }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        return { success: false, error: data.error || "Login failed" };
+        if (!res.ok) {
+          return { success: false, error: data.error || "Login failed" };
+        }
+
+        if (data.requires2FA) {
+          return { success: false, requires2FA: true };
+        }
+
+        if (data.user) {
+          setUser(data.user);
+        }
+
+        router.refresh();
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: "Network error. Please try again." };
       }
+    },
+    [router],
+  );
 
-      if (data.requires2FA) {
-        return { success: false, requires2FA: true };
+  const register = useCallback(
+    async (name: string, email: string, password: string) => {
+      setError(null);
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          return { success: false, error: data.error || "Registration failed" };
+        }
+
+        if (data.user) {
+          setUser(data.user);
+        }
+
+        router.refresh();
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: "Network error. Please try again." };
       }
-
-      if (data.user) {
-        setUser(data.user);
-      }
-
-      router.refresh();
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: "Network error. Please try again." };
-    }
-  }, [router]);
-
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || "Registration failed" };
-      }
-
-      if (data.user) {
-        setUser(data.user);
-      }
-
-      router.refresh();
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: "Network error. Please try again." };
-    }
-  }, [router]);
+    },
+    [router],
+  );
 
   const logout = useCallback(async () => {
     try {

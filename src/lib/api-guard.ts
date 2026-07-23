@@ -7,7 +7,7 @@ type Action = "create" | "read" | "update" | "delete";
 export async function requirePermission(
   action: Action,
   resource: string,
-  req?: Request
+  req?: Request,
 ): Promise<{ role: Role | null; response: NextResponse | null }> {
   const { session, response: authResponse } = await requireAuth(req);
   if (authResponse) {
@@ -17,9 +17,7 @@ export async function requirePermission(
   return { role: session.user.role as Role, response: null };
 }
 
-export async function requireAuth(
-  req?: Request
-): Promise<{
+export async function requireAuth(req?: Request): Promise<{
   session: { user: { id: string; sub: string; name: string; email: string; role: string } };
   response: NextResponse | null;
 }> {

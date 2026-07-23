@@ -7,7 +7,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Dashboard - All-in-One Business Management Platform",
-  description: "Comprehensive business management platform with real-time analytics, multi-channel order management, team collaboration, and powerful reporting. Run your business with real-time intelligence.",
+  description:
+    "Comprehensive business management platform with real-time analytics, multi-channel order management, team collaboration, and powerful reporting. Run your business with real-time intelligence.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -19,7 +20,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Dashboard - Business Management Platform",
-    description: "Run your business with real-time intelligence. Analytics, orders, customers, and team management in one place.",
+    description:
+      "Run your business with real-time intelligence. Analytics, orders, customers, and team management in one place.",
     type: "website",
     siteName: "Dashboard",
   },

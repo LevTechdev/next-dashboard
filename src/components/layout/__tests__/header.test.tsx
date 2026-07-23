@@ -14,10 +14,17 @@ vi.mock("next-intl", () => ({
   useTranslations: (namespace: string) => {
     const messages: Record<string, Record<string, string>> = {
       nav: { dashboard: "Dashboard", profile: "Profile", settings: "Settings", logout: "Logout" },
-      common: { search: "Search orders, customers...", cancel: "Cancel", save: "Save", view: "View", edit: "Edit", filter: "Theme" },
+      common: {
+        search: "Search orders, customers...",
+        cancel: "Cancel",
+        save: "Save",
+        view: "View",
+        edit: "Edit",
+        filter: "Theme",
+      },
       settings: { appearance: "Theme", light: "Light", dark: "Dark", system: "System" },
     };
-    return (key: string) => (messages[namespace]?.[key] ?? key);
+    return (key: string) => messages[namespace]?.[key] ?? key;
   },
 }));
 

@@ -2,8 +2,18 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 
 const monthNames = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 // Tool definitions as plain objects compatible with streamText
@@ -13,13 +23,12 @@ export const dashboardTools = {
       "Get overall dashboard statistics including total revenue, orders count, customer count, active product count, and growth percentages.",
     inputSchema: z.object({}),
     execute: async () => {
-      const [totalRevenue, totalOrders, totalCustomers, totalProducts] =
-        await Promise.all([
-          prisma.order.aggregate({ _sum: { grandTotal: true } }),
-          prisma.order.count(),
-          prisma.customer.count(),
-          prisma.product.count({ where: { isActive: true } }),
-        ]);
+      const [totalRevenue, totalOrders, totalCustomers, totalProducts] = await Promise.all([
+        prisma.order.aggregate({ _sum: { grandTotal: true } }),
+        prisma.order.count(),
+        prisma.customer.count(),
+        prisma.product.count({ where: { isActive: true } }),
+      ]);
 
       return {
         totalRevenue: totalRevenue._sum.grandTotal || 0,
@@ -102,7 +111,7 @@ export const dashboardTools = {
             revenue: agg._sum.grandTotal || 0,
             orderCount: channel._count.orders,
           };
-        })
+        }),
       );
 
       return channelSales;
@@ -110,8 +119,7 @@ export const dashboardTools = {
   },
 
   getRevenueData: {
-    description:
-      "Get monthly revenue data for the current year to show revenue trends over time.",
+    description: "Get monthly revenue data for the current year to show revenue trends over time.",
     inputSchema: z.object({}),
     execute: async () => {
       const oneYearAgo = new Date();

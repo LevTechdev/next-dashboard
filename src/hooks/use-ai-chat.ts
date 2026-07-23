@@ -48,10 +48,7 @@ export function useAiChat({ api, onFinish }: UseAiChatOptions) {
 
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
-          throw new Error(
-            (errData as { error?: string }).error ||
-              `API error: ${response.status}`
-          );
+          throw new Error((errData as { error?: string }).error || `API error: ${response.status}`);
         }
 
         // Read the streaming response
@@ -71,9 +68,7 @@ export function useAiChat({ api, onFinish }: UseAiChatOptions) {
           // Update assistant message content
           setMessages((prev) => {
             const next = prev.map((msg) =>
-              msg.id === assistantId
-                ? { ...msg, content: accumulatedContent }
-                : msg
+              msg.id === assistantId ? { ...msg, content: accumulatedContent } : msg,
             );
             messagesRef.current = next;
             return next;
@@ -91,11 +86,9 @@ export function useAiChat({ api, onFinish }: UseAiChatOptions) {
               msg.id === assistantId
                 ? {
                     ...msg,
-                    content:
-                      msg.content ||
-                      "Sorry, an error occurred. Please try again.",
+                    content: msg.content || "Sorry, an error occurred. Please try again.",
                   }
-                : msg
+                : msg,
             );
             messagesRef.current = next;
             return next;
@@ -107,7 +100,7 @@ export function useAiChat({ api, onFinish }: UseAiChatOptions) {
         onFinish?.();
       }
     },
-    [api, onFinish]
+    [api, onFinish],
   );
 
   const stop = useCallback(() => {

@@ -15,9 +15,7 @@ describe("Features Page", () => {
 
   it("renders the header description", () => {
     // TextAnimate renders the text twice (sr-only + animated), so use getAllByText
-    const descriptions = screen.getAllByText(
-      /From real-time analytics to team collaboration/
-    );
+    const descriptions = screen.getAllByText(/From real-time analytics to team collaboration/);
     expect(descriptions.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -57,10 +55,7 @@ describe("Features Page", () => {
   it("renders feature icons with semantic identifiers", () => {
     // Feature icons provide visual semantics for each card
     // Clock and RefreshCw appear twice each (in feature items + performance highlights)
-    const duplicateIcons = [
-      "icon-clock",
-      "icon-refreshcw",
-    ];
+    const duplicateIcons = ["icon-clock", "icon-refreshcw"];
 
     const iconTestIds = [
       "icon-layoutdashboard",

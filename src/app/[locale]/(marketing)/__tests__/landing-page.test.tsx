@@ -18,9 +18,7 @@ describe("Marketing Landing Page", () => {
   });
 
   it("renders the hero description", () => {
-    expect(
-      screen.getByText(/Stop wrestling with fragmented data/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Stop wrestling with fragmented data/)).toBeInTheDocument();
   });
 
   it("renders CTA buttons with accessible links", () => {
@@ -84,8 +82,6 @@ describe("Marketing Landing Page", () => {
 
   it("renders the bottom CTA section", () => {
     expect(screen.getByText("Ready for scale.")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Deploy Dashboard in minutes/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Deploy Dashboard in minutes/)).toBeInTheDocument();
   });
 });

@@ -22,7 +22,9 @@ describe("OrderTrackingTimeline", () => {
   it("renders cancelled state for CANCELLED order", () => {
     render(<OrderTrackingTimeline currentStatus="CANCELLED" />);
     expect(screen.getByText("Order Cancelled")).toBeInTheDocument();
-    expect(screen.getByText("This order has been cancelled and will not be processed further.")).toBeInTheDocument();
+    expect(
+      screen.getByText("This order has been cancelled and will not be processed further."),
+    ).toBeInTheDocument();
   });
 
   it("renders status history events", () => {
@@ -38,21 +40,32 @@ describe("OrderTrackingTimeline", () => {
   });
 
   it("applies custom className", () => {
-    const { container } = render(<OrderTrackingTimeline currentStatus="PENDING" className="custom-class" />);
+    const { container } = render(
+      <OrderTrackingTimeline currentStatus="PENDING" className="custom-class" />,
+    );
     expect(container.querySelector(".custom-class")).toBeInTheDocument();
   });
 });
 
 describe("getTrackingEventsFromOrder", () => {
   it("generates PENDING event from createdAt", () => {
-    const order = { createdAt: "2024-07-01T10:00:00Z", status: "PENDING", updatedAt: "2024-07-01T10:00:00Z" };
+    const order = {
+      createdAt: "2024-07-01T10:00:00Z",
+      status: "PENDING",
+      updatedAt: "2024-07-01T10:00:00Z",
+    };
     const events = getTrackingEventsFromOrder(order);
     expect(events.length).toBeGreaterThanOrEqual(1);
     expect(events[0].status).toBe("PENDING");
   });
 
   it("includes note from order", () => {
-    const order = { createdAt: "2024-07-01T10:00:00Z", status: "PENDING", updatedAt: "2024-07-01T10:00:00Z", notes: "Handle with care" };
+    const order = {
+      createdAt: "2024-07-01T10:00:00Z",
+      status: "PENDING",
+      updatedAt: "2024-07-01T10:00:00Z",
+      notes: "Handle with care",
+    };
     const events = getTrackingEventsFromOrder(order);
     expect(events[0].note).toBe("Handle with care");
   });

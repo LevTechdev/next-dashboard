@@ -121,7 +121,7 @@ export function canAccessPage(page: string, role: Role | undefined | null): bool
 export function can(
   role: Role | undefined | null,
   action: "create" | "read" | "update" | "delete",
-  resource: string
+  resource: string,
 ): boolean {
   if (!role) return false;
   const permissions = CRUD_PERMISSIONS[resource];
@@ -134,7 +134,7 @@ export function can(
  */
 export function filterNavItemsByRole(
   items: { href: string; label: string }[],
-  role: Role | undefined | null
+  role: Role | undefined | null,
 ): { href: string; label: string }[] {
   if (!role) return [];
   return items.filter((item) => {

@@ -22,7 +22,7 @@ interface RealtimeState<T> {
 
 export function useRealtimeData<T = unknown>(
   url: string,
-  options: RealtimeOptions<T> = {}
+  options: RealtimeOptions<T> = {},
 ): RealtimeState<T> {
   const { interval = 30000, enabled = true, onUpdate } = options;
   const [data, setData] = useState<T | null>(null);
@@ -37,7 +37,7 @@ export function useRealtimeData<T = unknown>(
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
-      
+
       // Detect significant changes for notification
       const resultStr = JSON.stringify(result);
       if (prevDataRef.current && resultStr !== prevDataRef.current && onUpdate) {
@@ -63,11 +63,11 @@ export function useRealtimeData<T = unknown>(
 
   useEffect(() => {
     if (!enabled) return;
-    
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
     const intervalId = setInterval(fetchData, interval);
-    
+
     return () => clearInterval(intervalId);
   }, [fetchData, interval, enabled]);
 

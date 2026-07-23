@@ -35,8 +35,32 @@ beforeEach(() => {
     ok: true,
     json: () =>
       Promise.resolve([
-        { id: "1", code: "SAVE20", name: "Summer Sale", type: "PERCENTAGE", value: 20, minPurchase: 50, maxUses: 100, usedCount: 45, startsAt: "2024-01-01", endsAt: "2024-12-31", isActive: true },
-        { id: "2", code: "FLAT10", name: "Flat Discount", type: "FIXED", value: 10, minPurchase: 0, maxUses: 50, usedCount: 50, startsAt: "2024-01-01", endsAt: "2024-06-30", isActive: false },
+        {
+          id: "1",
+          code: "SAVE20",
+          name: "Summer Sale",
+          type: "PERCENTAGE",
+          value: 20,
+          minPurchase: 50,
+          maxUses: 100,
+          usedCount: 45,
+          startsAt: "2024-01-01",
+          endsAt: "2024-12-31",
+          isActive: true,
+        },
+        {
+          id: "2",
+          code: "FLAT10",
+          name: "Flat Discount",
+          type: "FIXED",
+          value: 10,
+          minPurchase: 0,
+          maxUses: 50,
+          usedCount: 50,
+          startsAt: "2024-01-01",
+          endsAt: "2024-06-30",
+          isActive: false,
+        },
       ]),
   } as Response);
 });

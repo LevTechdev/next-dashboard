@@ -48,9 +48,7 @@ describe("useAnimatedCounter", () => {
 
   it("applies formatFn for custom display", () => {
     const formatFn = (v: number) => `${v.toFixed(1)}%`;
-    const { result } = renderHook(() =>
-      useAnimatedCounter(99, { formatFn })
-    );
+    const { result } = renderHook(() => useAnimatedCounter(99, { formatFn }));
 
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -61,9 +59,7 @@ describe("useAnimatedCounter", () => {
   });
 
   it("respects a custom duration", () => {
-    const { result } = renderHook(() =>
-      useAnimatedCounter(100, { duration: 500 })
-    );
+    const { result } = renderHook(() => useAnimatedCounter(100, { duration: 500 }));
 
     // Advance only part-way (250ms = 50% duration)
     act(() => {
@@ -84,9 +80,7 @@ describe("useAnimatedCounter", () => {
   });
 
   it("supports startOnMount: false and does not start animating", () => {
-    const { result } = renderHook(() =>
-      useAnimatedCounter(100, { startOnMount: false })
-    );
+    const { result } = renderHook(() => useAnimatedCounter(100, { startOnMount: false }));
 
     expect(result.current.value).toBe(0);
     expect(result.current.isAnimating).toBe(false);
@@ -215,9 +209,7 @@ describe("useAnimatedCounter", () => {
     });
 
     it("handles duration of 0 and completes immediately", () => {
-      const { result } = renderHook(() =>
-        useAnimatedCounter(100, { duration: 0 })
-      );
+      const { result } = renderHook(() => useAnimatedCounter(100, { duration: 0 }));
 
       // With duration=0: elapsed/duration = 0/0 = NaN, Math.min(NaN,1) = NaN
       // NaN < 1 is false, so animation completes on the first rAF frame
@@ -230,9 +222,7 @@ describe("useAnimatedCounter", () => {
     });
 
     it("handles negative duration without crashing", () => {
-      const { result } = renderHook(() =>
-        useAnimatedCounter(100, { duration: -500 })
-      );
+      const { result } = renderHook(() => useAnimatedCounter(100, { duration: -500 }));
 
       // elapsed = timestamp - 0 = timestamp, progress = min(timestamp / -500, 1)
       // timestamp / -500 is negative, min(negative, 1) = negative
@@ -261,9 +251,7 @@ describe("useAnimatedCounter", () => {
     });
 
     it("handles a very small decimal with no rounding", () => {
-      const { result } = renderHook(() =>
-        useAnimatedCounter(0.001, { round: false })
-      );
+      const { result } = renderHook(() => useAnimatedCounter(0.001, { round: false }));
 
       act(() => {
         vi.advanceTimersByTime(2000);

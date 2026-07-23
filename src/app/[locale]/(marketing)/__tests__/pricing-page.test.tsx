@@ -19,9 +19,7 @@ vi.mock("framer-motion", async () => {
       span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
       p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
       h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
-      button: ({ children, ...props }: any) => (
-        <button {...props}>{children}</button>
-      ),
+      button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
     },
   };
 });
@@ -44,8 +42,7 @@ vi.mock("next-intl", async () => {
       ctaContact: "Contact Sales",
       popular: "Most Popular",
       compareTitle: "Compare plans",
-      compareSubtitle:
-        "Every plan includes a 14-day free trial. No credit card required.",
+      compareSubtitle: "Every plan includes a 14-day free trial. No credit card required.",
       faqTitle: "Frequently Asked Questions",
       faqQ1: "Can I upgrade or downgrade my plan at any time?",
       faqA1:
@@ -64,8 +61,7 @@ vi.mock("next-intl", async () => {
       trustUsers: "Active Users",
       trustCountries: "Countries",
       bottomTitle: "Not Sure Which Plan?",
-      bottomSubtitle:
-        "Start with a 14-day free trial on any plan. No credit card required.",
+      bottomSubtitle: "Start with a 14-day free trial on any plan. No credit card required.",
       bottomButton: "Go to Dashboard",
       featureOrders: "orders/month",
       featureTeam: "team members",
@@ -90,8 +86,7 @@ vi.mock("next-intl", async () => {
       planProfessional: "Professional",
       planEnterprise: "Enterprise",
       descStarter: "Perfect for small businesses getting started.",
-      descProfessional:
-        "Best for growing businesses with multiple channels.",
+      descProfessional: "Best for growing businesses with multiple channels.",
       descEnterprise: "For large organizations with advanced needs.",
       perMonth: "/month",
       perYear: "/year",
@@ -126,9 +121,7 @@ describe("Pricing Page", () => {
   });
 
   it("renders the header description", () => {
-    expect(
-      screen.getByText(/Choose the perfect plan/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Choose the perfect plan/)).toBeInTheDocument();
   });
 
   it("renders billing period toggle", () => {
@@ -140,9 +133,7 @@ describe("Pricing Page", () => {
   it("renders all 3 pricing tiers", () => {
     // Tier names appear in both pricing cards and comparison table headers
     expect(screen.getAllByText("Starter").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Professional").length).toBeGreaterThanOrEqual(
-      1
-    );
+    expect(screen.getAllByText("Professional").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Enterprise").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -202,9 +193,7 @@ describe("Pricing Page", () => {
   });
 
   it("renders FAQ section with accessible accordion buttons", () => {
-    expect(
-      screen.getByText("Frequently Asked Questions")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Frequently Asked Questions")).toBeInTheDocument();
 
     // Verify FAQ renders questions
     const faqQuestions = [
@@ -222,18 +211,10 @@ describe("Pricing Page", () => {
   });
 
   it("renders FAQ answers with accessible content", () => {
-    expect(
-      screen.getByText(/Yes, you can change your plan at any time/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/All plans come with a 14-day free trial/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/We accept all major credit cards/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Yes, you can cancel anytime/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Yes, you can change your plan at any time/)).toBeInTheDocument();
+    expect(screen.getByText(/All plans come with a 14-day free trial/)).toBeInTheDocument();
+    expect(screen.getByText(/We accept all major credit cards/)).toBeInTheDocument();
+    expect(screen.getByText(/Yes, you can cancel anytime/)).toBeInTheDocument();
   });
 
   it("renders trust metrics section", () => {

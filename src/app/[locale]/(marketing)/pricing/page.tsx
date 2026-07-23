@@ -22,11 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
@@ -153,9 +149,7 @@ function FeatureItem({
       <span
         className={cn(
           "text-xs",
-          included
-            ? "text-zinc-600 dark:text-zinc-300"
-            : "text-zinc-300 dark:text-zinc-600"
+          included ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-300 dark:text-zinc-600",
         )}
       >
         {label}
@@ -197,9 +191,7 @@ function PricingCard({
       }}
       className={cn(
         "feature-card glow-border relative rounded-2xl border border-zinc-200 dark:border-zinc-800/60 p-0.5 group",
-        meta.popular
-          ? "ring-1 ring-indigo-500/30 dark:ring-indigo-500/40"
-          : ""
+        meta.popular ? "ring-1 ring-indigo-500/30 dark:ring-indigo-500/40" : "",
       )}
       onPointerMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -235,12 +227,8 @@ function PricingCard({
       <div className="relative z-20 bg-white dark:bg-zinc-900 rounded-[calc(1.5rem-2px)] p-6 flex flex-col flex-1 transition-colors">
         {/* Header */}
         <div className="mb-6">
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-            {planT()}
-          </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">
-            {descT()}
-          </p>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{planT()}</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">{descT()}</p>
         </div>
 
         {/* Price */}
@@ -296,7 +284,11 @@ function PricingCard({
               shimmerColor="#ffffff"
               shimmerSize="0.05em"
               background="rgba(0,0,0,1)"
-              onClick={() => trackCTA(`${meta.key}_${t("cta").toLowerCase().replace(/\s+/g, "_")}`, { href: ctaHref })}
+              onClick={() =>
+                trackCTA(`${meta.key}_${t("cta").toLowerCase().replace(/\s+/g, "_")}`, {
+                  href: ctaHref,
+                })
+              }
             >
               <span className="flex items-center justify-center gap-1.5">
                 {meta.key === "enterprise" ? t("ctaContact") : t("cta")}
@@ -308,7 +300,11 @@ function PricingCard({
               <Button
                 variant="glass"
                 className="w-full h-10 text-xs font-medium rounded-xl"
-                onClick={() => trackCTA(`${meta.key}_${t("cta").toLowerCase().replace(/\s+/g, "_")}`, { href: ctaHref })}
+                onClick={() =>
+                  trackCTA(`${meta.key}_${t("cta").toLowerCase().replace(/\s+/g, "_")}`, {
+                    href: ctaHref,
+                  })
+                }
               >
                 {meta.key === "enterprise" ? t("ctaContact") : t("cta")}
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
@@ -376,8 +372,18 @@ export default function PricingPage() {
 
   // Trust metrics
   const trustMetrics = [
-    { label: t("trustBusinesses"), end: 2847, icon: BarChart3, format: (v: number) => v.toLocaleString() },
-    { label: t("trustOrders"), end: 12400000, icon: TrendingUp, format: (v: number) => `${(v / 1000000).toFixed(1)}M` },
+    {
+      label: t("trustBusinesses"),
+      end: 2847,
+      icon: BarChart3,
+      format: (v: number) => v.toLocaleString(),
+    },
+    {
+      label: t("trustOrders"),
+      end: 12400000,
+      icon: TrendingUp,
+      format: (v: number) => `${(v / 1000000).toFixed(1)}M`,
+    },
     { label: t("trustUsers"), end: 8431, icon: Users, format: (v: number) => v.toLocaleString() },
     { label: t("trustCountries"), end: 30, icon: Globe, suffix: "+" },
   ];
@@ -412,7 +418,11 @@ export default function PricingPage() {
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
@@ -425,7 +435,11 @@ export default function PricingPage() {
             <motion.h1
               variants={{
                 hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
@@ -445,7 +459,11 @@ export default function PricingPage() {
             <motion.p
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto"
             >
@@ -467,7 +485,7 @@ export default function PricingPage() {
                   "relative px-5 py-2 text-xs font-medium rounded-xl transition-all duration-300 press-scale",
                   !isAnnual
                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300",
                 )}
               >
                 {t("monthly")}
@@ -478,7 +496,7 @@ export default function PricingPage() {
                   "relative px-5 py-2 text-xs font-medium rounded-xl transition-all duration-300 press-scale inline-flex items-center gap-1.5",
                   isAnnual
                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300",
                 )}
               >
                 {t("yearly")}
@@ -525,9 +543,7 @@ export default function PricingPage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
               {t("compareTitle")}
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {t("compareSubtitle")}
-            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("compareSubtitle")}</p>
           </AnimateUp>
 
           <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800/60">
@@ -549,7 +565,10 @@ export default function PricingPage() {
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/40">
                 {comparisonRows.map((row, i) => (
-                  <tr key={i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors">
+                  <tr
+                    key={i}
+                    className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
+                  >
                     <td className="py-3.5 px-5 text-zinc-600 dark:text-zinc-300 text-xs">
                       {row[0]}
                     </td>
@@ -560,7 +579,7 @@ export default function PricingPage() {
                           "text-center py-3.5 px-5 text-xs",
                           cell === "—"
                             ? "text-zinc-300 dark:text-zinc-700"
-                            : "text-zinc-400 dark:text-zinc-400"
+                            : "text-zinc-400 dark:text-zinc-400",
                         )}
                       >
                         {cell}
@@ -586,11 +605,7 @@ export default function PricingPage() {
             </h2>
           </AnimateUp>
 
-          <FaqAccordion
-            items={faqItems}
-            title=""
-            className="!py-0"
-          />
+          <FaqAccordion items={faqItems} title="" className="!py-0" />
         </div>
       </AnimateSection>
 

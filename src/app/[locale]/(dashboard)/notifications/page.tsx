@@ -82,8 +82,15 @@ interface NotificationPreferences {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const NOTIFICATION_TYPES = [
-  "order", "customer", "product", "revenue",
-  "inventory", "discount", "campaign", "milestone", "alert",
+  "order",
+  "customer",
+  "product",
+  "revenue",
+  "inventory",
+  "discount",
+  "campaign",
+  "milestone",
+  "alert",
 ] as const;
 
 const TYPE_ICONS: Record<string, string> = {
@@ -206,7 +213,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            n.id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n
+            n.id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n,
           ),
           unreadCount: prev.unreadCount - 1,
         };
@@ -226,7 +233,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            n.id === id ? { ...n, read: false, readAt: null } : n
+            n.id === id ? { ...n, read: false, readAt: null } : n,
           ),
           unreadCount: prev.unreadCount + 1,
         };
@@ -266,7 +273,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            selectedIds.has(n.id) ? { ...n, read: true, readAt: new Date().toISOString() } : n
+            selectedIds.has(n.id) ? { ...n, read: true, readAt: new Date().toISOString() } : n,
           ),
           unreadCount: Math.max(0, prev.unreadCount - selectedIds.size),
         };
@@ -314,7 +321,11 @@ function InboxTab() {
         if (!prev) return prev;
         return {
           ...prev,
-          notifications: prev.notifications.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })),
+          notifications: prev.notifications.map((n) => ({
+            ...n,
+            read: true,
+            readAt: new Date().toISOString(),
+          })),
           unreadCount: 0,
         };
       });
@@ -374,7 +385,10 @@ function InboxTab() {
             >
               <option value="all">{tnotif("filterAllTypes")}</option>
               {NOTIFICATION_TYPES.map((t) => (
-                <option key={t} value={t}>{tnotif(`type${t.charAt(0).toUpperCase() + t.slice(1)}`)} ({data?.typeCounts[t]?.unread || 0})</option>
+                <option key={t} value={t}>
+                  {tnotif(`type${t.charAt(0).toUpperCase() + t.slice(1)}`)} (
+                  {data?.typeCounts[t]?.unread || 0})
+                </option>
               ))}
             </select>
           </div>
@@ -397,7 +411,12 @@ function InboxTab() {
             </Button>
           )}
           {notifications.filter((n) => n.read).length > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleDeleteAllRead} className="text-xs gap-1 text-red-500">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteAllRead}
+              className="text-xs gap-1 text-red-500"
+            >
               <Trash2 className="h-4 w-4" /> {tnotif("clearRead")}
             </Button>
           )}
@@ -413,15 +432,31 @@ function InboxTab() {
           {/* Summary */}
           {data && (
             <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span><strong className="text-gray-900 dark:text-gray-100">{notifications.length}</strong> {tnotif("notifCount")}</span>
-              <span><strong className="text-indigo-600 dark:text-indigo-400">{data.unreadCount}</strong> {tnotif("unreadCountLabel")}</span>
+              <span>
+                <strong className="text-gray-900 dark:text-gray-100">{notifications.length}</strong>{" "}
+                {tnotif("notifCount")}
+              </span>
+              <span>
+                <strong className="text-indigo-600 dark:text-indigo-400">{data.unreadCount}</strong>{" "}
+                {tnotif("unreadCountLabel")}
+              </span>
               {selectedIds.size > 0 && (
                 <span className="flex items-center gap-2 ml-auto">
                   <strong>{selectedIds.size}</strong> {tnotif("selectedCount")}
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleBatchMarkRead}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={handleBatchMarkRead}
+                  >
                     <CheckCheck className="h-3 w-3 mr-1" /> {tnotif("markReadBtn")}
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs text-red-500" onClick={handleBatchDelete}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-red-500"
+                    onClick={handleBatchDelete}
+                  >
                     <Trash2 className="h-3 w-3 mr-1" /> {tnotif("deleteBtn")}
                   </Button>
                 </span>
@@ -434,7 +469,9 @@ function InboxTab() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Bell className="h-12 w-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">{tnotif("noNotifications")}</h3>
+                <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                  {tnotif("noNotifications")}
+                </h3>
                 <p className="text-sm text-gray-400 mt-1">
                   {filterType !== "all" || filterRead !== "all"
                     ? tnotif("tryChangingFilters")
@@ -460,8 +497,9 @@ function InboxTab() {
                   key={n.id}
                   className={cn(
                     "transition-all duration-150",
-                    !n.read && "border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10",
-                    selectedIds.has(n.id) && "ring-2 ring-indigo-400"
+                    !n.read &&
+                      "border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10",
+                    selectedIds.has(n.id) && "ring-2 ring-indigo-400",
                   )}
                 >
                   <CardContent className="p-4">
@@ -474,20 +512,23 @@ function InboxTab() {
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </div>
-                      <span className="text-lg shrink-0 pt-0.5">
-                        {TYPE_ICONS[n.type] || "🔔"}
-                      </span>
+                      <span className="text-lg shrink-0 pt-0.5">{TYPE_ICONS[n.type] || "🔔"}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className={cn("text-sm", !n.read ? "font-semibold" : "font-medium text-gray-600 dark:text-gray-400")}>
+                          <h4
+                            className={cn(
+                              "text-sm",
+                              !n.read
+                                ? "font-semibold"
+                                : "font-medium text-gray-600 dark:text-gray-400",
+                            )}
+                          >
                             {n.title}
                           </h4>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
                             {tnotif(`type${n.type.charAt(0).toUpperCase() + n.type.slice(1)}`)}
                           </Badge>
-                          {!n.read && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                          )}
+                          {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
                         </div>
                         {n.description && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
@@ -495,8 +536,14 @@ function InboxTab() {
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-[10px] text-gray-400">{formatDate(n.createdAt, tnotif)}</span>
-                          {n.link && (                              <a href={n.link} className="text-[10px] text-indigo-500 hover:underline">
+                          <span className="text-[10px] text-gray-400">
+                            {formatDate(n.createdAt, tnotif)}
+                          </span>
+                          {n.link && (
+                            <a
+                              href={n.link}
+                              className="text-[10px] text-indigo-500 hover:underline"
+                            >
                               {tnotif("viewDetails")}
                             </a>
                           )}
@@ -542,7 +589,12 @@ function InboxTab() {
 
 // ─── Toggle Component ───────────────────────────────────────────────────────
 
-function Toggle({ checked, onChange, label, description }: {
+function Toggle({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
@@ -597,7 +649,9 @@ function AlertRulesTab() {
     }
   }, []);
 
-  useEffect(() => { fetchPrefs(); }, [fetchPrefs]);
+  useEffect(() => {
+    fetchPrefs();
+  }, [fetchPrefs]);
 
   const updatePref = async (field: string, value: boolean | number) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -698,7 +752,9 @@ function AlertRulesTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshStockLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localLowStock} units</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localLowStock} units
+              </span>
             </div>
             <input
               type="range"
@@ -714,15 +770,15 @@ function AlertRulesTab() {
               <span>25</span>
               <span>50</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshStockDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshStockDesc")}</p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshPendingLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localPendingThreshold} orders</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localPendingThreshold} orders
+              </span>
             </div>
             <input
               type="range"
@@ -738,15 +794,15 @@ function AlertRulesTab() {
               <span>10</span>
               <span>20</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshPendingDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshPendingDesc")}</p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshBudgetLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localBudgetPercent}%</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localBudgetPercent}%
+              </span>
             </div>
             <input
               type="range"
@@ -762,13 +818,19 @@ function AlertRulesTab() {
               <span>75%</span>
               <span>100%</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshBudgetDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshBudgetDesc")}</p>
           </div>
 
           <Button onClick={handleSaveThresholds} disabled={saving}>
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tnotif("savingBtn")}</> : <><Save className="h-4 w-4 mr-2" /> {tnotif("saveThresholds")}</>}
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tnotif("savingBtn")}
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" /> {tnotif("saveThresholds")}
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -798,7 +860,9 @@ function EmailPrefsTab() {
     }
   }, []);
 
-  useEffect(() => { fetchPrefs(); }, [fetchPrefs]);
+  useEffect(() => {
+    fetchPrefs();
+  }, [fetchPrefs]);
 
   const updatePref = async (field: string, value: boolean) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -855,10 +919,20 @@ function EmailPrefsTab() {
               <CardDescription>{tnotif("emailDesc")}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleToggleAll(true)} disabled={saving}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleAll(true)}
+                disabled={saving}
+              >
                 {tnotif("enableAll")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleToggleAll(false)} disabled={saving}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleAll(false)}
+                disabled={saving}
+              >
                 {tnotif("disableAll")}
               </Button>
             </div>
@@ -919,10 +993,10 @@ function EmailPrefsTab() {
       <Card>
         <CardContent className="p-6 text-center">
           <Mail className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{tnotif("emailDeliveryTitle")}</h3>
-          <p className="text-xs text-gray-400 mt-1">
-            {tnotif("emailDeliveryDesc")}
-          </p>
+          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {tnotif("emailDeliveryTitle")}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">{tnotif("emailDeliveryDesc")}</p>
         </CardContent>
       </Card>
     </div>

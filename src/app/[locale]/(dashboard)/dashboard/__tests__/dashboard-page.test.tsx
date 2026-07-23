@@ -51,8 +51,22 @@ const mockDashboardData = {
     productsGrowth: 5.1,
   },
   recentOrders: [
-    { id: "1", orderNumber: "ORD-001", grandTotal: 249.99, createdAt: "2024-07-01T10:00:00Z", customer: { name: "John Doe" }, channel: { name: "Online Store" } },
-    { id: "2", orderNumber: "ORD-002", grandTotal: 149.99, createdAt: "2024-07-01T09:00:00Z", customer: { name: "Jane Smith" }, channel: { name: "Shopify" } },
+    {
+      id: "1",
+      orderNumber: "ORD-001",
+      grandTotal: 249.99,
+      createdAt: "2024-07-01T10:00:00Z",
+      customer: { name: "John Doe" },
+      channel: { name: "Online Store" },
+    },
+    {
+      id: "2",
+      orderNumber: "ORD-002",
+      grandTotal: 149.99,
+      createdAt: "2024-07-01T09:00:00Z",
+      customer: { name: "Jane Smith" },
+      channel: { name: "Shopify" },
+    },
   ],
   topProducts: [
     { id: "1", name: "Widget Pro", price: 29.99, orderCount: 145 },

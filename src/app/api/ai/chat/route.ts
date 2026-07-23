@@ -47,7 +47,7 @@ If the user asks about something outside your capabilities, politely explain wha
       JSON.stringify({
         error: "An error occurred processing your request. Please try again.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

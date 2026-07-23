@@ -14,27 +14,18 @@ export async function POST(req: Request) {
   const { token, secret } = body;
 
   if (!token || !secret) {
-    return NextResponse.json(
-      { error: "Token and secret are required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Token and secret are required" }, { status: 400 });
   }
 
   if (typeof token !== "string" || token.length < 6) {
-    return NextResponse.json(
-      { error: "Invalid verification code" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
   // Verify the TOTP code
   const totp = new TOTP();
   const isValid = totp.verify(token, secret);
   if (!isValid) {
-    return NextResponse.json(
-      { error: "Invalid verification code" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
   // Find the user

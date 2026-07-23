@@ -3,22 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Sparkles,
-  Bug,
-  Rocket,
-  RefreshCw,
-  GitCommit,
-  Bell,
-} from "lucide-react";
+import { ArrowRight, Sparkles, Bug, Rocket, RefreshCw, GitCommit, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
@@ -233,7 +221,11 @@ export default function ChangelogPage() {
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-700/50 bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
@@ -246,7 +238,11 @@ export default function ChangelogPage() {
             <motion.h1
               variants={{
                 hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 max-w-4xl mx-auto"
             >
@@ -266,12 +262,16 @@ export default function ChangelogPage() {
             <motion.p
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="text-base lg:text-lg text-zinc-400 max-w-2xl mx-auto"
             >
-              Stay up to date with the latest features, improvements, and bug
-              fixes. We ship regularly based on your feedback.
+              Stay up to date with the latest features, improvements, and bug fixes. We ship
+              regularly based on your feedback.
             </motion.p>
           </motion.div>
         </div>
@@ -285,13 +285,10 @@ export default function ChangelogPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/20">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-medium text-zinc-300">
-              Latest version:{" "}
-              <span className="text-white font-semibold">2.5.0</span>
+              Latest version: <span className="text-white font-semibold">2.5.0</span>
             </span>
             <span className="text-[10px] text-zinc-500">—</span>
-            <span className="text-[10px] text-zinc-500">
-              Released April 14, 2026
-            </span>
+            <span className="text-[10px] text-zinc-500">Released April 14, 2026</span>
           </div>
         </div>
       </AnimateSection>
@@ -332,14 +329,12 @@ export default function ChangelogPage() {
                         <span
                           className={cn(
                             "text-[9px] font-semibold uppercase tracking-widest px-2 py-1 rounded-full",
-                            entry.tagColor
+                            entry.tagColor,
                           )}
                         >
                           {entry.tag}
                         </span>
-                        <span className="text-[10px] text-zinc-600 font-mono">
-                          {entry.date}
-                        </span>
+                        <span className="text-[10px] text-zinc-600 font-mono">{entry.date}</span>
                       </div>
 
                       {/* Items */}
@@ -363,17 +358,13 @@ export default function ChangelogPage() {
                               <div
                                 className={cn(
                                   "flex-shrink-0 mt-0.5 inline-flex p-1 rounded-md",
-                                  config.bg
+                                  config.bg,
                                 )}
                               >
-                                <Icon
-                                  className={cn("h-3 w-3", config.color)}
-                                />
+                                <Icon className={cn("h-3 w-3", config.color)} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs text-zinc-300 leading-relaxed">
-                                  {item.text}
-                                </p>
+                                <p className="text-xs text-zinc-300 leading-relaxed">{item.text}</p>
                               </div>
                             </motion.div>
                           );
@@ -416,9 +407,7 @@ export default function ChangelogPage() {
                   <div className="text-2xl lg:text-3xl font-bold text-white tabular-nums">
                     <AnimatedCounter end={stat.end} duration={2000} suffix={stat.suffix} />
                   </div>
-                  <div className="text-xs text-zinc-500 mt-1 font-medium">
-                    {stat.label}
-                  </div>
+                  <div className="text-xs text-zinc-500 mt-1 font-medium">{stat.label}</div>
                 </motion.div>
               );
             })}
@@ -438,12 +427,9 @@ export default function ChangelogPage() {
                 Stay Updated
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-              Never Miss a Release
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Never Miss a Release</h2>
             <p className="text-sm text-zinc-400 mb-6 max-w-md mx-auto">
-              Get notified about new releases, features, and updates directly
-              to your inbox.
+              Get notified about new releases, features, and updates directly to your inbox.
             </p>
             <div className="flex items-center justify-center gap-3 max-w-md mx-auto">
               <input
@@ -485,9 +471,7 @@ export default function ChangelogPage() {
                   </p>
                   <Link href={ctaHref}>
                     <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
-                      <Button
-                        className="h-11 px-8 text-sm gap-2 bg-white text-[#0b0c11] hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-black/20 press-scale"
-                      >
+                      <Button className="h-11 px-8 text-sm gap-2 bg-white text-[#0b0c11] hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-black/20 press-scale">
                         Go to Dashboard
                         <ArrowRight className="h-4 w-4" />
                       </Button>

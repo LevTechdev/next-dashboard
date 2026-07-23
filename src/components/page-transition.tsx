@@ -18,10 +18,7 @@ interface PageTransitionProps {
  * The actual page animation (crossfade + slide) is handled by CSS
  * pseudo-elements in globals.css (::view-transition-old/new).
  */
-export default function PageTransition({
-  children,
-  className,
-}: PageTransitionProps) {
+export default function PageTransition({ children, className }: PageTransitionProps) {
   const pathname = usePathname();
   const { isSupported } = useViewTransition();
   const [mounted, setMounted] = useState(false);

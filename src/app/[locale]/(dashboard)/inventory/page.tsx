@@ -14,13 +14,7 @@ import {
   Layers,
   Download,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,11 +55,17 @@ interface InventoryData {
 
 // ─── Category Breakdown ─────────────────────────────────────────────────────
 
-function CategoryBreakdown({ products, categories }: { products: Product[]; categories: { id: string; name: string }[] }) {
+function CategoryBreakdown({
+  products,
+  categories,
+}: {
+  products: Product[];
+  categories: { id: string; name: string }[];
+}) {
   // Count products by category
   const catCounts: Record<string, number> = {};
   const catStock: Record<string, number> = {};
-  
+
   categories.forEach((c) => {
     const prods = products.filter((p) => p.categoryId === c.id || p.category?.name === c.name);
     catCounts[c.name] = prods.length;
@@ -107,16 +107,14 @@ function CategoryBreakdown({ products, categories }: { products: Product[]; cate
                   "h-full rounded-full",
                   name === "Uncategorized"
                     ? "bg-gray-400 dark:bg-gray-600"
-                    : "bg-indigo-400 dark:bg-indigo-500"
+                    : "bg-indigo-400 dark:bg-indigo-500",
                 )}
               />
             </div>
             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 w-10 text-right">
               {count}
             </span>
-            <span className="text-[10px] text-gray-400 w-16 text-right">
-              {stock} units
-            </span>
+            <span className="text-[10px] text-gray-400 w-16 text-right">{stock} units</span>
           </motion.div>
         );
       })}
@@ -132,15 +130,12 @@ export default function InventoryPage() {
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
 
-  const {
-    data,
-    loading,
-    lastUpdated,
-    isRefreshing,
-    refresh,
-  } = useRealtimeData<InventoryData>("/api/products?includeCategories=true&includeValue=true", {
-    interval: 20000,
-  });
+  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<InventoryData>(
+    "/api/products?includeCategories=true&includeValue=true",
+    {
+      interval: 20000,
+    },
+  );
 
   const products = data?.products || [];
   const categories = data?.categories || [];
@@ -152,15 +147,22 @@ export default function InventoryPage() {
   const filtered = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase())
+      p.sku?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const getStockBadge = (stock: number) => {
-    if (stock <= 0)
-      return <Badge variant="danger">{tinventory("outOfStock")}</Badge>;
+    if (stock <= 0) return <Badge variant="danger">{tinventory("outOfStock")}</Badge>;
     if (stock < 10)
-      return <Badge variant="warning">{tinventory("lowStock")} ({stock})</Badge>;
-    return <Badge variant="success">{tinventory("inStock")} ({stock})</Badge>;
+      return (
+        <Badge variant="warning">
+          {tinventory("lowStock")} ({stock})
+        </Badge>
+      );
+    return (
+      <Badge variant="success">
+        {tinventory("inStock")} ({stock})
+      </Badge>
+    );
   };
 
   return (
@@ -176,15 +178,10 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {tinventory("title")}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {tinventory("subtitle")}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tinventory("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
+          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button
             variant="ghost"
             size="sm"
@@ -192,9 +189,7 @@ export default function InventoryPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             <span className="hidden sm:inline">{tcommon("refresh")}</span>
           </Button>
         </div>
@@ -218,7 +213,9 @@ export default function InventoryPage() {
                   In Stock
                 </span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{tinventory("inStock")}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                {tinventory("inStock")}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 <AnimatedCounter end={inStockCount} duration={1200} />
               </p>
@@ -242,7 +239,9 @@ export default function InventoryPage() {
                   Needs Restock
                 </span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{tinventory("lowStock")}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                {tinventory("lowStock")}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 <AnimatedCounter end={lowStockCount} duration={1200} />
               </p>
@@ -266,7 +265,9 @@ export default function InventoryPage() {
                   Out of Stock
                 </span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{tinventory("outOfStock")}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                {tinventory("outOfStock")}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 <AnimatedCounter end={outOfStockCount} duration={1200} />
               </p>
@@ -292,7 +293,11 @@ export default function InventoryPage() {
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{tproducts("price")}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                <AnimatedCounter end={totalValue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                <AnimatedCounter
+                  end={totalValue}
+                  duration={1600}
+                  formatter={(v) => formatCurrency(v)}
+                />
               </p>
             </CardContent>
           </Card>
@@ -362,9 +367,7 @@ export default function InventoryPage() {
                             {p.name}
                           </p>
                           {p.category?.name && (
-                            <p className="text-[10px] text-gray-400 mt-0.5">
-                              {p.category.name}
-                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">{p.category.name}</p>
                           )}
                         </div>
                       </TableCell>
@@ -377,9 +380,7 @@ export default function InventoryPage() {
                       <TableCell className="text-sm font-semibold tabular-nums">
                         {p.stock}
                       </TableCell>
-                      <TableCell>
-                        {getStockBadge(p.stock)}
-                      </TableCell>
+                      <TableCell>{getStockBadge(p.stock)}</TableCell>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
@@ -407,7 +408,11 @@ export default function InventoryPage() {
                     { key: (p: any) => p.sku || "—", header: "SKU" },
                     { key: (p: any) => p.price, header: "Price" },
                     { key: (p: any) => p.stock, header: "Stock" },
-                    { key: (p: any) => p.stock <= 0 ? "Out of Stock" : p.stock < 10 ? "Low Stock" : "In Stock", header: "Status" },
+                    {
+                      key: (p: any) =>
+                        p.stock <= 0 ? "Out of Stock" : p.stock < 10 ? "Low Stock" : "In Stock",
+                      header: "Status",
+                    },
                     { key: (p: any) => p.category?.name || "", header: "Category" },
                     { key: (p: any) => p.costPrice, header: "Cost Price" },
                   ]}

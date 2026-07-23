@@ -68,7 +68,11 @@ global.IntersectionObserver = class {
 
 // ── Mock next-themes ───────────────────────────────────────────────────────
 vi.mock("next-themes", () => ({
-  useTheme: vi.fn(() => ({ theme: "light", setTheme: vi.fn(), themes: ["light", "dark", "system"] })),
+  useTheme: vi.fn(() => ({
+    theme: "light",
+    setTheme: vi.fn(),
+    themes: ["light", "dark", "system"],
+  })),
   ThemeProvider: ({ children }: any) => children,
 }));
 
@@ -80,8 +84,18 @@ vi.mock("framer-motion", () => {
     const tag = rest.tag || "div";
     // Extract framer-motion specific props that shouldn't be passed to DOM
     const {
-      initial, animate, exit, variants, whileInView, whileHover,
-      whileTap, viewport, transition, layout, layoutId, onAnimationComplete,
+      initial,
+      animate,
+      exit,
+      variants,
+      whileInView,
+      whileHover,
+      whileTap,
+      viewport,
+      transition,
+      layout,
+      layoutId,
+      onAnimationComplete,
       ...domProps
     } = rest;
     return React.createElement(tag === "details" ? "details" : "div", domProps, children);
@@ -90,9 +104,8 @@ vi.mock("framer-motion", () => {
   const motion = new Proxy(
     {},
     {
-      get: (_: any, tag: any) =>
-        (props: any) => React.createElement(noop, { ...props, tag }),
-    }
+      get: (_: any, tag: any) => (props: any) => React.createElement(noop, { ...props, tag }),
+    },
   );
 
   return {
@@ -122,31 +135,111 @@ vi.mock("lucide-react", () => {
   // All icon names used across the entire application
   const iconNames = [
     // Marketing page icons
-    "ArrowRight", "Zap", "Sparkles", "Bug", "Rocket", "RefreshCw", "Shield",
-    "BarChart3", "Package", "LayoutDashboard", "Menu", "X", "ChevronRight",
-    "Rows", "Layers", "Globe", "ShoppingCart", "CreditCard", "Mail",
-    "MessageSquare", "Database", "Cloud", "Share2", "Check", "TrendingUp",
-    "Users", "Activity", "GitBranch", "Bell", "Star", "HelpCircle",
-    "FileText", "Megaphone", "Tag", "UserCheck", "Clock", "PieChart",
-    "CheckCircle", "Download", "Copy", "CopyCheck", "Github", "Twitter",
-    "GitCommit", "Plug",
+    "ArrowRight",
+    "Zap",
+    "Sparkles",
+    "Bug",
+    "Rocket",
+    "RefreshCw",
+    "Shield",
+    "BarChart3",
+    "Package",
+    "LayoutDashboard",
+    "Menu",
+    "X",
+    "ChevronRight",
+    "Rows",
+    "Layers",
+    "Globe",
+    "ShoppingCart",
+    "CreditCard",
+    "Mail",
+    "MessageSquare",
+    "Database",
+    "Cloud",
+    "Share2",
+    "Check",
+    "TrendingUp",
+    "Users",
+    "Activity",
+    "GitBranch",
+    "Bell",
+    "Star",
+    "HelpCircle",
+    "FileText",
+    "Megaphone",
+    "Tag",
+    "UserCheck",
+    "Clock",
+    "PieChart",
+    "CheckCircle",
+    "Download",
+    "Copy",
+    "CopyCheck",
+    "Github",
+    "Twitter",
+    "GitCommit",
+    "Plug",
     "PlugZap",
     "CheckCircle2",
     // Dashboard page icons
-    "Search", "Plus", "Settings", "Sun", "Moon", "Monitor", "Command", "Loader2",
-    "Hash", "File", "Text", "Layout", "LogOut", "User", "ChevronLeft",
-    "AlertCircle", "AlertTriangle", "Info", "Trash2", "Box", "Users2",
-    "Gift", "BellRing", "ExternalLink",
-    "ArrowUpDown", "ChevronDown", "MoreHorizontal", "Filter", "Eye",
-    "DollarSign", "Palette", "Smartphone", "Key", "ShoppingBag", "MapPin",
-    "Store", "Wifi", "WifiOff", "ArrowUpRight", "UserCircle", "ClipboardList",
-    "Truck", "PackageCheck", "XCircle", "Pencil", "Monitor", "CopyCheck",
+    "Search",
+    "Plus",
+    "Settings",
+    "Sun",
+    "Moon",
+    "Monitor",
+    "Command",
+    "Loader2",
+    "Hash",
+    "File",
+    "Text",
+    "Layout",
+    "LogOut",
+    "User",
+    "ChevronLeft",
+    "AlertCircle",
+    "AlertTriangle",
+    "Info",
+    "Trash2",
+    "Box",
+    "Users2",
+    "Gift",
+    "BellRing",
+    "ExternalLink",
+    "ArrowUpDown",
+    "ChevronDown",
+    "MoreHorizontal",
+    "Filter",
+    "Eye",
+    "DollarSign",
+    "Palette",
+    "Smartphone",
+    "Key",
+    "ShoppingBag",
+    "MapPin",
+    "Store",
+    "Wifi",
+    "WifiOff",
+    "ArrowUpRight",
+    "UserCircle",
+    "ClipboardList",
+    "Truck",
+    "PackageCheck",
+    "XCircle",
+    "Pencil",
+    "Monitor",
+    "CopyCheck",
   ];
 
   const icons: Record<string, any> = {};
   for (const name of iconNames) {
     icons[name] = ({ className, ...props }: any) =>
-      React.createElement("svg", { className, "data-testid": `icon-${name.toLowerCase()}`, ...props });
+      React.createElement("svg", {
+        className,
+        "data-testid": `icon-${name.toLowerCase()}`,
+        ...props,
+      });
   }
   return icons;
 });
@@ -159,7 +252,7 @@ vi.mock("@radix-ui/react-slot", () => {
     if (!children) return null;
     return React.cloneElement(
       React.Children.only(Array.isArray(children) ? children[0] : children),
-      { ...rest, ref }
+      { ...rest, ref },
     );
   });
   Slot.displayName = "Slot";
@@ -175,9 +268,7 @@ vi.mock("class-variance-authority", () => ({
       default: "bg-white text-black",
       outline: "border rounded",
     };
-    return [base, variantMap[v] || "", variants.className || ""]
-      .filter(Boolean)
-      .join(" ");
+    return [base, variantMap[v] || "", variants.className || ""].filter(Boolean).join(" ");
   },
 }));
 
@@ -192,11 +283,7 @@ vi.mock("@/lib/utils", async () => {
   const actual = await vi.importActual<typeof import("@/lib/utils")>("@/lib/utils");
   return {
     ...actual,
-    cn: (...inputs: any[]) =>
-      inputs
-        .filter(Boolean)
-        .flat()
-        .join(" "),
+    cn: (...inputs: any[]) => inputs.filter(Boolean).flat().join(" "),
   };
 });
 
@@ -205,7 +292,7 @@ vi.mock("@/components/ui/button", () => {
   const React = require("react");
   const Button = React.forwardRef(
     ({ children, className, variant, size, asChild, ...props }: any, ref: any) =>
-      React.createElement("button", { className, ref, ...props }, children)
+      React.createElement("button", { className, ref, ...props }, children),
   );
   Button.displayName = "Button";
   return {

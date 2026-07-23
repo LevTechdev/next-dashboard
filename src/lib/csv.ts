@@ -20,7 +20,7 @@ export function downloadCsv<T>(
   columns: CsvColumn<T>[],
   rows: T[],
   filename: string,
-  dataExtractor?: (rows: T[]) => T[]
+  dataExtractor?: (rows: T[]) => T[],
 ) {
   const data = dataExtractor ? dataExtractor(rows) : rows;
 
@@ -37,7 +37,7 @@ export function downloadCsv<T>(
             : (row as Record<string | number | symbol, unknown>)[col.key as keyof T];
         return escapeCsvValue(value);
       })
-      .join(",")
+      .join(","),
   );
 
   const csv = [headerRow, ...dataRows].join("\r\n");

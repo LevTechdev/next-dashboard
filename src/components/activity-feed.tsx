@@ -24,7 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useRealtime, type NotificationType, type RealtimeNotification } from "@/components/realtime-provider";
+import {
+  useRealtime,
+  type NotificationType,
+  type RealtimeNotification,
+} from "@/components/realtime-provider";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ── Types ──
@@ -52,20 +56,77 @@ interface ApiNotification {
 
 // ── Constants ──
 
-const TYPE_CONFIG: Record<ActivityType, { icon: typeof ShoppingCart; color: string; bg: string; label: string }> = {
-  order:      { icon: ShoppingCart,   color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50 dark:bg-blue-900/20",     label: "Orders" },
-  customer:   { icon: Users,          color: "text-purple-600 dark:text-purple-400",  bg: "bg-purple-50 dark:bg-purple-900/20",  label: "Customers" },
-  product:    { icon: Package,        color: "text-orange-600 dark:text-orange-400",  bg: "bg-orange-50 dark:bg-orange-900/20",  label: "Products" },
-  revenue:    { icon: DollarSign,     color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", label: "Revenue" },
-  inventory:  { icon: AlertTriangle,  color: "text-amber-600 dark:text-amber-400",    bg: "bg-amber-50 dark:bg-amber-900/20",   label: "Inventory" },
-  discount:   { icon: Clock,          color: "text-rose-600 dark:text-rose-400",      bg: "bg-rose-50 dark:bg-rose-900/20",     label: "Discounts" },
-  campaign:   { icon: Megaphone,      color: "text-pink-600 dark:text-pink-400",      bg: "bg-pink-50 dark:bg-pink-900/20",      label: "Campaigns" },
-  milestone:  { icon: Gift,           color: "text-yellow-600 dark:text-yellow-400",   bg: "bg-yellow-50 dark:bg-yellow-900/20",  label: "Milestones" },
-  alert:      { icon: BellRing,       color: "text-red-600 dark:text-red-400",        bg: "bg-red-50 dark:bg-red-900/20",        label: "Alerts" },
+const TYPE_CONFIG: Record<
+  ActivityType,
+  { icon: typeof ShoppingCart; color: string; bg: string; label: string }
+> = {
+  order: {
+    icon: ShoppingCart,
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    label: "Orders",
+  },
+  customer: {
+    icon: Users,
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-900/20",
+    label: "Customers",
+  },
+  product: {
+    icon: Package,
+    color: "text-orange-600 dark:text-orange-400",
+    bg: "bg-orange-50 dark:bg-orange-900/20",
+    label: "Products",
+  },
+  revenue: {
+    icon: DollarSign,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    label: "Revenue",
+  },
+  inventory: {
+    icon: AlertTriangle,
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    label: "Inventory",
+  },
+  discount: {
+    icon: Clock,
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    label: "Discounts",
+  },
+  campaign: {
+    icon: Megaphone,
+    color: "text-pink-600 dark:text-pink-400",
+    bg: "bg-pink-50 dark:bg-pink-900/20",
+    label: "Campaigns",
+  },
+  milestone: {
+    icon: Gift,
+    color: "text-yellow-600 dark:text-yellow-400",
+    bg: "bg-yellow-50 dark:bg-yellow-900/20",
+    label: "Milestones",
+  },
+  alert: {
+    icon: BellRing,
+    color: "text-red-600 dark:text-red-400",
+    bg: "bg-red-50 dark:bg-red-900/20",
+    label: "Alerts",
+  },
 };
 
 const FILTER_ORDER: (ActivityType | "all")[] = [
-  "all", "order", "customer", "inventory", "campaign", "discount", "alert", "milestone", "revenue", "product",
+  "all",
+  "order",
+  "customer",
+  "inventory",
+  "campaign",
+  "discount",
+  "alert",
+  "milestone",
+  "revenue",
+  "product",
 ];
 
 const MAX_VISIBLE = 15;
@@ -86,10 +147,7 @@ function formatTimeAgo(date: Date): string {
 export function ActivityFeed({ className }: { className?: string }) {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
-  const {
-    notifications: realtimeNotifications,
-    connectionStatus,
-  } = useRealtime();
+  const { notifications: realtimeNotifications, connectionStatus } = useRealtime();
 
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +186,9 @@ export function ActivityFeed({ className }: { className?: string }) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Listen for real-time notifications ──
@@ -201,9 +261,7 @@ export function ActivityFeed({ className }: { className?: string }) {
   }, []);
 
   // ── Filter ──
-  const filtered = filter === "all"
-    ? activities
-    : activities.filter((a) => a.type === filter);
+  const filtered = filter === "all" ? activities : activities.filter((a) => a.type === filter);
 
   const countByType = (type: ActivityType | "all") => {
     if (type === "all") return activities.length;
@@ -238,7 +296,9 @@ export function ActivityFeed({ className }: { className?: string }) {
     const csvRows = [
       ["Type", "Title", "Description", "Timestamp"].join(","),
       ...activities.map((a) =>
-        [a.type, `"${a.title}"`, `"${a.description}"`, new Date(a.timestamp).toISOString()].join(",")
+        [a.type, `"${a.title}"`, `"${a.description}"`, new Date(a.timestamp).toISOString()].join(
+          ",",
+        ),
       ),
     ];
     const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
@@ -256,14 +316,16 @@ export function ActivityFeed({ className }: { className?: string }) {
       <CardHeader className="pb-3 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              connectionStatus === "connected"
-                ? "bg-emerald-50 dark:bg-emerald-900/20"
-                : connectionStatus === "connecting"
-                ? "bg-yellow-50 dark:bg-yellow-900/20"
-                : "bg-red-50 dark:bg-red-900/20"
-            )}>
+            <div
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                connectionStatus === "connected"
+                  ? "bg-emerald-50 dark:bg-emerald-900/20"
+                  : connectionStatus === "connecting"
+                    ? "bg-yellow-50 dark:bg-yellow-900/20"
+                    : "bg-red-50 dark:bg-red-900/20",
+              )}
+            >
               {connectionStatus === "connected" ? (
                 <ActivityDot className="text-emerald-500" />
               ) : connectionStatus === "connecting" ? (
@@ -282,8 +344,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     exit={{ scale: 0.5, opacity: 0 }}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold"
                   >
-                    <Sparkles className="h-2.5 w-2.5" />
-                    +{newCount} new
+                    <Sparkles className="h-2.5 w-2.5" />+{newCount} new
                   </motion.span>
                 )}
               </CardTitle>
@@ -336,16 +397,16 @@ export function ActivityFeed({ className }: { className?: string }) {
               connectionStatus === "connected"
                 ? "bg-emerald-500"
                 : connectionStatus === "connecting"
-                ? "bg-yellow-500 animate-pulse"
-                : "bg-red-500"
+                  ? "bg-yellow-500 animate-pulse"
+                  : "bg-red-500",
             )}
           />
           <span className="text-[10px] text-gray-400 font-medium">
             {connectionStatus === "connected"
               ? "Live"
               : connectionStatus === "connecting"
-              ? "Connecting..."
-              : "Disconnected"}
+                ? "Connecting..."
+                : "Disconnected"}
           </span>
           {activities.length > 0 && (
             <span className="text-[10px] text-gray-300 dark:text-gray-600 mx-1">·</span>
@@ -372,7 +433,9 @@ export function ActivityFeed({ className }: { className?: string }) {
               variant="ghost"
               size="sm"
               className="h-6 text-[10px] text-gray-400 gap-1 px-2"
-              onClick={() => { setPaused(true); }}
+              onClick={() => {
+                setPaused(true);
+              }}
             >
               <span className="w-2 h-2 rounded-full bg-gray-400" />
               Pause
@@ -395,12 +458,10 @@ export function ActivityFeed({ className }: { className?: string }) {
                 "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all shrink-0",
                 isActive
                   ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-300 dark:ring-indigo-700"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
               )}
             >
-              {config && (
-                <config.icon className={cn("h-3 w-3", config.color)} />
-              )}
+              {config && <config.icon className={cn("h-3 w-3", config.color)} />}
               {t === "all" ? "All" : config?.label || t}
               {count > 0 && (
                 <span
@@ -408,7 +469,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
                     isActive
                       ? "bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                   )}
                 >
                   {count}
@@ -460,7 +521,9 @@ export function ActivityFeed({ className }: { className?: string }) {
         {!loading && activities.length > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <Filter className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No matching activity</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              No matching activity
+            </p>
             <p className="text-xs text-gray-400 mt-1">Try a different filter</p>
           </div>
         )}
@@ -469,107 +532,118 @@ export function ActivityFeed({ className }: { className?: string }) {
         {!loading && filtered.length > 0 && (
           <AnimatePresence initial={false} mode="popLayout">
             {filtered.slice(0, MAX_VISIBLE).map((item, index) => {
-                const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.alert;
-                const Icon = config.icon;
-                const isNewItem = newIds.has(item.id);
+              const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.alert;
+              const Icon = config.icon;
+              const isNewItem = newIds.has(item.id);
 
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={isNewItem ? { opacity: 0, y: -20, scale: 0.95 } : { opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, overflow: "hidden" }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 35,
-                      mass: 0.8,
-                    }}
-                    layout
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={isNewItem ? { opacity: 0, y: -20, scale: 0.95 } : { opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                    marginTop: 0,
+                    marginBottom: 0,
+                    overflow: "hidden",
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                    mass: 0.8,
+                  }}
+                  layout
+                  className={cn(
+                    "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group relative overflow-hidden",
+                    isNewItem && "bg-indigo-50/60 dark:bg-indigo-900/15",
+                  )}
+                >
+                  {/* New item glow indicator */}
+                  {isNewItem && (
+                    <motion.div
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ delay: 4, duration: 1 }}
+                      className="absolute inset-0 pointer-events-none"
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+                    </motion.div>
+                  )}
+
+                  {/* Icon */}
+                  <div
                     className={cn(
-                      "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group relative overflow-hidden",
-                      isNewItem && "bg-indigo-50/60 dark:bg-indigo-900/15"
-                    )}
-                  >
-                    {/* New item glow indicator */}
-                    {isNewItem && (
-                      <motion.div
-                        initial={{ opacity: 1 }}
-                        animate={{ opacity: 0 }}
-                        transition={{ delay: 4, duration: 1 }}
-                        className="absolute inset-0 pointer-events-none"
-                      >
-                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
-                      </motion.div>
-                    )}
-
-                    {/* Icon */}
-                    <div className={cn(
                       "flex-shrink-0 p-2 rounded-lg transition-transform group-hover:scale-110 duration-200",
                       config.bg,
-                      isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600"
-                    )}>
-                      <Icon className={cn("h-4 w-4", config.color)} />
-                    </div>
+                      isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600",
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4", config.color)} />
+                  </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn(
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p
+                        className={cn(
                           "text-sm truncate",
                           isNewItem
                             ? "font-semibold text-gray-900 dark:text-gray-100"
-                            : "font-medium text-gray-900 dark:text-gray-100"
-                        )}>
-                          {item.title}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
-                            isNewItem && "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                          )}
+                            : "font-medium text-gray-900 dark:text-gray-100",
+                        )}
+                      >
+                        {item.title}
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
+                          isNewItem &&
+                            "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400",
+                        )}
+                      >
+                        {item.type}
+                      </Badge>
+                      {isNewItem && (
+                        <motion.span
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-500 text-white"
                         >
-                          {item.type}
-                        </Badge>
-                        {isNewItem && (
-                          <motion.span
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-500 text-white"
-                          >
-                            New
-                          </motion.span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5">
-                        <span>{formatTimeAgo(item.timestamp)}</span>
-                        {index === 0 && newIds.size === 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-emerald-500">
-                            <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                            latest
-                          </span>
-                        )}
-                      </p>
+                          New
+                        </motion.span>
+                      )}
                     </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5">
+                      <span>{formatTimeAgo(item.timestamp)}</span>
+                      {index === 0 && newIds.size === 0 && (
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-500">
+                          <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                          latest
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-                    {/* Unread indicator */}
-                    {isNewItem && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                        className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
-                      />
-                    )}
-                  </motion.div>
-                );
-              })}
+                  {/* Unread indicator */}
+                  {isNewItem && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                      className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         )}
 

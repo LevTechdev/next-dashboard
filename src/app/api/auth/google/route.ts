@@ -4,7 +4,8 @@ export const dynamic = "force-dynamic";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
+const REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
 
 /**
  * GET /api/auth/google
@@ -14,7 +15,7 @@ export async function GET() {
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json(
       { error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID in your .env file." },
-      { status: 501 }
+      { status: 501 },
     );
   }
 
@@ -27,9 +28,5 @@ export async function GET() {
     prompt: "consent",
   });
 
-  return NextResponse.redirect(
-    `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
-  );
+  return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 }
-
-

@@ -22,13 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ActivityFeed } from "@/components/activity-feed";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
@@ -143,7 +137,13 @@ function QuickActionsGrid({ locale }: { locale: string }) {
                 transition={{ type: "spring", stiffness: 300, damping: 17 }}
                 className="group flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 bg-white dark:bg-gray-900"
               >
-                <div className={cn("p-2.5 rounded-xl transition-all duration-300 group-hover:shadow-md group-hover:scale-110", action.bg, "shadow-sm")}>
+                <div
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all duration-300 group-hover:shadow-md group-hover:scale-110",
+                    action.bg,
+                    "shadow-sm",
+                  )}
+                >
                   <Icon className={cn("h-4 w-4", action.color)} />
                 </div>
                 <div className="text-center">
@@ -192,7 +192,13 @@ function PremiumStatCard({
     >
       <div className="stat-card-premium">
         <div className="flex items-center justify-between">
-          <div className={cn("p-2.5 rounded-xl transition-all duration-300 hover:scale-110", bg, "shadow-sm")}>
+          <div
+            className={cn(
+              "p-2.5 rounded-xl transition-all duration-300 hover:scale-110",
+              bg,
+              "shadow-sm",
+            )}
+          >
             <Icon className={cn("h-5 w-5", color)} />
           </div>
           <span
@@ -200,7 +206,7 @@ function PremiumStatCard({
               "flex items-center text-xs font-medium gap-0.5 px-2 py-0.5 rounded-full",
               change >= 0
                 ? "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20"
-                : "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20"
+                : "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20",
             )}
           >
             {change >= 0 ? (
@@ -212,12 +218,14 @@ function PremiumStatCard({
           </span>
         </div>
         <div className="mt-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {title}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {isCurrency ? (
-              <AnimatedCounter end={endValue} duration={1600} formatter={(v) => formatCurrency(v)} />
+              <AnimatedCounter
+                end={endValue}
+                duration={1600}
+                formatter={(v) => formatCurrency(v)}
+              />
             ) : (
               <AnimatedCounter end={endValue} duration={1600} />
             )}
@@ -276,16 +284,13 @@ export default function DashboardPage() {
   const tdash = useTranslations("dashboard");
   const tcommon = useTranslations("common");
 
-  const {
-    data,
-    loading,
-    lastUpdated,
-    isRefreshing,
-    refresh,
-  } = useRealtimeData<DashboardData>("/api/dashboard", {
-    interval: 15000,
-    enabled: true,
-  });
+  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<DashboardData>(
+    "/api/dashboard",
+    {
+      interval: 15000,
+      enabled: true,
+    },
+  );
 
   // Also refresh when global trigger fires
   useEffect(() => {
@@ -351,12 +356,8 @@ export default function DashboardPage() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {tdash("title")}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {tdash("subtitle")}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{tdash("title")}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tdash("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
           <RealtimeIndicator
@@ -371,9 +372,7 @@ export default function DashboardPage() {
             disabled={isRefreshing}
             className="gap-1 rounded-xl"
           >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             <span className="hidden sm:inline">{tcommon("save")}</span>
           </Button>
         </div>
@@ -392,9 +391,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 overflow-hidden">
           <CardHeader>
             <CardTitle>{tdash("revenueChart")}</CardTitle>
-            <CardDescription>
-              Monthly revenue for the current year
-            </CardDescription>
+            <CardDescription>Monthly revenue for the current year</CardDescription>
           </CardHeader>
           <CardContent>
             <RevenueChart data={data.revenueData} height={300} />
@@ -411,9 +408,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-1 overflow-hidden">
           <CardHeader>
             <CardTitle>{tdash("salesByChannel")}</CardTitle>
-            <CardDescription>
-              Distribution across channels
-            </CardDescription>
+            <CardDescription>Distribution across channels</CardDescription>
           </CardHeader>
           <CardContent>
             <SalesChannelChart data={data.salesByChannel} height={260} />
@@ -452,8 +447,7 @@ export default function DashboardPage() {
                         #{order.orderNumber}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {order.customer?.name || "Guest"} •{" "}
-                        {order.channel?.name || "N/A"}
+                        {order.customer?.name || "Guest"} • {order.channel?.name || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -461,9 +455,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {formatCurrency(order.grandTotal)}
                     </p>
-                    <p className="text-[10px] text-gray-500">
-                      {formatDateTime(order.createdAt)}
-                    </p>
+                    <p className="text-[10px] text-gray-500">{formatDateTime(order.createdAt)}</p>
                   </div>
                 </motion.div>
               ))}

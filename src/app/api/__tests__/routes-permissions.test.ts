@@ -2,19 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
-const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPrisma } =
-  vi.hoisted(() => {
-    const model = <T extends Record<string, unknown>>(
-      overrides: Partial<T> = {}
-    ) =>
+const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPrisma } = vi.hoisted(
+  () => {
+    const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
       new Proxy<T>({} as T, {
         get(_, prop) {
           const key = String(prop);
           // Return the override if provided, otherwise a default vi.fn
-          return (
-            (overrides as any)[key] ??
-            vi.fn().mockImplementation(() => Promise.resolve(null))
-          );
+          return (overrides as any)[key] ?? vi.fn().mockImplementation(() => Promise.resolve(null));
         },
       });
 
@@ -22,14 +17,24 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
       mockRequirePermission: vi.fn<
         (
           action: string,
-          resource: string
+          resource: string,
         ) => Promise<{
           role: string | null;
           response: Response | null;
         }>
       >(),
 
-      mockRequireAuth: vi.fn<(req?: Request) => Promise<{ session: { user: { id: string; sub: string; name: string; email: string; role: string } }; response: Response | null }>>(),
+      mockRequireAuth:
+        vi.fn<
+          (
+            req?: Request,
+          ) => Promise<{
+            session: {
+              user: { id: string; sub: string; name: string; email: string; role: string };
+            };
+            response: Response | null;
+          }>
+        >(),
 
       mockGetSession: vi.fn<() => Promise<unknown>>(),
 
@@ -61,9 +66,9 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         order: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "order-1", orderNumber: "ORD-001", grandTotal: 100 },
-          ]),
+          findMany: vi
+            .fn()
+            .mockResolvedValue([{ id: "order-1", orderNumber: "ORD-001", grandTotal: 100 }]),
           create: vi.fn().mockResolvedValue({
             id: "order-new",
             orderNumber: "ORD-TEST",
@@ -79,9 +84,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         customer: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "cust-1", name: "John Doe" },
-          ]),
+          findMany: vi.fn().mockResolvedValue([{ id: "cust-1", name: "John Doe" }]),
           create: vi.fn().mockResolvedValue({
             id: "cust-new",
             name: "Jane Doe",
@@ -94,9 +97,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         campaign: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "camp-1", name: "Summer Sale" },
-          ]),
+          findMany: vi.fn().mockResolvedValue([{ id: "camp-1", name: "Summer Sale" }]),
           create: vi.fn().mockResolvedValue({
             id: "camp-new",
             name: "New Campaign",
@@ -109,9 +110,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         product: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "prod-1", name: "Widget", price: 29.99 },
-          ]),
+          findMany: vi.fn().mockResolvedValue([{ id: "prod-1", name: "Widget", price: 29.99 }]),
           create: vi.fn().mockResolvedValue({
             id: "prod-new",
             name: "Gadget",
@@ -126,9 +125,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         discount: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "disc-1", code: "SAVE10" },
-          ]),
+          findMany: vi.fn().mockResolvedValue([{ id: "disc-1", code: "SAVE10" }]),
           create: vi.fn().mockResolvedValue({
             id: "disc-new",
             code: "NEWCODE",
@@ -143,9 +140,9 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         salesChannel: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "ch-1", name: "Online Store", slug: "online-store" },
-          ]),
+          findMany: vi
+            .fn()
+            .mockResolvedValue([{ id: "ch-1", name: "Online Store", slug: "online-store" }]),
           findUnique: vi.fn().mockResolvedValue({
             id: "ch-1",
             name: "Online Store",
@@ -158,13 +155,12 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
         }),
 
         productCategory: model({
-          findMany: vi.fn().mockResolvedValue([
-            { id: "cat-1", name: "Electronics" },
-          ]),
+          findMany: vi.fn().mockResolvedValue([{ id: "cat-1", name: "Electronics" }]),
         }),
       },
     };
-  });
+  },
+);
 
 // ── Module mocks ────────────────────────────────────────────────────────────
 
@@ -212,10 +208,9 @@ function permissionDenied(): {
 } {
   return {
     role: null,
-    response: new Response(
-      JSON.stringify({ error: "Forbidden: insufficient permissions" }),
-      { status: 403 }
-    ),
+    response: new Response(JSON.stringify({ error: "Forbidden: insufficient permissions" }), {
+      status: 403,
+    }),
   };
 }
 
@@ -232,7 +227,13 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
   mockRequireAuth.mockResolvedValue({
     session: {
-      user: { id: "mock-admin-user", sub: "mock-admin-user", name: "Admin", email: "admin@dashboard.com", role: "ADMIN" },
+      user: {
+        id: "mock-admin-user",
+        sub: "mock-admin-user",
+        name: "Admin",
+        email: "admin@dashboard.com",
+        role: "ADMIN",
+      },
     },
     response: null,
   });
@@ -282,7 +283,7 @@ describe("Team API (read/create/update/delete — ADMIN only)", () => {
     it("POST creates a user with hashed password", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
       const res = await teamRoutes.POST(
-        mockRequest({ name: "Bob", email: "bob@test.com", password: "secret" })
+        mockRequest({ name: "Bob", email: "bob@test.com", password: "secret" }),
       );
       expect(res.status).toBe(200);
       expect(mockHash).toHaveBeenCalledWith("secret", 10);
@@ -291,9 +292,7 @@ describe("Team API (read/create/update/delete — ADMIN only)", () => {
 
     it("PUT updates a user", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await teamRoutes.PUT(
-        mockRequest({ id: "user-1", name: "Alice Updated" })
-      );
+      const res = await teamRoutes.PUT(mockRequest({ id: "user-1", name: "Alice Updated" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.user.update).toHaveBeenCalled();
     });
@@ -322,9 +321,7 @@ describe("Orders API (POST/PUT guarded, GET public)", () => {
 
     it("creates order and logs activity when permission granted", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await ordersRoutes.POST(
-        mockRequest({ customerId: "c-1", totalAmount: "200" })
-      );
+      const res = await ordersRoutes.POST(mockRequest({ customerId: "c-1", totalAmount: "200" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.order.create).toHaveBeenCalled();
       expect(mockPrisma.activityLog.create).toHaveBeenCalled();
@@ -334,18 +331,14 @@ describe("Orders API (POST/PUT guarded, GET public)", () => {
   describe("PUT — guarded", () => {
     it("returns 403 when requirePermission denies", async () => {
       mockRequirePermission.mockResolvedValue(permissionDenied());
-      const res = await ordersRoutes.PUT(
-        mockRequest({ id: "order-1", status: "SHIPPED" })
-      );
+      const res = await ordersRoutes.PUT(mockRequest({ id: "order-1", status: "SHIPPED" }));
       expect(res.status).toBe(403);
       expect(mockRequirePermission).toHaveBeenCalledWith("update", "orders", expect.anything());
     });
 
     it("updates order and logs activity when permission granted", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await ordersRoutes.PUT(
-        mockRequest({ id: "order-1", status: "SHIPPED" })
-      );
+      const res = await ordersRoutes.PUT(mockRequest({ id: "order-1", status: "SHIPPED" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.order.update).toHaveBeenCalled();
       expect(mockPrisma.activityLog.create).toHaveBeenCalled();
@@ -355,7 +348,7 @@ describe("Orders API (POST/PUT guarded, GET public)", () => {
   describe("GET — public (no permission check)", () => {
     it("returns orders without calling requirePermission", async () => {
       const res = await ordersRoutes.GET(
-        mockRequest() // GET doesn't check permissions
+        mockRequest(), // GET doesn't check permissions
       );
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -389,7 +382,7 @@ describe("Customers API (POST/PUT/DELETE guarded, GET public)", () => {
         mockRequirePermission.mockResolvedValue(permissionDenied());
         const res = await handler(mockRequest(body));
         expect(res.status).toBe(403);
-      }
+      },
     );
   });
 
@@ -403,9 +396,7 @@ describe("Customers API (POST/PUT/DELETE guarded, GET public)", () => {
 
     it("PUT updates a customer", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await customersRoutes.PUT(
-        mockRequest({ id: "cust-1", name: "John Updated" })
-      );
+      const res = await customersRoutes.PUT(mockRequest({ id: "cust-1", name: "John Updated" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.customer.update).toHaveBeenCalled();
     });
@@ -447,18 +438,14 @@ describe("Marketing API (POST/PUT/DELETE guarded, GET public)", () => {
   describe("guarded methods succeed when permission granted", () => {
     it("POST creates a campaign", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await marketingRoutes.POST(
-        mockRequest({ name: "New Campaign", type: "EMAIL" })
-      );
+      const res = await marketingRoutes.POST(mockRequest({ name: "New Campaign", type: "EMAIL" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.campaign.create).toHaveBeenCalled();
     });
 
     it("PUT updates a campaign", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await marketingRoutes.PUT(
-        mockRequest({ id: "camp-1", name: "Updated" })
-      );
+      const res = await marketingRoutes.PUT(mockRequest({ id: "camp-1", name: "Updated" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.campaign.update).toHaveBeenCalled();
     });
@@ -500,18 +487,14 @@ describe("Products API (POST/PUT/DELETE guarded, GET public)", () => {
   describe("guarded methods succeed when permission granted", () => {
     it("POST creates a product", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await productsRoutes.POST(
-        mockRequest({ name: "Gadget", price: "49.99" })
-      );
+      const res = await productsRoutes.POST(mockRequest({ name: "Gadget", price: "49.99" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.product.create).toHaveBeenCalled();
     });
 
     it("PUT updates a product", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await productsRoutes.PUT(
-        mockRequest({ id: "prod-1", name: "Widget Pro" })
-      );
+      const res = await productsRoutes.PUT(mockRequest({ id: "prod-1", name: "Widget Pro" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.product.update).toHaveBeenCalled();
     });
@@ -553,18 +536,14 @@ describe("Discounts API (POST/PUT/DELETE guarded, GET public)", () => {
   describe("guarded methods succeed when permission granted", () => {
     it("POST creates a discount", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await discountsRoutes.POST(
-        mockRequest({ code: "NEWCODE", value: "15" })
-      );
+      const res = await discountsRoutes.POST(mockRequest({ code: "NEWCODE", value: "15" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.discount.create).toHaveBeenCalled();
     });
 
     it("PUT updates a discount", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
-      const res = await discountsRoutes.PUT(
-        mockRequest({ id: "disc-1", value: "20" })
-      );
+      const res = await discountsRoutes.PUT(mockRequest({ id: "disc-1", value: "20" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.discount.update).toHaveBeenCalled();
     });

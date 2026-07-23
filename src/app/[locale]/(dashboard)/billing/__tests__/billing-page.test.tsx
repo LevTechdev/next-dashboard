@@ -19,7 +19,12 @@ describe("Billing Page", () => {
     vi.clearAllMocks();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ subscription: null, invoices: [], totals: { totalPaid: 0, totalInvoices: 0 } }),
+      json: () =>
+        Promise.resolve({
+          subscription: null,
+          invoices: [],
+          totals: { totalPaid: 0, totalInvoices: 0 },
+        }),
     } as Response);
   });
 
@@ -27,7 +32,9 @@ describe("Billing Page", () => {
     render(<BillingPage />);
     await waitFor(() => {});
     expect(screen.getByText("Subscription & Billing")).toBeInTheDocument();
-    expect(screen.getByText("Manage your plan, view invoices, and update payment information")).toBeInTheDocument();
+    expect(
+      screen.getByText("Manage your plan, view invoices, and update payment information"),
+    ).toBeInTheDocument();
   });
 
   it("renders tab navigation", async () => {

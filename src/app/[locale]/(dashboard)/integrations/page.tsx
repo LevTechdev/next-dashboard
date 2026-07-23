@@ -95,7 +95,10 @@ const WEBHOOK_EVENTS = [
 ];
 
 const EVENT_GROUPS = [
-  { label: "Orders", events: ["order.created", "order.updated", "order.cancelled", "order.refunded"] },
+  {
+    label: "Orders",
+    events: ["order.created", "order.updated", "order.cancelled", "order.refunded"],
+  },
   { label: "Customers", events: ["customer.created", "customer.updated"] },
   { label: "Products", events: ["product.created", "product.updated", "product.low_stock"] },
   { label: "Payments", events: ["payment.completed", "payment.failed"] },
@@ -115,10 +118,17 @@ function formatDate(dateStr: string | null, locale: string = "en-US") {
 }
 
 function getEventLabel(value: string, t: (key: string) => string) {
-  const key = "event" + value
-    .split(".")
-    .map((part) => part.split("_").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(""))
-    .join("");
+  const key =
+    "event" +
+    value
+      .split(".")
+      .map((part) =>
+        part
+          .split("_")
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(""),
+      )
+      .join("");
   return t(key);
 }
 
@@ -136,9 +146,7 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {t("subtitle")}
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t("subtitle")}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -283,9 +291,7 @@ function ApiKeysTab() {
     toast.success(t("keyCopiedToast"));
   };
 
-  const filteredKeys = keys.filter((k) =>
-    k.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredKeys = keys.filter((k) => k.name.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
     return (
@@ -358,9 +364,7 @@ function ApiKeysTab() {
               {search ? t("noKeysMatch") : t("noKeys")}
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {search
-                ? t("tryDifferentSearch")
-                : t("createFirstKey")}
+              {search ? t("tryDifferentSearch") : t("createFirstKey")}
             </p>
             {!search && (
               <Button variant="outline" className="mt-4" onClick={() => setShowCreate(true)}>
@@ -388,12 +392,18 @@ function ApiKeysTab() {
                         {key.prefix}
                       </code>
                       {key.lastUsedAt && (
-                        <span>{t("lastUsed")} {formatDate(key.lastUsedAt)}</span>
+                        <span>
+                          {t("lastUsed")} {formatDate(key.lastUsedAt)}
+                        </span>
                       )}
                       {key.expiresAt && (
-                        <span>{t("expires")} {formatDate(key.expiresAt)}</span>
+                        <span>
+                          {t("expires")} {formatDate(key.expiresAt)}
+                        </span>
                       )}
-                      <span>{t("created")} {formatDate(key.createdAt)}</span>
+                      <span>
+                        {t("created")} {formatDate(key.createdAt)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -430,9 +440,7 @@ function ApiKeysTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("createKeyTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("createKeyDesc")}
-            </DialogDescription>
+            <DialogDescription>{t("createKeyDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -455,9 +463,7 @@ function ApiKeysTab() {
                   <SelectItem value="admin">{t("permissionAdmin")}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-400 mt-1">
-                {t("permissionHelp")}
-              </p>
+              <p className="text-xs text-gray-400 mt-1">{t("permissionHelp")}</p>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t("expirationLabel")}</label>
@@ -664,7 +670,7 @@ function WebhooksTab() {
         toast.success(
           data.status === "DELIVERED"
             ? t("testSuccessfulToast", { statusCode: data.statusCode, durationMs: data.durationMs })
-            : t("testFailedToast", { code: data.statusCode || "timeout" })
+            : t("testFailedToast", { code: data.statusCode || "timeout" }),
         );
         await fetchEndpoints();
       } else {
@@ -687,7 +693,7 @@ function WebhooksTab() {
 
   const toggleEvent = (event: string) => {
     setFormEvents((prev) =>
-      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event],
     );
   };
 
@@ -707,7 +713,7 @@ function WebhooksTab() {
   const filteredEndpoints = endpoints.filter(
     (ep) =>
       ep.name.toLowerCase().includes(search.toLowerCase()) ||
-      ep.url.toLowerCase().includes(search.toLowerCase())
+      ep.url.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -774,7 +780,12 @@ function WebhooksTab() {
           />
         </div>
         <div className="flex-1" />
-        <Button onClick={() => { resetForm(); setShowCreate(true); }}>
+        <Button
+          onClick={() => {
+            resetForm();
+            setShowCreate(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
         </Button>
       </div>
@@ -788,12 +799,17 @@ function WebhooksTab() {
               {search ? t("noWebhooksMatch") : t("noWebhooks")}
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {search
-                ? t("tryDifferentSearch")
-                : t("createFirstWebhook")}
+              {search ? t("tryDifferentSearch") : t("createFirstWebhook")}
             </p>
             {!search && (
-              <Button variant="outline" className="mt-4" onClick={() => { resetForm(); setShowCreate(true); }}>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  resetForm();
+                  setShowCreate(true);
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
               </Button>
             )}
@@ -813,8 +829,8 @@ function WebhooksTab() {
                           ep.status === "ACTIVE"
                             ? "success"
                             : ep.status === "PAUSED"
-                            ? "warning"
-                            : "danger"
+                              ? "warning"
+                              : "danger"
                         }
                       >
                         {ep.status}
@@ -834,12 +850,21 @@ function WebhooksTab() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span>
                         {t("events")}{" "}
-                        {ep.subscribedEvents.slice(0, 3).map((e) => getEventLabel(e, t)).join(", ")}
+                        {ep.subscribedEvents
+                          .slice(0, 3)
+                          .map((e) => getEventLabel(e, t))
+                          .join(", ")}
                         {ep.subscribedEvents.length > 3 &&
                           ` ${t("more", { count: ep.subscribedEvents.length - 3 })}`}
                       </span>
-                      <span>{t("deliveriesLabel")} {ep._count.deliveries}</span>
-                      {ep.lastTriggeredAt && <span>{t("last")} {formatDate(ep.lastTriggeredAt)}</span>}
+                      <span>
+                        {t("deliveriesLabel")} {ep._count.deliveries}
+                      </span>
+                      {ep.lastTriggeredAt && (
+                        <span>
+                          {t("last")} {formatDate(ep.lastTriggeredAt)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -1088,9 +1113,7 @@ function DeliveriesTab() {
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {t("noDeliveries")}
             </h3>
-            <p className="text-sm text-gray-400 mt-1">
-              {t("noDeliveriesDesc")}
-            </p>
+            <p className="text-sm text-gray-400 mt-1">{t("noDeliveriesDesc")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -1100,9 +1123,7 @@ function DeliveriesTab() {
               <CardContent className="p-4">
                 <div
                   className="flex items-start justify-between gap-4 cursor-pointer"
-                  onClick={() =>
-                    setExpandedDelivery(expandedDelivery === d.id ? null : d.id)
-                  }
+                  onClick={() => setExpandedDelivery(expandedDelivery === d.id ? null : d.id)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div>
@@ -1122,14 +1143,16 @@ function DeliveriesTab() {
                             d.status === "DELIVERED"
                               ? "success"
                               : d.status === "PENDING"
-                              ? "warning"
-                              : "danger"
+                                ? "warning"
+                                : "danger"
                           }
                         >
                           {d.status}
                         </Badge>
                         {d.statusCode && (
-                          <span className="text-xs text-gray-500">{t("statusHttp", { code: d.statusCode })}</span>
+                          <span className="text-xs text-gray-500">
+                            {t("statusHttp", { code: d.statusCode })}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
@@ -1155,8 +1178,11 @@ function DeliveriesTab() {
                         <p className="text-xs font-semibold text-gray-500 mb-1">{t("payload")}</p>
                         <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-40 overflow-auto whitespace-pre-wrap">
                           {(() => {
-                            try { return JSON.stringify(JSON.parse(d.payload), null, 2); }
-                            catch { return d.payload; }
+                            try {
+                              return JSON.stringify(JSON.parse(d.payload), null, 2);
+                            } catch {
+                              return d.payload;
+                            }
                           })()}
                         </pre>
                       </div>

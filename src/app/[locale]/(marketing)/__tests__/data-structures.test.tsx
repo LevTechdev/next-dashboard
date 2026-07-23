@@ -36,12 +36,7 @@ describe("Changelog Data Structure", () => {
   });
 
   it("has valid tag values", () => {
-    const validTags = [
-      "Latest Release",
-      "Feature Release",
-      "Improvement",
-      "Major Release",
-    ];
+    const validTags = ["Latest Release", "Feature Release", "Improvement", "Major Release"];
     for (const entry of changelog) {
       expect(validTags).toContain(entry.tag);
     }
@@ -85,9 +80,7 @@ describe("Changelog Data Structure", () => {
   it("has at least one feature item in Major Release (2.0.0)", () => {
     const majorRelease = changelog.find((e) => e.version === "2.0.0");
     expect(majorRelease).toBeDefined();
-    const featureItems = majorRelease!.items.filter(
-      (i) => i.type === "feature"
-    );
+    const featureItems = majorRelease!.items.filter((i) => i.type === "feature");
     expect(featureItems.length).toBeGreaterThanOrEqual(4);
   });
 
@@ -196,9 +189,7 @@ describe("Integrations Data Structure", () => {
   });
 
   it("contains Stripe, Shopify, and Zapier as popular integrations", () => {
-    const popularNames = integrations
-      .filter((i) => i.popular)
-      .map((i) => i.name);
+    const popularNames = integrations.filter((i) => i.popular).map((i) => i.name);
     expect(popularNames).toContain("Stripe");
     expect(popularNames).toContain("Shopify");
     expect(popularNames).toContain("Slack");
@@ -218,7 +209,7 @@ describe("Integrations Data Structure", () => {
         "Google Analytics",
         "Zapier",
         "Facebook & Instagram",
-      ])
+      ]),
     );
   });
 });
@@ -266,7 +257,7 @@ describe("Categories Data Structure", () => {
         "Data & Infrastructure",
         "Marketing & Analytics",
         "Automation & Workflows",
-      ])
+      ]),
     );
   });
 });

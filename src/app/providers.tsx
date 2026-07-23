@@ -21,8 +21,7 @@ const LOCALE_MESSAGES: Record<string, Record<string, any>> = {
 function LocaleProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pathLocale = pathname?.split("/")[1];
-  const validLocale =
-    pathLocale === "id" || pathLocale === "en" ? pathLocale : "en";
+  const validLocale = pathLocale === "id" || pathLocale === "en" ? pathLocale : "en";
 
   const [locale, setLocale] = useState<string>(validLocale);
 
@@ -34,7 +33,11 @@ function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, [pathLocale]);
 
   return (
-    <NextIntlClientProvider locale={locale} messages={LOCALE_MESSAGES[locale]} timeZone="Asia/Jakarta">
+    <NextIntlClientProvider
+      locale={locale}
+      messages={LOCALE_MESSAGES[locale]}
+      timeZone="Asia/Jakarta"
+    >
       {children}
     </NextIntlClientProvider>
   );
@@ -42,23 +45,19 @@ function LocaleProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-      <PostHogProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-        >
-          <LocaleProvider>
-            <AuthProvider>
+    <PostHogProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <LocaleProvider>
+          <AuthProvider>
             <RealtimeProvider>
               {children}
               <ThemeTransitionWatcher />
               <Toaster richColors position="top-right" />
               <PWARegister />
-              </RealtimeProvider>
-            </AuthProvider>
-          </LocaleProvider>
-        </ThemeProvider>
-      </PostHogProvider>
+            </RealtimeProvider>
+          </AuthProvider>
+        </LocaleProvider>
+      </ThemeProvider>
+    </PostHogProvider>
   );
 }

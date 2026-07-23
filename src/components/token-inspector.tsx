@@ -31,48 +31,82 @@ interface TokenItem {
 const ALL_TOKENS: TokenItem[] = [
   // ── Colors ──
   {
-    id: "color-bg", category: "Color Tokens", label: "--background",
+    id: "color-bg",
+    category: "Color Tokens",
+    label: "--background",
     render: () => (
       <div className="h-full flex items-center justify-center">
         <div className="space-y-2 text-center">
-          <div className="w-16 h-16 mx-auto rounded-2xl border-2 border-gray-200 dark:border-gray-700" style={{ background: "hsl(var(--background))" }} />
-          <p className="text-[10px] font-mono text-gray-400">hsl(222 20% 97%)<br className="hidden sm:block" />→ hsl(225 25% 7%)</p>
+          <div
+            className="w-16 h-16 mx-auto rounded-2xl border-2 border-gray-200 dark:border-gray-700"
+            style={{ background: "hsl(var(--background))" }}
+          />
+          <p className="text-[10px] font-mono text-gray-400">
+            hsl(222 20% 97%)
+            <br className="hidden sm:block" />→ hsl(225 25% 7%)
+          </p>
         </div>
       </div>
     ),
   },
   {
-    id: "color-card", category: "Color Tokens", label: "--card",
+    id: "color-card",
+    category: "Color Tokens",
+    label: "--card",
     render: () => (
       <div className="h-full flex items-center justify-center">
         <div className="space-y-2 text-center">
-          <div className="w-16 h-16 mx-auto rounded-2xl border-2 border-gray-200 dark:border-gray-700" style={{ background: "hsl(var(--card))" }} />
-          <p className="text-[10px] font-mono text-gray-400">hsl(0 0% 100%)<br className="hidden sm:block" />→ hsl(225 20% 12%)</p>
+          <div
+            className="w-16 h-16 mx-auto rounded-2xl border-2 border-gray-200 dark:border-gray-700"
+            style={{ background: "hsl(var(--card))" }}
+          />
+          <p className="text-[10px] font-mono text-gray-400">
+            hsl(0 0% 100%)
+            <br className="hidden sm:block" />→ hsl(225 20% 12%)
+          </p>
         </div>
       </div>
     ),
   },
   {
-    id: "color-glow-indigo", category: "Color Tokens", label: "--glow-indigo",
+    id: "color-glow-indigo",
+    category: "Color Tokens",
+    label: "--glow-indigo",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl ring-2 ring-white/20" style={{ background: "hsl(226, 70%, 55%)" }} />
-          <div className="w-10 h-10 rounded-xl ring-2 ring-white/20 opacity-80" style={{ background: "hsl(226, 70%, 55% / 0.5)" }} />
-          <div className="w-10 h-10 rounded-xl ring-2 ring-white/20 opacity-50" style={{ background: "hsl(226, 70%, 55% / 0.15)" }} />
+          <div
+            className="w-10 h-10 rounded-xl ring-2 ring-white/20"
+            style={{ background: "hsl(226, 70%, 55%)" }}
+          />
+          <div
+            className="w-10 h-10 rounded-xl ring-2 ring-white/20 opacity-80"
+            style={{ background: "hsl(226, 70%, 55% / 0.5)" }}
+          />
+          <div
+            className="w-10 h-10 rounded-xl ring-2 ring-white/20 opacity-50"
+            style={{ background: "hsl(226, 70%, 55% / 0.15)" }}
+          />
         </div>
         <p className="text-[10px] font-mono text-gray-400">100% · 50% · 15% opacity</p>
       </div>
     ),
   },
   {
-    id: "color-surface", category: "Color Tokens", label: "--surface-raised",
+    id: "color-surface",
+    category: "Color Tokens",
+    label: "--surface-raised",
     render: () => (
       <div className="h-full flex items-center justify-center gap-3">
         {["--surface-raised", "--surface-strong", "--surface-base"].map((v) => (
           <div key={v} className="space-y-1.5 text-center">
-            <div className="w-12 h-12 mx-auto rounded-xl border border-gray-200 dark:border-gray-700" style={{ background: `hsl(var(${v}))` }} />
-            <span className="text-[8px] font-mono text-gray-400 block truncate max-w-[80px]">{v}</span>
+            <div
+              className="w-12 h-12 mx-auto rounded-xl border border-gray-200 dark:border-gray-700"
+              style={{ background: `hsl(var(${v}))` }}
+            />
+            <span className="text-[8px] font-mono text-gray-400 block truncate max-w-[80px]">
+              {v}
+            </span>
           </div>
         ))}
       </div>
@@ -81,12 +115,16 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Cards ──
   {
-    id: "card-dashboard", category: "Cards & Containers", label: ".dashboard-card",
+    id: "card-dashboard",
+    category: "Cards & Containers",
+    label: ".dashboard-card",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="dashboard-card p-3 rounded-xl space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">$</div>
+            <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+              $
+            </div>
             <div className="flex-1 min-w-0">
               <div className="h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
               <div className="h-3 w-16 rounded-full bg-gray-900 dark:bg-gray-100 mt-1" />
@@ -99,7 +137,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "card-stat", category: "Cards & Containers", label: ".stat-card-premium",
+    id: "card-stat",
+    category: "Cards & Containers",
+    label: ".stat-card-premium",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="stat-card-premium cursor-pointer">
@@ -107,7 +147,9 @@ const ALL_TOKENS: TokenItem[] = [
             <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
               <div className="w-3 h-3 rounded bg-indigo-500" />
             </div>
-            <span className="flex items-center gap-0.5 text-[8px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">↑ 12%</span>
+            <span className="flex items-center gap-0.5 text-[8px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+              ↑ 12%
+            </span>
           </div>
           <p className="text-[10px] text-gray-400 mt-1">Metric Label</p>
           <p className="text-base font-bold text-gray-900 dark:text-gray-100">2,847</p>
@@ -117,7 +159,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "card-vengeance", category: "Cards & Containers", label: ".vengeance-card",
+    id: "card-vengeance",
+    category: "Cards & Containers",
+    label: ".vengeance-card",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="vengeance-card p-3 rounded-xl text-center group">
@@ -132,11 +176,15 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "card-gradient-border", category: "Cards & Containers", label: ".gradient-border-card",
+    id: "card-gradient-border",
+    category: "Cards & Containers",
+    label: ".gradient-border-card",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="gradient-border-card p-3 rounded-xl text-center">
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">Gradient Border</p>
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+            Gradient Border
+          </p>
           <p className="text-[8px] text-gray-400 mt-0.5">Hover to reveal</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Hover → mask-composite border</p>
@@ -144,11 +192,15 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "card-spotlight", category: "Cards & Containers", label: ".spotlight-card",
+    id: "card-spotlight",
+    category: "Cards & Containers",
+    label: ".spotlight-card",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="spotlight-card p-3 rounded-xl border border-gray-200 dark:border-gray-700 text-center relative overflow-hidden">
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">Move mouse here</p>
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+            Move mouse here
+          </p>
           <p className="text-[8px] text-gray-400 mt-0.5">Spotlight follows cursor</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Radial gradient at mouse XY</p>
@@ -156,12 +208,16 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "card-double-bezel", category: "Cards & Containers", label: ".double-bezel",
+    id: "card-double-bezel",
+    category: "Cards & Containers",
+    label: ".double-bezel",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="double-bezel">
           <div className="double-bezel-inner text-center !p-3">
-            <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">Nested Card</p>
+            <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+              Nested Card
+            </p>
             <p className="text-[8px] text-gray-400">Outer + Inner surfaces</p>
           </div>
         </div>
@@ -172,14 +228,18 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Glass & Surface ──
   {
-    id: "glass-vengeance", category: "Glass & Surface", label: ".vengeance-glass",
+    id: "glass-vengeance",
+    category: "Glass & Surface",
+    label: ".vengeance-glass",
     render: () => (
       <div className="h-full flex flex-col justify-center p-4">
         <div className="vengeance-glass rounded-xl p-3 text-center">
           <div className="w-6 h-6 mx-auto rounded-lg bg-white/50 dark:bg-white/10 flex items-center justify-center mb-1">
             <Wind className="w-3 h-3 text-indigo-500" />
           </div>
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">Frosted Glass</p>
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+            Frosted Glass
+          </p>
           <p className="text-[8px] text-gray-400">blur(24px) saturate(1.8)</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Backdrop blur panel</p>
@@ -187,11 +247,15 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "glass-panel", category: "Glass & Surface", label: ".glass-panel",
+    id: "glass-panel",
+    category: "Glass & Surface",
+    label: ".glass-panel",
     render: () => (
       <div className="h-full flex flex-col justify-center p-4">
         <div className="glass-panel rounded-xl p-3 text-center">
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">Standard Glass</p>
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+            Standard Glass
+          </p>
           <p className="text-[8px] text-gray-400">blur(24px) · inner shine</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Marketing nav glass</p>
@@ -201,31 +265,48 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Buttons ──
   {
-    id: "btn-default", category: "Buttons", label: "Button — default",
+    id: "btn-default",
+    category: "Buttons",
+    label: "Button — default",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <Button size="sm">Default</Button>
-        <Button variant="secondary" size="sm">Secondary</Button>
+        <Button variant="secondary" size="sm">
+          Secondary
+        </Button>
         <p className="text-[8px] text-gray-400">Standard action buttons</p>
       </div>
     ),
   },
   {
-    id: "btn-premium", category: "Buttons", label: "Button — premium + glass",
+    id: "btn-premium",
+    category: "Buttons",
+    label: "Button — premium + glass",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
-        <Button variant="premium" size="sm" className="gap-1.5"><Sparkles className="w-3 h-3" />Premium</Button>
-        <Button variant="glass" size="sm">Glass</Button>
+        <Button variant="premium" size="sm" className="gap-1.5">
+          <Sparkles className="w-3 h-3" />
+          Premium
+        </Button>
+        <Button variant="glass" size="sm">
+          Glass
+        </Button>
         <p className="text-[8px] text-gray-400">Gradient & frosted variants</p>
       </div>
     ),
   },
   {
-    id: "btn-outline-ghost", category: "Buttons", label: "Button — outline + ghost",
+    id: "btn-outline-ghost",
+    category: "Buttons",
+    label: "Button — outline + ghost",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
-        <Button variant="outline" size="sm">Outline</Button>
-        <Button variant="ghost" size="sm">Ghost</Button>
+        <Button variant="outline" size="sm">
+          Outline
+        </Button>
+        <Button variant="ghost" size="sm">
+          Ghost
+        </Button>
         <p className="text-[8px] text-gray-400">Low-emphasis actions</p>
       </div>
     ),
@@ -233,12 +314,20 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Badges ──
   {
-    id: "badge-premium", category: "Badges & Tags", label: ".badge-premium",
+    id: "badge-premium",
+    category: "Badges & Tags",
+    label: ".badge-premium",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
-        <span className="badge-premium"><Sparkles className="w-2.5 h-2.5" /> Premium</span>
-        <span className="badge-premium !bg-emerald-500/10 !text-emerald-600 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-500/20">✓ Verified</span>
-        <span className="badge-premium !bg-amber-500/10 !text-amber-600 dark:!text-amber-400 !border-amber-200 dark:!border-amber-500/20">Beta</span>
+        <span className="badge-premium">
+          <Sparkles className="w-2.5 h-2.5" /> Premium
+        </span>
+        <span className="badge-premium !bg-emerald-500/10 !text-emerald-600 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-500/20">
+          ✓ Verified
+        </span>
+        <span className="badge-premium !bg-amber-500/10 !text-amber-600 dark:!text-amber-400 !border-amber-200 dark:!border-amber-500/20">
+          Beta
+        </span>
         <p className="text-[8px] text-gray-400">Indigo tint · 8% → 18% alpha</p>
       </div>
     ),
@@ -246,10 +335,16 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Typography ──
   {
-    id: "text-gradient", category: "Typography & Text", label: ".text-gradient-premium",
+    id: "text-gradient",
+    category: "Typography & Text",
+    label: ".text-gradient-premium",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
-        <p className="text-gradient-premium text-lg font-bold text-center leading-tight">Premium<br />Gradient</p>
+        <p className="text-gradient-premium text-lg font-bold text-center leading-tight">
+          Premium
+          <br />
+          Gradient
+        </p>
         <p className="text-gradient-warm text-xs font-semibold text-center">Warm</p>
         <p className="text-gradient-cool text-xs font-semibold text-center">Cool</p>
         <p className="text-gradient-earth text-xs font-semibold text-center">Earth</p>
@@ -260,13 +355,17 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Effects ──
   {
-    id: "effect-global-glow", category: "Effects & Micro-Interactions", label: ".ambient-glow-indigo",
+    id: "effect-global-glow",
+    category: "Effects & Micro-Interactions",
+    label: ".ambient-glow-indigo",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="relative h-16 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
           <div className="absolute inset-0 ambient-glow-indigo" />
           <div className="relative z-10 flex items-center justify-center h-full">
-            <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400">Ambient Indigo</p>
+            <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400">
+              Ambient Indigo
+            </p>
           </div>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Section-scale glow (12%→15%)</p>
@@ -274,7 +373,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "effect-glow-border", category: "Effects & Micro-Interactions", label: ".glow-border",
+    id: "effect-glow-border",
+    category: "Effects & Micro-Interactions",
+    label: ".glow-border",
     render: () => (
       <div className="h-full flex flex-col justify-center p-4">
         <div className="glow-border p-3 rounded-xl border border-gray-200 dark:border-gray-700 text-center bg-white dark:bg-gray-900">
@@ -286,7 +387,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "effect-pulse-dot", category: "Effects & Micro-Interactions", label: ".pulse-dot",
+    id: "effect-pulse-dot",
+    category: "Effects & Micro-Interactions",
+    label: ".pulse-dot",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-3">
         <div className="flex items-center gap-3">
@@ -299,7 +402,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "effect-shimmer", category: "Effects & Micro-Interactions", label: ".shimmer",
+    id: "effect-shimmer",
+    category: "Effects & Micro-Interactions",
+    label: ".shimmer",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2 p-3">
         <div className="shimmer h-2.5 w-32 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -310,7 +415,9 @@ const ALL_TOKENS: TokenItem[] = [
     ),
   },
   {
-    id: "effect-feature-card", category: "Effects & Micro-Interactions", label: ".feature-card",
+    id: "effect-feature-card",
+    category: "Effects & Micro-Interactions",
+    label: ".feature-card",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="feature-card p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-center cursor-default">
@@ -318,8 +425,7 @@ const ALL_TOKENS: TokenItem[] = [
             <Sparkles className="w-3 h-3 text-indigo-500" />
           </div>
           <p className="text-[9px] font-medium text-gray-700 dark:text-gray-300">Feature Card</p>
-          <p className="feature-arrow text-[8px] text-indigo-500 mt-0.5">Hover →
-          </p>
+          <p className="feature-arrow text-[8px] text-indigo-500 mt-0.5">Hover →</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Lift + icon scale + arrow slide</p>
       </div>
@@ -328,7 +434,9 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Navigation ──
   {
-    id: "nav-sidebar", category: "Navigation", label: ".sidebar-item / -active",
+    id: "nav-sidebar",
+    category: "Navigation",
+    label: ".sidebar-item / -active",
     render: () => (
       <div className="h-full flex flex-col justify-center p-3">
         <div className="space-y-1">
@@ -337,15 +445,17 @@ const ALL_TOKENS: TokenItem[] = [
               key={name}
               className={cn(
                 "sidebar-item px-3 py-2 rounded-lg text-xs font-medium",
-                i === 1 && "sidebar-item-active"
+                i === 1 && "sidebar-item-active",
               )}
             >
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                i === 0 && "bg-gray-300 dark:bg-gray-600",
-                i === 1 && "bg-indigo-500",
-                i === 2 && "bg-gray-300 dark:bg-gray-600"
-              )} />
+              <div
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  i === 0 && "bg-gray-300 dark:bg-gray-600",
+                  i === 1 && "bg-indigo-500",
+                  i === 2 && "bg-gray-300 dark:bg-gray-600",
+                )}
+              />
               {name}
             </div>
           ))}
@@ -357,15 +467,24 @@ const ALL_TOKENS: TokenItem[] = [
 
   // ── Motion ──
   {
-    id: "motion-classes", category: "Motion Utilities", label: ".motion-spring / .press-scale",
+    id: "motion-classes",
+    category: "Motion Utilities",
+    label: ".motion-spring / .press-scale",
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-3 p-3">
         <div className="flex flex-wrap gap-2 justify-center">
-          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">.motion-spring</span>
-          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">.motion-spring-fast</span>
-          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">.motion-spring-slow</span>
-        </div>            <button className="press-scale px-4 py-2 rounded-xl text-xs font-medium bg-indigo-500 text-white">
-              .press-scale (click me)
+          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+            .motion-spring
+          </span>
+          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+            .motion-spring-fast
+          </span>
+          <span className="px-2 py-1 rounded-lg text-[9px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+            .motion-spring-slow
+          </span>
+        </div>{" "}
+        <button className="press-scale px-4 py-2 rounded-xl text-xs font-medium bg-indigo-500 text-white">
+          .press-scale (click me)
         </button>
         <p className="text-[8px] text-gray-400">Spring curves & press feedback</p>
       </div>
@@ -410,10 +529,12 @@ function TokenPreviewCard({ token, searchTerm }: { token: TokenItem; searchTerm:
     >
       {/* Preview area */}
       <div className="aspect-[4/3] bg-gray-50/50 dark:bg-gray-900/30 overflow-hidden">
-        <div className={cn(
-          "w-full h-full transition-transform duration-500",
-          isHovered && "scale-[1.02]"
-        )}>
+        <div
+          className={cn(
+            "w-full h-full transition-transform duration-500",
+            isHovered && "scale-[1.02]",
+          )}
+        >
           <token.render id={token.id} />
         </div>
       </div>
@@ -443,7 +564,7 @@ function SplitViewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: ()
         "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200",
         enabled
           ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
-          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300",
       )}
     >
       <PanelRightOpen className="w-3.5 h-3.5" />
@@ -454,14 +575,22 @@ function SplitViewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: ()
 
 // ─── View Mode Toggle ────────────────────────────────────────────────
 
-function ViewModeToggle({ mode, onChange }: { mode: "grid" | "list"; onChange: (m: "grid" | "list") => void }) {
+function ViewModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: "grid" | "list";
+  onChange: (m: "grid" | "list") => void;
+}) {
   return (
     <div className="flex items-center gap-1 p-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
       <button
         onClick={() => onChange("grid")}
         className={cn(
           "p-1.5 rounded-md transition-all",
-          mode === "grid" ? "bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-300" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
+          mode === "grid"
+            ? "bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-300"
+            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-400",
         )}
       >
         <Grid3X3 className="w-3.5 h-3.5" />
@@ -470,7 +599,9 @@ function ViewModeToggle({ mode, onChange }: { mode: "grid" | "list"; onChange: (
         onClick={() => onChange("list")}
         className={cn(
           "p-1.5 rounded-md transition-all",
-          mode === "list" ? "bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-300" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
+          mode === "list"
+            ? "bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-300"
+            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-400",
         )}
       >
         <List className="w-3.5 h-3.5" />
@@ -481,7 +612,11 @@ function ViewModeToggle({ mode, onChange }: { mode: "grid" | "list"; onChange: (
 
 // ─── Theme Switcher ──────────────────────────────────────────────────
 
-function ThemeSwitcher({ mounted, theme, setTheme }: {
+function ThemeSwitcher({
+  mounted,
+  theme,
+  setTheme,
+}: {
   mounted: boolean;
   theme: string | undefined;
   setTheme: (t: string) => void;
@@ -504,7 +639,7 @@ function ThemeSwitcher({ mounted, theme, setTheme }: {
               "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
               isSelected
                 ? "bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-gray-100"
-                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
             )}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -518,11 +653,26 @@ function ThemeSwitcher({ mounted, theme, setTheme }: {
 
 // ─── Floating Header ─────────────────────────────────────────────────
 
-function FloatingHeader({ mounted, theme, setTheme, search, onSearchChange, viewMode, onViewModeChange, splitView, onSplitViewToggle }: {
-  mounted: boolean; theme: string | undefined; setTheme: (t: string) => void;
-  search: string; onSearchChange: (v: string) => void;
-  viewMode: "grid" | "list"; onViewModeChange: (m: "grid" | "list") => void;
-  splitView: boolean; onSplitViewToggle: () => void;
+function FloatingHeader({
+  mounted,
+  theme,
+  setTheme,
+  search,
+  onSearchChange,
+  viewMode,
+  onViewModeChange,
+  splitView,
+  onSplitViewToggle,
+}: {
+  mounted: boolean;
+  theme: string | undefined;
+  setTheme: (t: string) => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+  viewMode: "grid" | "list";
+  onViewModeChange: (m: "grid" | "list") => void;
+  splitView: boolean;
+  onSplitViewToggle: () => void;
 }) {
   return (
     <div className="sticky top-0 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3 mb-6 bg-gradient-to-b from-white via-white/95 to-transparent dark:from-[hsl(225,25%,7%)] dark:via-[hsl(225,25%,7%)/95] dark:to-transparent backdrop-blur-sm">
@@ -534,7 +684,9 @@ function FloatingHeader({ mounted, theme, setTheme, search, onSearchChange, view
           </div>
           <div>
             <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100">Token Inspector</h1>
-            <p className="text-[10px] text-gray-400 hidden sm:block">Figma-style design system catalog</p>
+            <p className="text-[10px] text-gray-400 hidden sm:block">
+              Figma-style design system catalog
+            </p>
           </div>
         </div>
 
@@ -552,7 +704,7 @@ function FloatingHeader({ mounted, theme, setTheme, search, onSearchChange, view
                 "w-full sm:w-44 pl-7 pr-2.5 py-1.5 rounded-lg text-xs border transition-all duration-200",
                 "bg-gray-50 dark:bg-gray-900/80 border-gray-200 dark:border-gray-700/50",
                 "text-gray-900 dark:text-gray-100 placeholder:text-gray-400",
-                "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500"
+                "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500",
               )}
             />
           </div>
@@ -572,23 +724,37 @@ function FloatingHeader({ mounted, theme, setTheme, search, onSearchChange, view
 
 // ─── Category Section ────────────────────────────────────────────────
 
-function CategorySection({ name, tokens, searchTerm, viewMode }: {
-  name: string; tokens: TokenItem[]; searchTerm: string; viewMode: "grid" | "list";
+function CategorySection({
+  name,
+  tokens,
+  searchTerm,
+  viewMode,
+}: {
+  name: string;
+  tokens: TokenItem[];
+  searchTerm: string;
+  viewMode: "grid" | "list";
 }) {
   if (tokens.length === 0) return null;
 
   return (
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">{name}</h2>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          {name}
+        </h2>
         <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700/50" />
-        <span className="text-[10px] font-mono text-gray-300 dark:text-gray-600">{tokens.length} items</span>
+        <span className="text-[10px] font-mono text-gray-300 dark:text-gray-600">
+          {tokens.length} items
+        </span>
       </div>
-      <div className={cn(
-        viewMode === "grid"
-          ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
-          : "space-y-2"
-      )}>
+      <div
+        className={cn(
+          viewMode === "grid"
+            ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+            : "space-y-2",
+        )}
+      >
         {tokens.map((token) => (
           <TokenPreviewCard key={token.id} token={token} searchTerm={searchTerm} />
         ))}
@@ -615,7 +781,7 @@ export function TokenInspector({ className }: { className?: string }) {
       (t) =>
         t.label.toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q)
+        t.id.toLowerCase().includes(q),
     );
   }, [search]);
 
@@ -640,7 +806,10 @@ export function TokenInspector({ className }: { className?: string }) {
             <div className="h-4 w-32 rounded bg-gray-200 dark:bg-gray-800 animate-pulse" />
             <div className="grid grid-cols-3 gap-3">
               {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="aspect-[4/3] rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                <div
+                  key={j}
+                  className="aspect-[4/3] rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse"
+                />
               ))}
             </div>
           </div>
@@ -680,26 +849,50 @@ export function TokenInspector({ className }: { className?: string }) {
               </div>
             </div>
             <div className="p-4 space-y-3" style={{ background: "hsl(222,20%,97%)" }}>
-              <div className="h-2 w-24 rounded-full" style={{ background: "hsl(225,25%,7%,0.1)" }} />
-              <div className="h-16 rounded-xl bg-white border" style={{ borderColor: "hsl(225,15%,90%)" }}>
+              <div
+                className="h-2 w-24 rounded-full"
+                style={{ background: "hsl(225,25%,7%,0.1)" }}
+              />
+              <div
+                className="h-16 rounded-xl bg-white border"
+                style={{ borderColor: "hsl(225,15%,90%)" }}
+              >
                 <div className="p-3 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg" style={{ background: "hsl(226,70%,55%,0.1)" }} />
+                  <div
+                    className="w-6 h-6 rounded-lg"
+                    style={{ background: "hsl(226,70%,55%,0.1)" }}
+                  />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-1.5 w-16 rounded-full" style={{ background: "hsl(225,25%,7%,0.2)" }} />
-                    <div className="h-1.5 w-10 rounded-full" style={{ background: "hsl(225,15%,50%)" }} />
+                    <div
+                      className="h-1.5 w-16 rounded-full"
+                      style={{ background: "hsl(225,25%,7%,0.2)" }}
+                    />
+                    <div
+                      className="h-1.5 w-10 rounded-full"
+                      style={{ background: "hsl(225,15%,50%)" }}
+                    />
                   </div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <div className="flex-1 h-8 rounded-lg bg-white border" style={{ borderColor: "hsl(225,15%,90%)" }} />
+                <div
+                  className="flex-1 h-8 rounded-lg bg-white border"
+                  style={{ borderColor: "hsl(225,15%,90%)" }}
+                />
                 <div className="h-8 w-20 rounded-lg" style={{ background: "hsl(226,70%,55%)" }} />
               </div>
             </div>
           </div>
 
           {/* Dark mode column */}
-          <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(255,255,255,0.07)", background: "hsl(225,25%,7%)" }}>
-            <div className="flex items-center justify-between px-4 py-2 border-b" style={{ background: "hsl(224,18%,14%)", borderColor: "rgba(255,255,255,0.06)" }}>
+          <div
+            className="rounded-2xl overflow-hidden border"
+            style={{ borderColor: "rgba(255,255,255,0.07)", background: "hsl(225,25%,7%)" }}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-2 border-b"
+              style={{ background: "hsl(224,18%,14%)", borderColor: "rgba(255,255,255,0.06)" }}
+            >
               <span className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                 <Moon className="w-3.5 h-3.5 text-blue-400" />
                 Dark Mode
@@ -712,17 +905,29 @@ export function TokenInspector({ className }: { className?: string }) {
             </div>
             <div className="p-4 space-y-3">
               <div className="h-2 w-24 rounded-full bg-white/10" />
-              <div className="h-16 rounded-xl" style={{ background: "hsl(225,20%,12%)", border: "1px solid hsl(225,15%,26%)" }}>
+              <div
+                className="h-16 rounded-xl"
+                style={{ background: "hsl(225,20%,12%)", border: "1px solid hsl(225,15%,26%)" }}
+              >
                 <div className="p-3 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg" style={{ background: "hsl(226,70%,55%,0.2)" }} />
+                  <div
+                    className="w-6 h-6 rounded-lg"
+                    style={{ background: "hsl(226,70%,55%,0.2)" }}
+                  />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-1.5 w-16 rounded-full bg-white/20" />
-                    <div className="h-1.5 w-10 rounded-full" style={{ background: "hsl(225,10%,65%)" }} />
+                    <div
+                      className="h-1.5 w-10 rounded-full"
+                      style={{ background: "hsl(225,10%,65%)" }}
+                    />
                   </div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <div className="flex-1 h-8 rounded-lg" style={{ background: "hsl(225,20%,12%)", border: "1px solid hsl(225,15%,26%)" }} />
+                <div
+                  className="flex-1 h-8 rounded-lg"
+                  style={{ background: "hsl(225,20%,12%)", border: "1px solid hsl(225,15%,26%)" }}
+                />
                 <div className="h-8 w-20 rounded-lg" style={{ background: "hsl(226,70%,55%)" }} />
               </div>
             </div>
@@ -732,7 +937,9 @@ export function TokenInspector({ className }: { className?: string }) {
 
       {/* Results summary */}
       <div className="flex items-center gap-2 mb-6 text-[11px] text-gray-400">
-        <span>{shownCount} of {totalCount} tokens</span>
+        <span>
+          {shownCount} of {totalCount} tokens
+        </span>
         {search && shownCount === 0 && (
           <span className="text-amber-500">— no matches for &ldquo;{search}&rdquo;</span>
         )}
@@ -755,7 +962,9 @@ export function TokenInspector({ className }: { className?: string }) {
       {shownCount === 0 && search && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Search className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No tokens match &ldquo;{search}&rdquo;</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No tokens match &ldquo;{search}&rdquo;
+          </p>
           <button
             onClick={() => setSearch("")}
             className="mt-2 text-xs text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -768,7 +977,8 @@ export function TokenInspector({ className }: { className?: string }) {
       {/* Footer */}
       <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700/50 text-center">
         <p className="text-[10px] text-gray-400">
-          Powered by <code className="font-mono text-gray-500 dark:text-gray-400">globals.css</code> · {totalCount} premium design tokens & classes
+          Powered by <code className="font-mono text-gray-500 dark:text-gray-400">globals.css</code>{" "}
+          · {totalCount} premium design tokens & classes
         </p>
         <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-1">
           All components render live with the current active theme

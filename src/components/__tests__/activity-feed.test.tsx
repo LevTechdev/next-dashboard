@@ -12,14 +12,16 @@ vi.mock("@/components/realtime-provider", () => ({
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function createMockApiNotification(overrides: Partial<{
-  id: string;
-  type: string;
-  title: string;
-  description: string | null;
-  createdAt: string;
-  read: boolean;
-}> = {}) {
+function createMockApiNotification(
+  overrides: Partial<{
+    id: string;
+    type: string;
+    title: string;
+    description: string | null;
+    createdAt: string;
+    read: boolean;
+  }> = {},
+) {
   return {
     id: `notif-${Math.random().toString(36).slice(2, 8)}`,
     type: "order",
@@ -31,14 +33,25 @@ function createMockApiNotification(overrides: Partial<{
   };
 }
 
-function createMockRealtimeNotification(overrides: Partial<{
-  id: string;
-  type: "order" | "customer" | "product" | "revenue" | "inventory" | "discount" | "campaign" | "milestone" | "alert";
-  title: string;
-  description: string;
-  timestamp: Date;
-  read: boolean;
-}> = {}) {
+function createMockRealtimeNotification(
+  overrides: Partial<{
+    id: string;
+    type:
+      | "order"
+      | "customer"
+      | "product"
+      | "revenue"
+      | "inventory"
+      | "discount"
+      | "campaign"
+      | "milestone"
+      | "alert";
+    title: string;
+    description: string;
+    timestamp: Date;
+    read: boolean;
+  }> = {},
+) {
   return {
     id: `rt-${Math.random().toString(36).slice(2, 8)}`,
     type: "order" as const,
@@ -159,7 +172,7 @@ describe("ActivityFeed", () => {
       render(<ActivityFeed />);
       await waitFor(() => {
         expect(
-          screen.getByText(/Activities like orders, new customers, and system alerts/)
+          screen.getByText(/Activities like orders, new customers, and system alerts/),
         ).toBeInTheDocument();
       });
     });
@@ -296,23 +309,33 @@ describe("ActivityFeed", () => {
   describe("filtering", () => {
     const apiNotifications = [
       createMockApiNotification({
-        id: "order-1", type: "order", title: "Order #1",
+        id: "order-1",
+        type: "order",
+        title: "Order #1",
         description: "First order",
       }),
       createMockApiNotification({
-        id: "order-2", type: "order", title: "Order #2",
+        id: "order-2",
+        type: "order",
+        title: "Order #2",
         description: "Second order",
       }),
       createMockApiNotification({
-        id: "customer-1", type: "customer", title: "New Customer",
+        id: "customer-1",
+        type: "customer",
+        title: "New Customer",
         description: "Welcome!",
       }),
       createMockApiNotification({
-        id: "inventory-1", type: "inventory", title: "Low Stock",
+        id: "inventory-1",
+        type: "inventory",
+        title: "Low Stock",
         description: "Restock needed",
       }),
       createMockApiNotification({
-        id: "alert-1", type: "alert", title: "System Alert",
+        id: "alert-1",
+        type: "alert",
+        title: "System Alert",
         description: "High CPU usage",
       }),
     ];
@@ -445,7 +468,9 @@ describe("ActivityFeed", () => {
       // Return initial activities from API
       global.fetch = setupFetchMock([
         createMockApiNotification({
-          id: "existing-1", type: "order", title: "Existing Order",
+          id: "existing-1",
+          type: "order",
+          title: "Existing Order",
           description: "Before real-time",
         }),
       ]);
@@ -509,12 +534,14 @@ describe("ActivityFeed", () => {
       });
 
       // Add multiple real-time notifications
-      mock.mockReturnValue(defaultRealtimeMock({
-        notifications: [
-          createMockRealtimeNotification({ id: "rt-a", type: "order", title: "RT A" }),
-          createMockRealtimeNotification({ id: "rt-b", type: "customer", title: "RT B" }),
-        ],
-      }));
+      mock.mockReturnValue(
+        defaultRealtimeMock({
+          notifications: [
+            createMockRealtimeNotification({ id: "rt-a", type: "order", title: "RT A" }),
+            createMockRealtimeNotification({ id: "rt-b", type: "customer", title: "RT B" }),
+          ],
+        }),
+      );
       rerender(<ActivityFeed />);
 
       await waitFor(() => {
@@ -557,7 +584,7 @@ describe("ActivityFeed", () => {
           id: `api-${i}`,
           type: "order",
           title: `Order Item ${i + 1}`,
-        })
+        }),
       );
       global.fetch = setupFetchMock(manyItems);
 
@@ -573,7 +600,7 @@ describe("ActivityFeed", () => {
           id: `rt-new-${i}`,
           type: "order",
           title: `New RT #${i + 1}`,
-        })
+        }),
       );
       mock.mockReturnValue(defaultRealtimeMock({ notifications: newRTs }));
       rerender(<ActivityFeed />);
@@ -594,7 +621,9 @@ describe("ActivityFeed", () => {
     beforeEach(() => {
       global.fetch = setupFetchMock([
         createMockApiNotification({
-          id: "item-1", type: "order", title: "Initial Item",
+          id: "item-1",
+          type: "order",
+          title: "Initial Item",
         }),
       ]);
     });
@@ -659,7 +688,9 @@ describe("ActivityFeed", () => {
     beforeEach(() => {
       global.fetch = setupFetchMock([
         createMockApiNotification({
-          id: "exp-1", type: "order", title: "Export Test",
+          id: "exp-1",
+          type: "order",
+          title: "Export Test",
           description: "For CSV",
         }),
       ]);

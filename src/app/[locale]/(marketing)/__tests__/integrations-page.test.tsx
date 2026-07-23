@@ -16,7 +16,7 @@ describe("Integrations Overview Page", () => {
 
   it("renders the header description", () => {
     expect(
-      screen.getByText(/Seamlessly connect with the tools you already use/)
+      screen.getByText(/Seamlessly connect with the tools you already use/),
     ).toBeInTheDocument();
   });
 
@@ -63,31 +63,17 @@ describe("Integrations Overview Page", () => {
   it("renders features highlights section", () => {
     expect(screen.getByText("Built for Seamless Connections")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Every integration is built with reliability and developer/
-      )
+      screen.getByText(/Every integration is built with reliability and developer/),
     ).toBeInTheDocument();
   });
 
   it("renders integration feature points", () => {
-    expect(
-      screen.getByText("Real-time bidirectional data sync")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("OAuth 2.0 secure authentication")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Automatic retry with exponential backoff")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Webhook support for event-driven updates")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Rate limiting and quota management")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Detailed sync logs and audit trail")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Real-time bidirectional data sync")).toBeInTheDocument();
+    expect(screen.getByText("OAuth 2.0 secure authentication")).toBeInTheDocument();
+    expect(screen.getByText("Automatic retry with exponential backoff")).toBeInTheDocument();
+    expect(screen.getByText("Webhook support for event-driven updates")).toBeInTheDocument();
+    expect(screen.getByText("Rate limiting and quota management")).toBeInTheDocument();
+    expect(screen.getByText("Detailed sync logs and audit trail")).toBeInTheDocument();
   });
 
   it("renders the status mockup with integration names", () => {
@@ -112,9 +98,7 @@ describe("Integrations Overview Page", () => {
 
   it("renders bottom CTA with accessible link", () => {
     expect(screen.getByText("Start Connecting Today")).toBeInTheDocument();
-    expect(
-      screen.getByText(/No credit card required/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No credit card required/)).toBeInTheDocument();
 
     const ctaButton = screen.getByText("Go to Dashboard");
     expect(ctaButton).toBeInTheDocument();

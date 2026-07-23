@@ -18,8 +18,10 @@ export default function ReportsPage() {
   const treports = useTranslations("reports");
   const tdash = useTranslations("dashboard");
   const tcommon = useTranslations("common");
-  const { data, loading, lastUpdated, isRefreshing, refresh } =
-    useRealtimeData<any>("/api/dashboard", { interval: 30000 });
+  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<any>(
+    "/api/dashboard",
+    { interval: 30000 },
+  );
 
   const [activeReportTab, setActiveReportTab] = useState("sales");
 
@@ -34,7 +36,7 @@ export default function ReportsPage() {
         ],
         data?.salesByChannel || [],
         `sales-report-${now}`,
-        (rows) => rows.map((r: any) => ({ name: r.name, value: r.value }))
+        (rows) => rows.map((r: any) => ({ name: r.name, value: r.value })),
       );
       toast.success(treports("salesReportExported"));
     } else if (activeReportTab === "customers") {
@@ -46,9 +48,12 @@ export default function ReportsPage() {
         [
           { metric: treports("totalCustomers"), value: data?.stats.totalCustomers || 0 },
           { metric: `${tdash("growth")}`, value: `${data?.stats.customersGrowth || 0}%` },
-          { metric: treports("avgOrderValue"), value: data?.stats.totalRevenue / (data?.stats.totalCustomers || 1) },
+          {
+            metric: treports("avgOrderValue"),
+            value: data?.stats.totalRevenue / (data?.stats.totalCustomers || 1),
+          },
         ],
-        `customer-report-${now}`
+        `customer-report-${now}`,
       );
       toast.success(treports("customerReportExported"));
     } else if (activeReportTab === "products") {
@@ -60,9 +65,14 @@ export default function ReportsPage() {
         [
           { metric: treports("totalProducts"), value: data?.stats.totalProducts || 0 },
           { metric: tdash("topProducts"), value: data?.topProducts?.[0]?.orderCount || 0 },
-          { metric: treports("avgProductPrice"), value: (data?.topProducts?.reduce((s: number, p: any) => s + p.price, 0) || 0) / (data?.topProducts?.length || 1) },
+          {
+            metric: treports("avgProductPrice"),
+            value:
+              (data?.topProducts?.reduce((s: number, p: any) => s + p.price, 0) || 0) /
+              (data?.topProducts?.length || 1),
+          },
         ],
-        `product-report-${now}`
+        `product-report-${now}`,
       );
       toast.success(treports("productReportExported"));
     }
@@ -113,22 +123,22 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{treports("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {treports("subtitle")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{treports("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
+          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" /> {treports("export")}
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="sales" value={activeReportTab} onValueChange={setActiveReportTab} className="space-y-4">
+      <Tabs
+        defaultValue="sales"
+        value={activeReportTab}
+        onValueChange={setActiveReportTab}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="sales">{treports("salesReport")}</TabsTrigger>
           <TabsTrigger value="customers">{treports("customerReport")}</TabsTrigger>
@@ -142,7 +152,11 @@ export default function ReportsPage() {
                 <DollarSign className="h-5 w-5 text-emerald-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={revenue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={revenue}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -160,7 +174,11 @@ export default function ReportsPage() {
                 <DollarSign className="h-5 w-5 text-purple-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={revenue / (orders || 1)} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={revenue / (orders || 1)}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -201,7 +219,11 @@ export default function ReportsPage() {
                 <DollarSign className="h-5 w-5 text-orange-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={revenue / (customers || 1)} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={revenue / (customers || 1)}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -233,7 +255,11 @@ export default function ReportsPage() {
                 <DollarSign className="h-5 w-5 text-rose-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgProductPrice")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={avgPrice} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={avgPrice}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>

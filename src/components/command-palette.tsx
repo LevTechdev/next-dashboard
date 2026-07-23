@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Search,
@@ -18,10 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // ── Types ──
 
@@ -141,8 +133,7 @@ export function CommandPalette() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data: SearchResult = await res.json();
       setResults(data);
-      const count =
-        data.orders.length + data.customers.length + data.products.length;
+      const count = data.orders.length + data.customers.length + data.products.length;
       setTotalItems(count);
       setSelectedIndex(0);
     } catch {
@@ -173,7 +164,7 @@ export function CommandPalette() {
         iconBg: "bg-blue-50 dark:bg-blue-900/20",
         iconColor: "text-blue-600 dark:text-blue-400",
         href: `/${locale}/orders`,
-      })
+      }),
     );
 
     results.customers.forEach((c) =>
@@ -185,7 +176,7 @@ export function CommandPalette() {
         iconBg: "bg-purple-50 dark:bg-purple-900/20",
         iconColor: "text-purple-600 dark:text-purple-400",
         href: `/${locale}/customers`,
-      })
+      }),
     );
 
     results.products.forEach((p) =>
@@ -197,7 +188,7 @@ export function CommandPalette() {
         iconBg: "bg-orange-50 dark:bg-orange-900/20",
         iconColor: "text-orange-600 dark:text-orange-400",
         href: `/${locale}/products`,
-      })
+      }),
     );
 
     return items;
@@ -328,7 +319,7 @@ export function CommandPalette() {
                           "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors",
                           isSelected
                             ? "bg-indigo-50 dark:bg-indigo-900/20"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-800/50",
                         )}
                         onClick={() => navigateTo(item)}
                         onMouseEnter={() => setSelectedIndex(globalIdx)}
@@ -349,7 +340,7 @@ export function CommandPalette() {
                             "h-4 w-4 shrink-0 transition-opacity",
                             isSelected
                               ? "text-indigo-500 opacity-100"
-                              : "text-gray-300 dark:text-gray-600 opacity-0"
+                              : "text-gray-300 dark:text-gray-600 opacity-0",
                           )}
                         />
                       </button>

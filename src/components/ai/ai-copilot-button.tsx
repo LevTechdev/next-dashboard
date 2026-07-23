@@ -32,7 +32,7 @@ export function AiCopilotButton() {
           "relative flex items-center justify-center w-14 h-14 rounded-full shadow-xl transition-colors duration-300",
           isOpen
             ? "bg-gray-800 dark:bg-gray-700 text-white"
-            : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-500/30 hover:shadow-indigo-500/40"
+            : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-indigo-500/30 hover:shadow-indigo-500/40",
         )}
         aria-label={isOpen ? "Close AI Copilot" : "Open AI Copilot"}
       >

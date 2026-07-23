@@ -16,8 +16,26 @@ vi.mock("@/hooks/use-realtime-data", () => ({
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 
 const mockOrders = [
-  { id: "1", orderNumber: "ORD-001", grandTotal: 249.99, status: "PENDING", paymentStatus: "UNPAID", createdAt: "2024-07-01T10:00:00Z", customer: { name: "John Doe" }, channel: { name: "Online Store" } },
-  { id: "2", orderNumber: "ORD-002", grandTotal: 149.99, status: "DELIVERED", paymentStatus: "PAID", createdAt: "2024-07-01T09:00:00Z", customer: { name: "Jane Smith" }, channel: { name: "Shopify" } },
+  {
+    id: "1",
+    orderNumber: "ORD-001",
+    grandTotal: 249.99,
+    status: "PENDING",
+    paymentStatus: "UNPAID",
+    createdAt: "2024-07-01T10:00:00Z",
+    customer: { name: "John Doe" },
+    channel: { name: "Online Store" },
+  },
+  {
+    id: "2",
+    orderNumber: "ORD-002",
+    grandTotal: 149.99,
+    status: "DELIVERED",
+    paymentStatus: "PAID",
+    createdAt: "2024-07-01T09:00:00Z",
+    customer: { name: "Jane Smith" },
+    channel: { name: "Shopify" },
+  },
 ];
 
 const loadedState = {

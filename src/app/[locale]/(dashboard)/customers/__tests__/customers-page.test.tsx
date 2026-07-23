@@ -22,9 +22,36 @@ import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { useAuth } from "@/hooks/use-auth";
 
 const mockCustomers = [
-  { id: "1", name: "Alice Johnson", email: "alice@test.com", phone: "+1-555-0101", city: "New York", segment: "VIP", totalSpent: 15000, createdAt: "2024-01-15", lastOrderDate: "2024-06-28" },
-  { id: "2", name: "Bob Williams", email: "bob@test.com", phone: "+1-555-0102", city: "Los Angeles", segment: "REGULAR", totalSpent: 3200, createdAt: "2024-03-20", lastOrderDate: "2024-06-15" },
-  { id: "3", name: "Charlie Brown", email: "charlie@test.com", segment: "NEW", totalSpent: 0, createdAt: "2024-07-01" },
+  {
+    id: "1",
+    name: "Alice Johnson",
+    email: "alice@test.com",
+    phone: "+1-555-0101",
+    city: "New York",
+    segment: "VIP",
+    totalSpent: 15000,
+    createdAt: "2024-01-15",
+    lastOrderDate: "2024-06-28",
+  },
+  {
+    id: "2",
+    name: "Bob Williams",
+    email: "bob@test.com",
+    phone: "+1-555-0102",
+    city: "Los Angeles",
+    segment: "REGULAR",
+    totalSpent: 3200,
+    createdAt: "2024-03-20",
+    lastOrderDate: "2024-06-15",
+  },
+  {
+    id: "3",
+    name: "Charlie Brown",
+    email: "charlie@test.com",
+    segment: "NEW",
+    totalSpent: 0,
+    createdAt: "2024-07-01",
+  },
 ];
 
 const loadedState = {

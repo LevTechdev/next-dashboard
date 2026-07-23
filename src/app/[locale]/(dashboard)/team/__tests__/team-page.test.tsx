@@ -36,9 +36,33 @@ beforeEach(() => {
     ok: true,
     json: () =>
       Promise.resolve([
-        { id: "1", name: "Alice", email: "alice@test.com", role: "ADMIN", position: "CEO", isActive: true, createdAt: "2024-01-15" },
-        { id: "2", name: "Bob", email: "bob@test.com", role: "MANAGER", position: "Team Lead", isActive: true, createdAt: "2024-03-20" },
-        { id: "3", name: "Charlie", email: "charlie@test.com", role: "STAFF", position: "Developer", isActive: false, createdAt: "2024-06-10" },
+        {
+          id: "1",
+          name: "Alice",
+          email: "alice@test.com",
+          role: "ADMIN",
+          position: "CEO",
+          isActive: true,
+          createdAt: "2024-01-15",
+        },
+        {
+          id: "2",
+          name: "Bob",
+          email: "bob@test.com",
+          role: "MANAGER",
+          position: "Team Lead",
+          isActive: true,
+          createdAt: "2024-03-20",
+        },
+        {
+          id: "3",
+          name: "Charlie",
+          email: "charlie@test.com",
+          role: "STAFF",
+          position: "Developer",
+          isActive: false,
+          createdAt: "2024-06-10",
+        },
       ]),
   } as Response);
 });

@@ -56,19 +56,23 @@ export async function POST(request: NextRequest) {
 
     if (action && entity) {
       await prisma.activityLog.create({
-        data: { action, entity, entityId: entityId || null, details: details || JSON.stringify(body) },
+        data: {
+          action,
+          entity,
+          entityId: entityId || null,
+          details: details || JSON.stringify(body),
+        },
       });
     }
 
-    return new Response(
-      JSON.stringify({ success: true, timestamp: new Date().toISOString() }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Invalid request" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Invalid request" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
@@ -112,7 +116,10 @@ async function fetchDashboardData() {
     prisma.campaign.count({ where: { status: "ACTIVE" } }),
     prisma.discount.count({ where: { isActive: true, endsAt: { gte: now } } }),
     prisma.discount.findMany({
-      where: { isActive: true, endsAt: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) } },
+      where: {
+        isActive: true,
+        endsAt: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+      },
       take: 3,
       orderBy: { endsAt: "asc" },
       select: { code: true, name: true, endsAt: true },

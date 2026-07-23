@@ -2,13 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback } from "react";
-import {
-  ClipboardList,
-  Search,
-  Download,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
+import { ClipboardList, Search, Download, RefreshCw, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,25 +45,28 @@ export default function AuditLogPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { globalRefreshTrigger } = useRealtime();
 
-  const fetchLogs = useCallback(async (page = 1) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.set("q", debouncedSearch);
-      params.set("page", String(page));
-      params.set("limit", "25");
+  const fetchLogs = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        params.set("page", String(page));
+        params.set("limit", "25");
 
-      const res = await fetch(`/api/audit-log?${params}`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setLogs(data.logs);
-      setPagination(data.pagination);
-    } catch {
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedSearch]);
+        const res = await fetch(`/api/audit-log?${params}`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        setLogs(data.logs);
+        setPagination(data.pagination);
+      } catch {
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [debouncedSearch],
+  );
 
   // Debounce search input
   useEffect(() => {
@@ -80,7 +77,7 @@ export default function AuditLogPage() {
   // Fetch when debounced search or global refresh changes
   useEffect(() => {
     fetchLogs(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchLogs, globalRefreshTrigger]);
 
   const handleExport = () => {
@@ -99,7 +96,7 @@ export default function AuditLogPage() {
         details: log.details || "",
         createdAt: log.createdAt,
       })),
-      `audit-log-${new Date().toISOString().split("T")[0]}`
+      `audit-log-${new Date().toISOString().split("T")[0]}`,
     );
   };
 
@@ -108,9 +105,7 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {taudit("title")}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{taudit("title")}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {taudit("subtitle")} — {taudit("totalEntries", { count: pagination.total })}
           </p>
@@ -122,9 +117,7 @@ export default function AuditLogPage() {
             onClick={() => fetchLogs(pagination.page)}
             disabled={loading}
           >
-            <RefreshCw
-              className={cn("h-4 w-4 mr-2", loading && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             {tcommon("refresh")}
           </Button>
           <DataExportButton
@@ -178,7 +171,7 @@ export default function AuditLogPage() {
                       <div
                         className={cn(
                           "mt-1.5 w-2 h-2 rounded-full shrink-0",
-                          getActionColor(log.action)
+                          getActionColor(log.action),
                         )}
                       />
                       <div className="flex-1 min-w-0">
@@ -186,10 +179,7 @@ export default function AuditLogPage() {
                           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {log.user.name}
                           </span>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] font-mono"
-                          >
+                          <Badge variant="outline" className="text-[10px] font-mono">
                             {log.action}
                           </Badge>
                           {log.entity && (
@@ -210,9 +200,7 @@ export default function AuditLogPage() {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                           {log.details || taudit("details")}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {log.formattedDate}
-                        </p>
+                        <p className="text-xs text-gray-400 mt-1">{log.formattedDate}</p>
                       </div>
                     </div>
                   ))}
@@ -224,9 +212,7 @@ export default function AuditLogPage() {
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {taudit("noLogs")}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {taudit("subtitle")}
-                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{taudit("subtitle")}</p>
                     </div>
                   )}
                 </div>
@@ -247,9 +233,7 @@ export default function AuditLogPage() {
                       variant="outline"
                       size="sm"
                       disabled={pagination.page <= 1}
-                      onClick={() =>
-                        fetchLogs(Math.max(1, pagination.page - 1))
-                      }
+                      onClick={() => fetchLogs(Math.max(1, pagination.page - 1))}
                     >
                       {taudit("previous")}
                     </Button>
@@ -273,11 +257,8 @@ export default function AuditLogPage() {
 }
 
 function getActionColor(action: string): string {
-  if (action.includes("CREATE") || action.includes("LOGIN"))
-    return "bg-green-500";
-  if (action.includes("UPDATE") || action.includes("PROCESS"))
-    return "bg-blue-500";
-  if (action.includes("DELETE") || action.includes("CANCEL"))
-    return "bg-red-500";
+  if (action.includes("CREATE") || action.includes("LOGIN")) return "bg-green-500";
+  if (action.includes("UPDATE") || action.includes("PROCESS")) return "bg-blue-500";
+  if (action.includes("DELETE") || action.includes("CANCEL")) return "bg-red-500";
   return "bg-gray-400 dark:bg-gray-500";
 }

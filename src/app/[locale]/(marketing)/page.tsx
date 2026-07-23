@@ -28,11 +28,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
@@ -46,7 +42,12 @@ const springSnap = { type: "spring" as const, stiffness: 200, damping: 15 };
 const easeSmooth = [0.16, 1, 0.3, 1] as const;
 
 // ─── Magnetic button ───────────────────────────────────────────
-function MagneticButton({ children, className, href, onClick }: {
+function MagneticButton({
+  children,
+  className,
+  href,
+  onClick,
+}: {
   children: React.ReactNode;
   className?: string;
   href: string;
@@ -56,14 +57,17 @@ function MagneticButton({ children, className, href, onClick }: {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    x.set((e.clientX - cx) * 0.3);
-    y.set((e.clientY - cy) * 0.3);
-  }, [x, y]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const rect = ref.current?.getBoundingClientRect();
+      if (!rect) return;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      x.set((e.clientX - cx) * 0.3);
+      y.set((e.clientY - cy) * 0.3);
+    },
+    [x, y],
+  );
 
   const handleMouseLeave = useCallback(() => {
     x.set(0);
@@ -81,9 +85,7 @@ function MagneticButton({ children, className, href, onClick }: {
         whileHover={{ scale: 1.03 }}
         transition={springGentle}
       >
-        <Button className={className}>
-          {children}
-        </Button>
+        <Button className={className}>{children}</Button>
       </motion.div>
     </Link>
   );
@@ -91,10 +93,21 @@ function MagneticButton({ children, className, href, onClick }: {
 
 // ─── Partner Logos ─────────────────────────────────────────────
 const partnerLogos = [
-  <svg key="stripe" viewBox="0 0 100 32" fill="currentColor"><path d="M16.2 11.3c0-1.2.8-1.7 2-1.7.6 0 1.2.1 1.9.3V6.9c-.7-.2-1.4-.3-2.1-.3-3.3 0-5.5 1.8-5.5 4.8 0 4.7 6.4 3.9 6.4 6 0 1.4-1 1.9-2.5 1.9-1.5 0-2.8-.4-4-1v3.5c1.2.3 2.4.5 3.6.5 3.8 0 6.3-1.8 6.3-5 0-5.3-6.1-4.3-6.1-6.1z"/><path d="M24.9 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H24.9zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z"/><path d="M36.6 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H36.6zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z"/></svg>,
-  <svg key="shopify" viewBox="0 0 100 32" fill="currentColor"><path d="M23.5 6.7l-1.2-4.2c-.1-.4-.4-.6-.8-.5l-3.2.7c-.2-.5-.5-1-.9-1.4-.7-.6-1.5-.8-2.3-.6l-.3.1c-.1 0-.2 0-.2.1-1.4.3-2.4 1.3-2.9 2.8l-4.2.9c-.4.1-.7.4-.6.8l1.3 5.8c-1.1.5-1.8 1.4-1.8 2.5 0 .8.4 1.5 1.1 2.1-.4.2-.7.5-.9.9-.3.6-.3 1.3-.1 2.1.4 1.6 1.8 2.7 3.8 2.7 2.3 0 4.2-1.3 5.5-3.7l5.5-1.2c.4-.1.7-.4.6-.8l-.9-3.9z"/></svg>,
-  <svg key="slack" viewBox="0 0 100 32" fill="currentColor"><path d="M12.5 3.2c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h2.7V5.9c0-1.5-1.2-2.7-2.7-2.7zm0 7.2H5.9c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z"/><path d="M29.3 10.4c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7 2.7-1.2 2.7-2.7-1.2-2.7-2.7-2.7zm-7.2 0H15.5c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z"/></svg>,
-  <svg key="posthog" viewBox="0 0 100 32" fill="currentColor"><path d="M12.5 5.5L8.2 9.8l-3-3L9.5 2.5c.4-.4 1-.4 1.4 0l1.6 1.6V5.5zm3.5 3.5l-4.3 4.3h2.8l4.3-4.3H16zm6.3 0l3.5 3.5c.4.4.4 1 0 1.4l-8.5 8.5L12.8 17l6.7-6.7 1.4-1.4H22.3zm-8.5 8.5l-1.4 1.4-2.8-2.8 1.4-1.4 2.8 2.8zm-4.2 4.2L6.1 19l4.3-4.3v-2.8L2.5 21.5c-.4.4-.4 1 0 1.4l1.6 1.6h10.2l1.8-1.8-4.2-4.2z"/></svg>,
+  <svg key="stripe" viewBox="0 0 100 32" fill="currentColor">
+    <path d="M16.2 11.3c0-1.2.8-1.7 2-1.7.6 0 1.2.1 1.9.3V6.9c-.7-.2-1.4-.3-2.1-.3-3.3 0-5.5 1.8-5.5 4.8 0 4.7 6.4 3.9 6.4 6 0 1.4-1 1.9-2.5 1.9-1.5 0-2.8-.4-4-1v3.5c1.2.3 2.4.5 3.6.5 3.8 0 6.3-1.8 6.3-5 0-5.3-6.1-4.3-6.1-6.1z" />
+    <path d="M24.9 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H24.9zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z" />
+    <path d="M36.6 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H36.6zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z" />
+  </svg>,
+  <svg key="shopify" viewBox="0 0 100 32" fill="currentColor">
+    <path d="M23.5 6.7l-1.2-4.2c-.1-.4-.4-.6-.8-.5l-3.2.7c-.2-.5-.5-1-.9-1.4-.7-.6-1.5-.8-2.3-.6l-.3.1c-.1 0-.2 0-.2.1-1.4.3-2.4 1.3-2.9 2.8l-4.2.9c-.4.1-.7.4-.6.8l1.3 5.8c-1.1.5-1.8 1.4-1.8 2.5 0 .8.4 1.5 1.1 2.1-.4.2-.7.5-.9.9-.3.6-.3 1.3-.1 2.1.4 1.6 1.8 2.7 3.8 2.7 2.3 0 4.2-1.3 5.5-3.7l5.5-1.2c.4-.1.7-.4.6-.8l-.9-3.9z" />
+  </svg>,
+  <svg key="slack" viewBox="0 0 100 32" fill="currentColor">
+    <path d="M12.5 3.2c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h2.7V5.9c0-1.5-1.2-2.7-2.7-2.7zm0 7.2H5.9c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z" />
+    <path d="M29.3 10.4c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7 2.7-1.2 2.7-2.7-1.2-2.7-2.7-2.7zm-7.2 0H15.5c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z" />
+  </svg>,
+  <svg key="posthog" viewBox="0 0 100 32" fill="currentColor">
+    <path d="M12.5 5.5L8.2 9.8l-3-3L9.5 2.5c.4-.4 1-.4 1.4 0l1.6 1.6V5.5zm3.5 3.5l-4.3 4.3h2.8l4.3-4.3H16zm6.3 0l3.5 3.5c.4.4.4 1 0 1.4l-8.5 8.5L12.8 17l6.7-6.7 1.4-1.4H22.3zm-8.5 8.5l-1.4 1.4-2.8-2.8 1.4-1.4 2.8 2.8zm-4.2 4.2L6.1 19l4.3-4.3v-2.8L2.5 21.5c-.4.4-.4 1 0 1.4l1.6 1.6h10.2l1.8-1.8-4.2-4.2z" />
+  </svg>,
 ];
 
 // ─── Feature card with 21st.dev premium spotlight effect ────────
@@ -136,7 +149,7 @@ function FeatureCard({
         className,
         borderColor,
         "bg-gradient-to-br",
-        bgGradient
+        bgGradient,
       )}
       style={{ boxShadow: `0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)` }}
       onMouseEnter={() => setIsHovered(true)}
@@ -173,9 +186,7 @@ function FeatureCard({
       <div className="z-10 relative flex flex-col h-full">
         {/* Tag badge */}
         <div className="mb-3">
-          <span className="badge-premium text-[10px]">
-            {tag}
-          </span>
+          <span className="badge-premium text-[10px]">{tag}</span>
         </div>
 
         {/* Icon with micro-interaction */}
@@ -188,9 +199,7 @@ function FeatureCard({
         </motion.div>
 
         {/* Content */}
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">
-          {title}
-        </h3>
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">{title}</h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm leading-relaxed flex-1">
           {description}
         </p>
@@ -201,10 +210,7 @@ function FeatureCard({
           animate={{ color: isHovered ? "#6366f1" : undefined }}
         >
           <span>Learn more</span>
-          <motion.div
-            animate={{ x: isHovered ? 4 : 0 }}
-            transition={springGentle}
-          >
+          <motion.div animate={{ x: isHovered ? 4 : 0 }} transition={springGentle}>
             <ArrowRight className="h-3 w-3" />
           </motion.div>
         </motion.div>
@@ -237,9 +243,7 @@ function MetricsCarousel() {
         {[...items, ...items].map((item, i) => (
           <div key={i} className="flex items-center gap-4 shrink-0">
             <div className="text-right">
-              <div className="text-2xl font-bold text-zinc-900 dark:text-white">
-                {item.value}
-              </div>
+              <div className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</div>
               <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
                 {item.label}
               </div>
@@ -329,10 +333,34 @@ function LiveStatusCard() {
 // ─── Bento Grid: Growth Stats Card ──────────────────────────────
 function GrowthStatsCard() {
   const metrics = [
-    { label: "Revenue", end: 89200, change: "+23.5%", up: true, format: (v: number) => `$${(v/1000).toFixed(1)}K` },
-    { label: "Orders", end: 1847, change: "+14.2%", up: true, format: (v: number) => v.toLocaleString() },
-    { label: "Conversion", end: 32, change: "+0.8%", up: true, format: (v: number) => `${(v/10).toFixed(1)}%` },
-    { label: "Avg. Order", end: 4827, change: "-2.1%", up: false, format: (v: number) => `$${(v/100).toFixed(2)}` },
+    {
+      label: "Revenue",
+      end: 89200,
+      change: "+23.5%",
+      up: true,
+      format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
+    },
+    {
+      label: "Orders",
+      end: 1847,
+      change: "+14.2%",
+      up: true,
+      format: (v: number) => v.toLocaleString(),
+    },
+    {
+      label: "Conversion",
+      end: 32,
+      change: "+0.8%",
+      up: true,
+      format: (v: number) => `${(v / 10).toFixed(1)}%`,
+    },
+    {
+      label: "Avg. Order",
+      end: 4827,
+      change: "-2.1%",
+      up: false,
+      format: (v: number) => `$${(v / 100).toFixed(2)}`,
+    },
   ];
 
   return (
@@ -355,7 +383,7 @@ function GrowthStatsCard() {
                 <span
                   className={cn(
                     "text-[10px] font-semibold",
-                    m.up ? "text-emerald-500" : "text-rose-500"
+                    m.up ? "text-emerald-500" : "text-rose-500",
                   )}
                 >
                   {m.change}
@@ -439,7 +467,8 @@ const features = [
     className: "md:col-span-2 md:row-span-2",
     iconColor: "text-indigo-500 dark:text-indigo-400",
     borderColor: "border-indigo-200 dark:border-indigo-500/20",
-    bgGradient: "from-indigo-50/80 via-white to-purple-50/50 dark:from-indigo-500/10 dark:to-purple-500/5",
+    bgGradient:
+      "from-indigo-50/80 via-white to-purple-50/50 dark:from-indigo-500/10 dark:to-purple-500/5",
     glowColor: "rgba(99,102,241,0.15)",
     tag: "Analytics",
   },
@@ -570,12 +599,7 @@ export default function MarketingLandingPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* ── Left Content ── */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={stagger}
-              className="max-w-2xl"
-            >
+            <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-2xl">
               <motion.div variants={fadeUpItem} className="mb-8">
                 <div className="badge-premium inline-flex items-center gap-2">
                   <Sparkles className="h-3 w-3" />
@@ -605,9 +629,8 @@ export default function MarketingLandingPage() {
                 variants={fadeUpItem}
                 className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-lg leading-relaxed"
               >
-                Stop wrestling with fragmented data. Unite your analytics,
-                orders, and team in a single command center built for modern
-                operators.
+                Stop wrestling with fragmented data. Unite your analytics, orders, and team in a
+                single command center built for modern operators.
               </motion.p>
 
               <motion.div
@@ -628,7 +651,9 @@ export default function MarketingLandingPage() {
                     <Button
                       variant="glass"
                       className="h-11 px-6 text-sm rounded-xl"
-                      onClick={() => trackCTA("view_documentation", { href: `/${locale}/features` })}
+                      onClick={() =>
+                        trackCTA("view_documentation", { href: `/${locale}/features` })
+                      }
                     >
                       View Documentation
                     </Button>
@@ -637,10 +662,7 @@ export default function MarketingLandingPage() {
               </motion.div>
 
               {/* Trust stats row */}
-              <motion.div
-                variants={fadeUpItem}
-                className="mt-10 flex items-center gap-6"
-              >
+              <motion.div variants={fadeUpItem} className="mt-10 flex items-center gap-6">
                 {trustStats.map((stat) => (
                   <div key={stat.label} className="flex items-center gap-2">
                     <stat.icon className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
@@ -680,30 +702,48 @@ export default function MarketingLandingPage() {
                   <div className="p-5 space-y-5">
                     {/* Chart bars */}
                     <div className="flex items-end gap-2 h-28">
-                      {[35, 65, 40, 80, 55, 75, 90, 60, 85, 50, 70, 45].map(
-                        (h, i) => (
-                          <motion.div
-                            key={i}
-                            className="w-full bg-gradient-to-t from-indigo-500/60 to-indigo-400/30 dark:from-indigo-500/60 dark:to-indigo-400/30 rounded-t-sm origin-bottom"
-                            initial={{ scaleY: 0 }}
-                            animate={{ scaleY: h / 100 }}
-                            transition={{
-                              duration: 1,
-                              delay: 0.5 + i * 0.08,
-                              ...springGentle,
-                            }}
-                          />
-                        )
-                      )}
+                      {[35, 65, 40, 80, 55, 75, 90, 60, 85, 50, 70, 45].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-full bg-gradient-to-t from-indigo-500/60 to-indigo-400/30 dark:from-indigo-500/60 dark:to-indigo-400/30 rounded-t-sm origin-bottom"
+                          initial={{ scaleY: 0 }}
+                          animate={{ scaleY: h / 100 }}
+                          transition={{
+                            duration: 1,
+                            delay: 0.5 + i * 0.08,
+                            ...springGentle,
+                          }}
+                        />
+                      ))}
                     </div>
 
                     {/* Metric cards */}
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: "Orders Processed", end: 12400, change: "+14%", format: (v: number) => `${(v/1000).toFixed(1)}K` },
-                        { label: "Active Users", end: 2847, change: "+8.2%", format: (v: number) => v.toLocaleString() },
-                        { label: "Revenue Growth", end: 89200, change: "+23.5%", format: (v: number) => `$${(v/1000).toFixed(1)}K` },
-                        { label: "Avg Response", end: 120, change: "-40%", format: (v: number) => `${(v/100).toFixed(1)}s` },
+                        {
+                          label: "Orders Processed",
+                          end: 12400,
+                          change: "+14%",
+                          format: (v: number) => `${(v / 1000).toFixed(1)}K`,
+                        },
+                        {
+                          label: "Active Users",
+                          end: 2847,
+                          change: "+8.2%",
+                          format: (v: number) => v.toLocaleString(),
+                        },
+                        {
+                          label: "Revenue Growth",
+                          end: 89200,
+                          change: "+23.5%",
+                          format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
+                        },
+                        {
+                          label: "Avg Response",
+                          end: 120,
+                          change: "-40%",
+                          format: (v: number) => `${(v / 100).toFixed(1)}s`,
+                        },
                       ].map((metric, i) => (
                         <motion.div
                           key={metric.label}
@@ -721,14 +761,18 @@ export default function MarketingLandingPage() {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-lg font-bold text-zinc-800 dark:text-white tabular-nums">
-                              <AnimatedCounter end={metric.end} duration={2000} formatter={metric.format} />
+                              <AnimatedCounter
+                                end={metric.end}
+                                duration={2000}
+                                formatter={metric.format}
+                              />
                             </span>
                             <span
                               className={cn(
                                 "text-[10px] font-semibold",
                                 metric.change.startsWith("+")
                                   ? "text-emerald-500 dark:text-emerald-400"
-                                  : "text-rose-500 dark:text-rose-400"
+                                  : "text-rose-500 dark:text-rose-400",
                               )}
                             >
                               {metric.change}
@@ -786,8 +830,8 @@ export default function MarketingLandingPage() {
               The architecture of efficiency.
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 max-w-lg">
-              Everything required to run a high-volume operation, structured for
-              maximum clarity and real-time responsiveness.
+              Everything required to run a high-volume operation, structured for maximum clarity and
+              real-time responsiveness.
             </p>
           </AnimateUp>
 
@@ -809,8 +853,8 @@ export default function MarketingLandingPage() {
               Live at a glance.
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Your system status, growth metrics, and priority tasks in a
-              single view — perpetually updated.
+              Your system status, growth metrics, and priority tasks in a single view — perpetually
+              updated.
             </p>
           </AnimateUp>
 
@@ -873,7 +917,10 @@ export default function MarketingLandingPage() {
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                      {t.name.split(" ").map(n => n[0]).join("")}
+                      {t.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </div>
                     <div>
                       <div className="text-sm font-medium text-zinc-900 dark:text-white">
@@ -911,9 +958,8 @@ export default function MarketingLandingPage() {
                     Ready for scale.
                   </h2>
                   <p className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-xl mx-auto leading-relaxed">
-                    Deploy Dashboard in minutes and instantly upgrade your
-                    team&apos;s operational capabilities. No complex setup
-                    required.
+                    Deploy Dashboard in minutes and instantly upgrade your team&apos;s operational
+                    capabilities. No complex setup required.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <MagneticButton

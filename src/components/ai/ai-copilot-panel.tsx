@@ -21,12 +21,32 @@ import {
 } from "lucide-react";
 
 const suggestedQuestions = [
-  { icon: BarChart3, label: "What's my total revenue?", query: "What's my current total revenue and how is it trending?" },
-  { icon: TrendingUp, label: "Top selling products", query: "Show me my top 5 best selling products" },
+  {
+    icon: BarChart3,
+    label: "What's my total revenue?",
+    query: "What's my current total revenue and how is it trending?",
+  },
+  {
+    icon: TrendingUp,
+    label: "Top selling products",
+    query: "Show me my top 5 best selling products",
+  },
   { icon: ShoppingCart, label: "Recent orders", query: "Show me my most recent orders" },
-  { icon: Users, label: "Customer insights", query: "How many customers do I have and what are they worth?" },
-  { icon: Package, label: "Sales by channel", query: "How are my sales distributed across channels?" },
-  { icon: Lightbulb, label: "Business insights", query: "Give me some key insights about my business performance" },
+  {
+    icon: Users,
+    label: "Customer insights",
+    query: "How many customers do I have and what are they worth?",
+  },
+  {
+    icon: Package,
+    label: "Sales by channel",
+    query: "How are my sales distributed across channels?",
+  },
+  {
+    icon: Lightbulb,
+    label: "Business insights",
+    query: "Give me some key insights about my business performance",
+  },
 ];
 
 function SuggestedQuestions({ onSelect }: { onSelect: (query: string) => void }) {
@@ -71,14 +91,7 @@ export function AiCopilotPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const {
-    messages,
-    isLoading,
-    error,
-    append,
-    stop,
-    clearMessages,
-  } = useAiChat({
+  const { messages, isLoading, error, append, stop, clearMessages } = useAiChat({
     api: "/api/ai/chat",
     onFinish: () => setShowSuggestions(false),
   });
@@ -192,7 +205,8 @@ export function AiCopilotPanel() {
                     How can I help you?
                   </h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-xs">
-                    Ask about your revenue, orders, customers, products, or get insights about your business.
+                    Ask about your revenue, orders, customers, products, or get insights about your
+                    business.
                   </p>
 
                   <div className="w-full">
@@ -209,7 +223,7 @@ export function AiCopilotPanel() {
                       key={message.id}
                       className={cn(
                         "flex items-start gap-3 px-4 py-3",
-                        message.role === "user" ? "justify-end" : "justify-start"
+                        message.role === "user" ? "justify-end" : "justify-start",
                       )}
                     >
                       {message.role === "assistant" && (
@@ -223,7 +237,7 @@ export function AiCopilotPanel() {
                           "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                           message.role === "user"
                             ? "bg-indigo-500 text-white rounded-tr-md"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md",
                         )}
                       >
                         <div className="whitespace-pre-wrap">
@@ -239,7 +253,9 @@ export function AiCopilotPanel() {
                     </div>
                   ))}
 
-                  {isLoading && messages[messages.length - 1]?.content === "" && <ThinkingIndicator />}
+                  {isLoading && messages[messages.length - 1]?.content === "" && (
+                    <ThinkingIndicator />
+                  )}
 
                   {error && (
                     <div className="px-4 py-2 mx-4 mb-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
@@ -299,7 +315,7 @@ export function AiCopilotPanel() {
                       "flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-all duration-200",
                       inputValue.trim()
                         ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed",
                     )}
                   >
                     <Send className="h-4 w-4" />

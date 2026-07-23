@@ -80,7 +80,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const [lastGlobalUpdate, setLastGlobalUpdate] = useState<Date | null>(null);
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [globalRefreshTrigger, setGlobalRefreshTrigger] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "connecting">("connecting");
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "disconnected" | "connecting"
+  >("connecting");
   const [budgetThreshold, setBudgetThresholdState] = useState<number>(80);
 
   // Hydration-safe: read persisted threshold from localStorage after mount
@@ -311,11 +313,11 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         // Compute over-budget and near-threshold on the client side
         const currOverBudget = allCampaigns.filter((c: any) => c.spent >= c.budget);
         const currNearBudget = allCampaigns.filter(
-          (c: any) => c.spent >= c.budget * thresholdDecimal && c.spent < c.budget
+          (c: any) => c.spent >= c.budget * thresholdDecimal && c.spent < c.budget,
         );
         const prevOverBudget = prevAllCampaigns.filter((c: any) => c.spent >= c.budget);
         const prevNearBudget = prevAllCampaigns.filter(
-          (c: any) => prevCampaigns && c.spent >= c.budget * 0.8 && c.spent < c.budget
+          (c: any) => prevCampaigns && c.spent >= c.budget * 0.8 && c.spent < c.budget,
         );
 
         const prevOverStr = JSON.stringify(prevOverBudget.map((c: any) => c.id));
@@ -326,7 +328,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         // Detect new over-budget campaigns
         if (currOverStr !== prevOverStr) {
           const newOverBudget = currOverBudget.filter(
-            (c: any) => !prevOverBudget.find((p: any) => p.id === c.id)
+            (c: any) => !prevOverBudget.find((p: any) => p.id === c.id),
           );
           for (const campaign of newOverBudget) {
             addNotification({
@@ -342,7 +344,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         // Detect campaigns newly crossing user-defined budget threshold
         if (currNearStr !== prevNearStr) {
           const newNearBudget = currNearBudget.filter(
-            (c: any) => !prevNearBudget.find((p: any) => p.id === c.id)
+            (c: any) => !prevNearBudget.find((p: any) => p.id === c.id),
           );
           for (const campaign of newNearBudget) {
             addNotification({
@@ -370,7 +372,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [addNotification, budgetThreshold]
+    [addNotification, budgetThreshold],
   );
 
   return (

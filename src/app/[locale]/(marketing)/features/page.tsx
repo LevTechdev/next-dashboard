@@ -30,11 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
@@ -57,8 +53,7 @@ interface FeatureGroup {
 const featureGroups: FeatureGroup[] = [
   {
     title: "Analytics & Insights",
-    description:
-      "Make data-driven decisions with powerful analytics and real-time dashboards.",
+    description: "Make data-driven decisions with powerful analytics and real-time dashboards.",
     items: [
       {
         title: "Live Dashboard",
@@ -100,8 +95,7 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Order & Customer Management",
-    description:
-      "Efficiently manage your orders and build stronger customer relationships.",
+    description: "Efficiently manage your orders and build stronger customer relationships.",
     items: [
       {
         title: "Multi-Channel Orders",
@@ -143,8 +137,7 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Marketing & Growth",
-    description:
-      "Drive growth with powerful marketing tools and promotional features.",
+    description: "Drive growth with powerful marketing tools and promotional features.",
     items: [
       {
         title: "Campaign Management",
@@ -157,8 +150,7 @@ const featureGroups: FeatureGroup[] = [
       },
       {
         title: "Discount Engine",
-        description:
-          "Create and manage discount codes, promotional offers, and seasonal pricing.",
+        description: "Create and manage discount codes, promotional offers, and seasonal pricing.",
         icon: Tag,
         color: "text-amber-500 dark:text-amber-400",
         gradient: "from-amber-500/20 to-amber-500/5",
@@ -175,8 +167,7 @@ const featureGroups: FeatureGroup[] = [
       },
       {
         title: "Data Export",
-        description:
-          "Export orders, customers, and reports to CSV with full UTF-8 support.",
+        description: "Export orders, customers, and reports to CSV with full UTF-8 support.",
         icon: Download,
         color: "text-sky-500 dark:text-sky-400",
         gradient: "from-sky-500/20 to-sky-500/5",
@@ -186,8 +177,7 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Team & Security",
-    description:
-      "Collaborate effectively with your team while keeping your data secure.",
+    description: "Collaborate effectively with your team while keeping your data secure.",
     items: [
       {
         title: "Role-Based Access",
@@ -200,8 +190,7 @@ const featureGroups: FeatureGroup[] = [
       },
       {
         title: "Team Management",
-        description:
-          "Add team members, assign roles, and manage access permissions.",
+        description: "Add team members, assign roles, and manage access permissions.",
         icon: UserCheck,
         color: "text-violet-500 dark:text-violet-400",
         gradient: "from-violet-500/20 to-violet-500/5",
@@ -209,8 +198,7 @@ const featureGroups: FeatureGroup[] = [
       },
       {
         title: "Real-Time Updates",
-        description:
-          "Server-Sent Events deliver instant updates across all connected clients.",
+        description: "Server-Sent Events deliver instant updates across all connected clients.",
         icon: RefreshCw,
         color: "text-indigo-500 dark:text-indigo-400",
         gradient: "from-indigo-500/20 to-indigo-500/5",
@@ -218,8 +206,7 @@ const featureGroups: FeatureGroup[] = [
       },
       {
         title: "Audit Log",
-        description:
-          "Complete activity log tracking every action taken in the system.",
+        description: "Complete activity log tracking every action taken in the system.",
         icon: Clock,
         color: "text-zinc-500 dark:text-zinc-400",
         gradient: "from-zinc-500/20 to-zinc-500/5",
@@ -305,7 +292,11 @@ export default function FeaturesPage() {
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
@@ -318,7 +309,11 @@ export default function FeaturesPage() {
             <motion.h1
               variants={{
                 hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
@@ -341,7 +336,8 @@ export default function FeaturesPage() {
               className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto"
               once
             >
-              From real-time analytics to team collaboration — explore all the tools that make Dashboard the ultimate business management platform.
+              From real-time analytics to team collaboration — explore all the tools that make
+              Dashboard the ultimate business management platform.
             </TextAnimate>
           </motion.div>
         </div>
@@ -355,7 +351,7 @@ export default function FeaturesPage() {
           key={group.title}
           className={cn(
             "py-20 lg:py-24",
-            groupIndex % 2 === 1 && "bg-zinc-100 dark:bg-zinc-900/30 border-t border-border"
+            groupIndex % 2 === 1 && "bg-zinc-100 dark:bg-zinc-900/30 border-t border-border",
           )}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -413,7 +409,7 @@ export default function FeaturesPage() {
                         className={cn(
                           "feature-icon-wrap flex-shrink-0 inline-flex p-3 rounded-xl bg-gradient-to-br h-fit",
                           feature.gradient,
-                          "border border-black/5 dark:border-white/5"
+                          "border border-black/5 dark:border-white/5",
                         )}
                       >
                         <Icon
@@ -483,7 +479,13 @@ export default function FeaturesPage() {
                   />
                   <div className="relative z-10">
                     <Icon
-                      data-testid={item.icon === CheckCircle ? "icon-checkcircle" : item.icon === Zap ? "icon-zap" : "icon-refreshcw"}
+                      data-testid={
+                        item.icon === CheckCircle
+                          ? "icon-checkcircle"
+                          : item.icon === Zap
+                            ? "icon-zap"
+                            : "icon-refreshcw"
+                      }
                       className={cn("h-6 w-6 mb-3", item.color)}
                     />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">
@@ -509,7 +511,12 @@ export default function FeaturesPage() {
             {[
               { label: "Total Features", end: 48, suffix: "+", icon: LayoutDashboard },
               { label: "Integrations", end: 70, suffix: "+", icon: Zap },
-              { label: "Active Users", end: 2847, format: (v: number) => v.toLocaleString(), icon: Users },
+              {
+                label: "Active Users",
+                end: 2847,
+                format: (v: number) => v.toLocaleString(),
+                icon: Users,
+              },
               { label: "Countries", end: 30, suffix: "+", icon: CheckCircle },
             ].map((stat, i) => {
               const Icon = stat.icon;
@@ -526,7 +533,11 @@ export default function FeaturesPage() {
                     <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
-                    <AnimatedCounter end={stat.end} duration={2000} {...(stat.format ? { formatter: stat.format } : { suffix: stat.suffix })} />
+                    <AnimatedCounter
+                      end={stat.end}
+                      duration={2000}
+                      {...(stat.format ? { formatter: stat.format } : { suffix: stat.suffix })}
+                    />
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 mt-1 font-medium">
                     {stat.label}

@@ -103,12 +103,36 @@ const stats = [
 // ─── Timeline ────────────────────────────────────────────────────────────────
 
 const milestones = [
-  { year: "2020", title: "The Beginning", description: "Founded in a small garage with a big vision to transform business management." },
-  { year: "2021", title: "First 1,000 Users", description: "Hit our first major milestone with 1,000 active businesses using the platform." },
-  { year: "2022", title: "Series A Funding", description: "Raised $10M to accelerate product development and expand the team." },
-  { year: "2023", title: "Global Expansion", description: "Launched in 30+ countries with multi-language and multi-currency support." },
-  { year: "2024", title: "AI-Powered Insights", description: "Introduced AI-driven analytics, predictive forecasting, and smart automation." },
-  { year: "2025", title: "Enterprise Ready", description: "Achieved SOC 2 compliance, 99.99% uptime, and enterprise-grade security." },
+  {
+    year: "2020",
+    title: "The Beginning",
+    description: "Founded in a small garage with a big vision to transform business management.",
+  },
+  {
+    year: "2021",
+    title: "First 1,000 Users",
+    description: "Hit our first major milestone with 1,000 active businesses using the platform.",
+  },
+  {
+    year: "2022",
+    title: "Series A Funding",
+    description: "Raised $10M to accelerate product development and expand the team.",
+  },
+  {
+    year: "2023",
+    title: "Global Expansion",
+    description: "Launched in 30+ countries with multi-language and multi-currency support.",
+  },
+  {
+    year: "2024",
+    title: "AI-Powered Insights",
+    description: "Introduced AI-driven analytics, predictive forecasting, and smart automation.",
+  },
+  {
+    year: "2025",
+    title: "Enterprise Ready",
+    description: "Achieved SOC 2 compliance, 99.99% uptime, and enterprise-grade security.",
+  },
 ];
 
 // ─── Container Variants ──────────────────────────────────────────────────────
@@ -126,7 +150,6 @@ const itemVariants = {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AboutPage() {
-
   return (
     <div className="relative overflow-hidden bg-zinc-50 dark:bg-[#0b0c11]">
       {/* ═══ HERO ═══ */}
@@ -179,8 +202,8 @@ export default function AboutPage() {
             transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto mb-8"
           >
-            We're on a mission to empower every business with the tools, insights, and
-            automation they need to thrive in the digital age.
+            We're on a mission to empower every business with the tools, insights, and automation
+            they need to thrive in the digital age.
           </motion.p>
 
           <motion.div
@@ -252,18 +275,18 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-4 text-zinc-500 dark:text-zinc-400 leading-relaxed">
               <p>
-                Dashboard was born from a simple insight: businesses deserve better tools.
-                After years of wrestling with fragmented, disconnected software, our founders
-                set out to build a unified platform that brings everything together.
+                Dashboard was born from a simple insight: businesses deserve better tools. After
+                years of wrestling with fragmented, disconnected software, our founders set out to
+                build a unified platform that brings everything together.
               </p>
               <p>
-                What started as a side project in 2020 has grown into a platform serving
-                thousands of businesses worldwide. We've helped companies increase revenue,
-                streamline operations, and make smarter decisions with data they can trust.
+                What started as a side project in 2020 has grown into a platform serving thousands
+                of businesses worldwide. We've helped companies increase revenue, streamline
+                operations, and make smarter decisions with data they can trust.
               </p>
               <p>
-                Today, we're a team of 50+ passionate people across 15 countries, united
-                by a shared belief that great software can transform how businesses work.
+                Today, we're a team of 50+ passionate people across 15 countries, united by a shared
+                belief that great software can transform how businesses work.
               </p>
             </div>
           </motion.div>
@@ -287,7 +310,9 @@ export default function AboutPage() {
                   className="relative"
                 >
                   <div className="absolute -left-[25px] w-4 h-4 rounded-full bg-indigo-500 border-2 border-white dark:border-zinc-900 shadow-sm" />
-                  <p className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5">{m.year}</p>
+                  <p className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5">
+                    {m.year}
+                  </p>
                   <p className="text-sm font-semibold text-zinc-900 dark:text-white">{m.title}</p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">{m.description}</p>
                 </motion.div>
@@ -333,7 +358,12 @@ export default function AboutPage() {
                   variants={itemVariants}
                   className="glow-border group relative p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300"
                 >
-                  <div className={cn("p-3 w-fit rounded-xl mb-4 transition-transform group-hover:scale-110 duration-300", value.bg)}>
+                  <div
+                    className={cn(
+                      "p-3 w-fit rounded-xl mb-4 transition-transform group-hover:scale-110 duration-300",
+                      value.bg,
+                    )}
+                  >
                     <Icon className={cn("h-5 w-5", value.color)} />
                   </div>
                   <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-2">

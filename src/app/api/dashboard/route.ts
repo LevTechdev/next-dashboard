@@ -41,9 +41,22 @@ export async function GET() {
     ]);
 
     // Calculate monthly revenue in JavaScript (database-agnostic)
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const monthlyMap: Record<string, number> = {};
-    
+
     ordersLastYear.forEach((order) => {
       const month = monthNames[new Date(order.createdAt).getMonth()];
       monthlyMap[month] = (monthlyMap[month] || 0) + order.grandTotal;
@@ -67,7 +80,7 @@ export async function GET() {
           value: total._sum.grandTotal || 0,
           color: getChannelColor(channel.slug),
         };
-      })
+      }),
     );
 
     return NextResponse.json({
@@ -93,29 +106,33 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Dashboard API error:", error);
-    return NextResponse.json(
-      {
-        stats: {
-          totalRevenue: 0, totalOrders: 0, totalCustomers: 0, totalProducts: 0,
-          revenueGrowth: 0, ordersGrowth: 0, customersGrowth: 0, productsGrowth: 0,
-        },
-        recentOrders: [],
-        topProducts: [],
-        salesByChannel: [],
-        revenueData: [],
-      }
-    );
+    return NextResponse.json({
+      stats: {
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        revenueGrowth: 0,
+        ordersGrowth: 0,
+        customersGrowth: 0,
+        productsGrowth: 0,
+      },
+      recentOrders: [],
+      topProducts: [],
+      salesByChannel: [],
+      revenueData: [],
+    });
   }
 }
 
 function getChannelColor(slug: string): string {
   const colors: Record<string, string> = {
     "online-store": "#10B981",
-    "facebook": "#3B82F6",
+    facebook: "#3B82F6",
     "facebook-shop": "#2563EB",
-    "instagram": "#EC4899",
-    "tiktok": "#F43F5E",
-    "shopify": "#059669",
+    instagram: "#EC4899",
+    tiktok: "#F43F5E",
+    shopify: "#059669",
   };
   return colors[slug] || "#6B7280";
 }

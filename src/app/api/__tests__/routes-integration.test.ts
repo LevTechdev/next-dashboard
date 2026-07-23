@@ -6,22 +6,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ═══════════════════════════════════════════════════════════════════════════
 
 const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = vi.hoisted(() => {
-  const model = <T extends Record<string, unknown>>(
-    overrides: Partial<T> = {}
-  ) =>
+  const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
       get(_, prop) {
         const key = String(prop);
-        return (
-          (overrides as any)[key] ??
-          vi.fn().mockImplementation(() => Promise.resolve(null))
-        );
+        return (overrides as any)[key] ?? vi.fn().mockImplementation(() => Promise.resolve(null));
       },
     });
 
-  const deepModel = <T extends Record<string, unknown>>(
-    overrides: Partial<T> = {}
-  ) =>
+  const deepModel = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     model({
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
@@ -43,33 +36,41 @@ const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = v
     mockRequirePermission: vi.fn<() => Promise<unknown>>(),
     mockPrisma: {
       order: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "o-1", orderNumber: "ORD-001", grandTotal: 100, customer: { id: "c-1", name: "John" }, channel: { id: "ch-1", name: "Store" } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            {
+              id: "o-1",
+              orderNumber: "ORD-001",
+              grandTotal: 100,
+              customer: { id: "c-1", name: "John" },
+              channel: { id: "ch-1", name: "Store" },
+            },
+          ]),
         aggregate: vi.fn().mockResolvedValue({ _sum: { grandTotal: 5000 } }),
         count: vi.fn().mockResolvedValue(10),
       }),
       customer: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "c-1", name: "John" },
-        ]),
+        findMany: vi.fn().mockResolvedValue([{ id: "c-1", name: "John" }]),
         count: vi.fn().mockResolvedValue(50),
       }),
       product: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "p-1", name: "Widget", price: 29.99, _count: { orderItems: 5 } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "p-1", name: "Widget", price: 29.99, _count: { orderItems: 5 } },
+          ]),
         count: vi.fn().mockResolvedValue(20),
       }),
       salesChannel: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "ch-1", name: "Store", slug: "store", _count: { orders: 5 } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "ch-1", name: "Store", slug: "store", _count: { orders: 5 } }]),
       }),
       productCategory: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "cat-1", name: "Electronics", _count: { products: 8 } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "cat-1", name: "Electronics", _count: { products: 8 } }]),
       }),
       user: deepModel({
         findUnique: vi.fn().mockResolvedValue({
@@ -117,7 +118,15 @@ beforeEach(() => {
     user: { id: "admin-1", name: "Admin", email: "admin@test.com", role: "ADMIN" },
   });
   mockRequireAuth.mockResolvedValue({
-    session: { user: { id: "admin-1", sub: "admin-1", name: "Admin", email: "admin@test.com", role: "ADMIN" } },
+    session: {
+      user: {
+        id: "admin-1",
+        sub: "admin-1",
+        name: "Admin",
+        email: "admin@test.com",
+        role: "ADMIN",
+      },
+    },
     response: null,
   });
   mockRequirePermission.mockResolvedValue({ role: "ADMIN", response: null });
@@ -233,7 +242,7 @@ describe("HTTP integration: request edge cases", () => {
       const req = get("http://localhost/api/orders?channel=online-store&status=PENDING");
       await ordersRoutes.GET(req);
       expect(mockPrisma.salesChannel.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { slug: "online-store" } })
+        expect.objectContaining({ where: { slug: "online-store" } }),
       );
     });
 
@@ -375,17 +384,18 @@ describe("HTTP integration: real Request across routes", () => {
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
     expect(body[0].orderNumber).toBeDefined();
-  });    it("profile: returns user object shape", async () => {
-      const { GET } = await import("../profile/route");
-      const res = await GET(get("http://localhost/api/profile"));
-      expect(res.status).toBe(200);
+  });
+  it("profile: returns user object shape", async () => {
+    const { GET } = await import("../profile/route");
+    const res = await GET(get("http://localhost/api/profile"));
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body).toHaveProperty("id");
-      expect(body).toHaveProperty("name");
-      expect(body).toHaveProperty("email");
-      expect(body).toHaveProperty("role");
-    });
+    const body = await res.json();
+    expect(body).toHaveProperty("id");
+    expect(body).toHaveProperty("name");
+    expect(body).toHaveProperty("email");
+    expect(body).toHaveProperty("role");
+  });
 });
 
 describe("HTTP integration: query string handling", () => {
@@ -403,7 +413,7 @@ describe("HTTP integration: query string handling", () => {
       expect.objectContaining({
         skip: 40, // (page-1) * limit = 2 * 20 = 40
         take: 20,
-      })
+      }),
     );
 
     const body = await res.json();
@@ -420,13 +430,13 @@ describe("HTTP integration: query string handling", () => {
     // Too high → clamped to 50
     await GET(get("http://localhost/api/audit-log?limit=999"));
     expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 50 })
+      expect.objectContaining({ take: 50 }),
     );
 
     // Too low → clamped to 10
     await GET(get("http://localhost/api/audit-log?limit=1"));
     expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 10 })
+      expect.objectContaining({ take: 10 }),
     );
   });
 
@@ -450,8 +460,11 @@ describe("HTTP integration: edge case inputs", () => {
   it("profile DELETE with wrong password returns 403", async () => {
     // Override user mock to include password field, then fail the compare
     mockPrisma.user.findUnique.mockResolvedValueOnce({
-      id: "u-1", name: "Test User", email: "test@test.com",
-      role: "ADMIN", password: "$2a$10$hashed",
+      id: "u-1",
+      name: "Test User",
+      email: "test@test.com",
+      role: "ADMIN",
+      password: "$2a$10$hashed",
     });
     const { compare } = await import("bcryptjs");
     (compare as any).mockResolvedValue(false);
@@ -467,10 +480,25 @@ describe("HTTP integration: auth guard consistency", () => {
     mockGetSession.mockResolvedValue(null);
 
     const testCases: { route: string; handler: any; req?: Request; expected: number }[] = [
-      { route: "GET /api/search", handler: (await import("../search/route")).GET, req: get("http://localhost/api/search?q=test"), expected: 200 },
-      { route: "GET /api/audit-log", handler: (await import("../audit-log/route")).GET, req: get("http://localhost/api/audit-log"), expected: 200 },
+      {
+        route: "GET /api/search",
+        handler: (await import("../search/route")).GET,
+        req: get("http://localhost/api/search?q=test"),
+        expected: 200,
+      },
+      {
+        route: "GET /api/audit-log",
+        handler: (await import("../audit-log/route")).GET,
+        req: get("http://localhost/api/audit-log"),
+        expected: 200,
+      },
       { route: "GET /api/profile", handler: (await import("../profile/route")).GET, expected: 200 },
-      { route: "PUT /api/profile/password", handler: (await import("../profile/password/route")).PUT, req: put("http://localhost/api/profile/password", {}), expected: 400 },
+      {
+        route: "PUT /api/profile/password",
+        handler: (await import("../profile/password/route")).PUT,
+        req: put("http://localhost/api/profile/password", {}),
+        expected: 400,
+      },
     ];
 
     for (const { route, handler, req, expected } of testCases) {

@@ -20,7 +20,6 @@ import {
   Share2,
   Layers,
   Check,
-
   Plug,
   Sparkles,
   PlugZap,
@@ -28,11 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
@@ -125,7 +120,8 @@ export const integrations: Integration[] = [
 export const categories = [
   {
     name: "E-commerce & POS",
-    description: "Connect your online store and point-of-sale systems for unified order management.",
+    description:
+      "Connect your online store and point-of-sale systems for unified order management.",
     icon: ShoppingCart,
     count: "12 integrations",
   },
@@ -217,7 +213,11 @@ export default function IntegrationsOverviewPage() {
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeSmooth as any } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: easeSmooth as any },
+                },
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
@@ -230,7 +230,11 @@ export default function IntegrationsOverviewPage() {
             <motion.h1
               variants={{
                 hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: easeSmooth as any } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.6, ease: easeSmooth as any },
+                },
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
@@ -250,12 +254,16 @@ export default function IntegrationsOverviewPage() {
             <motion.p
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeSmooth as any } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: easeSmooth as any },
+                },
               }}
               className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto"
             >
-              Seamlessly connect with the tools you already use. Sync data across
-              payments, e-commerce, communication, and analytics platforms.
+              Seamlessly connect with the tools you already use. Sync data across payments,
+              e-commerce, communication, and analytics platforms.
             </motion.p>
           </motion.div>
         </div>
@@ -302,7 +310,7 @@ export default function IntegrationsOverviewPage() {
                       <div
                         className={cn(
                           "flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                          integration.color
+                          integration.color,
                         )}
                       >
                         <Icon className="h-5 w-5 text-zinc-700 dark:text-zinc-200" />
@@ -377,8 +385,7 @@ export default function IntegrationsOverviewPage() {
                 Explore by Category
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
-                Browse integrations organized by function to find exactly what
-                your workflow needs.
+                Browse integrations organized by function to find exactly what your workflow needs.
               </p>
             </div>
           </AnimateUp>
@@ -458,8 +465,8 @@ export default function IntegrationsOverviewPage() {
                       Built for Seamless Connections
                     </h2>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
-                      Every integration is built with reliability and developer
-                      experience in mind. Connect once and let the data flow.
+                      Every integration is built with reliability and developer experience in mind.
+                      Connect once and let the data flow.
                     </p>
                     <div className="space-y-3">
                       {[
@@ -470,10 +477,7 @@ export default function IntegrationsOverviewPage() {
                         "Rate limiting and quota management",
                         "Detailed sync logs and audit trail",
                       ].map((feature) => (
-                        <div
-                          key={feature}
-                          className="flex items-start gap-3"
-                        >
+                        <div key={feature} className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center">
                             <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           </div>
@@ -502,25 +506,37 @@ export default function IntegrationsOverviewPage() {
                         </div>
                         <div className="space-y-2.5">
                           {[
-                            { name: "Stripe", status: "Connected", color: "text-emerald-600 dark:text-emerald-400" },
-                            { name: "Shopify", status: "Connected", color: "text-emerald-600 dark:text-emerald-400" },
-                            { name: "Slack", status: "Connected", color: "text-emerald-600 dark:text-emerald-400" },
-                            { name: "SendGrid", status: "Syncing...", color: "text-amber-600 dark:text-amber-400" },
-                            { name: "Zapier", status: "Disconnected", color: "text-zinc-300 dark:text-zinc-500" },
+                            {
+                              name: "Stripe",
+                              status: "Connected",
+                              color: "text-emerald-600 dark:text-emerald-400",
+                            },
+                            {
+                              name: "Shopify",
+                              status: "Connected",
+                              color: "text-emerald-600 dark:text-emerald-400",
+                            },
+                            {
+                              name: "Slack",
+                              status: "Connected",
+                              color: "text-emerald-600 dark:text-emerald-400",
+                            },
+                            {
+                              name: "SendGrid",
+                              status: "Syncing...",
+                              color: "text-amber-600 dark:text-amber-400",
+                            },
+                            {
+                              name: "Zapier",
+                              status: "Disconnected",
+                              color: "text-zinc-300 dark:text-zinc-500",
+                            },
                           ].map((item) => (
-                            <div
-                              key={item.name}
-                              className="flex items-center justify-between"
-                            >
+                            <div key={item.name} className="flex items-center justify-between">
                               <span className="text-xs text-zinc-600 dark:text-zinc-300">
                                 {item.name}
                               </span>
-                              <span
-                                className={cn(
-                                  "text-[10px] font-medium",
-                                  item.color
-                                )}
-                              >
+                              <span className={cn("text-[10px] font-medium", item.color)}>
                                 {item.status}
                               </span>
                             </div>
@@ -551,9 +567,8 @@ export default function IntegrationsOverviewPage() {
                 Build Your Own Integration
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Our REST API and webhooks make it easy to build custom
-                integrations. Comprehensive documentation, SDKs, and
-                developer support included.
+                Our REST API and webhooks make it easy to build custom integrations. Comprehensive
+                documentation, SDKs, and developer support included.
               </p>
               <Link href={ctaHref}>
                 <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
@@ -576,8 +591,18 @@ export default function IntegrationsOverviewPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { label: "Total Integrations", end: 70, icon: Plug, suffix: "+" },
-              { label: "Active Connections", end: 12400, icon: BarChart3, format: (v: number) => `${(v/1000).toFixed(1)}K` },
-              { label: "API Requests/mo", end: 2500000, icon: Zap, format: (v: number) => `${(v/1000000).toFixed(1)}M` },
+              {
+                label: "Active Connections",
+                end: 12400,
+                icon: BarChart3,
+                format: (v: number) => `${(v / 1000).toFixed(1)}K`,
+              },
+              {
+                label: "API Requests/mo",
+                end: 2500000,
+                icon: Zap,
+                format: (v: number) => `${(v / 1000000).toFixed(1)}M`,
+              },
               { label: "Platforms", end: 6, icon: Globe, suffix: "+" },
             ].map((stat, i) => {
               const Icon = stat.icon;
@@ -594,7 +619,11 @@ export default function IntegrationsOverviewPage() {
                     <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
-                    <AnimatedCounter end={stat.end} duration={2000} {...(stat.format ? { formatter: stat.format } : { suffix: stat.suffix })} />
+                    <AnimatedCounter
+                      end={stat.end}
+                      duration={2000}
+                      {...(stat.format ? { formatter: stat.format } : { suffix: stat.suffix })}
+                    />
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 mt-1 font-medium">
                     {stat.label}
@@ -627,8 +656,8 @@ export default function IntegrationsOverviewPage() {
                     Start Connecting Today
                   </h2>
                   <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto mb-8">
-                    No credit card required. Start with our free plan and
-                    connect up to 5 integrations.
+                    No credit card required. Start with our free plan and connect up to 5
+                    integrations.
                   </p>
                   <Link href={ctaHref}>
                     <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>

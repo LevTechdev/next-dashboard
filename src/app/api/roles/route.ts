@@ -57,7 +57,10 @@ export async function POST(req: Request) {
   const { role, resource, action, allowed } = body;
 
   if (!role || !resource || !action) {
-    return NextResponse.json({ error: "Missing required fields: role, resource, action" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing required fields: role, resource, action" },
+      { status: 400 },
+    );
   }
 
   const setting = await prisma.roleSetting.upsert({

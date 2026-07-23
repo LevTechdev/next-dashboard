@@ -26,13 +26,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Token Color Dot ──────────────────────────────────────────────────
 
-function TokenSwatch({ label, variable, className }: { label: string; variable: string; className?: string }) {
+function TokenSwatch({
+  label,
+  variable,
+  className,
+}: {
+  label: string;
+  variable: string;
+  className?: string;
+}) {
   return (
     <div className="flex items-center gap-2.5 group cursor-default">
       <div
         className={cn(
           "h-7 w-7 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0 ring-1 ring-black/5 dark:ring-white/10 transition-transform duration-200 group-hover:scale-110",
-          className
+          className,
         )}
         style={{ background: `hsl(var(${variable}))` }}
       />
@@ -40,9 +48,7 @@ function TokenSwatch({ label, variable, className }: { label: string; variable: 
         <span className="text-[11px] font-mono font-medium text-gray-700 dark:text-gray-300 leading-tight">
           {label}
         </span>
-        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500">
-          {variable}
-        </span>
+        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500">{variable}</span>
       </div>
     </div>
   );
@@ -50,7 +56,11 @@ function TokenSwatch({ label, variable, className }: { label: string; variable: 
 
 // ─── Theme Selector Row ────────────────────────────────────────────────
 
-function ThemeSelectorRow({ mounted, theme, setTheme }: {
+function ThemeSelectorRow({
+  mounted,
+  theme,
+  setTheme,
+}: {
   mounted: boolean;
   theme: string | undefined;
   setTheme: (t: string) => void;
@@ -73,7 +83,7 @@ function ThemeSelectorRow({ mounted, theme, setTheme }: {
               "relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
               isSelected
                 ? "bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-gray-100"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300",
             )}
           >
             <Icon className={cn("h-4 w-4", iconColor)} />
@@ -96,12 +106,32 @@ function ThemeSelectorRow({ mounted, theme, setTheme }: {
 
 function TokenPalette() {
   const lightTokens = [
-    { label: "Background", variable: "--background", className: "bg-[hsl(222,20%,97%)] dark:bg-[hsl(225,25%,7%)]" },
-    { label: "Foreground", variable: "--foreground", className: "bg-[hsl(225,25%,7%)] dark:bg-[hsl(210,40%,98%)]" },
+    {
+      label: "Background",
+      variable: "--background",
+      className: "bg-[hsl(222,20%,97%)] dark:bg-[hsl(225,25%,7%)]",
+    },
+    {
+      label: "Foreground",
+      variable: "--foreground",
+      className: "bg-[hsl(225,25%,7%)] dark:bg-[hsl(210,40%,98%)]",
+    },
     { label: "Card", variable: "--card", className: "bg-white dark:bg-[hsl(225,20%,12%)]" },
-    { label: "Border", variable: "--border", className: "bg-[hsl(225,15%,90%)] dark:bg-[hsl(225,15%,26%)]" },
-    { label: "Surface Raised", variable: "--surface-raised", className: "bg-[hsl(220,20%,97%)] dark:bg-[hsl(224,20%,11%)]" },
-    { label: "Muted", variable: "--muted", className: "bg-[hsl(210,20%,96%)] dark:bg-[hsl(224,18%,14%)]" },
+    {
+      label: "Border",
+      variable: "--border",
+      className: "bg-[hsl(225,15%,90%)] dark:bg-[hsl(225,15%,26%)]",
+    },
+    {
+      label: "Surface Raised",
+      variable: "--surface-raised",
+      className: "bg-[hsl(220,20%,97%)] dark:bg-[hsl(224,20%,11%)]",
+    },
+    {
+      label: "Muted",
+      variable: "--muted",
+      className: "bg-[hsl(210,20%,96%)] dark:bg-[hsl(224,18%,14%)]",
+    },
   ];
 
   const glowTokens = [
@@ -110,7 +140,11 @@ function TokenPalette() {
     { label: "Glow Purple", variable: "--glow-purple", className: "bg-purple-500" },
     { label: "Glow Blue", variable: "--glow-blue", className: "bg-blue-500" },
     { label: "Destructive", variable: "--destructive", className: "bg-red-500 dark:bg-red-600" },
-    { label: "Ring", variable: "--ring", className: "bg-[hsl(225,25%,7%)] dark:bg-[hsl(210,40%,90%)]" },
+    {
+      label: "Ring",
+      variable: "--ring",
+      className: "bg-[hsl(225,25%,7%)] dark:bg-[hsl(210,40%,90%)]",
+    },
   ];
 
   return (
@@ -149,25 +183,39 @@ function ComponentDemos() {
 
       {/* Button Variants */}
       <div className="space-y-2">
-        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Buttons</p>
+        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          Buttons
+        </p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm">Default</Button>
-          <Button variant="secondary" size="sm">Secondary</Button>
-          <Button variant="outline" size="sm">Outline</Button>
+          <Button variant="secondary" size="sm">
+            Secondary
+          </Button>
+          <Button variant="outline" size="sm">
+            Outline
+          </Button>
           <Button variant="premium" size="sm" className="gap-1.5">
             <Sparkles className="h-3 w-3" />
             Premium
           </Button>
-          <Button variant="glass" size="sm">Glass</Button>
-          <Button variant="ghost" size="sm">Ghost</Button>
-          <Button variant="link" size="sm">Link</Button>
+          <Button variant="glass" size="sm">
+            Glass
+          </Button>
+          <Button variant="ghost" size="sm">
+            Ghost
+          </Button>
+          <Button variant="link" size="sm">
+            Link
+          </Button>
         </div>
       </div>
 
       {/* Cards + Glass */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="space-y-1.5">
-          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Dashboard Card</p>
+          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Dashboard Card
+          </p>
           <div className="dashboard-card p-4 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
@@ -186,7 +234,9 @@ function ComponentDemos() {
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Stat Card (hover me)</p>
+          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Stat Card (hover me)
+          </p>
           <div className="stat-card-premium cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
@@ -203,13 +253,17 @@ function ComponentDemos() {
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Glass Panel</p>
+          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Glass Panel
+          </p>
           <div className="vengeance-glass rounded-xl p-4 h-full">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-lg bg-white/50 dark:bg-white/10">
                 <Zap className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Quick Action</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                Quick Action
+              </span>
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
               Frosted glass surface with backdrop blur — works on any background.
@@ -220,7 +274,9 @@ function ComponentDemos() {
 
       {/* Badges */}
       <div className="space-y-2">
-        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Badges</p>
+        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          Badges
+        </p>
         <div className="flex flex-wrap gap-2">
           <span className="badge-premium">
             <Sparkles className="h-2.5 w-2.5" />
@@ -241,7 +297,9 @@ function ComponentDemos() {
 
       {/* Progress indicator */}
       <div className="space-y-1.5">
-        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Progress</p>
+        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          Progress
+        </p>
         <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div className="h-full w-[67%] rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
         </div>
@@ -359,12 +417,21 @@ export function ThemeShowcase({ className }: { className?: string }) {
 
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">
-            Current:{mounted ? (
+            Current:
+            {mounted ? (
               <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold">
-                {theme === "dark" ? <Moon className="h-3 w-3" /> : theme === "light" ? <Sun className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
+                {theme === "dark" ? (
+                  <Moon className="h-3 w-3" />
+                ) : theme === "light" ? (
+                  <Sun className="h-3 w-3" />
+                ) : (
+                  <Monitor className="h-3 w-3" />
+                )}
                 {theme === "dark" ? "Dark" : theme === "light" ? "Light" : "System"}
               </span>
-            ) : "—"}
+            ) : (
+              "—"
+            )}
           </span>
         </div>
       </div>
@@ -400,7 +467,9 @@ export function ThemeShowcase({ className }: { className?: string }) {
               <span>Theme transitions are enabled</span>
             </div>
             <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Switch above to see smooth 350ms morphing</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Switch above to see smooth 350ms morphing
+            </span>
           </div>
         </TabsContent>
 

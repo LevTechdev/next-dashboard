@@ -13,23 +13,16 @@ const {
   mockHash,
 } = vi.hoisted(() => {
   /** Proxy-based model helper: returns overrides or default vi.fn */
-  const model = <T extends Record<string, unknown>>(
-    overrides: Partial<T> = {}
-  ) =>
+  const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
       get(_, prop) {
         const key = String(prop);
-        return (
-          (overrides as any)[key] ??
-          vi.fn().mockImplementation(() => Promise.resolve(null))
-        );
+        return (overrides as any)[key] ?? vi.fn().mockImplementation(() => Promise.resolve(null));
       },
     });
 
   /** Deep model helper (for models with nested relation access) */
-  const deepModel = <T extends Record<string, unknown>>(
-    overrides: Partial<T> = {}
-  ) =>
+  const deepModel = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     model({
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
@@ -54,13 +47,9 @@ const {
 
     mockRequirePermission: vi.fn<() => Promise<unknown>>(),
 
-    mockCompare: vi.fn<
-      (pw: string, hash: string) => Promise<boolean>
-    >(),
+    mockCompare: vi.fn<(pw: string, hash: string) => Promise<boolean>>(),
 
-    mockHash: vi.fn<
-      (pw: string, rounds: number) => Promise<string>
-    >(),
+    mockHash: vi.fn<(pw: string, rounds: number) => Promise<string>>(),
 
     mockPrisma: {
       user: deepModel({
@@ -92,7 +81,7 @@ const {
             phone: "555-0100",
             position: "Engineer",
             ...(data as Record<string, unknown>),
-          })
+          }),
         ),
         delete: vi.fn().mockResolvedValue({ id: "user-1" }),
         count: vi.fn().mockResolvedValue(5),
@@ -117,9 +106,11 @@ const {
       }),
 
       customer: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "c-1", name: "John Doe", email: "john@test.com", phone: "555-1000", city: "NYC" },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "c-1", name: "John Doe", email: "john@test.com", phone: "555-1000", city: "NYC" },
+          ]),
         count: vi.fn().mockResolvedValue(100),
       }),
 
@@ -138,9 +129,11 @@ const {
       }),
 
       salesChannel: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "ch-1", name: "Online Store", slug: "online-store", _count: { orders: 30 } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "ch-1", name: "Online Store", slug: "online-store", _count: { orders: 30 } },
+          ]),
       }),
 
       activityLog: deepModel({
@@ -165,23 +158,33 @@ const {
       }),
 
       campaign: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "camp-1", name: "Summer Sale", status: "ACTIVE", budget: 5000, spent: 3000 },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "camp-1", name: "Summer Sale", status: "ACTIVE", budget: 5000, spent: 3000 },
+          ]),
         count: vi.fn().mockResolvedValue(3),
       }),
 
       discount: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "disc-1", code: "SAVE10", name: "10% Off", value: 10, endsAt: new Date("2024-12-31") },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            {
+              id: "disc-1",
+              code: "SAVE10",
+              name: "10% Off",
+              value: 10,
+              endsAt: new Date("2024-12-31"),
+            },
+          ]),
         count: vi.fn().mockResolvedValue(5),
       }),
 
       productCategory: deepModel({
-        findMany: vi.fn().mockResolvedValue([
-          { id: "cat-1", name: "Electronics", _count: { products: 10 } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: "cat-1", name: "Electronics", _count: { products: 10 } }]),
       }),
     },
   };
@@ -250,13 +253,20 @@ beforeEach(() => {
   // Default: user is authenticated
   mockGetSession.mockResolvedValue(authenticatedSession());
   mockRequireAuth.mockResolvedValue({
-    session: { user: { id: "user-1", sub: "user-1", name: "Test User", email: "test@example.com", role: "ADMIN" } },
+    session: {
+      user: {
+        id: "user-1",
+        sub: "user-1",
+        name: "Test User",
+        email: "test@example.com",
+        role: "ADMIN",
+      },
+    },
     response: null,
   });
   mockRequirePermission.mockResolvedValue({ role: "ADMIN", response: null });
   mockCompare.mockResolvedValue(true);
   mockHash.mockResolvedValue("$2a$10$newhashed");
-
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -300,17 +310,21 @@ describe("Dashboard API (public, no auth)", () => {
   });
 
   it("returns fallback empty data on error", async () => {
-    mockPrisma.order.aggregate.mockRejectedValueOnce(
-      new Error("DB error")
-    );
+    mockPrisma.order.aggregate.mockRejectedValueOnce(new Error("DB error"));
 
     const res = await dashboardRoutes.GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     // Fallback empty state
     expect(body.stats).toEqual({
-      totalRevenue: 0, totalOrders: 0, totalCustomers: 0, totalProducts: 0,
-      revenueGrowth: 0, ordersGrowth: 0, customersGrowth: 0, productsGrowth: 0,
+      totalRevenue: 0,
+      totalOrders: 0,
+      totalCustomers: 0,
+      totalProducts: 0,
+      revenueGrowth: 0,
+      ordersGrowth: 0,
+      customersGrowth: 0,
+      productsGrowth: 0,
     });
     expect(body.recentOrders).toEqual([]);
   });
@@ -328,8 +342,6 @@ describe("Categories API (public, no auth)", () => {
     expect(body[0]._count.products).toBe(10);
   });
 });
-
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTH-PROTECTED ROUTES (manual auth0.getSession() guard)
@@ -355,9 +367,7 @@ describe("Search API (auth-protected)", () => {
   });
 
   it("returns search results across orders, customers, products", async () => {
-    const res = await searchRoutes.GET(
-      mockRequest(undefined, "q=john")
-    );
+    const res = await searchRoutes.GET(mockRequest(undefined, "q=john"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.orders).toHaveLength(1);
@@ -390,28 +400,26 @@ describe("Audit Log API (auth-protected)", () => {
   });
 
   it("accepts pagination and search query params", async () => {
-    const res = await auditLogRoutes.GET(
-      mockRequest(undefined, "page=2&limit=10&q=order")
-    );
+    const res = await auditLogRoutes.GET(mockRequest(undefined, "page=2&limit=10&q=order"));
     expect(res.status).toBe(200);
     // Should have passed skip: 10, take: 10
     expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         skip: 10,
         take: 10,
-      })
+      }),
     );
   });
 
   it("clamps limit between 10 and 50", async () => {
     await auditLogRoutes.GET(mockRequest(undefined, "limit=999"));
     expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 50 })
+      expect.objectContaining({ take: 50 }),
     );
 
     await auditLogRoutes.GET(mockRequest(undefined, "limit=5"));
     expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 10 })
+      expect.objectContaining({ take: 10 }),
     );
   });
 });
@@ -448,18 +456,16 @@ describe("Profile API (auth-protected)", () => {
     });
 
     it("returns 409 when email is already taken", async () => {
-      mockPrisma.user.findUnique
-        .mockResolvedValueOnce({ id: "other-user", email: "taken@test.com" });
-      const res = await profileRoutes.PUT(
-        mockRequest({ email: "taken@test.com" })
-      );
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "other-user",
+        email: "taken@test.com",
+      });
+      const res = await profileRoutes.PUT(mockRequest({ email: "taken@test.com" }));
       expect(res.status).toBe(409);
     });
 
     it("updates and returns profile", async () => {
-      const res = await profileRoutes.PUT(
-        mockRequest({ name: "Updated Name", phone: "555-0200" })
-      );
+      const res = await profileRoutes.PUT(mockRequest({ name: "Updated Name", phone: "555-0200" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.user.update).toHaveBeenCalled();
     });
@@ -485,9 +491,7 @@ describe("Profile API (auth-protected)", () => {
     });
 
     it("returns 400 when no password provided for non-admin", async () => {
-      mockGetSession.mockResolvedValue(
-        authenticatedSession({ role: "STAFF" })
-      );
+      mockGetSession.mockResolvedValue(authenticatedSession({ role: "STAFF" }));
       // Override findUnique to return a user with STAFF role (matches the session)
       mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-1",
@@ -530,7 +534,7 @@ describe("Profile Password API (auth-protected)", () => {
 
   it("returns 400 when new password too short", async () => {
     const res = await passwordRoutes.PUT(
-      mockRequest({ currentPassword: "old", newPassword: "ab" })
+      mockRequest({ currentPassword: "old", newPassword: "ab" }),
     );
     expect(res.status).toBe(400);
   });
@@ -538,7 +542,7 @@ describe("Profile Password API (auth-protected)", () => {
   it("returns 404 when user not found", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null);
     const res = await passwordRoutes.PUT(
-      mockRequest({ currentPassword: "old", newPassword: "newpass123" })
+      mockRequest({ currentPassword: "old", newPassword: "newpass123" }),
     );
     expect(res.status).toBe(404);
   });
@@ -546,14 +550,14 @@ describe("Profile Password API (auth-protected)", () => {
   it("returns 403 when current password is incorrect", async () => {
     mockCompare.mockResolvedValueOnce(false);
     const res = await passwordRoutes.PUT(
-      mockRequest({ currentPassword: "wrong", newPassword: "newpass123" })
+      mockRequest({ currentPassword: "wrong", newPassword: "newpass123" }),
     );
     expect(res.status).toBe(403);
   });
 
   it("updates password when all checks pass", async () => {
     const res = await passwordRoutes.PUT(
-      mockRequest({ currentPassword: "correct", newPassword: "newpass123" })
+      mockRequest({ currentPassword: "correct", newPassword: "newpass123" }),
     );
     expect(res.status).toBe(200);
     expect(mockCompare).toHaveBeenCalledWith("correct", "$2a$10$hashedpassword");
@@ -596,14 +600,14 @@ describe("Profile Avatar API (auth-protected)", () => {
 
     it("updates avatar when valid", async () => {
       const res = await avatarRoutes.PUT(
-        mockRequest({ avatar: "data:image/png;base64,small-data" })
+        mockRequest({ avatar: "data:image/png;base64,small-data" }),
       );
       expect(res.status).toBe(200);
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "user-1" },
           data: expect.objectContaining({ avatar: "data:image/png;base64,small-data" }),
-        })
+        }),
       );
     });
   });
@@ -622,7 +626,7 @@ describe("Profile Avatar API (auth-protected)", () => {
         expect.objectContaining({
           where: { id: "user-1" },
           data: expect.objectContaining({ avatar: null }),
-        })
+        }),
       );
     });
   });

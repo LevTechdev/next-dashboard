@@ -118,7 +118,7 @@ function NavSection({ title, items, collapsed, locale, t }: NavSectionProps) {
                 "sidebar-item",
                 isActive
                   ? "sidebar-item-active"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
               )}
               title={collapsed ? t(item.label) : undefined}
             >
@@ -141,7 +141,15 @@ function NavSection({ title, items, collapsed, locale, t }: NavSectionProps) {
   );
 }
 
-export function Sidebar({ collapsed, onToggle, embedded }: { collapsed: boolean; onToggle: () => void; embedded?: boolean }) {
+export function Sidebar({
+  collapsed,
+  onToggle,
+  embedded,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  embedded?: boolean;
+}) {
   const locale = useLocale();
   const pathname = usePathname();
   const tnav = useTranslations("nav");
@@ -155,7 +163,7 @@ export function Sidebar({ collapsed, onToggle, embedded }: { collapsed: boolean;
       className={cn(
         "h-full bg-white dark:bg-gray-950/95 border-r border-gray-200 dark:border-gray-800/50 transition-all duration-300 flex flex-col",
         !embedded && "fixed left-0 top-0 z-40 h-screen",
-        embedded ? "w-72" : collapsed ? "w-[72px]" : "w-64"
+        embedded ? "w-72" : collapsed ? "w-[72px]" : "w-64",
       )}
     >
       {/* Logo (shared element — morphs smoothly across pages) */}
@@ -175,18 +183,52 @@ export function Sidebar({ collapsed, onToggle, embedded }: { collapsed: boolean;
                 Pro
               </span>
             </span>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5">{tApp("tagline")}</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5">
+              {tApp("tagline")}
+            </span>
           </div>
         )}
       </TransitionLink>
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-        <NavSection title="management" items={navItems.filter(i => canAccessPage(i.href.replace(/^\//, "") || "dashboard", role))} collapsed={collapsed} locale={locale} t={tnav} />
-        <NavSection title="management" items={managementItems.filter(i => canAccessPage(i.href.replace(/^\//, ""), role))} collapsed={collapsed} locale={locale} t={tnav} />
-        <NavSection title="insights" items={insightsItems.filter(i => canAccessPage(i.href.replace(/^\//, ""), role))} collapsed={collapsed} locale={locale} t={tnav} />
-        <NavSection title="account" items={settingsItems.filter(i => canAccessPage(i.href.replace(/^\//, ""), role))} collapsed={collapsed} locale={locale} t={tnav} />
-        <NavSection title="admin" items={adminItems.filter(i => canAccessPage(i.href.replace(/^\//, ""), role))} collapsed={collapsed} locale={locale} t={tnav} />
+        <NavSection
+          title="management"
+          items={navItems.filter((i) =>
+            canAccessPage(i.href.replace(/^\//, "") || "dashboard", role),
+          )}
+          collapsed={collapsed}
+          locale={locale}
+          t={tnav}
+        />
+        <NavSection
+          title="management"
+          items={managementItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          collapsed={collapsed}
+          locale={locale}
+          t={tnav}
+        />
+        <NavSection
+          title="insights"
+          items={insightsItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          collapsed={collapsed}
+          locale={locale}
+          t={tnav}
+        />
+        <NavSection
+          title="account"
+          items={settingsItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          collapsed={collapsed}
+          locale={locale}
+          t={tnav}
+        />
+        <NavSection
+          title="admin"
+          items={adminItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          collapsed={collapsed}
+          locale={locale}
+          t={tnav}
+        />
 
         {/* Sales Channels */}
         {!collapsed && (
@@ -203,7 +245,7 @@ export function Sidebar({ collapsed, onToggle, embedded }: { collapsed: boolean;
                     "sidebar-item",
                     pathname === channel.href
                       ? "sidebar-item-active text-indigo-600 dark:text-indigo-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
                   )}
                 >
                   <Store className={cn("h-[18px] w-[18px] shrink-0", channel.color)} />
@@ -223,7 +265,7 @@ export function Sidebar({ collapsed, onToggle, embedded }: { collapsed: boolean;
           onClick={onToggle}
           className={cn(
             "w-full justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300",
-            collapsed ? "px-0" : ""
+            collapsed ? "px-0" : "",
           )}
         >
           {collapsed ? (

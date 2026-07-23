@@ -23,9 +23,37 @@ import { useAuth } from "@/hooks/use-auth";
 
 const mockProductsData = {
   products: [
-    { id: "1", name: "Widget Pro", description: "High-quality widget", price: 29.99, costPrice: 15.00, stock: 50, sku: "WGT-001", categoryId: "cat1", category: { name: "Widgets" } },
-    { id: "2", name: "Gadget X", description: "Next-gen gadget", price: 49.99, costPrice: 25.00, stock: 5, sku: "GDG-002", categoryId: "cat2", category: { name: "Gadgets" } },
-    { id: "3", name: "Old Model", description: "Discontinued", price: 9.99, costPrice: 8.00, stock: 0, sku: "OLD-003" },
+    {
+      id: "1",
+      name: "Widget Pro",
+      description: "High-quality widget",
+      price: 29.99,
+      costPrice: 15.0,
+      stock: 50,
+      sku: "WGT-001",
+      categoryId: "cat1",
+      category: { name: "Widgets" },
+    },
+    {
+      id: "2",
+      name: "Gadget X",
+      description: "Next-gen gadget",
+      price: 49.99,
+      costPrice: 25.0,
+      stock: 5,
+      sku: "GDG-002",
+      categoryId: "cat2",
+      category: { name: "Gadgets" },
+    },
+    {
+      id: "3",
+      name: "Old Model",
+      description: "Discontinued",
+      price: 9.99,
+      costPrice: 8.0,
+      stock: 0,
+      sku: "OLD-003",
+    },
   ],
   categories: [
     { id: "cat1", name: "Widgets" },

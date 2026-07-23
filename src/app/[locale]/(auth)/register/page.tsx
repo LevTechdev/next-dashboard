@@ -4,7 +4,18 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2, UserPlus, Mail, User, LayoutDashboard, Sparkles, Check, X } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  UserPlus,
+  Mail,
+  User,
+  LayoutDashboard,
+  Sparkles,
+  Check,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -141,9 +152,7 @@ export default function RegisterPage() {
           </Link>
         </motion.div>
 
-        <Card
-          className="glow-border backdrop-blur-xl bg-white/80 dark:bg-zinc-900/80 border border-white/20 dark:border-zinc-800/50 shadow-2xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
-        >
+        <Card className="glow-border backdrop-blur-xl bg-white/80 dark:bg-zinc-900/80 border border-white/20 dark:border-zinc-800/50 shadow-2xl shadow-black/5 dark:shadow-black/20 overflow-hidden">
           {/* Subtle gradient top border */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-teal-500/0" />
 
@@ -220,7 +229,9 @@ export default function RegisterPage() {
                     placeholder="Min. 6 characters"
                     className={cn(
                       "pr-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-emerald-400 dark:focus:border-emerald-500 transition-all",
-                      password.length > 0 && !hasMinChars && "border-red-300 dark:border-red-800 focus:border-red-400"
+                      password.length > 0 &&
+                        !hasMinChars &&
+                        "border-red-300 dark:border-red-800 focus:border-red-400",
                     )}
                     disabled={isLoading}
                     autoComplete="new-password"
@@ -249,7 +260,7 @@ export default function RegisterPage() {
                             "h-1.5 flex-1 rounded-full transition-all duration-300",
                             passwordStrength >= level * 3
                               ? getStrengthColor()
-                              : "bg-zinc-200 dark:bg-zinc-700"
+                              : "bg-zinc-200 dark:bg-zinc-700",
                           )}
                         />
                       ))}
@@ -263,7 +274,12 @@ export default function RegisterPage() {
                         ) : (
                           <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
-                        <span className={cn("text-xs", hasMinChars ? "text-green-600 dark:text-green-400" : "text-zinc-400")}>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            hasMinChars ? "text-green-600 dark:text-green-400" : "text-zinc-400",
+                          )}
+                        >
                           6+ characters
                         </span>
                       </div>
@@ -273,7 +289,12 @@ export default function RegisterPage() {
                         ) : (
                           <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
-                        <span className={cn("text-xs", hasUpper ? "text-green-600 dark:text-green-400" : "text-zinc-400")}>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            hasUpper ? "text-green-600 dark:text-green-400" : "text-zinc-400",
+                          )}
+                        >
                           Uppercase
                         </span>
                       </div>
@@ -283,17 +304,26 @@ export default function RegisterPage() {
                         ) : (
                           <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
-                        <span className={cn("text-xs", hasNumber ? "text-green-600 dark:text-green-400" : "text-zinc-400")}>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            hasNumber ? "text-green-600 dark:text-green-400" : "text-zinc-400",
+                          )}
+                        >
                           Number
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className={cn(
-                          "text-xs font-medium",
-                          getStrengthLabel() === "Strong" ? "text-green-500" :
-                          getStrengthLabel() === "Medium" ? "text-yellow-500" :
-                          "text-zinc-400"
-                        )}>
+                        <span
+                          className={cn(
+                            "text-xs font-medium",
+                            getStrengthLabel() === "Strong"
+                              ? "text-green-500"
+                              : getStrengthLabel() === "Medium"
+                                ? "text-yellow-500"
+                                : "text-zinc-400",
+                          )}
+                        >
                           {getStrengthLabel() && `${getStrengthLabel()} password`}
                         </span>
                       </div>
@@ -317,7 +347,7 @@ export default function RegisterPage() {
                     "bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-emerald-400 dark:focus:border-emerald-500 transition-all",
                     confirmPassword && password !== confirmPassword
                       ? "border-red-300 dark:border-red-800 focus:ring-red-400 focus:border-red-400"
-                      : ""
+                      : "",
                   )}
                 />
                 {confirmPassword && password !== confirmPassword && (
@@ -344,13 +374,19 @@ export default function RegisterPage() {
                 <ShimmerButton
                   type="submit"
                   className="w-full h-11 text-sm font-medium"
-                  disabled={!name || !email || !password || password !== confirmPassword || isLoading}
+                  disabled={
+                    !name || !email || !password || password !== confirmPassword || isLoading
+                  }
                   shimmerColor="rgba(16, 185, 129, 0.5)"
                 >
                   {isLoading ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...</>
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account...
+                    </>
                   ) : (
-                    <><UserPlus className="h-4 w-4 mr-2" /> Create Account</>
+                    <>
+                      <UserPlus className="h-4 w-4 mr-2" /> Create Account
+                    </>
                   )}
                 </ShimmerButton>
               </motion.div>
@@ -363,7 +399,10 @@ export default function RegisterPage() {
               className="mt-6 text-center text-sm text-zinc-500"
             >
               Already have an account?{" "}
-              <Link href="/en/login" className="text-emerald-600 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors">
+              <Link
+                href="/en/login"
+                className="text-emerald-600 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
+              >
                 Sign in
               </Link>
             </motion.p>

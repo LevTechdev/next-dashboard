@@ -18,7 +18,16 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["default", "destructive", "outline", "secondary", "ghost", "link", "premium", "glass"],
+      options: [
+        "default",
+        "destructive",
+        "outline",
+        "secondary",
+        "ghost",
+        "link",
+        "premium",
+        "glass",
+      ],
     },
     size: {
       control: "select",
@@ -40,56 +49,103 @@ type Story = StoryObj<typeof Button>;
 
 export const Default: Story = {
   args: { variant: "default" },
-  parameters: { docs: { description: { story: "Standard indigo action button. Uses `bg-indigo-600` → `dark:bg-indigo-500`." } } },
+  parameters: {
+    docs: {
+      description: {
+        story: "Standard indigo action button. Uses `bg-indigo-600` → `dark:bg-indigo-500`.",
+      },
+    },
+  },
 };
 
 export const Secondary: Story = {
   args: { variant: "secondary" },
-  parameters: { docs: { description: { story: "Low-emphasis gray button for secondary actions." } } },
+  parameters: {
+    docs: { description: { story: "Low-emphasis gray button for secondary actions." } },
+  },
 };
 
 export const Destructive: Story = {
   args: { variant: "destructive", children: "Delete" },
-  parameters: { docs: { description: { story: "Red destructive action. Uses `--destructive` token for hover." } } },
+  parameters: {
+    docs: {
+      description: { story: "Red destructive action. Uses `--destructive` token for hover." },
+    },
+  },
 };
 
 export const Outline: Story = {
   args: { variant: "outline" },
-  parameters: { docs: { description: { story: "Bordered button for paired actions. Border uses `--border` token." } } },
+  parameters: {
+    docs: {
+      description: { story: "Bordered button for paired actions. Border uses `--border` token." },
+    },
+  },
 };
 
 export const Ghost: Story = {
   args: { variant: "ghost" },
-  parameters: { docs: { description: { story: "Minimal transparent button for toolbars and icon actions." } } },
+  parameters: {
+    docs: { description: { story: "Minimal transparent button for toolbars and icon actions." } },
+  },
 };
 
 export const Link: Story = {
   args: { variant: "link" },
-  parameters: { docs: { description: { story: "Text-link style button. Use for inline actions and navigation." } } },
+  parameters: {
+    docs: {
+      description: { story: "Text-link style button. Use for inline actions and navigation." },
+    },
+  },
 };
 
 export const Premium: Story = {
   args: { variant: "premium", children: "Premium", className: "gap-1.5" },
-  parameters: { docs: { description: { story: "Gradient CTA button. Uses `--gradient-premium` token. Light mode: `#6366f1 → #a855f7 → #ec4899`. Dark mode: `#818cf8 → #c084fc → #f472b6`." } } },
-  render: (args) => <Button {...args}><Sparkles className="h-4 w-4" />{args.children}</Button>,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Gradient CTA button. Uses `--gradient-premium` token. Light mode: `#6366f1 → #a855f7 → #ec4899`. Dark mode: `#818cf8 → #c084fc → #f472b6`.",
+      },
+    },
+  },
+  render: (args) => (
+    <Button {...args}>
+      <Sparkles className="h-4 w-4" />
+      {args.children}
+    </Button>
+  ),
 };
 
 export const Glass: Story = {
   args: { variant: "glass" },
-  parameters: { docs: { description: { story: "Frosted glass button with backdrop blur. Uses `--glass-bg` and `--glass-border` tokens." } } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Frosted glass button with backdrop blur. Uses `--glass-bg` and `--glass-border` tokens.",
+      },
+    },
+  },
 };
 
 // ── Sizes ──────────────────────────────────────────────────────────
 
 export const Sizes: Story = {
-  parameters: { docs: { description: { story: "All 5 button sizes: `sm`, `default`, `lg`, `xl`, and `icon`." } } },
+  parameters: {
+    docs: {
+      description: { story: "All 5 button sizes: `sm`, `default`, `lg`, `xl`, and `icon`." },
+    },
+  },
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
       <Button size="sm">Small (h-9)</Button>
       <Button size="default">Default (h-10)</Button>
       <Button size="lg">Large (h-11)</Button>
       <Button size="xl">XL (h-12)</Button>
-      <Button size="icon"><Sun className="h-4 w-4" /></Button>
+      <Button size="icon">
+        <Sun className="h-4 w-4" />
+      </Button>
     </div>
   ),
 };
@@ -97,7 +153,11 @@ export const Sizes: Story = {
 // ── All Variants Grid ──────────────────────────────────────────────
 
 export const AllVariants: Story = {
-  parameters: { docs: { description: { story: "Complete grid of all 8 button variants for visual comparison." } } },
+  parameters: {
+    docs: {
+      description: { story: "Complete grid of all 8 button variants for visual comparison." },
+    },
+  },
   render: () => (
     <div className="flex flex-wrap gap-3">
       <Button variant="default">Default</Button>
@@ -106,7 +166,10 @@ export const AllVariants: Story = {
       <Button variant="outline">Outline</Button>
       <Button variant="ghost">Ghost</Button>
       <Button variant="link">Link</Button>
-      <Button variant="premium" className="gap-1.5"><Sparkles className="h-4 w-4" />Premium</Button>
+      <Button variant="premium" className="gap-1.5">
+        <Sparkles className="h-4 w-4" />
+        Premium
+      </Button>
       <Button variant="glass">Glass</Button>
     </div>
   ),
@@ -115,7 +178,14 @@ export const AllVariants: Story = {
 // ─── Example: Theme-aware CTA ─────────────────────────────────────
 
 export const PremiumCTA: Story = {
-  parameters: { docs: { description: { story: "Full-width premium CTA with icon. The gradient automatically adapts between light (`#6366f1 → #a855f7 → #ec4899`) and dark (`#818cf8 → #c084fc → #f472b6`) modes." } } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Full-width premium CTA with icon. The gradient automatically adapts between light (`#6366f1 → #a855f7 → #ec4899`) and dark (`#818cf8 → #c084fc → #f472b6`) modes.",
+      },
+    },
+  },
   render: () => (
     <Button variant="premium" size="xl" className="gap-2 w-full max-w-xs">
       <Sparkles className="h-5 w-5" />

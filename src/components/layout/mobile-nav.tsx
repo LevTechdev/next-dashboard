@@ -7,14 +7,7 @@ import { cn } from "@/lib/utils";
 import { useViewTransition } from "@/components/view-transition-provider";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Globe,
-  Check,
-} from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Users, Package, Globe, Check } from "lucide-react";
 
 const LANGUAGES = [
   { code: "en", label: "EN", name: "English", flag: "🇬🇧" },
@@ -111,20 +104,18 @@ export function MobileNav() {
                 "flex flex-col items-center justify-center gap-0.5 px-3 py-1 min-w-[64px] transition-colors duration-200 relative",
                 isActive
                   ? "text-indigo-600 dark:text-indigo-400"
-                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300",
               )}
             >
               <div
                 className={cn(
                   "flex items-center justify-center w-10 h-8 rounded-lg transition-all duration-200",
-                  isActive && "bg-indigo-50 dark:bg-indigo-900/20"
+                  isActive && "bg-indigo-50 dark:bg-indigo-900/20",
                 )}
               >
                 <Icon className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-medium leading-none">
-                {item.label}
-              </span>
+              <span className="text-[10px] font-medium leading-none">{item.label}</span>
               {isActive && (
                 <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
               )}
@@ -141,16 +132,21 @@ export function MobileNav() {
               "flex flex-col items-center justify-center gap-0.5 px-3 py-1 min-w-[64px] transition-colors duration-200 relative",
               showLangMenu
                 ? "text-indigo-600 dark:text-indigo-400"
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-indigo-500"
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-indigo-500",
             )}
             aria-label="Switch language"
           >
             <motion.div
-              animate={showLangMenu ? { scale: [1, 1.15, 1], rotate: [0, -8, 8, 0] } : { scale: 1, rotate: 0 }}
+              animate={
+                showLangMenu
+                  ? { scale: [1, 1.15, 1], rotate: [0, -8, 8, 0] }
+                  : { scale: 1, rotate: 0 }
+              }
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className={cn(
                 "flex items-center justify-center w-10 h-8 rounded-lg transition-all duration-200",
-                showLangMenu && "bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-200 dark:ring-indigo-800"
+                showLangMenu &&
+                  "bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-200 dark:ring-indigo-800",
               )}
             >
               <span className="text-sm leading-none mr-0.5">{currentLang.flag}</span>
@@ -159,7 +155,9 @@ export function MobileNav() {
             <span
               className={cn(
                 "text-[10px] font-semibold leading-none transition-all duration-200",
-                showLangMenu ? "text-indigo-600 dark:text-indigo-400" : "text-gray-500 dark:text-gray-400"
+                showLangMenu
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-500 dark:text-gray-400",
               )}
             >
               {currentLang.label}
@@ -217,15 +215,17 @@ export function MobileNav() {
                           "w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors",
                           isSelected
                             ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50",
                         )}
                       >
                         <span className="text-base shrink-0">{lang.flag}</span>
                         <div className="flex-1 text-left min-w-0">
-                          <span className={cn(
-                            "block text-sm leading-tight",
-                            isSelected && "text-indigo-600 dark:text-indigo-400"
-                          )}>
+                          <span
+                            className={cn(
+                              "block text-sm leading-tight",
+                              isSelected && "text-indigo-600 dark:text-indigo-400",
+                            )}
+                          >
                             {lang.label}
                           </span>
                           <span className="block text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5 truncate">

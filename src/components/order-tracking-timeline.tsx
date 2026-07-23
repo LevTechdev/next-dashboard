@@ -20,7 +20,11 @@ const STATUS_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   PENDING: { label: "Order Placed", icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
-  PROCESSING: { label: "Processing", icon: PackageCheck, color: "text-blue-600 dark:text-blue-400" },
+  PROCESSING: {
+    label: "Processing",
+    icon: PackageCheck,
+    color: "text-blue-600 dark:text-blue-400",
+  },
   SHIPPED: { label: "Shipped", icon: Truck, color: "text-purple-600 dark:text-purple-400" },
   DELIVERED: { label: "Delivered", icon: Check, color: "text-green-600 dark:text-green-400" },
   CANCELLED: { label: "Cancelled", icon: XCircle, color: "text-red-600 dark:text-red-400" },
@@ -53,7 +57,8 @@ export function OrderTrackingTimeline({
                       isCompleted
                         ? "bg-indigo-600 border-indigo-600 text-white"
                         : "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400",
-                      isCurrent && "ring-2 ring-indigo-500/30 ring-offset-2 dark:ring-offset-gray-900"
+                      isCurrent &&
+                        "ring-2 ring-indigo-500/30 ring-offset-2 dark:ring-offset-gray-900",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -63,7 +68,7 @@ export function OrderTrackingTimeline({
                       "text-[10px] font-medium mt-1.5 whitespace-nowrap",
                       isCompleted
                         ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-gray-400 dark:text-gray-500"
+                        : "text-gray-400 dark:text-gray-500",
                     )}
                   >
                     {config.label}
@@ -85,8 +90,8 @@ export function OrderTrackingTimeline({
                     isCompleted
                       ? "bg-indigo-500"
                       : isCurrent
-                      ? "bg-gradient-to-r from-indigo-500 to-gray-300 dark:to-gray-600"
-                      : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-gradient-to-r from-indigo-500 to-gray-300 dark:to-gray-600"
+                        : "bg-gray-200 dark:bg-gray-700",
                   )}
                 />
               );
@@ -132,15 +137,13 @@ export function OrderTrackingTimeline({
                         "flex items-center justify-center w-5 h-5 rounded-full",
                         isLast
                           ? "bg-indigo-100 dark:bg-indigo-900/30"
-                          : "bg-gray-100 dark:bg-gray-800"
+                          : "bg-gray-100 dark:bg-gray-800",
                       )}
                     >
                       <Icon
                         className={cn(
                           "h-3 w-3",
-                          isLast
-                            ? "text-indigo-600 dark:text-indigo-400"
-                            : "text-gray-400"
+                          isLast ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400",
                         )}
                       />
                     </div>

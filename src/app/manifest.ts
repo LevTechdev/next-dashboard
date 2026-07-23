@@ -4,7 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Dashboard - Business Management Platform",
     short_name: "Dashboard",
-    description: "Comprehensive business management dashboard with real-time analytics, order tracking, and team collaboration",
+    description:
+      "Comprehensive business management dashboard with real-time analytics, order tracking, and team collaboration",
     start_url: "/en/dashboard",
     display: "standalone",
     background_color: "#f8fafc",

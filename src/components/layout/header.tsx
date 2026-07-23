@@ -1,6 +1,20 @@
 "use client";
 
-import { Search, Sun, Moon, Monitor, LogOut, User, Settings as SettingsIcon, Menu, Command, Wifi, WifiOff, Loader2, Check } from "lucide-react";
+import {
+  Search,
+  Sun,
+  Moon,
+  Monitor,
+  LogOut,
+  User,
+  Settings as SettingsIcon,
+  Menu,
+  Command,
+  Wifi,
+  WifiOff,
+  Loader2,
+  Check,
+} from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
@@ -67,41 +81,22 @@ function RealtimeConnectionBadge() {
           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
           config.bg,
           config.color,
-          "hover:opacity-80"
+          "hover:opacity-80",
         )}
         title={config.label}
       >
-        <Icon
-          className={cn(
-            "h-3.5 w-3.5",
-            config.pulse && "animate-spin"
-          )}
-        />
+        <Icon className={cn("h-3.5 w-3.5", config.pulse && "animate-spin")} />
         <span className="hidden lg:inline">{config.label}</span>
       </button>
 
       {/* Tooltip popover */}
       {tooltipOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setTooltipOpen(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setTooltipOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-50 w-64 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg">
             <div className="flex items-center gap-3 mb-3">
-              <div
-                className={cn(
-                  "p-2 rounded-full",
-                  config.bg
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-4 w-4",
-                    config.color,
-                    config.pulse && "animate-spin"
-                  )}
-                />
+              <div className={cn("p-2 rounded-full", config.bg)}>
+                <Icon className={cn("h-4 w-4", config.color, config.pulse && "animate-spin")} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -111,8 +106,8 @@ function RealtimeConnectionBadge() {
                   {connectionStatus === "connected"
                     ? "Receiving live updates via SSE"
                     : connectionStatus === "connecting"
-                    ? "Establishing real-time connection..."
-                    : "Connection lost. Reconnecting..."}
+                      ? "Establishing real-time connection..."
+                      : "Connection lost. Reconnecting..."}
                 </p>
               </div>
             </div>
@@ -143,12 +138,13 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   useEffect(() => setMounted(true), []);
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   const particleColor = mounted && theme === "dark" ? "#818cf8" : "#6366f1";
 
@@ -181,11 +177,13 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         <div className="flex-1 max-w-md hidden sm:block">
           <button
             onClick={() => {
-              document.dispatchEvent(new KeyboardEvent("keydown", {
-                key: "k",
-                metaKey: true,
-                bubbles: true,
-              }));
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", {
+                  key: "k",
+                  metaKey: true,
+                  bubbles: true,
+                }),
+              );
             }}
             className="relative w-full group"
           >
@@ -208,7 +206,11 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* Theme Toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-gray-500 active:scale-95 transition-transform duration-150 rounded-xl">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 active:scale-95 transition-transform duration-150 rounded-xl"
+              >
                 {mounted && theme === "dark" ? (
                   <Moon className="h-5 w-5" />
                 ) : mounted && theme === "light" ? (
@@ -235,7 +237,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                       "flex items-center gap-3 cursor-pointer group rounded-lg",
                       isSelected
                         ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                        : "text-gray-700 dark:text-gray-300"
+                        : "text-gray-700 dark:text-gray-300",
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -252,7 +254,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </DropdownMenu>
 
           {/* Language Toggle */}
-          <LanguageToggle locale={pathname.split('/')[1] || 'en'} pathname={pathname} />
+          <LanguageToggle locale={pathname.split("/")[1] || "en"} pathname={pathname} />
 
           {/* Notifications */}
           <NotificationPanel />
@@ -289,12 +291,18 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={`/${pathname.split('/')[1]}/profile`} className="flex items-center cursor-pointer">
+                <Link
+                  href={`/${pathname.split("/")[1]}/profile`}
+                  className="flex items-center cursor-pointer"
+                >
                   <User className="h-4 w-4 mr-2" /> {tnav("profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={`/${pathname.split('/')[1]}/settings`} className="flex items-center cursor-pointer">
+                <Link
+                  href={`/${pathname.split("/")[1]}/settings`}
+                  className="flex items-center cursor-pointer"
+                >
                   <SettingsIcon className="h-4 w-4 mr-2" /> {tnav("settings")}
                 </Link>
               </DropdownMenuItem>

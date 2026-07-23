@@ -150,7 +150,7 @@ export function DataExportButton<T = any>({
       // Clear success indicator after animation
       setTimeout(() => setSuccessFormat(null), 2000);
     },
-    [exportData, showColumnSelector, columns.length]
+    [exportData, showColumnSelector, columns.length],
   );
 
   const handleColumnSelectConfirm = useCallback(() => {
@@ -185,7 +185,7 @@ export function DataExportButton<T = any>({
             className={cn(
               "gap-1.5 relative overflow-hidden group",
               successFormat && "border-emerald-400 dark:border-emerald-600",
-              className
+              className,
             )}
             disabled={data.length === 0}
           >
@@ -209,9 +209,7 @@ export function DataExportButton<T = any>({
               <FileDown className="h-4 w-4 transition-transform group-hover:scale-110 duration-200" />
             )}
             <span className="hidden sm:inline">
-              {successFormat
-                ? "Exported!"
-                : label || "Export"}
+              {successFormat ? "Exported!" : label || "Export"}
             </span>
             {!successFormat && (
               <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -301,7 +299,7 @@ export function DataExportButton<T = any>({
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150",
                     isSelected
                       ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300"
-                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50",
                   )}
                 >
                   <div
@@ -309,7 +307,7 @@ export function DataExportButton<T = any>({
                       "w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0",
                       isSelected
                         ? "border-indigo-500 bg-indigo-500"
-                        : "border-gray-300 dark:border-gray-600"
+                        : "border-gray-300 dark:border-gray-600",
                     )}
                   >
                     {isSelected && <CheckCircle2 className="h-3 w-3 text-white" />}
@@ -321,21 +319,12 @@ export function DataExportButton<T = any>({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetColumns}
-              className="text-xs"
-            >
+            <Button variant="ghost" size="sm" onClick={resetColumns} className="text-xs">
               <X className="h-3 w-3 mr-1" />
               Reset
             </Button>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowColumnsDialog(false)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowColumnsDialog(false)}>
                 Cancel
               </Button>
               <Button

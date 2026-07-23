@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ||
-  "http://localhost:3010/api/auth/google/callback";
+  process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
 
 /**
  * GET /api/auth/google/callback?code=xxx
@@ -27,45 +26,34 @@ export async function GET(request: Request) {
     // Handle error from Google (e.g. user denied consent)
     if (error) {
       console.error("Google OAuth error:", error);
-      return NextResponse.redirect(
-        new URL(`/en/login?error=google_${error}`, request.url)
-      );
+      return NextResponse.redirect(new URL(`/en/login?error=google_${error}`, request.url));
     }
 
     if (!code) {
-      return NextResponse.redirect(
-        new URL("/en/login?error=missing_code", request.url)
-      );
+      return NextResponse.redirect(new URL("/en/login?error=missing_code", request.url));
     }
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      return NextResponse.redirect(
-        new URL("/en/login?error=google_not_configured", request.url)
-      );
+      return NextResponse.redirect(new URL("/en/login?error=google_not_configured", request.url));
     }
 
     // Exchange authorization code for tokens
-    const tokenResponse = await fetch(
-      "https://oauth2.googleapis.com/token",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          code,
-          client_id: GOOGLE_CLIENT_ID,
-          client_secret: GOOGLE_CLIENT_SECRET,
-          redirect_uri: REDIRECT_URI,
-          grant_type: "authorization_code",
-        }),
-      }
-    );
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
+    });
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error("Google token exchange failed:", errorData);
-      return NextResponse.redirect(
-        new URL("/en/login?error=token_exchange_failed", request.url)
-      );
+      return NextResponse.redirect(new URL("/en/login?error=token_exchange_failed", request.url));
     }
 
     const tokens = await tokenResponse.json();
@@ -75,9 +63,7 @@ export async function GET(request: Request) {
     let userInfo: { email: string; name: string; picture?: string };
     if (id_token) {
       // Decode the ID token (JWT) to get user info
-      const payload = JSON.parse(
-        Buffer.from(id_token.split(".")[1], "base64").toString()
-      );
+      const payload = JSON.parse(Buffer.from(id_token.split(".")[1], "base64").toString());
       userInfo = {
         email: payload.email,
         name: payload.name || payload.email.split("@")[0],
@@ -85,17 +71,14 @@ export async function GET(request: Request) {
       };
     } else {
       // Fallback: use access token to fetch user info
-      const infoResponse = await fetch(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        { headers: { Authorization: `Bearer ${access_token}` } }
-      );
+      const infoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
       userInfo = await infoResponse.json();
     }
 
     if (!userInfo.email) {
-      return NextResponse.redirect(
-        new URL("/en/login?error=no_email", request.url)
-      );
+      return NextResponse.redirect(new URL("/en/login?error=no_email", request.url));
     }
 
     // Find or create user
@@ -142,8 +125,6 @@ export async function GET(request: Request) {
     return response;
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    return NextResponse.redirect(
-      new URL("/en/login?error=callback_failed", request.url)
-    );
+    return NextResponse.redirect(new URL("/en/login?error=callback_failed", request.url));
   }
 }

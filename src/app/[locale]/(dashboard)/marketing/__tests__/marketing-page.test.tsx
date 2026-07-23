@@ -35,8 +35,24 @@ beforeEach(() => {
     ok: true,
     json: () =>
       Promise.resolve([
-        { id: "1", name: "Summer Sale 2024", type: "EMAIL", channel: "email", budget: 5000, spent: 3200, status: "ACTIVE" },
-        { id: "2", name: "Social Blast", type: "SOCIAL", channel: "instagram", budget: 2000, spent: 2100, status: "ACTIVE" },
+        {
+          id: "1",
+          name: "Summer Sale 2024",
+          type: "EMAIL",
+          channel: "email",
+          budget: 5000,
+          spent: 3200,
+          status: "ACTIVE",
+        },
+        {
+          id: "2",
+          name: "Social Blast",
+          type: "SOCIAL",
+          channel: "instagram",
+          budget: 2000,
+          spent: 2100,
+          status: "ACTIVE",
+        },
       ]),
   } as Response);
 });

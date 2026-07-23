@@ -16,7 +16,10 @@ export async function PUT(req: Request) {
   }
 
   if (newPassword.length < 6) {
-    return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+    return NextResponse.json(
+      { error: "New password must be at least 6 characters" },
+      { status: 400 },
+    );
   }
 
   // Try findUnique first, fallback to first admin

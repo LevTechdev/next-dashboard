@@ -13,11 +13,7 @@ import {
   RefreshCw,
   Download,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,13 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  formatCurrency,
-  formatDateTime,
-  getStatusColor,
-  salesChannels,
-  cn,
-} from "@/lib/utils";
+import { formatCurrency, formatDateTime, getStatusColor, salesChannels, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -54,19 +44,23 @@ export default function SalesPage() {
   const [channelFilter, setChannelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: orders, loading, lastUpdated, isRefreshing, refresh } =
-    useRealtimeData<any[]>(
-      `/api/orders?channel=${channelFilter}&status=${statusFilter}`,
-      { interval: 15000 }
-    );
+  const {
+    data: orders,
+    loading,
+    lastUpdated,
+    isRefreshing,
+    refresh,
+  } = useRealtimeData<any[]>(`/api/orders?channel=${channelFilter}&status=${statusFilter}`, {
+    interval: 15000,
+  });
 
   const totalRevenue = useMemo(
     () => (orders || []).reduce((sum: number, o: any) => sum + o.grandTotal, 0),
-    [orders]
+    [orders],
   );
   const avgOrderValue = useMemo(
     () => (orders && orders.length > 0 ? totalRevenue / orders.length : 0),
-    [totalRevenue, orders]
+    [totalRevenue, orders],
   );
 
   const stats = useMemo(
@@ -104,7 +98,7 @@ export default function SalesPage() {
         bg: "bg-orange-50 dark:bg-orange-900/20",
       },
     ],
-    [totalRevenue, orders, avgOrderValue, tsales]
+    [totalRevenue, orders, avgOrderValue, tsales],
   );
 
   if (loading)
@@ -141,15 +135,10 @@ export default function SalesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tsales("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {tsales("subtitle")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{tsales("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-          />
+          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button
             variant="ghost"
             size="sm"
@@ -157,9 +146,7 @@ export default function SalesPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
           <DataExportButton
@@ -212,10 +199,7 @@ export default function SalesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-gray-400" />
-              <Select
-                value={channelFilter}
-                onValueChange={setChannelFilter}
-              >
+              <Select value={channelFilter} onValueChange={setChannelFilter}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder={tsales("allChannels")} />
                 </SelectTrigger>
@@ -231,10 +215,7 @@ export default function SalesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <Select
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-              >
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder={tcommon("all")} />
                 </SelectTrigger>
@@ -252,63 +233,54 @@ export default function SalesPage() {
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tsales("orderList")}</TableHead>
-                <TableHead>{tsales("customer")}</TableHead>
-                <TableHead>{tsales("channel")}</TableHead>
-                <TableHead>{tsales("status")}</TableHead>
-                <TableHead>{tcommon("status")}</TableHead>
-                <TableHead>{tsales("amount")}</TableHead>
-                <TableHead>{tsales("date")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(orders || []).map((order: any) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-mono text-sm font-medium">
-                    #{order.orderNumber}
-                  </TableCell>
-                  <TableCell>
-                    {order.customer?.name || "Guest"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {order.channel?.name || "N/A"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.paymentStatus)}>
-                      {order.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {formatCurrency(order.grandTotal)}
-                  </TableCell>
-                  <TableCell className="text-xs text-gray-500">
-                    {formatDateTime(order.createdAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(!orders || orders.length === 0) && (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-8 text-gray-500"
-                  >
-                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
-                    {tsales("noOrders")}
-                  </TableCell>
+                  <TableHead>{tsales("orderList")}</TableHead>
+                  <TableHead>{tsales("customer")}</TableHead>
+                  <TableHead>{tsales("channel")}</TableHead>
+                  <TableHead>{tsales("status")}</TableHead>
+                  <TableHead>{tcommon("status")}</TableHead>
+                  <TableHead>{tsales("amount")}</TableHead>
+                  <TableHead>{tsales("date")}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(orders || []).map((order: any) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-mono text-sm font-medium">
+                      #{order.orderNumber}
+                    </TableCell>
+                    <TableCell>{order.customer?.name || "Guest"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{order.channel?.name || "N/A"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.paymentStatus)}>
+                        {order.paymentStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(order.grandTotal)}
+                    </TableCell>
+                    <TableCell className="text-xs text-gray-500">
+                      {formatDateTime(order.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(!orders || orders.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
+                      {tsales("noOrders")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
