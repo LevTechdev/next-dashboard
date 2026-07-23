@@ -58,6 +58,7 @@
     "fuse.js": "^7.5.0",
     "ignore": "^7.0.6",
     "jsonwebtoken": "^9.0.3",
+    "lucide-animated": "^1.0.5",
     "lucide-react": "^0.475.0",
     "motion": "^12.42.2",
     "next": "16.2.9",
