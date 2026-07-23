@@ -102,7 +102,7 @@ jobs:
       - run: npm run build
         env:
           NEXTAUTH_SECRET: "ci-placeholder"
-          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_URL: "http://localhost:3010"
           DATABASE_URL: "file:./prisma/dev.db"
           GOOGLE_CLIENT_ID: "ci-placeholder"
           GOOGLE_CLIENT_SECRET: "ci-placeholder"

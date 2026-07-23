@@ -9,13 +9,16 @@ beforeEach(() => {
 describe("Features Page", () => {
   it("renders the cinematic header", () => {
     expect(screen.getByText("Powerful Capabilities")).toBeInTheDocument();
-    expect(screen.getByText("Grow Your Business")).toBeInTheDocument();
+    // The h1 renders "Everything You Need to " + FlipFadeText cycling through words
+    expect(screen.getByText("Everything You Need to")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
-    expect(
-      screen.getByText(/From real-time analytics to team collaboration/)
-    ).toBeInTheDocument();
+    // TextAnimate renders the text twice (sr-only + animated), so use getAllByText
+    const descriptions = screen.getAllByText(
+      /From real-time analytics to team collaboration/
+    );
+    expect(descriptions.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders feature group titles", () => {

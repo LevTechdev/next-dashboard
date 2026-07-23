@@ -8,8 +8,10 @@ beforeEach(() => {
 
 describe("Integrations Overview Page", () => {
   it("renders the header section", () => {
-    expect(screen.getByText("Integrations")).toBeInTheDocument();
-    expect(screen.getByText("Entire Stack")).toBeInTheDocument();
+    // Badge text is "Seamless Integrations"
+    expect(screen.getByText("Seamless Integrations")).toBeInTheDocument();
+    // The h1 renders "Connect Your " + FlipFadeText cycling through words
+    expect(screen.getByText("Connect Your")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
@@ -14,17 +15,16 @@ vi.mock("next/navigation", () => ({
 }));
 
 // ── Mock next-intl (uses real en.json translations; individual test files can override) ────
-// Load the real translations so all dashboard/marketing page tests get correct text
-const enMessages = require("../../../../i18n/locales/en.json");
+import enMessages from "../../../../i18n/locales/en.json";
 
 vi.mock("next-intl", () => {
   const messages = enMessages;
 
   const tFn = (namespace: string) => {
-    const ns = (messages as any)[namespace] || {};
-    const t = (key: string) => (ns as any)[key] ?? key;
-    t.raw = (key: string) => (ns as any)[key] ?? key;
-    t.rich = (key: string) => (ns as any)[key] ?? key;
+    const ns = (messages as Record<string, any>)[namespace] || {};
+    const t = (key: string) => (ns as Record<string, any>)[key] ?? key;
+    t.raw = (key: string) => (ns as Record<string, any>)[key] ?? key;
+    t.rich = (key: string) => (ns as Record<string, any>)[key] ?? key;
     return t;
   };
 
@@ -54,6 +54,18 @@ global.ResizeObserver = class {
   disconnect() {}
 };
 
+// ── Mock IntersectionObserver (required by framer-motion whileInView) ─────
+global.IntersectionObserver = class {
+  constructor() {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  root = null;
+  rootMargin = "";
+  thresholds: number[] = [];
+  takeRecords = (): IntersectionObserverEntry[] => [];
+} as unknown as typeof IntersectionObserver;
+
 // ── Mock next-themes ───────────────────────────────────────────────────────
 vi.mock("next-themes", () => ({
   useTheme: vi.fn(() => ({ theme: "light", setTheme: vi.fn(), themes: ["light", "dark", "system"] })),
@@ -78,7 +90,7 @@ vi.mock("framer-motion", () => {
   const motion = new Proxy(
     {},
     {
-      get: (_, tag: any) =>
+      get: (_: any, tag: any) =>
         (props: any) => React.createElement(noop, { ...props, tag }),
     }
   );
@@ -92,15 +104,15 @@ vi.mock("framer-motion", () => {
       set: () => {},
       onChange: () => {},
     }),
-    useTransform: (value: any, _input: any, _output: any) => ({
+    useTransform: (value: any, inputRange: any, outputRange: any) => ({
       get: () => 0,
       set: () => {},
     }),
     useScroll: () => ({ scrollY: { get: () => 0 } }),
     useSpring: (value: any) => value,
     useAnimation: () => ({ start: () => {}, stop: () => {} }),
-    useAnimationFrame: () => {},
-    useDragControls: () => ({})
+    useAnimationFrame: (callback: any) => {},
+    useDragControls: () => ({}),
   };
 });
 
@@ -118,6 +130,8 @@ vi.mock("lucide-react", () => {
     "FileText", "Megaphone", "Tag", "UserCheck", "Clock", "PieChart",
     "CheckCircle", "Download", "Copy", "CopyCheck", "Github", "Twitter",
     "GitCommit", "Plug",
+    "PlugZap",
+    "CheckCircle2",
     // Dashboard page icons
     "Search", "Plus", "Settings", "Sun", "Moon", "Monitor", "Command", "Loader2",
     "Hash", "File", "Text", "Layout", "LogOut", "User", "ChevronLeft",
@@ -126,7 +140,7 @@ vi.mock("lucide-react", () => {
     "ArrowUpDown", "ChevronDown", "MoreHorizontal", "Filter", "Eye",
     "DollarSign", "Palette", "Smartphone", "Key", "ShoppingBag", "MapPin",
     "Store", "Wifi", "WifiOff", "ArrowUpRight", "UserCircle", "ClipboardList",
-    "Truck", "PackageCheck", "XCircle", "Pencil"," Monitor", "CopyCheck",
+    "Truck", "PackageCheck", "XCircle", "Pencil", "Monitor", "CopyCheck",
   ];
 
   const icons: Record<string, any> = {};
@@ -140,16 +154,16 @@ vi.mock("lucide-react", () => {
 // ── Mock @radix-ui/react-slot ──────────────────────────────────────────────
 vi.mock("@radix-ui/react-slot", () => {
   const React = require("react");
-  return {
-    Slot: React.forwardRef((props: any, ref: any) => {
-      const { children, ...rest } = props;
-      if (!children) return null;
-      return React.cloneElement(
-        React.Children.only(Array.isArray(children) ? children[0] : children),
-        { ...rest, ref }
-      );
-    }),
-  };
+  const Slot = React.forwardRef((props: any, ref: any) => {
+    const { children, ...rest } = props;
+    if (!children) return null;
+    return React.cloneElement(
+      React.Children.only(Array.isArray(children) ? children[0] : children),
+      { ...rest, ref }
+    );
+  });
+  Slot.displayName = "Slot";
+  return { Slot };
 });
 
 // ── Mock class-variance-authority ───────────────────────────────────────────
@@ -189,11 +203,13 @@ vi.mock("@/lib/utils", async () => {
 // ── Mock @/components/ui/button ────────────────────────────────────────────
 vi.mock("@/components/ui/button", () => {
   const React = require("react");
+  const Button = React.forwardRef(
+    ({ children, className, variant, size, asChild, ...props }: any, ref: any) =>
+      React.createElement("button", { className, ref, ...props }, children)
+  );
+  Button.displayName = "Button";
   return {
-    Button: React.forwardRef(
-      ({ children, className, variant, size, asChild, ...props }: any, ref: any) =>
-        React.createElement("button", { className, ref, ...props }, children)
-    ),
+    Button,
     buttonVariants: "",
   };
 });

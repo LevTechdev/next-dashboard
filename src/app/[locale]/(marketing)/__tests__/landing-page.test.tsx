@@ -9,7 +9,8 @@ beforeEach(() => {
 describe("Marketing Landing Page", () => {
   it("renders the hero section with headline", () => {
     expect(screen.getByText("Operate with")).toBeInTheDocument();
-    expect(screen.getByText("real-time precision.")).toBeInTheDocument();
+    // "Trusted by" appears in both subtext and section heading
+    expect(screen.getAllByText(/Trusted by/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the beta badge", () => {

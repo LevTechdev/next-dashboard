@@ -33,7 +33,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+Open [http://localhost:3010](http://localhost:3010) to view the dashboard.
 
 ## Available Scripts
 
@@ -73,4 +73,3 @@ GitHub Actions runs on every push/PR to `main`:
 5. **Test (API)** — API integration tests with coverage
 6. **Coverage Merge** — Combines all 3 coverage reports, generates unified HTML
 7. **Build** — Production build
->>>>>>> 869e7ec (feat: initial project setup with premium design system v1.0.0)

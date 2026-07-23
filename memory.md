@@ -274,13 +274,18 @@
 
 ### Common Commands
 ```bash
-npm run dev              # Start dev server (port 3010)
+npm run dev              # Start dev server → http://localhost:3010
 npm run build            # Production build
 npm test                 # Unit tests
 npm run test:components  # Component tests
 npm run test:all         # All tests
 npm run coverage:all     # All tests + coverage report
 ```
+
+### Port Convention
+- **Dev server runs on port 3010** (not 3000). Configured via `-p 3010` in `package.json`'s `dev` script.
+- This avoids conflicts with other local apps that commonly use port 3000.
+- All config references (`NEXTAUTH_URL` in CI, README links, etc.) must use port 3010.
 
 ### Project Structure
 ```

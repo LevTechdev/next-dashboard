@@ -9,7 +9,8 @@ beforeEach(() => {
 describe("Changelog Page", () => {
   it("renders the header section", () => {
     expect(screen.getByText("Release Notes")).toBeInTheDocument();
-    expect(screen.getByText("New")).toBeInTheDocument();
+    // The h1 renders "What's " + FlipFadeText cycling through words like "new.", "shipping.", etc.
+    expect(screen.getByText("What's")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
