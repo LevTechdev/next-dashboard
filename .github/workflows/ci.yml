@@ -108,7 +108,7 @@ jobs:
         env:
           NEXTAUTH_SECRET: "ci-placeholder"
           NEXTAUTH_URL: "http://localhost:3010"
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
           GOOGLE_CLIENT_ID: "ci-placeholder"
           GOOGLE_CLIENT_SECRET: "ci-placeholder"
 
@@ -153,6 +153,10 @@ jobs:
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
           JWT_SECRET: "ci-e2e-secret"
+          NEXTAUTH_SECRET: "ci-e2e-secret"
+          NEXTAUTH_URL: "http://localhost:3010"
+          GOOGLE_CLIENT_ID: "ci-placeholder"
+          GOOGLE_CLIENT_SECRET: "ci-placeholder"
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
