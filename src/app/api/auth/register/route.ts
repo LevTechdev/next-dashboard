@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword, signToken, type AuthUser } from "@/lib/auth";
+import { isPasswordBreached } from "@/lib/hibp";
+import { createSession } from "@/lib/sessions";
+import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
+import { setAuthCookies } from "@/lib/auth-cookies";
+import { logSecurityEvent } from "@/lib/security-events";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +32,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
+    // Reject passwords found in known breach corpora (HIBP k-anonymity).
+    if (await isPasswordBreached(password)) {
+      return NextResponse.json(
+        { error: "This password has appeared in a known data breach. Please choose another." },
+        { status: 400 },
+      );
+    }
+
     // Check if email already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -35,13 +48,17 @@ export async function POST(req: Request) {
 
     // Create user
     const hashedPassword = await hashPassword(password);
+    const defaultTenant = await prisma.tenant.findUnique({ where: { slug: "default" } });
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        passwordAlgo: "argon2id",
+        passwordChangedAt: new Date(),
         role: "STAFF",
         isActive: true,
+        tenantId: defaultTenant?.id ?? null,
       },
     });
 
@@ -51,8 +68,14 @@ export async function POST(req: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
+      tenantId: user.tenantId,
     };
     const token = signToken(authUser);
+
+    const familyId = newFamilyId();
+    const sessionId = await createSession({ userId: user.id, token, req, familyId });
+    const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
+    await logSecurityEvent({ userId: user.id, type: "LOGIN", req, metadata: { registered: true } });
 
     const { password: _, ...safeUser } = user;
 
@@ -62,14 +85,7 @@ export async function POST(req: Request) {
       message: "Account created successfully",
     });
 
-    // Set cookie for middleware-based auth
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
+    setAuthCookies(response, token, refreshToken);
 
     return response;
   } catch (error) {

@@ -1,48 +1,85 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyPassword, signToken, type AuthUser } from "@/lib/auth";
-import { TOTP } from "otplib";
+import { verifyPassword, hashPassword, needsRehash, signToken, type AuthUser } from "@/lib/auth";
+import { verifyTotp } from "@/lib/totp";
+import { createSession } from "@/lib/sessions";
+import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
+import { setAuthCookies } from "@/lib/auth-cookies";
+import { consumeBackupCode } from "@/lib/backup-codes";
+import { logSecurityEvent } from "@/lib/security-events";
 
 export const dynamic = "force-dynamic";
+
+const MAX_FAILED = 5;
+const LOCK_MINUTES = 15;
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password, totpToken } = body;
+    const { email, password, totpToken, backupCode } = body;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    // Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Check if user is active
     if (!user.isActive) {
       return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
     }
 
-    // Verify password
+    // Lockout: reject while locked.
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      return NextResponse.json(
+        { error: `Account temporarily locked. Try again in ${mins} minute(s).` },
+        { status: 423 },
+      );
+    }
+
+    // Verify password (Argon2id or legacy bcrypt).
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
+      const failed = user.failedLoginCount + 1;
+      const lock = failed >= MAX_FAILED;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginCount: lock ? 0 : failed,
+          lockedUntil: lock ? new Date(Date.now() + LOCK_MINUTES * 60000) : null,
+        },
+      });
+      await logSecurityEvent({
+        userId: user.id,
+        type: lock ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
+        req,
+        metadata: { email, attempt: failed },
+      });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // If user has 2FA enabled, verify the TOTP token
+    // 2FA: accept a TOTP code OR a single-use backup code.
     if (user.totpEnabled && user.totpSecret) {
-      if (!totpToken) {
+      if (!totpToken && !backupCode) {
         return NextResponse.json(
           { requires2FA: true, message: "TOTP verification code required" },
           { status: 200 },
         );
       }
-
-      const totp = new TOTP();
-      const isTotpValid = totp.verify(totpToken, { secret: user.totpSecret });
-      if (!isTotpValid) {
+      let passed = false;
+      if (totpToken) {
+        passed = verifyTotp(totpToken, user.totpSecret);
+      }
+      if (!passed && backupCode) {
+        passed = await consumeBackupCode(user.id, backupCode);
+        if (passed) {
+          await logSecurityEvent({ userId: user.id, type: "BACKUP_CODE_USED", req });
+        }
+      }
+      if (!passed) {
         return NextResponse.json(
           { error: "Invalid two-factor authentication code" },
           { status: 401 },
@@ -50,17 +87,32 @@ export async function POST(req: Request) {
       }
     }
 
-    // Create JWT token
+    // Successful auth: reset lockout counters + transparently upgrade the hash.
+    const updates: Record<string, unknown> = { failedLoginCount: 0, lockedUntil: null };
+    if (needsRehash(user.password)) {
+      updates.password = await hashPassword(password);
+      updates.passwordAlgo = "argon2id";
+    }
+    await prisma.user.update({ where: { id: user.id }, data: updates });
+
     const authUser: AuthUser = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      tenantId: user.tenantId,
     };
     const token = signToken(authUser);
 
-    // Return token and user data (without password)
-    const { password: _, totpSecret, ...safeUser } = user;
+    // Per-device session + refresh-token family (Phase 2 rotation).
+    const familyId = newFamilyId();
+    const sessionId = await createSession({ userId: user.id, token, req, familyId });
+    const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
+    await logSecurityEvent({ userId: user.id, type: "LOGIN", req });
+
+    const { password: _pw, totpSecret: _ts, ...safeUser } = user;
+    void _pw;
+    void _ts;
 
     const response = NextResponse.json({
       token,
@@ -68,14 +120,7 @@ export async function POST(req: Request) {
       message: "Login successful",
     });
 
-    // Set cookie for middleware-based auth
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
-    });
+    setAuthCookies(response, token, refreshToken);
 
     return response;
   } catch (error) {

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
-import { TOTP } from "otplib";
+import { verifyTotp } from "@/lib/totp";
+import { logSecurityEvent } from "@/lib/security-events";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,7 @@ export async function POST(req: Request) {
   }
 
   // Verify the TOTP code
-  const totp = new TOTP();
-  const isValid = totp.verify(token, secret);
+  const isValid = verifyTotp(token, secret);
   if (!isValid) {
     return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
@@ -48,6 +48,8 @@ export async function POST(req: Request) {
       totpEnabled: true,
     },
   });
+
+  await logSecurityEvent({ userId: user.id, type: "TOTP_ENABLED", req });
 
   return NextResponse.json({ success: true });
 }

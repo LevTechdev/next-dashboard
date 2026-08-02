@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
-import { compare } from "bcryptjs";
+import { verifyPassword } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +29,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Verify password
-  const isValid = await compare(password, user.password);
+  // Verify password (handles both Argon2id and legacy bcrypt hashes)
+  const isValid = await verifyPassword(password, user.password);
   if (!isValid) {
     return NextResponse.json({ error: "Invalid password" }, { status: 403 });
   }
