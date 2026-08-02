@@ -67,3 +67,7 @@ next-env.d.ts
 /replace_api.js
 /replace_hooks.js
 /test-results.json
+
+# local verification / audit screenshots (never commit)
+/test-results/icon-check*/
+/test-results/visual-qa-*/
