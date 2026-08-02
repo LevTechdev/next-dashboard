@@ -22,6 +22,13 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
+  {
+    // Standalone Node.js scripts (scripts/*) are idiomatic CommonJS.
+    files: ["scripts/**"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
