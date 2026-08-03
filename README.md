@@ -49,6 +49,49 @@ Open [http://localhost:3010](http://localhost:3010) to view the dashboard.
 | `npm run coverage:all` | All tests with coverage + merged report |
 | `npm run coverage:merge` | Merge existing coverage reports |
 
+## Helper & Tooling Scripts
+
+The `npm run` scripts below wrap the one-shot helpers in [`scripts/`](scripts/). They are grouped by prefix and safe to re-run — the i18n mergers only add missing keys and the icon fixer only adds missing `size` props.
+
+### `i18n:*` — locale key mergers
+
+Adds missing translation keys to all 4 locale files (`en`, `id`, `zh`, `ja`) without overwriting existing translations.
+
+| Command | Description |
+|---|---|
+| `npm run i18n:affiliate` | Merge affiliate-marketing keys (`nav.affiliates` + `affiliates` namespace) |
+| `npm run i18n:keys` | Merge detail-page, password-reset, invoice-download, and CSV-import keys |
+| `npm run i18n:image-features` | Merge image-manager / fetch-tier / headless-toggle keys |
+| `npm run i18n:image` | Merge product-image-gallery keys |
+| `npm run i18n:import` | Merge URL-importer keys |
+| `npm run i18n:add-all` | Run all five i18n mergers in sequence |
+
+### `db:*` — database maintenance
+
+| Command | Description |
+|---|---|
+| `npm run db:generate` | Generate the Prisma client from `prisma/schema.prisma` |
+| `npm run db:push` | Push schema changes to the database without a migration |
+| `npm run db:seed` | Seed the database with demo data |
+| `npm run db:studio` | Open Prisma Studio to browse and edit data |
+| `npm run db:backfill-tenant` | Backfill tenant IDs for records created before multi-tenancy |
+| `npm run db:encrypt-pii` | Encrypt customer PII fields in place (one-shot migration helper) |
+
+### `shopee:*` — Shopee Open Platform
+
+| Command | Description |
+|---|---|
+| `npm run shopee:oauth` | OAuth helper — authorize the app and obtain/refresh access tokens |
+| `npm run shopee:test` | Live Shopee Open Platform API round-trip test (requires `SHOPEE_*` env credentials) |
+
+### `icons:*` — icon-size audit & codemod
+
+| Command | Description |
+|---|---|
+| `npm run icons:scan` | Scan for `lucide-animated` icons missing an explicit `size` prop (read-only) |
+| `npm run icons:fix` | Codemod: add explicit `size={N}` to icons that only have Tailwind classes |
+| `npm run icons:fix-dry` | Preview what `icons:fix` would change without writing anything |
+
 ## Test Structure
 
 Tests are organized by scope, each with its own Vitest config and coverage thresholds:
