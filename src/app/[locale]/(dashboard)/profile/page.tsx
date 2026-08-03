@@ -946,9 +946,9 @@ export default function ProfilePage() {
                     <p className="text-xs text-red-500 mt-1">{tprofile("passwordsDoNotMatch")}</p>
                   )}
                   {passwordForm.confirm && passwordForm.new === passwordForm.confirm && (
-                    <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                    <div className="text-xs text-green-500 mt-1 flex items-center gap-1">
                       <CheckIcon size={12} className="h-3 w-3" /> {tprofile("passwordsMatch")}
-                    </p>
+                    </div>
                   )}
                 </div>
               </div>
