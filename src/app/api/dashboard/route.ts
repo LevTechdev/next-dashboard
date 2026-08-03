@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { withDecryptedCustomer } from "@/lib/pii";
+import { requireAuth } from "@/lib/api-guard";
+import { getTenantId } from "@/lib/tenancy";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { session, response } = await requireAuth(req);
+  if (response) return response;
+  const tenantId = getTenantId(session);
   try {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -16,25 +22,27 @@ export async function GET() {
       salesChannels,
       ordersLastYear,
     ] = await Promise.all([
-      prisma.order.aggregate({ _sum: { grandTotal: true } }),
-      prisma.order.count(),
-      prisma.customer.count(),
-      prisma.product.count({ where: { isActive: true } }),
+      prisma.order.aggregate({ where: { tenantId }, _sum: { grandTotal: true } }),
+      prisma.order.count({ where: { tenantId } }),
+      prisma.customer.count({ where: { tenantId } }),
+      prisma.product.count({ where: { isActive: true, tenantId } }),
       prisma.order.findMany({
+        where: { tenantId },
         take: 10,
         orderBy: { createdAt: "desc" },
         include: { customer: true, channel: true },
       }),
       prisma.product.findMany({
+        where: { tenantId },
         take: 5,
         orderBy: { orderItems: { _count: "desc" } },
-        include: { _count: { select: { orderItems: true } } },
+        include: { _count: { select: { orderItems: true, affiliateLinks: true } } },
       }),
       prisma.salesChannel.findMany({
         include: { _count: { select: { orders: true } } },
       }),
       prisma.order.findMany({
-        where: { createdAt: { gte: oneYearAgo } },
+        where: { tenantId, createdAt: { gte: oneYearAgo } },
         select: { createdAt: true, grandTotal: true },
         orderBy: { createdAt: "asc" },
       }),
@@ -72,7 +80,7 @@ export async function GET() {
     const channelSales = await Promise.all(
       salesChannels.map(async (channel) => {
         const total = await prisma.order.aggregate({
-          where: { channelId: channel.id },
+          where: { channelId: channel.id, tenantId },
           _sum: { grandTotal: true },
         });
         return {
@@ -94,12 +102,13 @@ export async function GET() {
         customersGrowth: 15.2,
         productsGrowth: 5.1,
       },
-      recentOrders,
+      recentOrders: recentOrders.map(withDecryptedCustomer),
       topProducts: topProducts.map((p) => ({
         id: p.id,
         name: p.name,
         price: p.price,
         orderCount: p._count.orderItems,
+        linkedCount: p._count.affiliateLinks,
       })),
       salesByChannel: channelSales,
       revenueData: monthlyRevenue,

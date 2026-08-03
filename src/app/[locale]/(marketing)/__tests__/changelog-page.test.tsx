@@ -114,9 +114,10 @@ describe("Changelog Page", () => {
     });
 
     it("renders release stat icons", () => {
-      const commitIcon = document.querySelector('[data-testid="icon-gitcommit"]');
-      const sparklesIcon = document.querySelector('[data-testid="icon-sparkles"]');
-      const rocketIcon = document.querySelector('[data-testid="icon-rocket"]');
+      // Stats use animated icons (GitCommitHorizontalIcon/SparklesIcon/RocketIcon) + static Bug
+      const commitIcon = document.querySelector('[data-testid="icon-gitcommithorizontalicon"]');
+      const sparklesIcon = document.querySelector('[data-testid="icon-sparklesicon"]');
+      const rocketIcon = document.querySelector('[data-testid="icon-rocketicon"]');
       const bugIcon = document.querySelector('[data-testid="icon-bug"]');
       expect(commitIcon).toBeInTheDocument();
       expect(sparklesIcon).toBeInTheDocument();

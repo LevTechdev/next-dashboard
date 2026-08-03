@@ -2,31 +2,30 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { motion, useMotionValue, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { ActivityIcon, RefreshCwIcon, BellIcon, ClockIcon } from "lucide-animated";
 import {
   ArrowRight,
   BarChart3,
   ShoppingCart,
   Users,
   Shield,
-  Activity,
   Sparkles,
   TrendingUp,
   Zap,
-  RefreshCw,
   Star,
   Layers,
   LineChart,
-  Bell,
   CheckCircle2,
   ArrowUpRight,
   Globe,
-  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RadialGlowButton } from "@/components/ui/radial-glow-button";
 import { cn } from "@/lib/utils";
 import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -75,19 +74,21 @@ function MagneticButton({
   }, [x, y]);
 
   return (
-    <Link href={href} onClick={onClick}>
-      <motion.div
-        ref={ref}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{ x, y }}
-        whileTap={{ scale: 0.97 }}
-        whileHover={{ scale: 1.03 }}
-        transition={springGentle}
-      >
-        <Button className={className}>{children}</Button>
-      </motion.div>
-    </Link>
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ x, y }}
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.03 }}
+      transition={springGentle}
+    >
+      <RadialGlowButton asChild className={className}>
+        <Link href={href} onClick={onClick}>
+          {children}
+        </Link>
+      </RadialGlowButton>
+    </motion.div>
   );
 }
 
@@ -122,6 +123,7 @@ interface FeatureCardProps {
   glowColor: string;
   tag: string;
   index: number;
+  learnMoreLabel: string;
 }
 
 function FeatureCard({
@@ -135,14 +137,14 @@ function FeatureCard({
   glowColor,
   tag,
   index,
+  learnMoreLabel,
 }: FeatureCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: index * 0.12, ...springGentle }}
       className={cn(
         "spotlight-card vengeance-card relative p-7 lg:p-8 rounded-2xl border flex flex-col justify-between overflow-hidden group transition-all",
@@ -195,7 +197,7 @@ function FeatureCard({
           animate={{ y: isHovered ? -2 : 0 }}
           transition={springGentle}
         >
-          <Icon className={cn("h-5 w-5", iconColor)} />
+          <Icon size={20} className={cn("h-5 w-5", iconColor)} />
         </motion.div>
 
         {/* Content */}
@@ -209,7 +211,7 @@ function FeatureCard({
           className="flex items-center gap-1.5 mt-4 text-xs font-medium text-zinc-400 dark:text-zinc-500 transition-colors"
           animate={{ color: isHovered ? "#6366f1" : undefined }}
         >
-          <span>Learn more</span>
+          <span>{learnMoreLabel}</span>
           <motion.div animate={{ x: isHovered ? 4 : 0 }} transition={springGentle}>
             <ArrowRight className="h-3 w-3" />
           </motion.div>
@@ -224,13 +226,14 @@ function FeatureCard({
 
 // ─── Infinite carousel metrics ──────────────────────────────────
 function MetricsCarousel() {
+  const t = useTranslations("homePage");
   const items = [
-    { value: "12.4K", label: "Orders Processed" },
-    { value: "99.9%", label: "Uptime SLA" },
-    { value: "2,847", label: "Active Users" },
-    { value: "15s", label: "Data Refresh" },
-    { value: "47.2%", label: "Avg. Growth Rate" },
-    { value: "8,431", label: "Total Customers" },
+    { value: "12.4K", labelKey: "cOrders" },
+    { value: "99.9%", labelKey: "cUptime" },
+    { value: "2,847", labelKey: "cUsers" },
+    { value: "15s", labelKey: "cRefresh" },
+    { value: "47.2%", labelKey: "cGrowth" },
+    { value: "8,431", labelKey: "cCustomers" },
   ];
 
   return (
@@ -245,7 +248,7 @@ function MetricsCarousel() {
             <div className="text-right">
               <div className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</div>
               <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
-                {item.label}
+                {t(item.labelKey)}
               </div>
             </div>
             <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800 last:hidden" />
@@ -258,11 +261,12 @@ function MetricsCarousel() {
 
 // ─── Bento Grid: Live Status Card ───────────────────────────────
 function LiveStatusCard() {
+  const t = useTranslations("homePage");
   const statuses = [
-    { name: "Stripe", status: "Live", color: "text-emerald-500" },
-    { name: "Shopify", status: "Live", color: "text-emerald-500" },
-    { name: "Slack", status: "Live", color: "text-emerald-500" },
-    { name: "SendGrid", status: "Active", color: "text-emerald-500" },
+    { name: "Stripe", statusKey: "statusLive", color: "text-emerald-500" },
+    { name: "Shopify", statusKey: "statusLive", color: "text-emerald-500" },
+    { name: "Slack", statusKey: "statusLive", color: "text-emerald-500" },
+    { name: "SendGrid", statusKey: "statusActive", color: "text-emerald-500" },
   ];
   const [currentIdx, setCurrentIdx] = useState(0);
 
@@ -295,7 +299,7 @@ function LiveStatusCard() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                {s.status}
+                {t(s.statusKey)}
               </span>
             </div>
           ))}
@@ -316,11 +320,9 @@ function LiveStatusCard() {
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-700 dark:text-zinc-200">
-                  {statuses[currentIdx].name} connected
+                  {statuses[currentIdx].name} {t("connected")}
                 </p>
-                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                  Real-time sync active
-                </p>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">{t("syncActive")}</p>
               </div>
             </div>
           </motion.div>
@@ -332,30 +334,31 @@ function LiveStatusCard() {
 
 // ─── Bento Grid: Growth Stats Card ──────────────────────────────
 function GrowthStatsCard() {
+  const t = useTranslations("homePage");
   const metrics = [
     {
-      label: "Revenue",
+      labelKey: "gRevenue",
       end: 89200,
       change: "+23.5%",
       up: true,
       format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
     },
     {
-      label: "Orders",
+      labelKey: "gOrders",
       end: 1847,
       change: "+14.2%",
       up: true,
       format: (v: number) => v.toLocaleString(),
     },
     {
-      label: "Conversion",
+      labelKey: "gConversion",
       end: 32,
       change: "+0.8%",
       up: true,
       format: (v: number) => `${(v / 10).toFixed(1)}%`,
     },
     {
-      label: "Avg. Order",
+      labelKey: "gAvgOrder",
       end: 4827,
       change: "-2.1%",
       up: false,
@@ -369,13 +372,13 @@ function GrowthStatsCard() {
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="h-4 w-4 text-emerald-500" />
           <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-            Growth Metrics
+            {t("growthTitle")}
           </h3>
         </div>
         <div className="flex-1 space-y-3">
           {metrics.map((m) => (
-            <div key={m.label} className="flex items-center justify-between py-1.5">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">{m.label}</span>
+            <div key={m.labelKey} className="flex items-center justify-between py-1.5">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">{t(m.labelKey)}</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-zinc-800 dark:text-white font-mono">
                   <AnimatedCounter end={m.end} duration={1800} formatter={m.format} />
@@ -399,12 +402,13 @@ function GrowthStatsCard() {
 
 // ─── Bento Grid: Intelligent List ───────────────────────────────
 function IntelligentListCard() {
+  const t = useTranslations("homePage");
   const items = [
-    { id: 1, text: "Process pending orders", priority: 3 },
-    { id: 2, text: "Review customer feedback", priority: 1 },
-    { id: 3, text: "Update inventory levels", priority: 2 },
-    { id: 4, text: "Generate monthly report", priority: 4 },
-    { id: 5, text: "Check marketing campaigns", priority: 5 },
+    { id: 1, textKey: "q1", priority: 3 },
+    { id: 2, textKey: "q2", priority: 1 },
+    { id: 3, textKey: "q3", priority: 2 },
+    { id: 4, textKey: "q4", priority: 4 },
+    { id: 5, textKey: "q5", priority: 5 },
   ];
   const [sorted, setSorted] = useState(items);
 
@@ -425,9 +429,9 @@ function IntelligentListCard() {
     <div className="double-bezel h-full">
       <div className="double-bezel-inner flex flex-col">
         <div className="flex items-center gap-2 mb-4">
-          <RefreshCw className="h-4 w-4 text-indigo-500" />
+          <RefreshCwIcon size={16} className="h-4 w-4 text-indigo-500" />
           <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-            Priority Queue
+            {t("queueTitle")}
           </h3>
         </div>
         <div className="flex-1 space-y-2">
@@ -447,7 +451,7 @@ function IntelligentListCard() {
                     {item.priority}
                   </span>
                 </div>
-                <span className="text-xs text-zinc-600 dark:text-zinc-300">{item.text}</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-300">{t(item.textKey)}</span>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -460,9 +464,8 @@ function IntelligentListCard() {
 // ─── Feature data ───────────────────────────────────────────────
 const features = [
   {
-    title: "Real-Time Analytics",
-    description:
-      "Monitor your business metrics in real-time with live-updating dashboards. Track revenue, orders, and customer growth as they happen.",
+    titleKey: "f1Title",
+    descKey: "f1Desc",
     icon: BarChart3,
     className: "md:col-span-2 md:row-span-2",
     iconColor: "text-indigo-500 dark:text-indigo-400",
@@ -470,58 +473,53 @@ const features = [
     bgGradient:
       "from-indigo-50/80 via-white to-purple-50/50 dark:from-indigo-500/10 dark:to-purple-500/5",
     glowColor: "rgba(99,102,241,0.15)",
-    tag: "Analytics",
+    tagKey: "f1Tag",
   },
   {
-    title: "Multi-Channel Orders",
-    description:
-      "Unified order management across 6+ channels including Online Store, Facebook, Instagram, and Shopify.",
+    titleKey: "f2Title",
+    descKey: "f2Desc",
     icon: ShoppingCart,
     className: "",
     iconColor: "text-emerald-500 dark:text-emerald-400",
     borderColor: "border-emerald-200 dark:border-emerald-500/20",
     bgGradient: "from-emerald-50/60 to-white dark:from-emerald-500/5 dark:to-transparent",
     glowColor: "rgba(16,185,129,0.15)",
-    tag: "Orders",
+    tagKey: "f2Tag",
   },
   {
-    title: "Customer Intelligence",
-    description:
-      "Deep analytics, segmentation, and behavioral insights to understand your customers better.",
+    titleKey: "f3Title",
+    descKey: "f3Desc",
     icon: Users,
     className: "",
     iconColor: "text-purple-500 dark:text-purple-400",
     borderColor: "border-purple-200 dark:border-purple-500/20",
     bgGradient: "from-purple-50/60 to-white dark:from-purple-500/5 dark:to-transparent",
     glowColor: "rgba(168,85,247,0.15)",
-    tag: "CRM",
+    tagKey: "f3Tag",
   },
   {
-    title: "Role-Based Security",
-    description:
-      "Granular permission controls with Admin, Manager, and Staff roles. Full audit logging for accountability.",
+    titleKey: "f4Title",
+    descKey: "f4Desc",
     icon: Shield,
     className: "md:col-span-2",
     iconColor: "text-blue-500 dark:text-blue-400",
     borderColor: "border-blue-200 dark:border-blue-500/20",
     bgGradient: "from-blue-50/60 to-white dark:from-blue-500/5 dark:to-transparent",
     glowColor: "rgba(59,130,246,0.15)",
-    tag: "Security",
+    tagKey: "f4Tag",
   },
 ];
 
 const testimonials = [
   {
-    quote:
-      "Dashboard transformed how we manage our multi-channel operations. The real-time analytics alone saved us hours every day.",
+    quoteKey: "testi1Quote",
     name: "Sarah Chen",
-    role: "Operations Director, Pixelcraft",
+    roleKey: "testi1Role",
   },
   {
-    quote:
-      "The role-based access and audit logging gave us the security we needed to scale from 5 to 50 team members confidently.",
+    quoteKey: "testi2Quote",
     name: "Marcus Rivera",
-    role: "CTO, Studio Nine",
+    roleKey: "testi2Role",
   },
 ];
 
@@ -545,9 +543,9 @@ const fadeUpItem = {
 
 // ─── Trusted by stats row ───────────────────────────────────────
 const trustStats = [
-  { icon: CheckCircle2, value: "2,000+", label: "Businesses" },
-  { icon: Globe, value: "47", label: "Countries" },
-  { icon: Clock, value: "99.9%", label: "Uptime" },
+  { icon: CheckCircle2, value: "2,000+", labelKey: "trustBusinesses" },
+  { icon: Globe, value: "47", labelKey: "trustCountries" },
+  { icon: ClockIcon, value: "99.9%", labelKey: "trustUptime" },
 ];
 
 // ─── Main component ─────────────────────────────────────────────
@@ -556,6 +554,7 @@ export default function MarketingLandingPage() {
   const locale = (params?.locale as string) || "en";
   const { theme } = useTheme();
   const { trackCTA } = useAnalytics();
+  const t = useTranslations("homePage");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -599,25 +598,25 @@ export default function MarketingLandingPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* ── Left Content ── */}
-            <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-2xl">
+            <motion.div initial={false} animate="visible" variants={stagger} className="max-w-2xl">
               <motion.div variants={fadeUpItem} className="mb-8">
                 <div className="badge-premium inline-flex items-center gap-2">
                   <Sparkles className="h-3 w-3" />
-                  <span>Now in Public Beta</span>
+                  <span>{t("badge")}</span>
                 </div>
               </motion.div>
 
               <motion.h1
                 variants={fadeUpItem}
-                className="text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.05] mb-6 text-zinc-900 dark:text-white"
+                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.05] mb-6 text-zinc-900 dark:text-white"
               >
-                Operate with&nbsp;
+                {t("heroPrefix")}&nbsp;
                 {/* FlipFadeText for dynamic word cycling */}
                 <span className="inline-flex">
                   <FlipFadeText
-                    words={["precision.", "clarity.", "speed.", "confidence."]}
+                    words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                     interval={2800}
-                    textClassName="!text-5xl lg:!text-6xl xl:!text-7xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight !leading-[1.05]"
+                    textClassName="!text-4xl sm:!text-5xl lg:!text-6xl xl:!text-7xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight !leading-[1.05]"
                     className="!min-h-0 inline-flex"
                     staggerDelay={0.06}
                     letterDuration={0.4}
@@ -629,8 +628,7 @@ export default function MarketingLandingPage() {
                 variants={fadeUpItem}
                 className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-lg leading-relaxed"
               >
-                Stop wrestling with fragmented data. Unite your analytics, orders, and team in a
-                single command center built for modern operators.
+                {t("heroSubtitle")}
               </motion.p>
 
               <motion.div
@@ -640,38 +638,37 @@ export default function MarketingLandingPage() {
                 <MagneticButton
                   href={ctaHref}
                   onClick={() => trackCTA("enter_dashboard", { href: ctaHref })}
-                  className="h-11 px-6 text-sm gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium shadow-lg shadow-zinc-900/20 dark:shadow-black/30"
+                  className="shadow-xl shadow-indigo-500/20"
                 >
-                  Enter Dashboard
-                  <ArrowRight className="h-4 w-4" />
+                  {t("ctaEnter")}
+                  <ArrowRight className="h-4 w-4 inline-block align-middle ml-1.5" />
                 </MagneticButton>
 
-                <Link href={`/${locale}/features`}>
-                  <motion.div whileTap={buttonTap} whileHover={{ scale: 1.02 }}>
-                    <Button
-                      variant="glass"
-                      className="h-11 px-6 text-sm rounded-xl"
+                <motion.div whileTap={buttonTap} whileHover={{ scale: 1.02 }}>
+                  <RadialGlowButton asChild className="opacity-80 hover:opacity-100">
+                    <Link
+                      href={`/${locale}/features`}
                       onClick={() =>
                         trackCTA("view_documentation", { href: `/${locale}/features` })
                       }
                     >
-                      View Documentation
-                    </Button>
-                  </motion.div>
-                </Link>
+                      {t("ctaDocs")}
+                    </Link>
+                  </RadialGlowButton>
+                </motion.div>
               </motion.div>
 
               {/* Trust stats row */}
               <motion.div variants={fadeUpItem} className="mt-10 flex items-center gap-6">
                 {trustStats.map((stat) => (
-                  <div key={stat.label} className="flex items-center gap-2">
-                    <stat.icon className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                  <div key={stat.labelKey} className="flex items-center gap-2">
+                    <stat.icon size={16} className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
                     <div>
                       <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                         {stat.value}
                       </span>
                       <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-1">
-                        {stat.label}
+                        {t(stat.labelKey)}
                       </span>
                     </div>
                   </div>
@@ -681,7 +678,7 @@ export default function MarketingLandingPage() {
 
             {/* ── Right Visual ── */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, x: 20 }}
+              initial={false}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ...springGentle }}
               className="relative"
@@ -706,7 +703,7 @@ export default function MarketingLandingPage() {
                         <motion.div
                           key={i}
                           className="w-full bg-gradient-to-t from-indigo-500/60 to-indigo-400/30 dark:from-indigo-500/60 dark:to-indigo-400/30 rounded-t-sm origin-bottom"
-                          initial={{ scaleY: 0 }}
+                          initial={false}
                           animate={{ scaleY: h / 100 }}
                           transition={{
                             duration: 1,
@@ -721,33 +718,33 @@ export default function MarketingLandingPage() {
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         {
-                          label: "Orders Processed",
+                          labelKey: "mOrders",
                           end: 12400,
                           change: "+14%",
                           format: (v: number) => `${(v / 1000).toFixed(1)}K`,
                         },
                         {
-                          label: "Active Users",
+                          labelKey: "mUsers",
                           end: 2847,
                           change: "+8.2%",
                           format: (v: number) => v.toLocaleString(),
                         },
                         {
-                          label: "Revenue Growth",
+                          labelKey: "mRevenue",
                           end: 89200,
                           change: "+23.5%",
                           format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
                         },
                         {
-                          label: "Avg Response",
+                          labelKey: "mResponse",
                           end: 120,
                           change: "-40%",
                           format: (v: number) => `${(v / 100).toFixed(1)}s`,
                         },
                       ].map((metric, i) => (
                         <motion.div
-                          key={metric.label}
-                          initial={{ opacity: 0, y: 10 }}
+                          key={metric.labelKey}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
                             delay: 0.8 + i * 0.1,
@@ -757,7 +754,7 @@ export default function MarketingLandingPage() {
                           className="stat-card-premium !p-3.5"
                         >
                           <div className="text-[10px] text-zinc-500 dark:text-zinc-500 font-medium uppercase tracking-wider mb-1">
-                            {metric.label}
+                            {t(metric.labelKey)}
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-lg font-bold text-zinc-800 dark:text-white tabular-nums">
@@ -796,7 +793,7 @@ export default function MarketingLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <AnimateUp className="text-center mb-8">
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              Trusted by industry-leading teams
+              {t("partnersLabel")}
             </p>
           </AnimateUp>
           <LogoSlider
@@ -823,21 +820,31 @@ export default function MarketingLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateUp className="max-w-2xl mb-16">
             <div className="badge-premium inline-flex items-center gap-2 mb-4">
-              <Activity className="h-3 w-3" />
-              <span>Platform Capabilities</span>
+              <ActivityIcon size={12} className="h-3 w-3" />
+              <span>{t("featuresBadge")}</span>
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4 text-zinc-900 dark:text-white">
-              The architecture of efficiency.
+              {t("featuresTitle")}
             </h2>
-            <p className="text-zinc-500 dark:text-zinc-400 max-w-lg">
-              Everything required to run a high-volume operation, structured for maximum clarity and
-              real-time responsiveness.
-            </p>
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-lg">{t("featuresSubtitle")}</p>
           </AnimateUp>
 
           <div className="bento-grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 lg:gap-5 auto-rows-[280px]">
             {features.map((feature, i) => (
-              <FeatureCard key={feature.title} {...feature} index={i} />
+              <FeatureCard
+                key={feature.titleKey}
+                title={t(feature.titleKey)}
+                description={t(feature.descKey)}
+                icon={feature.icon}
+                className={feature.className}
+                iconColor={feature.iconColor}
+                borderColor={feature.borderColor}
+                bgGradient={feature.bgGradient}
+                glowColor={feature.glowColor}
+                tag={t(feature.tagKey)}
+                index={i}
+                learnMoreLabel={t("learnMore")}
+              />
             ))}
           </div>
         </div>
@@ -850,12 +857,9 @@ export default function MarketingLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateUp className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-2xl lg:text-3xl font-bold tracking-tight mb-3 text-zinc-900 dark:text-white">
-              Live at a glance.
+              {t("liveTitle")}
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Your system status, growth metrics, and priority tasks in a single view — perpetually
-              updated.
-            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("liveSubtitle")}</p>
           </AnimateUp>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 auto-rows-[280px]">
@@ -880,23 +884,20 @@ export default function MarketingLandingPage() {
           <AnimateUp className="text-center max-w-2xl mx-auto mb-12">
             <div className="badge-premium inline-flex items-center gap-2 mb-4 !bg-amber-500/10 !text-amber-600 !border-amber-200 dark:!border-amber-500/20 dark:!text-amber-400">
               <Star className="h-3 w-3" />
-              <span>Customer Stories</span>
+              <span>{t("testiBadge")}</span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-bold tracking-tight mb-3 text-zinc-900 dark:text-white">
-              Trusted by operators.
+              {t("testiTitle")}
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              See what teams are saying after switching to Dashboard.
-            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("testiSubtitle")}</p>
           </AnimateUp>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            {testimonials.map((t, i) => (
+            {testimonials.map((t2, i) => (
               <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                key={t2.name}
+                initial={false}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{
                   delay: i * 0.15,
                   duration: 0.6,
@@ -913,20 +914,22 @@ export default function MarketingLandingPage() {
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11H10v10H0z" />
                   </svg>
                   <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6">
-                    &ldquo;{t.quote}&rdquo;
+                    &ldquo;{t(t2.quoteKey)}&rdquo;
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                      {t.name
+                      {t2.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </div>
                     <div>
                       <div className="text-sm font-medium text-zinc-900 dark:text-white">
-                        {t.name}
+                        {t2.name}
                       </div>
-                      <div className="text-xs text-zinc-400 dark:text-zinc-500">{t.role}</div>
+                      <div className="text-xs text-zinc-400 dark:text-zinc-500">
+                        {t(t2.roleKey)}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -955,24 +958,23 @@ export default function MarketingLandingPage() {
               <div className="relative">
                 <AnimateUp>
                   <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4">
-                    Ready for scale.
+                    {t("ctaTitle")}
                   </h2>
                   <p className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-xl mx-auto leading-relaxed">
-                    Deploy Dashboard in minutes and instantly upgrade your team&apos;s operational
-                    capabilities. No complex setup required.
+                    {t("ctaDesc")}
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <MagneticButton
                       href={ctaHref}
                       onClick={() => trackCTA("access_workspace", { href: ctaHref })}
-                      className="h-12 px-8 text-sm gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-zinc-900/20 dark:shadow-black/20"
+                      className="shadow-xl shadow-indigo-500/25"
                     >
-                      Access Workspace
-                      <ArrowRight className="h-4 w-4" />
+                      {t("ctaAccess")}
+                      <ArrowRight className="h-4 w-4 inline-block align-middle ml-1.5" />
                     </MagneticButton>
                     <Link href={`/${locale}/contact`}>
                       <Button variant="outline" className="h-12 px-8 text-sm rounded-xl">
-                        Talk to Sales
+                        {t("ctaSales")}
                       </Button>
                     </Link>
                   </div>

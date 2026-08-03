@@ -1,7 +1,9 @@
 "use client";
 
-import { Globe, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckIcon, EarthIcon } from "lucide-animated";
 import { useViewTransition } from "@/components/view-transition-provider";
+import { setLocaleCookie } from "@/lib/locale-cookie";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,13 +28,18 @@ const LANGUAGES = [
 export function LanguageToggle({ locale, pathname }: { locale: string; pathname: string }) {
   const { push: pushWithTransition } = useViewTransition();
   const { trackLanguageSwitch } = useAnalytics();
+  const router = useRouter();
 
   const switchLocale = (newLocale: string) => {
     if (newLocale === locale) return;
     trackLanguageSwitch(locale, newLocale);
     const newPath = pathname.replace(/^\/[a-z]{2}(?:-\w{2})?/, `/${newLocale}`);
     localStorage.setItem("dashboard-locale", newLocale);
+    // Persist locale for next-intl middleware and bust the client Router Cache
+    // so server components re-render with the new locale's messages.
+    setLocaleCookie(newLocale);
     pushWithTransition(newPath);
+    router.refresh();
   };
 
   const current = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
@@ -48,7 +55,7 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
         >
           <span className="flex items-center gap-1.5">
             <span className="text-sm leading-none">{current.flag}</span>
-            <Globe className="h-3.5 w-3.5" />
+            <EarthIcon size={14} className="h-3.5 w-3.5" />
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -78,7 +85,10 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
                 </span>
               </div>
               {isSelected ? (
-                <Check className="h-4 w-4 text-indigo-500 animate-in zoom-in-50 duration-200" />
+                <CheckIcon
+                  size={16}
+                  className="h-4 w-4 text-indigo-500 animate-in zoom-in-50 duration-200"
+                />
               ) : (
                 <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}

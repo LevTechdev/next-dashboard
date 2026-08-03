@@ -3,21 +3,18 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import {
-  Sun,
-  Moon,
-  Monitor,
-  Check,
-  Sparkles,
-  Palette,
-  Eye,
-  SwatchBook,
-  Layers,
-  CheckCircle2,
-  TrendingUp,
-  DollarSign,
-  Zap,
-  Users,
-} from "lucide-react";
+  CheckIcon,
+  SunIcon,
+  MoonIcon,
+  SparklesIcon,
+  EyeIcon,
+  LayersIcon,
+  TrendingUpIcon,
+  DollarSignIcon,
+  ZapIcon,
+  UsersIcon,
+} from "lucide-animated";
+import { Monitor, Palette, SwatchBook, CheckCircle2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,8 +63,8 @@ function ThemeSelectorRow({
   setTheme: (t: string) => void;
 }) {
   const options = [
-    { key: "light", icon: Sun, label: "Light", iconColor: "text-amber-500" },
-    { key: "dark", icon: Moon, label: "Dark", iconColor: "text-blue-500" },
+    { key: "light", icon: SunIcon, label: "Light", iconColor: "text-amber-500" },
+    { key: "dark", icon: MoonIcon, label: "Dark", iconColor: "text-blue-500" },
     { key: "system", icon: Monitor, label: "System", iconColor: "text-gray-500" },
   ];
 
@@ -86,12 +83,12 @@ function ThemeSelectorRow({
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300",
             )}
           >
-            <Icon className={cn("h-4 w-4", iconColor)} />
+            <Icon size={16} className={cn("h-4 w-4", iconColor)} />
             <span>{label}</span>
             {isSelected && (
               <span className="absolute -top-1 -right-1">
                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-white">
-                  <Check className="h-2.5 w-2.5" />
+                  <CheckIcon size={10} className="h-2.5 w-2.5" />
                 </span>
               </span>
             )}
@@ -177,7 +174,7 @@ function ComponentDemos() {
   return (
     <div className="space-y-4">
       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
-        <Layers className="h-3.5 w-3.5" />
+        <LayersIcon size={14} className="h-3.5 w-3.5" />
         Component Examples
       </h4>
 
@@ -195,7 +192,7 @@ function ComponentDemos() {
             Outline
           </Button>
           <Button variant="premium" size="sm" className="gap-1.5">
-            <Sparkles className="h-3 w-3" />
+            <SparklesIcon size={12} className="h-3 w-3" />
             Premium
           </Button>
           <Button variant="glass" size="sm">
@@ -219,7 +216,10 @@ function ComponentDemos() {
           <div className="dashboard-card p-4 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-                <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <DollarSignIcon
+                  size={16}
+                  className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Revenue</p>
@@ -227,7 +227,7 @@ function ComponentDemos() {
               </div>
             </div>
             <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUpIcon size={12} className="h-3 w-3" />
               +23.5% vs last month
             </div>
           </div>
@@ -240,10 +240,10 @@ function ComponentDemos() {
           <div className="stat-card-premium cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-                <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <UsersIcon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <span className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20">
-                <TrendingUp className="h-2.5 w-2.5" />
+                <TrendingUpIcon size={10} className="h-2.5 w-2.5" />
                 +12%
               </span>
             </div>
@@ -259,7 +259,7 @@ function ComponentDemos() {
           <div className="vengeance-glass rounded-xl p-4 h-full">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-lg bg-white/50 dark:bg-white/10">
-                <Zap className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                <ZapIcon size={14} className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                 Quick Action
@@ -279,7 +279,7 @@ function ComponentDemos() {
         </p>
         <div className="flex flex-wrap gap-2">
           <span className="badge-premium">
-            <Sparkles className="h-2.5 w-2.5" />
+            <SparklesIcon size={10} className="h-2.5 w-2.5" />
             Premium
           </span>
           <span className="badge-premium !bg-emerald-500/10 !text-emerald-600 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-500/20">
@@ -314,7 +314,7 @@ function ThemeComparison({ mounted }: { mounted: boolean }) {
   return (
     <div className="space-y-4">
       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
-        <Eye className="h-3.5 w-3.5" />
+        <EyeIcon size={14} className="h-3.5 w-3.5" />
         Theme Comparison
       </h4>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -322,7 +322,7 @@ function ThemeComparison({ mounted }: { mounted: boolean }) {
         <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
           <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
             <span className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-              <Sun className="h-3 w-3 text-amber-500" />
+              <SunIcon size={12} className="h-3 w-3 text-amber-500" />
               Light Mode
             </span>
             <div className="flex gap-1">
@@ -351,7 +351,7 @@ function ThemeComparison({ mounted }: { mounted: boolean }) {
         <div className="rounded-2xl overflow-hidden border border-gray-700/50 shadow-sm bg-[hsl(225,25%,7%)]">
           <div className="flex items-center justify-between px-4 py-2 bg-[hsl(224,18%,14%)] border-b border-gray-700/30">
             <span className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
-              <Moon className="h-3 w-3 text-blue-400" />
+              <MoonIcon size={12} className="h-3 w-3 text-blue-400" />
               Dark Mode
             </span>
             <div className="flex gap-1">
@@ -421,9 +421,9 @@ export function ThemeShowcase({ className }: { className?: string }) {
             {mounted ? (
               <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold">
                 {theme === "dark" ? (
-                  <Moon className="h-3 w-3" />
+                  <MoonIcon size={12} className="h-3 w-3" />
                 ) : theme === "light" ? (
-                  <Sun className="h-3 w-3" />
+                  <SunIcon size={12} className="h-3 w-3" />
                 ) : (
                   <Monitor className="h-3 w-3" />
                 )}
@@ -443,7 +443,7 @@ export function ThemeShowcase({ className }: { className?: string }) {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-fit">
           <TabsTrigger value="preview" className="gap-2">
-            <Eye className="h-4 w-4" />
+            <EyeIcon size={16} className="h-4 w-4" />
             Live Preview
           </TabsTrigger>
           <TabsTrigger value="tokens" className="gap-2">
@@ -451,7 +451,7 @@ export function ThemeShowcase({ className }: { className?: string }) {
             Design Tokens
           </TabsTrigger>
           <TabsTrigger value="components" className="gap-2">
-            <Layers className="h-4 w-4" />
+            <LayersIcon size={16} className="h-4 w-4" />
             Components
           </TabsTrigger>
         </TabsList>

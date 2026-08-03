@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { Plus, Users2, Search, Download } from "lucide-react";
+import { PlusIcon, UsersRoundIcon, SearchIcon, DownloadIcon } from "lucide-animated";
+import { Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials, getStatusColor, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
 import { DataExportButton } from "@/components/data-export-button";
@@ -55,10 +57,13 @@ export default function TeamPage() {
     position: "",
   });
 
-  const loadData = async () => {
-    const res = await fetch("/api/team");
-    setMembers(await res.json());
-    setLoading(false);
+  const loadData = () => {
+    fetch("/api/team", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setMembers(data);
+        setLoading(false);
+      });
   };
   useEffect(() => {
     loadData();
@@ -69,11 +74,15 @@ export default function TeamPage() {
   const handleSave = async () => {
     const method = editMember ? "PUT" : "POST";
     const body = editMember ? { ...form, id: editMember.id } : form;
-    await fetch("/api/team", {
+    const res = await fetch("/api/team", {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(editMember ? tteam("memberUpdated") : tteam("memberAdded"));
     setDialogOpen(false);
     setEditMember(null);
@@ -81,13 +90,25 @@ export default function TeamPage() {
     loadData();
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(tteam("confirmRemove"))) return;
-    await fetch("/api/team", {
+    const ok = await confirm({
+      title: tteam("removeBtn"),
+      description: tteam("confirmRemove"),
+      confirmLabel: tteam("removeBtn"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/team", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(tteam("memberRemoved"));
     loadData();
   };
@@ -123,7 +144,7 @@ export default function TeamPage() {
                   setForm({ name: "", email: "", password: "", role: "STAFF", position: "" });
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" /> {tteam("addMember")}
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tteam("addMember")}
               </Button>
             </DialogTrigger>
           )}
@@ -155,9 +176,11 @@ export default function TeamPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="SUPER_ADMIN">{tteam("superAdmin")}</SelectItem>
                   <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
                   <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
                   <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
+                  <SelectItem value="AUDITOR">{tteam("auditor")}</SelectItem>
                 </SelectContent>
               </Select>
               {!editMember && (
@@ -179,7 +202,10 @@ export default function TeamPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <SearchIcon
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            />
             <Input
               placeholder={tcommon("search")}
               className="pl-10"
@@ -246,6 +272,7 @@ export default function TeamPage() {
                             setDialogOpen(true);
                           }}
                         >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" />
                           {tteam("editBtn")}
                         </Button>
                       )}
@@ -256,6 +283,7 @@ export default function TeamPage() {
                           onClick={() => handleDelete(m.id)}
                           className="text-red-500"
                         >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
                           {tteam("removeBtn")}
                         </Button>
                       )}
@@ -265,7 +293,8 @@ export default function TeamPage() {
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      <Users2 className="h-8 w-8 mx-auto mb-2 opacity-50" /> {tteam("noMembers")}
+                      <UsersRoundIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
+                      {tteam("noMembers")}
                     </TableCell>
                   </TableRow>
                 )}

@@ -10,17 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import {
-  ShoppingCart,
-  Package,
-  Users,
-  DollarSign,
-  AlertTriangle,
-  Clock,
-  Megaphone,
-  Gift,
-  BellRing,
-} from "lucide-react";
+import { ClockIcon, UsersIcon, DollarSignIcon } from "lucide-animated";
+import { ShoppingCart, Package, AlertTriangle, Megaphone, Gift, BellRing } from "lucide-react";
 
 export type NotificationType =
   | "order"
@@ -417,11 +408,11 @@ function formatBudgetShort(amount: number): string {
 function showToast(notification: RealtimeNotification) {
   const iconMap: Record<NotificationType, React.ElementType> = {
     order: ShoppingCart,
-    customer: Users,
+    customer: UsersIcon,
     product: Package,
-    revenue: DollarSign,
+    revenue: DollarSignIcon,
     inventory: AlertTriangle,
-    discount: Clock,
+    discount: ClockIcon,
     campaign: Megaphone,
     milestone: Gift,
     alert: BellRing,
@@ -430,7 +421,7 @@ function showToast(notification: RealtimeNotification) {
 
   toast(notification.title, {
     description: notification.description,
-    icon: <Icon className="h-4 w-4" />,
+    icon: <Icon size={16} className="h-4 w-4" />,
     duration: 4000,
   });
 }

@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useCallback, useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 /**
@@ -28,8 +36,12 @@ const ViewTransitionContext = createContext<ViewTransitionContextValue>({
 export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const isSupported =
-    typeof document !== "undefined" && typeof document.startViewTransition === "function";
+  const [isSupported, setIsSupported] = useState(false);
+
+  // Defer browser-only check to avoid hydration mismatch
+  useEffect(() => {
+    setIsSupported(typeof document.startViewTransition === "function");
+  }, []);
 
   // Wrap router.push with startViewTransition
   const pushWithTransition = useCallback(

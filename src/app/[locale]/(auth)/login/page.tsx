@@ -1,20 +1,14 @@
 "use client";
 
 import { useState, Suspense, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Eye,
-  EyeOff,
-  Loader2,
-  LogIn,
-  Smartphone,
-  Mail,
-  LayoutDashboard,
-  Sparkles,
-} from "lucide-react";
+import { EyeIcon, EyeOffIcon, LoaderCircleIcon, SparklesIcon } from "lucide-animated";
+import { LogIn, Smartphone, Mail, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Fingerprint, Building2 } from "lucide-react";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,8 +27,10 @@ function LoginForm() {
   const [totpCode, setTotpCode] = useState("");
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/en/dashboard";
   const cardRef = useRef<HTMLDivElement>(null);
@@ -94,6 +90,53 @@ function LoginForm() {
 
   const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (!email) {
+      toast.error("Enter your email first");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const optRes = await fetch("/api/auth/webauthn/authenticate/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!optRes.ok) {
+        const d = await optRes.json().catch(() => ({}));
+        toast.error(d.error || "No passkey available");
+        return;
+      }
+      const options = await optRes.json();
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: assertion }),
+      });
+      if (!verifyRes.ok) {
+        toast.error("Passkey sign-in failed");
+        return;
+      }
+      await refreshUser();
+      toast.success("Welcome back!");
+      router.push(redirect);
+    } catch {
+      toast.error("Passkey sign-in cancelled");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSsoLogin = () => {
+    if (!email) {
+      toast.error("Enter your work email first");
+      return;
+    }
+    // Full-page navigation: the endpoint redirects to the tenant's IdP.
+    window.location.href = `/api/auth/saml/login?email=${encodeURIComponent(email)}`;
   };
 
   // Pointer-tracking glow effect on the card
@@ -167,7 +210,8 @@ function LoginForm() {
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...
+                      <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                      Verifying...
                     </>
                   ) : (
                     <>
@@ -259,7 +303,7 @@ function LoginForm() {
             </CardTitle>
             <CardDescription className="flex items-center justify-center gap-1">
               Sign in to your dashboard
-              <Sparkles className="h-3 w-3 text-indigo-400" />
+              <SparklesIcon size={12} className="h-3 w-3 text-indigo-400" />
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-8">
@@ -297,12 +341,12 @@ function LoginForm() {
                   <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                     Password
                   </label>
-                  <button
-                    type="button"
+                  <Link
+                    href={`/${locale}/forgot-password`}
                     className="text-xs text-indigo-500 hover:text-indigo-400 transition-colors"
                   >
                     Forgot?
-                  </button>
+                  </Link>
                 </div>
                 <div className="relative group">
                   <Input
@@ -319,7 +363,11 @@ function LoginForm() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOffIcon size={16} className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon size={16} className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -337,7 +385,8 @@ function LoginForm() {
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Signing in...
+                      <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> Signing
+                      in...
                     </>
                   ) : (
                     <>
@@ -395,6 +444,26 @@ function LoginForm() {
                 </svg>
                 Continue with Google
               </Button>
+              <Button
+                variant="outline"
+                className="w-full h-11 mt-3 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                onClick={handlePasskeyLogin}
+                disabled={isLoading}
+                type="button"
+              >
+                <Fingerprint className="h-5 w-5 mr-2" />
+                Sign in with a passkey
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-11 mt-3 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                onClick={handleSsoLogin}
+                disabled={isLoading}
+                type="button"
+              >
+                <Building2 className="h-5 w-5 mr-2" />
+                Sign in with SSO
+              </Button>
             </motion.div>
 
             <motion.p
@@ -403,7 +472,7 @@ function LoginForm() {
               transition={{ delay: 0.45, duration: 0.4 }}
               className="mt-6 text-center text-sm text-zinc-500"
             >
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/en/register"
                 className="text-indigo-600 hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors"
@@ -432,7 +501,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-[#0b0c11]">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-indigo-500" />
         </div>
       }
     >

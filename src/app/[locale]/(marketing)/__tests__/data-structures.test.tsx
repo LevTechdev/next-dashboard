@@ -44,10 +44,10 @@ describe("Changelog Data Structure", () => {
 
   it("has valid tagColor Tailwind classes", () => {
     const colorPatterns = [
-      "bg-indigo-500/20 text-indigo-400",
-      "bg-emerald-500/20 text-emerald-400",
-      "bg-blue-500/20 text-blue-400",
-      "bg-purple-500/20 text-purple-400",
+      "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+      "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+      "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+      "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
     ];
     for (const entry of changelog) {
       expect(colorPatterns).toContain(entry.tagColor);
@@ -116,11 +116,11 @@ describe("typeConfig Structure", () => {
   });
 
   it("has valid Tailwind color classes", () => {
-    expect(typeConfig.feature.color).toBe("text-emerald-400");
+    expect(typeConfig.feature.color).toBe("text-emerald-600 dark:text-emerald-400");
     expect(typeConfig.feature.bg).toBe("bg-emerald-500/10");
-    expect(typeConfig.improvement.color).toBe("text-blue-400");
+    expect(typeConfig.improvement.color).toBe("text-blue-600 dark:text-blue-400");
     expect(typeConfig.improvement.bg).toBe("bg-blue-500/10");
-    expect(typeConfig.fix.color).toBe("text-amber-400");
+    expect(typeConfig.fix.color).toBe("text-amber-600 dark:text-amber-400");
     expect(typeConfig.fix.bg).toBe("bg-amber-500/10");
   });
 

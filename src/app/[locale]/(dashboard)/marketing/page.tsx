@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Megaphone, Search } from "lucide-react";
+import { PlusIcon, SearchIcon } from "lucide-animated";
+import { Megaphone, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatDate, getStatusColor, sanitizeInteger } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
 
@@ -38,6 +40,7 @@ export default function MarketingPage() {
   const { user } = useAuth();
   const tmarketing = useTranslations("marketing");
   const tcommon = useTranslations("common");
+  const confirm = useConfirm();
   const role = (user as any)?.role;
 
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -54,10 +57,13 @@ export default function MarketingPage() {
     status: "DRAFT",
   });
 
-  const loadData = async () => {
-    const res = await fetch("/api/marketing");
-    setCampaigns(await res.json());
-    setLoading(false);
+  const loadData = () => {
+    fetch("/api/marketing", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setCampaigns(data);
+        setLoading(false);
+      });
   };
   useEffect(() => {
     loadData();
@@ -86,11 +92,15 @@ export default function MarketingPage() {
   const handleSave = async () => {
     const method = editCampaign ? "PUT" : "POST";
     const body = editCampaign ? { ...form, id: editCampaign.id } : form;
-    await fetch("/api/marketing", {
+    const res = await fetch("/api/marketing", {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(editCampaign ? tmarketing("updated") : tmarketing("added"));
     setDialogOpen(false);
     setEditCampaign(null);
@@ -107,12 +117,22 @@ export default function MarketingPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(tmarketing("confirmDelete"))) return;
-    await fetch("/api/marketing", {
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tmarketing("confirmDelete"),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/marketing", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(tmarketing("deleted"));
     loadData();
   };
@@ -142,7 +162,7 @@ export default function MarketingPage() {
                 }}
               >
                 {" "}
-                <Plus className="h-4 w-4 mr-2" /> {tmarketing("addCampaign")}
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tmarketing("addCampaign")}
               </Button>
             </DialogTrigger>
           )}{" "}
@@ -195,14 +215,18 @@ export default function MarketingPage() {
                 <Input
                   placeholder={tmarketing("budget")}
                   type="number"
+                  inputMode="numeric"
+                  step={1}
                   value={form.budget}
-                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                  onChange={(e) => setForm({ ...form, budget: sanitizeInteger(e.target.value) })}
                 />
                 <Input
                   placeholder={tmarketing("spent")}
                   type="number"
+                  inputMode="numeric"
+                  step={1}
                   value={form.spent}
-                  onChange={(e) => setForm({ ...form, spent: e.target.value })}
+                  onChange={(e) => setForm({ ...form, spent: sanitizeInteger(e.target.value) })}
                 />
               </div>
               <Button onClick={handleSave} className="w-full">
@@ -267,6 +291,7 @@ export default function MarketingPage() {
                               setDialogOpen(true);
                             }}
                           >
+                            <Edit2 className="h-3.5 w-3.5 mr-1" />
                             {tcommon("edit")}
                           </Button>
                         )}
@@ -277,6 +302,7 @@ export default function MarketingPage() {
                             onClick={() => handleDelete(c.id)}
                             className="text-red-500"
                           >
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
                             {tcommon("delete")}
                           </Button>
                         )}

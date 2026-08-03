@@ -3,22 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import {
-  Key,
-  Globe,
-  Plus,
-  Copy,
-  Pencil,
-  Trash2,
-  Power,
-  PowerOff,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Loader2,
-  Search,
-} from "lucide-react";
+  RefreshCwIcon,
+  ClockIcon,
+  PlusIcon,
+  CopyIcon,
+  SearchIcon,
+  KeyIcon,
+  EarthIcon,
+  CircleCheckIcon,
+} from "lucide-animated";
+import { Pencil, Trash2, Power, PowerOff, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -152,15 +147,15 @@ export default function IntegrationsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="api-keys" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
+            <KeyIcon size={16} className="h-4 w-4" />
             {t("tabApiKeys")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
+            <EarthIcon size={16} className="h-4 w-4" />
             {t("tabWebhooks")}
           </TabsTrigger>
           <TabsTrigger value="deliveries" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+            <ClockIcon size={16} className="h-4 w-4" />
             {t("tabDeliveries")}
           </TabsTrigger>
         </TabsList>
@@ -209,7 +204,10 @@ function ApiKeysTab() {
   }, []);
 
   useEffect(() => {
-    fetchKeys();
+    const init = async () => {
+      await fetchKeys();
+    };
+    init();
   }, [fetchKeys]);
 
   const handleCreate = async () => {
@@ -267,8 +265,14 @@ function ApiKeysTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(t("confirmDeleteKey"))) return;
+    const ok = await confirm({
+      description: t("confirmDeleteKey"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/api-keys", {
         method: "DELETE",
@@ -308,7 +312,7 @@ function ApiKeysTab() {
         <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+              <CircleCheckIcon size={20} className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-emerald-800 dark:text-emerald-300">
                   {t("keyCreatedTitle")}
@@ -321,7 +325,7 @@ function ApiKeysTab() {
                     {showNewKey}
                   </code>
                   <Button size="sm" variant="secondary" onClick={() => handleCopyKey(showNewKey)}>
-                    <Copy className="h-4 w-4" />
+                    <CopyIcon size={16} className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
@@ -341,7 +345,10 @@ function ApiKeysTab() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <SearchIcon
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          />
           <Input
             placeholder={tc("search")}
             value={search}
@@ -351,7 +358,7 @@ function ApiKeysTab() {
         </div>
         <div className="flex-1" />
         <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" /> {t("createKey")}
+          <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("createKey")}
         </Button>
       </div>
 
@@ -359,7 +366,7 @@ function ApiKeysTab() {
       {filteredKeys.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Key className="h-12 w-12 text-gray-300 mb-4" />
+            <KeyIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {search ? t("noKeysMatch") : t("noKeys")}
             </h3>
@@ -368,7 +375,7 @@ function ApiKeysTab() {
             </p>
             {!search && (
               <Button variant="outline" className="mt-4" onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4 mr-2" /> {t("createKey")}
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("createKey")}
               </Button>
             )}
           </CardContent>
@@ -492,7 +499,7 @@ function ApiKeysTab() {
                 </>
               ) : (
                 <>
-                  <Key className="h-4 w-4 mr-2" /> {t("generateKey")}
+                  <KeyIcon size={16} className="h-4 w-4 mr-2" /> {t("generateKey")}
                 </>
               )}
             </Button>
@@ -524,7 +531,7 @@ function WebhooksTab() {
 
   const fetchEndpoints = useCallback(async () => {
     try {
-      const res = await fetch("/api/webhooks");
+      const res = await fetch("/api/webhooks", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setEndpoints(data);
@@ -537,7 +544,10 @@ function WebhooksTab() {
   }, []);
 
   useEffect(() => {
-    fetchEndpoints();
+    const init = async () => {
+      await fetchEndpoints();
+    };
+    init();
   }, [fetchEndpoints]);
 
   const resetForm = () => {
@@ -619,8 +629,14 @@ function WebhooksTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(t("confirmDeleteWebhook"))) return;
+    const ok = await confirm({
+      description: t("confirmDeleteWebhook"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/webhooks", {
         method: "DELETE",
@@ -751,7 +767,7 @@ function WebhooksTab() {
                       toast.success(t("secretCopied"));
                     }}
                   >
-                    <Copy className="h-4 w-4" />
+                    <CopyIcon size={16} className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
@@ -771,7 +787,10 @@ function WebhooksTab() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <SearchIcon
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          />
           <Input
             placeholder={tc("search")}
             value={search}
@@ -786,7 +805,7 @@ function WebhooksTab() {
             setShowCreate(true);
           }}
         >
-          <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
+          <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("addEndpoint")}
         </Button>
       </div>
 
@@ -794,7 +813,7 @@ function WebhooksTab() {
       {filteredEndpoints.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Globe className="h-12 w-12 text-gray-300 mb-4" />
+            <EarthIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {search ? t("noWebhooksMatch") : t("noWebhooks")}
             </h3>
@@ -810,7 +829,7 @@ function WebhooksTab() {
                   setShowCreate(true);
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("addEndpoint")}
               </Button>
             )}
           </CardContent>
@@ -878,7 +897,7 @@ function WebhooksTab() {
                       {testing === ep.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <RefreshCw className="h-4 w-4 text-blue-500" />
+                        <RefreshCwIcon size={16} className="h-4 w-4 text-blue-500" />
                       )}
                     </Button>
                     <Button
@@ -1016,7 +1035,7 @@ function WebhooksTab() {
               {tc("cancel")}
             </Button>
             <Button onClick={showEdit ? handleUpdate : handleCreate}>
-              <Globe className="h-4 w-4 mr-2" />
+              <EarthIcon size={16} className="h-4 w-4 mr-2" />
               {showEdit ? t("updateWebhook") : t("createWebhookBtn")}
             </Button>
           </DialogFooter>
@@ -1057,7 +1076,7 @@ function DeliveriesTab() {
 
   const fetchEndpointList = useCallback(async () => {
     try {
-      const res = await fetch("/api/webhooks");
+      const res = await fetch("/api/webhooks", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setEndpoints(data.map((ep: WebhookEndpoint) => ({ id: ep.id, name: ep.name })));
@@ -1068,11 +1087,17 @@ function DeliveriesTab() {
   }, []);
 
   useEffect(() => {
-    fetchEndpointList();
+    const init = async () => {
+      await fetchEndpointList();
+    };
+    init();
   }, [fetchEndpointList]);
 
   useEffect(() => {
-    fetchDeliveries();
+    const init = async () => {
+      await fetchDeliveries();
+    };
+    init();
   }, [fetchDeliveries]);
 
   if (loading) {
@@ -1101,7 +1126,7 @@ function DeliveriesTab() {
           </SelectContent>
         </Select>
         <Button variant="outline" size="sm" onClick={fetchDeliveries}>
-          <RefreshCw className="h-4 w-4 mr-2" /> {tc("refresh")}
+          <RefreshCwIcon size={16} className="h-4 w-4 mr-2" /> {tc("refresh")}
         </Button>
       </div>
 
@@ -1109,7 +1134,7 @@ function DeliveriesTab() {
       {deliveries.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Clock className="h-12 w-12 text-gray-300 mb-4" />
+            <ClockIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {t("noDeliveries")}
             </h3>
@@ -1128,9 +1153,9 @@ function DeliveriesTab() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div>
                       {d.status === "DELIVERED" ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <CircleCheckIcon size={20} className="h-5 w-5 text-green-500" />
                       ) : d.status === "PENDING" ? (
-                        <Clock className="h-5 w-5 text-amber-500" />
+                        <ClockIcon size={20} className="h-5 w-5 text-amber-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}

@@ -3,19 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
-  Shield,
-  Users2,
-  Search,
-  Save,
-  RotateCcw,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  SlidersHorizontal,
-  Lock,
-  KeyRound,
-} from "lucide-react";
+  SearchIcon,
+  CircleCheckIcon,
+  SlidersHorizontalIcon,
+  RotateCcwIcon,
+  LockIcon,
+} from "lucide-animated";
+import { Shield, Users2, Save, Loader2, XCircle, AlertTriangle, KeyRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,20 +130,19 @@ export default function RolesPage() {
   const [dirty, setDirty] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{ id: string; allowed: boolean }[]>([]);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/roles");
-      const data = await res.json();
-      setRoleSettings(data.roleSettings || []);
-      setUsers(data.users || []);
-    } catch {
-      toast.error(troles("loadFailed"));
-    } finally {
-      setLoading(false);
-    }
+  const loadData = () => {
+    fetch("/api/roles", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setRoleSettings(data.roleSettings || []);
+        setUsers(data.users || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error(troles("loadFailed"));
+        setLoading(false);
+      });
   };
-
   useEffect(() => {
     loadData();
   }, []);
@@ -207,17 +200,19 @@ export default function RolesPage() {
           const action = parts.pop()!;
           const role = parts.pop()!;
           const resource = parts.join("-");
-          await fetch("/api/roles", {
+          const res = await fetch("/api/roles", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role, resource, action, allowed: change.allowed }),
           });
+          if (!res.ok) throw new Error("save failed");
         } else {
-          await fetch("/api/roles", {
+          const res = await fetch("/api/roles", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: change.id, allowed: change.allowed }),
           });
+          if (!res.ok) throw new Error("save failed");
         }
         success++;
       } catch {
@@ -277,7 +272,7 @@ export default function RolesPage() {
           {dirty && (
             <>
               <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcwIcon size={16} className="h-4 w-4 mr-2" />
                 Discard
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -351,7 +346,7 @@ export default function RolesPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="matrix" className="gap-2">
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontalIcon size={16} className="h-4 w-4" />
             {troles("tabMatrix")}
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
@@ -366,11 +361,14 @@ export default function RolesPage() {
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
+                  <LockIcon size={16} className="h-4 w-4" />
                   {troles("resourcePermissions")}
                 </CardTitle>
                 <div className="relative max-w-xs w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <SearchIcon
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                  />
                   <Input
                     placeholder={troles("searchResources")}
                     className="pl-10"
@@ -478,7 +476,7 @@ export default function RolesPage() {
                                     }
                                   >
                                     {allowed ? (
-                                      <CheckCircle2 className="h-4 w-4" />
+                                      <CircleCheckIcon size={16} className="h-4 w-4" />
                                     ) : (
                                       <XCircle className="h-4 w-4" />
                                     )}
@@ -497,7 +495,7 @@ export default function RolesPage() {
                     {filteredResources.length === 0 && (
                       <tr>
                         <td colSpan={10} className="text-center py-12 text-gray-500">
-                          <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          <SearchIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-30" />
                           {troles("noMatch", { search })}
                         </td>
                       </tr>
@@ -509,7 +507,7 @@ export default function RolesPage() {
               {/* Legend */}
               <div className="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 px-4 sm:px-0">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                  <CircleCheckIcon size={14} className="h-3.5 w-3.5 text-green-500" />
                   {troles("legendAllowed")}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -606,7 +604,7 @@ export default function RolesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcwIcon size={16} className="h-4 w-4 mr-2" />
                 {troles("discard")}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>

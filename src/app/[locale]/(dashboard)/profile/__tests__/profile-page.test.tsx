@@ -20,6 +20,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// ProfilePage uses useConfirm for destructive actions; provide a no-op confirm
+// so the page renders standalone without the DashboardLayout's ConfirmProvider.
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(true)),
+}));
+
 import { useAuth } from "@/hooks/use-auth";
 
 const mockUser = {

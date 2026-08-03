@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  Package,
-  RefreshCw,
-  DollarSign,
-  BarChart3,
-  Layers,
-  Sparkles,
-  Download,
-} from "lucide-react";
+  RefreshCwIcon,
+  PlusIcon,
+  SearchIcon,
+  DollarSignIcon,
+  LayersIcon,
+  SparklesIcon,
+} from "lucide-animated";
+import { Edit2, Trash2, Package, BarChart3, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, shortenName, sanitizeInteger } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
@@ -50,8 +48,13 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { can } from "@/lib/permissions";
 import { DataExportButton } from "@/components/data-export-button";
+import { CsvImportDialog } from "@/components/csv-import-dialog";
+import { LinkedPlatformsBadge } from "@/components/linked-platforms-badge";
+import { useConfirm } from "@/components/ui/confirm-provider";
 
 export default function ProductsPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
   const { user } = useAuth();
   const tproducts = useTranslations("products");
   const tcommon = useTranslations("common");
@@ -84,16 +87,61 @@ export default function ProductsPage() {
 
   const role = (user as any)?.role;
 
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
   const filtered = products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()));
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) =>
+      prev.size === filtered.length ? new Set() : new Set(filtered.map((p: any) => p.id)),
+    );
+  };
+
+  const confirm = useConfirm();
+
+  const handleBulkDelete = async () => {
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tproducts("bulkDeleteConfirm", { count: selected.size }),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/products/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", ids: Array.from(selected) }),
+    });
+    if (res.ok) {
+      toast.success(tproducts("bulkDeleted", { count: selected.size }));
+      setSelected(new Set());
+      refresh();
+    } else {
+      toast.error(tcommon("error"));
+    }
+  };
 
   const handleSave = async () => {
     const body = editProduct ? { ...form, id: editProduct.id } : form;
     const method = editProduct ? "PUT" : "POST";
-    await fetch("/api/products", {
+    const res = await fetch("/api/products", {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(editProduct ? tproducts("updated") : tproducts("added"));
     setDialogOpen(false);
     setEditProduct(null);
@@ -109,15 +157,25 @@ export default function ProductsPage() {
     refresh();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(tproducts("confirmDelete"))) return;
-    await fetch("/api/products", {
+  const [deleteProduct, setDeleteProduct] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteProduct) return;
+    setDeleting(true);
+    const res = await fetch("/api/products", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id: deleteProduct.id }),
     });
-    toast.success(tproducts("deleted"));
-    refresh();
+    setDeleting(false);
+    if (res.ok) {
+      toast.success(tproducts("deleted"));
+      setDeleteProduct(null);
+      refresh();
+    } else {
+      toast.error(tcommon("error"));
+    }
   };
 
   const openEdit = (product: any) => {
@@ -222,7 +280,7 @@ export default function ProductsPage() {
                     });
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
+                  <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
                 </Button>
               </DialogTrigger>
             )}
@@ -247,22 +305,30 @@ export default function ProductsPage() {
                   <Input
                     placeholder={tproducts("price")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    onChange={(e) => setForm({ ...form, price: sanitizeInteger(e.target.value) })}
                   />
                   <Input
                     placeholder={tproducts("costPrice")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.costPrice}
-                    onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, costPrice: sanitizeInteger(e.target.value) })
+                    }
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     placeholder={tproducts("stock")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.stock}
-                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                    onChange={(e) => setForm({ ...form, stock: sanitizeInteger(e.target.value) })}
                   />
                   <Input
                     placeholder={tproducts("sku")}
@@ -307,14 +373,14 @@ export default function ProductsPage() {
           {
             label: tproducts("category") || "Categories",
             end: categoryCount,
-            icon: Layers,
+            icon: LayersIcon,
             color: "text-indigo-600 dark:text-indigo-400",
             bg: "bg-indigo-50 dark:bg-indigo-900/20",
           },
           {
             label: tproducts("price") || "Avg Price",
             end: avgPrice,
-            icon: DollarSign,
+            icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
             format: (v: number) => formatCurrency(v),
@@ -343,9 +409,9 @@ export default function ProductsPage() {
                       stat.bg,
                     )}
                   >
-                    <stat.icon className={cn("h-5 w-5", stat.color)} />
+                    <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <Sparkles className="h-3 w-3 text-gray-300 dark:text-gray-600" />
+                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -365,7 +431,10 @@ export default function ProductsPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <SearchIcon
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              />
               <Input
                 placeholder={tcommon("search")}
                 className="pl-10"
@@ -380,8 +449,20 @@ export default function ProductsPage() {
               disabled={isRefreshing}
               className="gap-1"
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              <RefreshCwIcon
+                size={14}
+                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+              />
             </Button>
+            {can(role, "create", "products") && (
+              <CsvImportDialog
+                endpoint="/api/products/import"
+                columns={["name", "price", "costPrice", "stock", "sku", "category", "description"]}
+                requiredColumns={["name", "price"]}
+                sampleRow="Wireless Mouse,29.99,12.5,100,WM-001,Electronics,Ergonomic wireless mouse"
+                onImported={refresh}
+              />
+            )}
             <DataExportButton
               columns={[
                 { key: "name", header: "Name" },
@@ -409,10 +490,42 @@ export default function ProductsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
+          {selected.size > 0 && (
+            <div className="flex items-center justify-between gap-3 mb-4 mx-4 sm:mx-0 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                {tproducts("selectedCount", { count: selected.size })}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                  {tcommon("cancel")}
+                </Button>
+                {can(role, "delete", "products") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 border-red-200 dark:border-red-800"
+                    onClick={handleBulkDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {tcommon("delete")}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-indigo-500 cursor-pointer"
+                      checked={filtered.length > 0 && selected.size === filtered.length}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>{tproducts("name")}</TableHead>
                   <TableHead>{tproducts("category")}</TableHead>
                   <TableHead>{tproducts("price")}</TableHead>
@@ -428,8 +541,32 @@ export default function ProductsPage() {
                   const margin =
                     p.price > 0 ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : "0";
                   return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableRow key={p.id} data-state={selected.has(p.id) ? "selected" : undefined}>
+                      <TableCell className="w-10">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-indigo-500 cursor-pointer"
+                          checked={selected.has(p.id)}
+                          onChange={() => toggleSelect(p.id)}
+                          aria-label={`Select ${p.name}`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/${locale}/products/${p.id}`}
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                          title={p.name}
+                        >
+                          {shortenName(p.name, 48)}
+                        </Link>
+                        {p._count?.affiliateLinks > 0 && (
+                          <LinkedPlatformsBadge
+                            productId={p.id}
+                            count={p._count.affiliateLinks}
+                            className="ml-2"
+                          />
+                        )}
+                      </TableCell>
                       <TableCell>{p.category?.name || "-"}</TableCell>
                       <TableCell>{formatCurrency(p.price)}</TableCell>
                       <TableCell className="text-gray-500">{formatCurrency(p.costPrice)}</TableCell>
@@ -456,7 +593,7 @@ export default function ProductsPage() {
                             </Button>
                           )}
                           {can(role, "delete", "products") && (
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(p)}>
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           )}
@@ -467,7 +604,7 @@ export default function ProductsPage() {
                 })}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                       <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       {tproducts("noProducts")}
                     </TableCell>
@@ -478,6 +615,55 @@ export default function ProductsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete product confirmation */}
+      <Dialog open={!!deleteProduct} onOpenChange={(o) => !o && setDeleteProduct(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              {tproducts("deleteProduct")}
+            </DialogTitle>
+          </DialogHeader>
+          {deleteProduct && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                {deleteProduct.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={deleteProduct.image}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-12 h-12 rounded-md object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                    <Package className="h-5 w-5 text-gray-400" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" title={deleteProduct.name}>
+                    {shortenName(deleteProduct.name, 40)}
+                  </p>
+                  <p className="text-xs text-gray-500">{formatCurrency(deleteProduct.price)}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {tproducts("deleteProductWarning")}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDeleteProduct(null)}>
+                  {tcommon("cancel")}
+                </Button>
+                <Button variant="destructive" onClick={confirmDeleteProduct} disabled={deleting}>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {deleting ? tcommon("loading") : tcommon("delete")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

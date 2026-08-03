@@ -104,6 +104,14 @@ vi.mock("@/lib/api-guard", () => ({
   requirePermission: mockRequirePermission,
 }));
 
+// Bypass Phase 1 step-up so password-route handler tests reach their
+// validation paths (step-up itself is covered by dedicated tests).
+vi.mock("@/lib/step-up", () => ({
+  verifyStepUpToken: () => true,
+  getStepUpToken: () => "stub",
+  STEP_UP_COOKIE: "step_up",
+}));
+
 import * as dashboardRoutes from "../dashboard/route";
 import * as categoriesRoutes from "../categories/route";
 import * as ordersRoutes from "../orders/route";
@@ -127,7 +135,20 @@ beforeEach(() => {
     },
     response: null,
   });
-  mockRequirePermission.mockResolvedValue({ role: "ADMIN", response: null });
+  mockRequirePermission.mockResolvedValue({
+    role: "ADMIN",
+    session: {
+      user: {
+        id: "admin-1",
+        sub: "admin-1",
+        name: "Admin",
+        email: "admin@test.com",
+        role: "ADMIN",
+        tenantId: "tenant-1",
+      },
+    },
+    response: null,
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -173,7 +194,7 @@ function del(url: string, body: unknown): Request {
 describe("HTTP integration: response contract", () => {
   describe("success responses include Content-Type: application/json", () => {
     it("dashboard GET returns JSON content-type", async () => {
-      const res = await dashboardRoutes.GET();
+      const res = await dashboardRoutes.GET(get("http://localhost/api/dashboard"));
       expect(res.headers.get("content-type")).toBe("application/json");
     });
 
@@ -188,7 +209,7 @@ describe("HTTP integration: response contract", () => {
     });
 
     it("customers GET returns JSON content-type", async () => {
-      const res = await customersRoutes.GET();
+      const res = await customersRoutes.GET(get("http://localhost/api/customers"));
       expect(res.headers.get("content-type")).toBe("application/json");
     });
 
@@ -259,7 +280,7 @@ describe("HTTP integration: request edge cases", () => {
 
   describe("method handling", () => {
     it("dashboard GET with real method works", async () => {
-      const res = await dashboardRoutes.GET();
+      const res = await dashboardRoutes.GET(get("http://localhost/api/dashboard"));
       expect(res.status).toBe(200);
     });
 
@@ -319,7 +340,7 @@ describe("HTTP integration: request edge cases", () => {
       const res = await PUT(req);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toContain("6 characters");
+      expect(body.error).toContain("8 characters");
     });
   });
 });
@@ -338,7 +359,7 @@ describe("HTTP integration: real Request across routes", () => {
   });
 
   it("dashboard: full response shape including nested objects", async () => {
-    const res = await dashboardRoutes.GET();
+    const res = await dashboardRoutes.GET(get("http://localhost/api/dashboard"));
     expect(res.status).toBe(200);
 
     const body = await res.json();

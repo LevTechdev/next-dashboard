@@ -143,6 +143,6 @@ describe("Dashboard Page", () => {
   it("renders the Refresh button", () => {
     (useRealtimeData as any).mockReturnValue(loadedState);
     render(<DashboardPage />);
-    expect(screen.getByText("Save")).toBeInTheDocument();
+    expect(screen.getByText("Refresh")).toBeInTheDocument();
   });
 });

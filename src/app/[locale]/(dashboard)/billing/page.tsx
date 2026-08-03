@@ -3,29 +3,26 @@
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import {
-  CreditCard,
-  ShoppingCart,
-  Check,
-  X,
-  Download,
-  Clock,
-  Shield,
-  Users,
-  BarChart3,
-  Zap,
-  Loader2,
-  AlertTriangle,
-  FileText,
-  RefreshCw,
-  CheckCircle2,
-  Ban,
-  HelpCircle,
-} from "lucide-react";
+  CheckIcon,
+  XIcon,
+  ClockIcon,
+  RefreshCwIcon,
+  ZapIcon,
+  UsersIcon,
+  FileTextIcon,
+  CreditCardIcon,
+  BanIcon,
+  CircleCheckIcon,
+  CircleHelpIcon,
+  DownloadIcon,
+} from "lucide-animated";
+import { ShoppingCart, Shield, BarChart3, Loader2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import {
   Dialog,
   DialogContent,
@@ -179,7 +176,7 @@ export default function BillingPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
+            <ZapIcon size={16} className="h-4 w-4" />
             {tbilling("tabOverview")}
           </TabsTrigger>
           <TabsTrigger value="plans" className="flex items-center gap-2">
@@ -187,11 +184,11 @@ export default function BillingPage() {
             {tbilling("tabPlans")}
           </TabsTrigger>
           <TabsTrigger value="invoices" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+            <FileTextIcon size={16} className="h-4 w-4" />
             {tbilling("tabInvoices")}
           </TabsTrigger>
           <TabsTrigger value="payment" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
+            <CreditCardIcon size={16} className="h-4 w-4" />
             {tbilling("tabPayment")}
           </TabsTrigger>
         </TabsList>
@@ -242,8 +239,15 @@ function OverviewTab() {
     fetchData();
   }, [fetchData]);
 
+  const confirm = useConfirm();
+
   const handleCancel = async () => {
-    if (!confirm(tbilling("cancelConfirm"))) return;
+    const ok = await confirm({
+      description: tbilling("cancelConfirm"),
+      confirmLabel: tcommon("confirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/billing/subscription", {
         method: "PUT",
@@ -316,7 +320,8 @@ function OverviewTab() {
                       : "bg-gray-100 dark:bg-gray-800",
                 )}
               >
-                <Zap
+                <ZapIcon
+                  size={24}
                   className={cn(
                     "h-6 w-6",
                     sub?.cancelAtPeriodEnd
@@ -352,7 +357,7 @@ function OverviewTab() {
             <div className="flex items-center gap-3 shrink-0">
               {sub?.cancelAtPeriodEnd ? (
                 <Button variant="outline" onClick={handleReactivate}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> {tbilling("reactivate")}
+                  <RefreshCwIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("reactivate")}
                 </Button>
               ) : sub ? (
                 <Button
@@ -360,7 +365,7 @@ function OverviewTab() {
                   onClick={handleCancel}
                   className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
                 >
-                  <Ban className="h-4 w-4 mr-2" /> {tbilling("cancel")}
+                  <BanIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("cancel")}
                 </Button>
               ) : null}
             </div>
@@ -390,7 +395,7 @@ function OverviewTab() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <UsersIcon size={20} className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("teamMembers")}</p>
@@ -418,7 +423,7 @@ function OverviewTab() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <ClockIcon size={20} className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("billingCycle")}</p>
@@ -461,7 +466,8 @@ function OverviewTab() {
                             : "bg-gray-100 dark:bg-gray-800",
                       )}
                     >
-                      <FileText
+                      <FileTextIcon
+                        size={16}
                         className={cn(
                           "h-4 w-4",
                           inv.status === "PAID"
@@ -585,7 +591,7 @@ function PlansTab() {
               {plan.popular && !isCurrent && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold shadow-lg">
-                    <Zap className="h-3 w-3" />
+                    <ZapIcon size={12} className="h-3 w-3" />
                     {tbilling("mostPopular")}
                   </span>
                 </div>
@@ -593,7 +599,7 @@ function PlansTab() {
               {isCurrent && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-emerald-600 text-white text-xs font-semibold shadow-lg">
-                    <Check className="h-3 w-3" />
+                    <CheckIcon size={12} className="h-3 w-3" />
                     {tbilling("currentPlan")}
                   </span>
                 </div>
@@ -639,7 +645,8 @@ function PlansTab() {
                     </>
                   ) : (
                     <>
-                      <Zap className="h-4 w-4 mr-2" /> {tbilling("switchPlan")} {plan.name}
+                      <ZapIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("switchPlan")}{" "}
+                      {plan.name}
                     </>
                   )}
                 </Button>
@@ -652,9 +659,12 @@ function PlansTab() {
                     <div key={i} className="flex items-start gap-3">
                       <div className="mt-1">
                         {feat.included !== false ? (
-                          <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                          <CheckIcon size={16} className="h-4 w-4 text-emerald-500 shrink-0" />
                         ) : (
-                          <X className="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0" />
+                          <XIcon
+                            size={16}
+                            className="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0"
+                          />
                         )}
                       </div>
                       <span
@@ -700,17 +710,17 @@ function PlansTab() {
                 </div>
                 <div className="text-sm text-gray-500 space-y-2">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CircleCheckIcon size={16} className="h-4 w-4 text-emerald-500" />
                     <span>
                       {tbilling("billed")} {confirmPlan.interval.toLowerCase()}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CircleCheckIcon size={16} className="h-4 w-4 text-emerald-500" />
                     <span>{tbilling("cancelAnytime")}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CircleCheckIcon size={16} className="h-4 w-4 text-emerald-500" />
                     <span>{tbilling("noHiddenFees")}</span>
                   </div>
                 </div>
@@ -731,7 +741,7 @@ function PlansTab() {
                 </>
               ) : (
                 <>
-                  <Zap className="h-4 w-4 mr-2" /> {tbilling("confirmChange")}
+                  <ZapIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("confirmChange")}
                 </>
               )}
             </Button>
@@ -785,7 +795,10 @@ function InvoicesTab() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-                <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <FileTextIcon
+                  size={20}
+                  className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+                />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("totalInvoices")}</p>
@@ -796,7 +809,7 @@ function InvoicesTab() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <CreditCardIcon size={20} className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("totalPaid")}</p>
@@ -809,7 +822,7 @@ function InvoicesTab() {
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <ClockIcon size={20} className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("pending")}</p>
@@ -831,7 +844,7 @@ function InvoicesTab() {
         <CardContent>
           {invoices.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <FileTextIcon size={48} className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500">{tbilling("noInvoices")}</p>
             </div>
           ) : (
@@ -924,9 +937,12 @@ function InvoicesTab() {
                                 size="sm"
                                 variant="ghost"
                                 className="ml-auto"
-                                onClick={() => toast.info(tbilling("pdfDownloadComing"))}
+                                onClick={() =>
+                                  window.open(`/api/billing/invoices/${inv.id}/download`, "_blank")
+                                }
                               >
-                                <Download className="h-4 w-4 mr-1" /> {tbilling("pdf")}
+                                <DownloadIcon size={16} className="h-4 w-4 mr-1" />{" "}
+                                {tbilling("pdf")}
                               </Button>
                             </div>
                           </td>
@@ -959,13 +975,13 @@ function PaymentTab() {
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
-            <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+            <CreditCardIcon size={48} className="h-12 w-12 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-1">
               {tbilling("noPaymentMethods")}
             </h3>
             <p className="text-sm text-gray-400 mb-4">{tbilling("paymentComingSoon")}</p>
             <Button disabled>
-              <CreditCard className="h-4 w-4 mr-2" /> {tbilling("addPaymentMethod")}
+              <CreditCardIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("addPaymentMethod")}
             </Button>
             <p className="text-xs text-gray-400 mt-3">{tbilling("paymentComingSoon")}</p>
           </div>
@@ -980,7 +996,7 @@ function PaymentTab() {
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
-            <HelpCircle className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+            <CircleHelpIcon size={48} className="h-12 w-12 mx-auto text-gray-300 mb-4" />
             <p className="text-sm text-gray-400">{tbilling("billingInfoPlaceholder")}</p>
           </div>
         </CardContent>

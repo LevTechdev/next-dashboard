@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Download, TrendingUp, Users, Package, DollarSign } from "lucide-react";
+import { DownloadIcon, TrendingUpIcon, UsersIcon, DollarSignIcon } from "lucide-animated";
+import { Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,6 +79,22 @@ export default function ReportsPage() {
     }
   };
 
+  const statMap = useMemo(() => {
+    const revenue = data?.stats?.totalRevenue || 0;
+    const orders = data?.stats?.totalOrders || 0;
+    const customers = data?.stats?.totalCustomers || 0;
+    const products = data?.stats?.totalProducts || 0;
+    const growth = data?.stats?.customersGrowth || 0;
+    const topOrders = data?.topProducts?.[0]?.orderCount || 0;
+    const avgPrice =
+      (data?.topProducts?.reduce((s: number, p: any) => s + p.price, 0) || 0) /
+      (data?.topProducts?.length || 1);
+
+    return { revenue, orders, customers, products, growth, topOrders, avgPrice };
+  }, [data]);
+
+  const { revenue, orders, customers, products, growth, topOrders, avgPrice } = statMap;
+
   if (loading)
     return (
       <div className="space-y-4">
@@ -102,22 +119,6 @@ export default function ReportsPage() {
       </div>
     );
 
-  const statMap = useMemo(() => {
-    const revenue = data?.stats?.totalRevenue || 0;
-    const orders = data?.stats?.totalOrders || 0;
-    const customers = data?.stats?.totalCustomers || 0;
-    const products = data?.stats?.totalProducts || 0;
-    const growth = data?.stats?.customersGrowth || 0;
-    const topOrders = data?.topProducts?.[0]?.orderCount || 0;
-    const avgPrice =
-      (data?.topProducts?.reduce((s: number, p: any) => s + p.price, 0) || 0) /
-      (data?.topProducts?.length || 1);
-
-    return { revenue, orders, customers, products, growth, topOrders, avgPrice };
-  }, [data]);
-
-  const { revenue, orders, customers, products, growth, topOrders, avgPrice } = statMap;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -128,7 +129,7 @@ export default function ReportsPage() {
         <div className="flex items-center gap-3">
           <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" /> {treports("export")}
+            <DownloadIcon size={16} className="h-4 w-4 mr-2" /> {treports("export")}
           </Button>
         </div>
       </div>
@@ -149,7 +150,7 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-6">
-                <DollarSign className="h-5 w-5 text-emerald-500 mb-2" />
+                <DollarSignIcon size={20} className="h-5 w-5 text-emerald-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter
@@ -162,7 +163,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <TrendingUp className="h-5 w-5 text-blue-500 mb-2" />
+                <TrendingUpIcon size={20} className="h-5 w-5 text-blue-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalOrders")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter end={orders} duration={1400} />
@@ -171,7 +172,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <DollarSign className="h-5 w-5 text-purple-500 mb-2" />
+                <DollarSignIcon size={20} className="h-5 w-5 text-purple-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter
@@ -198,7 +199,7 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-6">
-                <Users className="h-5 w-5 text-blue-500 mb-2" />
+                <UsersIcon size={20} className="h-5 w-5 text-blue-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalCustomers")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter end={customers} duration={1400} />
@@ -207,7 +208,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <TrendingUp className="h-5 w-5 text-green-500 mb-2" />
+                <TrendingUpIcon size={20} className="h-5 w-5 text-green-500 mb-2" />
                 <p className="text-sm text-gray-500">{tdash("growth")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter end={growth} duration={1200} suffix="%" decimals={1} />
@@ -216,7 +217,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <DollarSign className="h-5 w-5 text-orange-500 mb-2" />
+                <DollarSignIcon size={20} className="h-5 w-5 text-orange-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter
@@ -243,7 +244,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <TrendingUp className="h-5 w-5 text-cyan-500 mb-2" />
+                <TrendingUpIcon size={20} className="h-5 w-5 text-cyan-500 mb-2" />
                 <p className="text-sm text-gray-500">{tdash("topProducts")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter end={topOrders} duration={1400} />
@@ -252,7 +253,7 @@ export default function ReportsPage() {
             </Card>
             <Card>
               <CardContent className="p-6">
-                <DollarSign className="h-5 w-5 text-rose-500 mb-2" />
+                <DollarSignIcon size={20} className="h-5 w-5 text-rose-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgProductPrice")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   <AnimatedCounter

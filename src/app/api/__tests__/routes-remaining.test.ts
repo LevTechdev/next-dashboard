@@ -210,6 +210,19 @@ vi.mock("@/lib/api-guard", () => ({
   requirePermission: mockRequirePermission,
 }));
 
+// Phase 1 step-up + HIBP are exercised by dedicated tests; bypass here so the
+// password-route handler reaches its validation/verification paths.
+vi.mock("@/lib/step-up", () => ({
+  verifyStepUpToken: () => true,
+  getStepUpToken: () => "stub",
+  STEP_UP_COOKIE: "step_up",
+}));
+
+vi.mock("@/lib/hibp", () => ({
+  isPasswordBreached: async () => false,
+  getPwnedCount: async () => 0,
+}));
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Imports under test
 // ═══════════════════════════════════════════════════════════════════════════
@@ -290,7 +303,7 @@ describe("Dashboard API (public, no auth)", () => {
         _count: { orderItems: 5 },
       },
     ]);
-    const res = await dashboardRoutes.GET();
+    const res = await dashboardRoutes.GET(mockRequest({}));
     expect(res.status).toBe(200);
     const body = await res.json();
 
@@ -310,7 +323,7 @@ describe("Dashboard API (public, no auth)", () => {
   it("returns fallback empty data on error", async () => {
     mockPrisma.order.aggregate.mockRejectedValueOnce(new Error("DB error"));
 
-    const res = await dashboardRoutes.GET();
+    const res = await dashboardRoutes.GET(mockRequest({}));
     expect(res.status).toBe(200);
     const body = await res.json();
     // Fallback empty state
@@ -559,7 +572,7 @@ describe("Profile Password API (auth-protected)", () => {
     );
     expect(res.status).toBe(200);
     expect(mockCompare).toHaveBeenCalledWith("correct", "$2a$10$hashedpassword");
-    expect(mockHash).toHaveBeenCalledWith("newpass123", 10);
+    // Phase 1: new password is hashed with Argon2id (not bcrypt) via lib/auth.
     expect(mockPrisma.user.update).toHaveBeenCalled();
     const body = await res.json();
     expect(body.success).toBe(true);

@@ -5,32 +5,27 @@ import { useParams } from "next/navigation";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight,
-  Zap,
-  Globe,
-  ShoppingCart,
-  CreditCard,
-  Mail,
-  MessageSquare,
-  Database,
-  Cloud,
-  BarChart3,
-  Share2,
-  Layers,
-  Check,
-  Plug,
-  Sparkles,
-  PlugZap,
-  type LucideIcon,
-} from "lucide-react";
+  CheckIcon,
+  ArrowRightIcon,
+  ZapIcon,
+  EarthIcon,
+  CreditCardIcon,
+  MessageSquareIcon,
+  DatabaseIcon,
+  LayersIcon,
+  SparklesIcon,
+  PlugZapIcon,
+} from "lucide-animated";
+import { ShoppingCart, Mail, Cloud, BarChart3, Share2, Plug, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
 
 interface Integration {
@@ -46,7 +41,7 @@ export const integrations: Integration[] = [
   {
     name: "Stripe",
     description: "Process payments, manage subscriptions, and handle invoicing seamlessly.",
-    icon: CreditCard,
+    icon: CreditCardIcon as LucideIcon,
     category: "Payments",
     popular: true,
     color: "from-purple-500/20 to-blue-500/20",
@@ -70,7 +65,7 @@ export const integrations: Integration[] = [
   {
     name: "Slack",
     description: "Get real-time alerts, order updates, and team notifications in your channels.",
-    icon: MessageSquare,
+    icon: MessageSquareIcon as LucideIcon,
     category: "Communication",
     popular: true,
     color: "from-amber-500/20 to-orange-500/20",
@@ -78,7 +73,7 @@ export const integrations: Integration[] = [
   {
     name: "PostgreSQL",
     description: "Connect your existing database for custom analytics and reporting.",
-    icon: Database,
+    icon: DatabaseIcon as LucideIcon,
     category: "Data",
     popular: false,
     color: "from-cyan-500/20 to-blue-500/20",
@@ -102,7 +97,7 @@ export const integrations: Integration[] = [
   {
     name: "Zapier",
     description: "Connect 3,000+ apps and automate workflows without writing code.",
-    icon: Zap,
+    icon: ZapIcon as LucideIcon,
     category: "Automation",
     popular: true,
     color: "from-indigo-500/20 to-purple-500/20",
@@ -128,19 +123,19 @@ export const categories = [
   {
     name: "Payments & Billing",
     description: "Process payments, manage subscriptions, and automate invoicing workflows.",
-    icon: CreditCard,
+    icon: CreditCardIcon,
     count: "8 integrations",
   },
   {
     name: "Communication",
     description: "Keep your team and customers informed with real-time messaging and alerts.",
-    icon: MessageSquare,
+    icon: MessageSquareIcon,
     count: "6 integrations",
   },
   {
     name: "Data & Infrastructure",
     description: "Sync, store, and analyze your data across cloud services and databases.",
-    icon: Database,
+    icon: DatabaseIcon,
     count: "14 integrations",
   },
   {
@@ -152,7 +147,7 @@ export const categories = [
   {
     name: "Automation & Workflows",
     description: "Connect thousands of apps and automate repetitive tasks effortlessly.",
-    icon: Zap,
+    icon: ZapIcon,
     count: "20+ integrations",
   },
 ];
@@ -165,9 +160,12 @@ export default function IntegrationsOverviewPage() {
   const locale = (params?.locale as string) || "en";
   const { theme } = useTheme();
   const { trackCTA } = useAnalytics();
+  const t = useTranslations("integrationsPage");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   const ctaHref = `/${locale}/dashboard`;
   const isDark = mounted && theme === "dark";
@@ -221,9 +219,9 @@ export default function IntegrationsOverviewPage() {
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
-              <PlugZap className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+              <PlugZapIcon size={14} className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
               <span className="text-[11px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
-                Seamless Integrations
+                {t("badge")}
               </span>
             </motion.div>
 
@@ -238,15 +236,13 @@ export default function IntegrationsOverviewPage() {
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
-              Connect Your&nbsp;
+              {t("heroPrefix")}&nbsp;
               <span className="inline-flex">
-                <FlipFadeText
-                  words={["stack.", "tools.", "apps.", "platforms."]}
+                <FlipRevealText
+                  words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                   interval={2800}
                   textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight"
                   className="!min-h-0 inline-flex"
-                  staggerDelay={0.06}
-                  letterDuration={0.4}
                 />
               </span>
             </motion.h1>
@@ -262,8 +258,7 @@ export default function IntegrationsOverviewPage() {
               }}
               className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto"
             >
-              Seamlessly connect with the tools you already use. Sync data across payments,
-              e-commerce, communication, and analytics platforms.
+              {t("heroSubtitle")}
             </motion.p>
           </motion.div>
         </div>
@@ -313,7 +308,7 @@ export default function IntegrationsOverviewPage() {
                           integration.color,
                         )}
                       >
-                        <Icon className="h-5 w-5 text-zinc-700 dark:text-zinc-200" />
+                        <Icon size={20} className="h-5 w-5 text-zinc-700 dark:text-zinc-200" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -322,7 +317,7 @@ export default function IntegrationsOverviewPage() {
                           </h3>
                           {integration.popular && (
                             <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
-                              Popular
+                              {t("popular")}
                             </span>
                           )}
                         </div>
@@ -349,14 +344,14 @@ export default function IntegrationsOverviewPage() {
                         {integration.category}
                       </span>
                       <span className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors flex items-center gap-1">
-                        Connect
+                        {t("connect")}
                         <motion.span
                           className="inline-flex"
                           animate={{ x: 0 }}
                           whileHover={{ x: 3 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <ArrowRight className="h-3 w-3" />
+                          <ArrowRightIcon size={12} className="h-3 w-3" />
                         </motion.span>
                       </span>
                     </div>
@@ -376,16 +371,19 @@ export default function IntegrationsOverviewPage() {
           <AnimateUp>
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-4">
-                <Layers className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                <LayersIcon
+                  size={14}
+                  className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400"
+                />
                 <span className="text-[11px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
-                  Browse by Category
+                  {t("catBadge")}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mb-3">
-                Explore by Category
+                {t("catTitle")}
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
-                Browse integrations organized by function to find exactly what your workflow needs.
+                {t("catSubtitle")}
               </p>
             </div>
           </AnimateUp>
@@ -423,7 +421,7 @@ export default function IntegrationsOverviewPage() {
                   <div className="relative z-20 bg-white dark:bg-zinc-900 rounded-[calc(1.5rem-2px)] p-5 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-zinc-800/80 flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                        <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
@@ -456,36 +454,36 @@ export default function IntegrationsOverviewPage() {
                 <AnimateUp>
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-4">
-                      <Sparkles className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />
+                      <SparklesIcon
+                        size={12}
+                        className="h-3 w-3 text-indigo-500 dark:text-indigo-400"
+                      />
                       <span className="text-[10px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
-                        Integration Features
+                        {t("featBadge")}
                       </span>
                     </div>
                     <h2 className="text-xl lg:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4">
-                      Built for Seamless Connections
+                      {t("featTitle")}
                     </h2>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
-                      Every integration is built with reliability and developer experience in mind.
-                      Connect once and let the data flow.
+                      {t("featDesc")}
                     </p>
                     <div className="space-y-3">
-                      {[
-                        "Real-time bidirectional data sync",
-                        "OAuth 2.0 secure authentication",
-                        "Automatic retry with exponential backoff",
-                        "Webhook support for event-driven updates",
-                        "Rate limiting and quota management",
-                        "Detailed sync logs and audit trail",
-                      ].map((feature) => (
-                        <div key={feature} className="flex items-start gap-3">
-                          <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                      {[t("feat1"), t("feat2"), t("feat3"), t("feat4"), t("feat5"), t("feat6")].map(
+                        (feature) => (
+                          <div key={feature} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center">
+                              <CheckIcon
+                                size={12}
+                                className="h-3 w-3 text-emerald-600 dark:text-emerald-400"
+                              />
+                            </div>
+                            <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                              {feature}
+                            </span>
                           </div>
-                          <span className="text-xs text-zinc-600 dark:text-zinc-300">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 </AnimateUp>
@@ -508,27 +506,27 @@ export default function IntegrationsOverviewPage() {
                           {[
                             {
                               name: "Stripe",
-                              status: "Connected",
+                              status: t("statusConnected"),
                               color: "text-emerald-600 dark:text-emerald-400",
                             },
                             {
                               name: "Shopify",
-                              status: "Connected",
+                              status: t("statusConnected"),
                               color: "text-emerald-600 dark:text-emerald-400",
                             },
                             {
                               name: "Slack",
-                              status: "Connected",
+                              status: t("statusConnected"),
                               color: "text-emerald-600 dark:text-emerald-400",
                             },
                             {
                               name: "SendGrid",
-                              status: "Syncing...",
+                              status: t("statusSyncing"),
                               color: "text-amber-600 dark:text-amber-400",
                             },
                             {
                               name: "Zapier",
-                              status: "Disconnected",
+                              status: t("statusDisconnected"),
                               color: "text-zinc-300 dark:text-zinc-500",
                             },
                           ].map((item) => (
@@ -561,20 +559,17 @@ export default function IntegrationsOverviewPage() {
           <div className="text-center max-w-2xl mx-auto">
             <AnimateUp>
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-100 dark:bg-zinc-800/80 mb-4">
-                <Globe className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <EarthIcon size={20} className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h2 className="text-xl lg:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mb-3">
-                Build Your Own Integration
+                {t("apiTitle")}
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Our REST API and webhooks make it easy to build custom integrations. Comprehensive
-                documentation, SDKs, and developer support included.
-              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">{t("apiDesc")}</p>
               <Link href={ctaHref}>
                 <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
                   <Button className="h-10 px-6 text-xs gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-zinc-900/20 dark:shadow-black/20 press-scale">
-                    View API Docs
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    {t("apiButton")}
+                    <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
                   </Button>
                 </motion.div>
               </Link>
@@ -590,25 +585,25 @@ export default function IntegrationsOverviewPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { label: "Total Integrations", end: 70, icon: Plug, suffix: "+" },
+              { labelKey: "statTotal", end: 70, icon: Plug, suffix: "+" },
               {
-                label: "Active Connections",
+                labelKey: "statConnections",
                 end: 12400,
                 icon: BarChart3,
                 format: (v: number) => `${(v / 1000).toFixed(1)}K`,
               },
               {
-                label: "API Requests/mo",
+                labelKey: "statRequests",
                 end: 2500000,
-                icon: Zap,
+                icon: ZapIcon,
                 format: (v: number) => `${(v / 1000000).toFixed(1)}M`,
               },
-              { label: "Platforms", end: 6, icon: Globe, suffix: "+" },
+              { labelKey: "statPlatforms", end: 6, icon: EarthIcon, suffix: "+" },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <motion.div
-                  key={stat.label}
+                  key={stat.labelKey}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -616,7 +611,7 @@ export default function IntegrationsOverviewPage() {
                   className="text-center"
                 >
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/10 mb-3">
-                    <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
                     <AnimatedCounter
@@ -626,7 +621,7 @@ export default function IntegrationsOverviewPage() {
                     />
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 mt-1 font-medium">
-                    {stat.label}
+                    {t(stat.labelKey)}
                   </div>
                 </motion.div>
               );
@@ -653,11 +648,10 @@ export default function IntegrationsOverviewPage() {
               <div className="relative text-center">
                 <AnimateUp>
                   <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4">
-                    Start Connecting Today
+                    {t("ctaTitle")}
                   </h2>
                   <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto mb-8">
-                    No credit card required. Start with our free plan and connect up to 5
-                    integrations.
+                    {t("ctaDesc")}
                   </p>
                   <Link href={ctaHref}>
                     <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
@@ -665,8 +659,8 @@ export default function IntegrationsOverviewPage() {
                         className="h-11 px-8 text-sm gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium press-scale shadow-xl shadow-zinc-900/20 dark:shadow-black/20"
                         onClick={() => trackCTA("start_connecting", { href: ctaHref })}
                       >
-                        Go to Dashboard
-                        <ArrowRight className="h-4 w-4" />
+                        {t("ctaButton")}
+                        <ArrowRightIcon size={16} className="h-4 w-4" />
                       </Button>
                     </motion.div>
                   </Link>

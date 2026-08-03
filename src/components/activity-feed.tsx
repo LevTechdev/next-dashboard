@@ -2,8 +2,26 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { ClockIcon, BellIcon, RefreshCwIcon } from "lucide-animated";
-import { ShoppingCart, Users, Package, DollarSign, AlertTriangle, Megaphone, Gift, BellRing, Filter, Download, Loader2, ExternalLink, Sparkles } from "lucide-react";
+import {
+  ClockIcon,
+  BellIcon,
+  RefreshCwIcon,
+  DollarSignIcon,
+  DownloadIcon,
+  SparklesIcon,
+  UsersIcon,
+} from "lucide-animated";
+import {
+  ShoppingCart,
+  Package,
+  AlertTriangle,
+  Megaphone,
+  Gift,
+  BellRing,
+  Filter,
+  Loader2,
+  ExternalLink,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +60,12 @@ interface ApiNotification {
 
 const TYPE_CONFIG: Record<
   ActivityType,
-  { icon: React.ComponentType<{ className?: string }>; color: string; bg: string; label: string }
+  {
+    icon: React.ComponentType<{ className?: string; size?: number }>;
+    color: string;
+    bg: string;
+    label: string;
+  }
 > = {
   order: {
     icon: ShoppingCart,
@@ -51,7 +74,7 @@ const TYPE_CONFIG: Record<
     label: "Orders",
   },
   customer: {
-    icon: Users,
+    icon: UsersIcon,
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-50 dark:bg-purple-900/20",
     label: "Customers",
@@ -63,7 +86,7 @@ const TYPE_CONFIG: Record<
     label: "Products",
   },
   revenue: {
-    icon: DollarSign,
+    icon: DollarSignIcon,
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-900/20",
     label: "Revenue",
@@ -254,20 +277,18 @@ export function ActivityFeed({ className }: { className?: string }) {
 
   // ── Pause / Resume for new activity intake ──
   const handlePauseToggle = () => {
-    setPaused((p) => {
-      if (p) {
-        // Was paused → now resuming: flush pending items
-        const pending = pendingItemsRef.current;
-        pendingItemsRef.current = [];
-        if (pending.length > 0) {
-          setActivities((prev) => {
-            const merged = [...pending, ...prev];
-            return merged.slice(0, MAX_VISIBLE);
-          });
-        }
+    setPaused((p) => !p);
+    // If resuming from paused state, flush pending items
+    if (paused) {
+      const pending = pendingItemsRef.current;
+      pendingItemsRef.current = [];
+      if (pending.length > 0) {
+        setActivities((prev) => {
+          const merged = [...pending, ...prev];
+          return merged.slice(0, MAX_VISIBLE);
+        });
       }
-      return !p;
-    });
+    }
   };
 
   // ── Scroll to top of feed ──
@@ -313,7 +334,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               {connectionStatus === "connected" ? (
                 <ActivityDot className="text-emerald-500" />
               ) : connectionStatus === "connecting" ? (
-                <RefreshCwIcon className="h-4 w-4 text-yellow-500 animate-spin" />
+                <RefreshCwIcon size={16} className="h-4 w-4 text-yellow-500 animate-spin" />
               ) : (
                 <AlertTriangle className="h-4 w-4 text-red-500" />
               )}
@@ -328,7 +349,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     exit={{ scale: 0.5, opacity: 0 }}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold"
                   >
-                    <Sparkles className="h-2.5 w-2.5" />+{newCount} new
+                    <SparklesIcon size={10} className="h-2.5 w-2.5" />+{newCount} new
                   </motion.span>
                 )}
               </CardTitle>
@@ -359,7 +380,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               title="Export as CSV"
               aria-label="Export activity feed as CSV"
             >
-              <Download className="h-3.5 w-3.5" />
+              <DownloadIcon size={14} className="h-3.5 w-3.5" />
             </Button>
             <a
               href={`/${locale}/notifications`}
@@ -409,7 +430,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               className="h-6 text-[10px] text-indigo-500 gap-1 px-2"
               onClick={handlePauseToggle}
             >
-              <RefreshCwIcon className="h-3 w-3" />
+              <RefreshCwIcon size={12} className="h-3 w-3" />
               Resume
             </Button>
           ) : (
@@ -445,7 +466,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                   : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
               )}
             >
-              {config && <config.icon className={cn("h-3 w-3", config.color)} />}
+              {config && <config.icon size={12} className={cn("h-3 w-3", config.color)} />}
               {t === "all" ? "All" : config?.label || t}
               {count > 0 && (
                 <span
@@ -492,7 +513,7 @@ export function ActivityFeed({ className }: { className?: string }) {
         {/* Empty State */}
         {!loading && activities.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <BellIcon className="h-10 w-10 mb-3 opacity-30" />
+            <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No activity yet</p>
             <p className="text-xs text-gray-400 mt-1">Real-time updates will appear here</p>
             <p className="text-xs text-gray-300 dark:text-gray-600 mt-3 max-w-[200px] text-center leading-relaxed">
@@ -564,7 +585,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                       isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600",
                     )}
                   >
-                    <Icon className={cn("h-4 w-4", config.color)} />
+                    <Icon size={16} className={cn("h-4 w-4", config.color)} />
                   </div>
 
                   {/* Content */}
@@ -638,7 +659,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               onClick={handleScrollToTop}
               className="pointer-events-auto inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-all"
             >
-              <RefreshCwIcon className="h-2.5 w-2.5" />
+              <RefreshCwIcon size={10} className="h-2.5 w-2.5" />
               Scroll to top
             </button>
           </div>

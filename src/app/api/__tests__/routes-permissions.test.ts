@@ -66,6 +66,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
           findMany: vi
             .fn()
             .mockResolvedValue([{ id: "order-1", orderNumber: "ORD-001", grandTotal: 100 }]),
+          findUnique: vi.fn().mockResolvedValue({ id: "order-1", tenantId: "tenant-1" }),
           create: vi.fn().mockResolvedValue({
             id: "order-new",
             orderNumber: "ORD-TEST",
@@ -82,6 +83,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
 
         customer: model({
           findMany: vi.fn().mockResolvedValue([{ id: "cust-1", name: "John Doe" }]),
+          findUnique: vi.fn().mockResolvedValue({ id: "cust-1", tenantId: "tenant-1" }),
           create: vi.fn().mockResolvedValue({
             id: "cust-new",
             name: "Jane Doe",
@@ -95,6 +97,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
 
         campaign: model({
           findMany: vi.fn().mockResolvedValue([{ id: "camp-1", name: "Summer Sale" }]),
+          findUnique: vi.fn().mockResolvedValue({ id: "camp-1", tenantId: "tenant-1" }),
           create: vi.fn().mockResolvedValue({
             id: "camp-new",
             name: "New Campaign",
@@ -108,6 +111,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
 
         product: model({
           findMany: vi.fn().mockResolvedValue([{ id: "prod-1", name: "Widget", price: 29.99 }]),
+          findUnique: vi.fn().mockResolvedValue({ id: "prod-1", tenantId: "tenant-1" }),
           create: vi.fn().mockResolvedValue({
             id: "prod-new",
             name: "Gadget",
@@ -123,6 +127,7 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
 
         discount: model({
           findMany: vi.fn().mockResolvedValue([{ id: "disc-1", code: "SAVE10" }]),
+          findUnique: vi.fn().mockResolvedValue({ id: "disc-1", tenantId: "tenant-1" }),
           create: vi.fn().mockResolvedValue({
             id: "disc-new",
             code: "NEWCODE",
@@ -214,9 +219,32 @@ function permissionDenied(): {
 /** Return a success result as requirePermission would */
 function permissionGranted(role = "ADMIN"): {
   role: string;
+  session: {
+    user: {
+      id: string;
+      sub: string;
+      name: string;
+      email: string;
+      role: string;
+      tenantId: string | null;
+    };
+  };
   response: null;
 } {
-  return { role, response: null };
+  return {
+    role,
+    session: {
+      user: {
+        id: "admin-1",
+        sub: "admin-1",
+        name: "Admin",
+        email: "admin@test.com",
+        role,
+        tenantId: "tenant-1",
+      },
+    },
+    response: null,
+  };
 }
 
 beforeEach(() => {
@@ -342,22 +370,21 @@ describe("Orders API (POST/PUT guarded, GET public)", () => {
     });
   });
 
-  describe("GET — public (no permission check)", () => {
-    it("returns orders without calling requirePermission", async () => {
-      const res = await ordersRoutes.GET(
-        mockRequest(), // GET doesn't check permissions
-      );
+  describe("GET — requires read permission (tenant-scoped)", () => {
+    it("returns the caller's tenant orders after a read-permission check", async () => {
+      mockRequirePermission.mockResolvedValue(permissionGranted());
+      const res = await ordersRoutes.GET(mockRequest());
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body[0].orderNumber).toBe("ORD-001");
-      expect(mockRequirePermission).not.toHaveBeenCalled();
+      expect(mockRequirePermission).toHaveBeenCalledWith("read", "orders", expect.anything());
     });
   });
 });
 
 // ── Customers API (POST, PUT, DELETE guarded; GET is public) ──────────────
 
-describe("Customers API (POST/PUT/DELETE guarded, GET public)", () => {
+describe("Customers API (all methods guarded + tenant-scoped)", () => {
   const guardedMethods = [
     { method: "POST", body: { name: "Jane" }, handler: customersRoutes.POST },
     {
@@ -406,13 +433,14 @@ describe("Customers API (POST/PUT/DELETE guarded, GET public)", () => {
     });
   });
 
-  describe("GET — public (no permission check)", () => {
-    it("returns customers without calling requirePermission", async () => {
-      const res = await customersRoutes.GET();
+  describe("GET — requires read permission (tenant-scoped)", () => {
+    it("returns the caller's tenant customers after a read-permission check", async () => {
+      mockRequirePermission.mockResolvedValue(permissionGranted());
+      const res = await customersRoutes.GET(mockRequest());
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body[0].name).toBe("John Doe");
-      expect(mockRequirePermission).not.toHaveBeenCalled();
+      expect(mockRequirePermission).toHaveBeenCalledWith("read", "customers", expect.anything());
     });
   });
 });
@@ -455,9 +483,9 @@ describe("Marketing API (POST/PUT/DELETE guarded, GET public)", () => {
     });
   });
 
-  describe("GET — public (no permission check)", () => {
-    it("returns campaigns without calling requirePermission", async () => {
-      const res = await marketingRoutes.GET();
+  describe("GET — requires auth (no permission gate, tenant-scoped)", () => {
+    it("returns the tenant's campaigns without a permission check", async () => {
+      const res = await marketingRoutes.GET(mockRequest({}));
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body[0].name).toBe("Summer Sale");
@@ -504,13 +532,14 @@ describe("Products API (POST/PUT/DELETE guarded, GET public)", () => {
     });
   });
 
-  describe("GET — public (no permission check)", () => {
-    it("returns products without calling requirePermission", async () => {
+  describe("GET — requires read permission (tenant-scoped)", () => {
+    it("returns the caller's tenant products after a read-permission check", async () => {
+      mockRequirePermission.mockResolvedValue(permissionGranted());
       const res = await productsRoutes.GET(mockRequest());
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body[0].name).toBe("Widget");
-      expect(mockRequirePermission).not.toHaveBeenCalled();
+      expect(mockRequirePermission).toHaveBeenCalledWith("read", "products", expect.anything());
     });
   });
 });
@@ -553,9 +582,9 @@ describe("Discounts API (POST/PUT/DELETE guarded, GET public)", () => {
     });
   });
 
-  describe("GET — public (no permission check)", () => {
-    it("returns discounts without calling requirePermission", async () => {
-      const res = await discountsRoutes.GET();
+  describe("GET — requires auth (no permission gate, tenant-scoped)", () => {
+    it("returns the tenant's discounts without a permission check", async () => {
+      const res = await discountsRoutes.GET(mockRequest({}));
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body[0].code).toBe("SAVE10");

@@ -89,9 +89,8 @@ interface AnimateSectionProps extends HTMLMotionProps<"section"> {
 export function AnimateSection({ children, className, ...props }: AnimateSectionProps) {
   return (
     <motion.section
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-80px" }}
+      initial={false}
+      animate="visible"
       variants={fadeIn}
       className={className}
       {...props}
@@ -116,9 +115,8 @@ export function AnimateUp({ children, className, as = "div", delay = 0 }: Animat
   const Component = as === "li" ? motion.li : motion.div;
   return (
     <Component
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-40px" }}
+      initial={false}
+      animate="visible"
       variants={{
         hidden: { opacity: 0, y: 30 },
         visible: {
@@ -145,9 +143,8 @@ export const StaggerGrid = forwardRef<HTMLDivElement, { children: ReactNode; cla
   ({ children, className }, ref) => (
     <motion.div
       ref={ref}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-40px" }}
+      initial={false}
+      animate="visible"
       variants={staggerContainer}
       className={className}
     >

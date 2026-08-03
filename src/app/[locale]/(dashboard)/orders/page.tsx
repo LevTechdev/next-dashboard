@@ -1,23 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  ShoppingBag,
-  Search,
-  Eye,
-  RefreshCw,
-  MapPin,
-  CreditCard,
-  User,
-  Store,
-  Download,
-  DollarSign,
-  TrendingUp,
-  Clock,
-  BarChart3,
-  Sparkles,
-} from "lucide-react";
+  RefreshCwIcon,
+  ClockIcon,
+  SearchIcon,
+  EyeIcon,
+  MapPinIcon,
+  CreditCardIcon,
+  UserIcon,
+  DollarSignIcon,
+  TrendingUpIcon,
+  SparklesIcon,
+} from "lucide-animated";
+import { ShoppingBag, Store, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +41,13 @@ import {
   getTrackingEventsFromOrder,
 } from "@/components/order-tracking-timeline";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { downloadCsv } from "@/lib/csv";
 import { DataExportButton } from "@/components/data-export-button";
 
 export default function OrdersPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
   const torders = useTranslations("orders");
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
@@ -74,22 +76,37 @@ export default function OrdersPage() {
   );
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch("/api/orders", {
+    const res = await fetch("/api/orders", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(torders("markedAs", { status }));
     refresh();
   };
 
+  const confirm = useConfirm();
+
   const handleCancelOrder = async (id: string) => {
-    if (!confirm(torders("confirmCancelOrder"))) return;
-    await fetch("/api/orders", {
+    const ok = await confirm({
+      description: torders("confirmCancelOrder"),
+      confirmLabel: tcommon("confirm"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/orders", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "CANCELLED" }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(torders("orderCancelled"));
     refresh();
   };
@@ -146,7 +163,10 @@ export default function OrdersPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+            <RefreshCwIcon
+              size={14}
+              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
           <DataExportButton
@@ -193,7 +213,7 @@ export default function OrdersPage() {
           {
             label: torders("totalRevenue") || "Total Revenue",
             end: totalRevenue,
-            icon: DollarSign,
+            icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
             format: (v: number) => formatCurrency(v),
@@ -201,7 +221,7 @@ export default function OrdersPage() {
           {
             label: torders("pending") || "Pending",
             end: pendingCount,
-            icon: Clock,
+            icon: ClockIcon,
             color: "text-amber-600 dark:text-amber-400",
             bg: "bg-amber-50 dark:bg-amber-900/20",
           },
@@ -229,9 +249,9 @@ export default function OrdersPage() {
                       stat.bg,
                     )}
                   >
-                    <stat.icon className={cn("h-5 w-5", stat.color)} />
+                    <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <Sparkles className="h-3 w-3 text-gray-300 dark:text-gray-600" />
+                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -250,7 +270,10 @@ export default function OrdersPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <SearchIcon
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            />
             <Input
               placeholder={tcommon("search")}
               className="pl-10"
@@ -279,7 +302,12 @@ export default function OrdersPage() {
                 {filtered.map((order: any) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-sm font-medium">
-                      #{order.orderNumber}
+                      <Link
+                        href={`/${locale}/orders/${order.id}`}
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        #{order.orderNumber}
+                      </Link>
                     </TableCell>
                     <TableCell>{order.customer?.name || torders("guest")}</TableCell>
                     <TableCell>
@@ -311,7 +339,7 @@ export default function OrdersPage() {
                           }}
                           title={torders("viewDetails")}
                         >
-                          <Eye className="h-4 w-4" />
+                          <EyeIcon size={16} className="h-4 w-4" />
                         </Button>
                         {order.status === "PENDING" && (
                           <Button
@@ -395,7 +423,7 @@ export default function OrdersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <User className="h-3.5 w-3.5" />
+                      <UserIcon size={14} className="h-3.5 w-3.5" />
                       {torders("orderCustomer")}
                     </div>
                     <p className="text-sm font-medium">
@@ -416,7 +444,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <CreditCard className="h-3.5 w-3.5" />
+                      <CreditCardIcon size={14} className="h-3.5 w-3.5" />
                       {torders("orderPayment")}
                     </div>
                     <p className="text-sm font-medium capitalize">
@@ -439,7 +467,7 @@ export default function OrdersPage() {
                 {selectedOrder.shippingAddress && (
                   <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <MapPin className="h-3.5 w-3.5" />
+                      <MapPinIcon size={14} className="h-3.5 w-3.5" />
                       {torders("shippingAddress")}
                     </div>
                     <p className="text-sm font-medium">{selectedOrder.shippingAddress}</p>

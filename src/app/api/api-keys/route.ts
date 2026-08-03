@@ -24,6 +24,7 @@ export async function GET(req: Request) {
       name: true,
       prefix: true,
       permissions: true,
+      ipAllowlist: true,
       status: true,
       lastUsedAt: true,
       expiresAt: true,
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
   if (response) return response;
 
   const body = await req.json();
-  const { name, permissions, expiresInDays } = body;
+  const { name, permissions, expiresInDays, ipAllowlist } = body;
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -49,6 +50,14 @@ export async function POST(req: Request) {
   const expiresAt = expiresInDays
     ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
     : null;
+  const allowlist: string[] = Array.isArray(ipAllowlist)
+    ? ipAllowlist.map((s: unknown) => String(s).trim()).filter(Boolean)
+    : typeof ipAllowlist === "string" && ipAllowlist.trim()
+      ? ipAllowlist
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
 
   const { session } = await requireAuth(req);
   const userId = session.user.id;
@@ -59,6 +68,7 @@ export async function POST(req: Request) {
       key: hashedKey,
       prefix,
       permissions: permissions || "read",
+      ipAllowlist: allowlist,
       status: "ACTIVE",
       expiresAt,
       userId,
@@ -81,6 +91,7 @@ export async function POST(req: Request) {
     prefix: apiKey.prefix,
     key, // ← raw key, only returned on creation
     permissions: apiKey.permissions,
+    ipAllowlist: apiKey.ipAllowlist,
     status: apiKey.status,
     expiresAt: apiKey.expiresAt,
     createdAt: apiKey.createdAt,

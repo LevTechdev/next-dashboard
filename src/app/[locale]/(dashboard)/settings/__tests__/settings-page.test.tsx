@@ -22,6 +22,13 @@ vi.mock("next-themes", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/settings",
   useParams: () => ({ locale: "en" }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }));
 
 // Mock realtime provider

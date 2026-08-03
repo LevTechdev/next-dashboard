@@ -3,17 +3,15 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
-  Box,
-  Search,
-  Package,
-  AlertTriangle,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Layers,
-  Download,
-} from "lucide-react";
+  RefreshCwIcon,
+  SearchIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  LayersIcon,
+  BoxIcon,
+} from "lucide-animated";
+import { Package, AlertTriangle, BarChart3 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -189,7 +187,10 @@ export default function InventoryPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+            <RefreshCwIcon
+              size={14}
+              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            />
             <span className="hidden sm:inline">{tcommon("refresh")}</span>
           </Button>
         </div>
@@ -209,7 +210,7 @@ export default function InventoryPage() {
                   <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <span className="flex items-center gap-0.5 text-xs font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
-                  <TrendingUp className="h-3 w-3" />
+                  <TrendingUpIcon size={12} className="h-3 w-3" />
                   In Stock
                 </span>
               </div>
@@ -258,10 +259,10 @@ export default function InventoryPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 transition-transform group-hover:scale-110 duration-300">
-                  <Box className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <BoxIcon size={20} className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
                 <span className="flex items-center gap-0.5 text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
-                  <TrendingDown className="h-3 w-3" />
+                  <TrendingDownIcon size={12} className="h-3 w-3" />
                   Out of Stock
                 </span>
               </div>
@@ -310,7 +311,7 @@ export default function InventoryPage() {
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-500" />
+              <LayersIcon size={16} className="h-4 w-4 text-indigo-500" />
               <CardTitle className="text-base">{tcommon("filter")}</CardTitle>
             </div>
             <CardDescription>Products by category</CardDescription>
@@ -320,7 +321,7 @@ export default function InventoryPage() {
               <CategoryBreakdown products={products} categories={categories} />
             ) : (
               <div className="text-center py-6 text-sm text-gray-400">
-                <Layers className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <LayersIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-30" />
                 <p>No categories found</p>
               </div>
             )}
@@ -333,7 +334,10 @@ export default function InventoryPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <CardTitle className="text-base">{tproducts("title")}</CardTitle>
               <div className="relative max-w-xs w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <SearchIcon
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                />
                 <Input
                   placeholder={tcommon("search")}
                   className="pl-9"
@@ -386,7 +390,7 @@ export default function InventoryPage() {
                   {filtered.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-12 text-gray-500">
-                        <Box className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                        <BoxIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm font-medium">{tproducts("noProducts")}</p>
                         <p className="text-xs mt-1">Try adjusting your search</p>
                       </TableCell>

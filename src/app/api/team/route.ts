@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { response } = await requirePermission("create", "team");
+  const { session, response } = await requirePermission("create", "team", req);
   if (response) return response;
 
   const body = await req.json();
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       role: body.role || "STAFF",
       position: body.position,
       phone: body.phone,
+      tenantId: session!.user.tenantId,
     },
   });
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });

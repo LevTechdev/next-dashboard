@@ -11,6 +11,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // The real server-only package throws via its default export; its
+      // `react-server` entry (empty.js) is the intended no-op for non-bundler
+      // environments like Vitest. Next.js resolves the same entry internally.
+      "server-only": path.resolve(__dirname, "./node_modules/server-only/empty.js"),
     },
   },
   test: {

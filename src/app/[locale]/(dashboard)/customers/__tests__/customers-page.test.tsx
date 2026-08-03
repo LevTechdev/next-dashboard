@@ -8,6 +8,12 @@ vi.mock("lucide-react", async () => {
   return actual;
 });
 
+// Mock confirm provider (page uses useConfirm for confirm dialogs)
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn(() => vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
+}));
+
 // Mock useRealtimeData
 vi.mock("@/hooks/use-realtime-data", () => ({
   useRealtimeData: vi.fn(),

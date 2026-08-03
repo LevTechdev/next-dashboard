@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Tag, Search, Download } from "lucide-react";
+import { PlusIcon, SearchIcon, DownloadIcon } from "lucide-animated";
+import { Tag, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatDate, getStatusColor, sanitizeInteger } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
 import { DataExportButton } from "@/components/data-export-button";
@@ -39,6 +41,7 @@ export default function DiscountsPage() {
   const { user } = useAuth();
   const tdiscounts = useTranslations("discounts");
   const tcommon = useTranslations("common");
+  const confirm = useConfirm();
   const role = (user as any)?.role;
 
   const [discounts, setDiscounts] = useState<any[]>([]);
@@ -58,12 +61,15 @@ export default function DiscountsPage() {
   });
 
   const loadData = async () => {
-    const res = await fetch("/api/discounts");
+    const res = await fetch("/api/discounts", { cache: "no-store" });
     setDiscounts(await res.json());
     setLoading(false);
   };
   useEffect(() => {
-    loadData();
+    const init = async () => {
+      await loadData();
+    };
+    init();
   }, []);
 
   if (loading) {
@@ -89,11 +95,15 @@ export default function DiscountsPage() {
   const handleSave = async () => {
     const method = editDiscount ? "PUT" : "POST";
     const body = editDiscount ? { ...form, id: editDiscount.id } : form;
-    await fetch("/api/discounts", {
+    const res = await fetch("/api/discounts", {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(editDiscount ? tdiscounts("updated") : tdiscounts("added"));
     setDialogOpen(false);
     setEditDiscount(null);
@@ -112,12 +122,22 @@ export default function DiscountsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(tdiscounts("confirmDelete"))) return;
-    await fetch("/api/discounts", {
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tdiscounts("confirmDelete"),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/discounts", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(tdiscounts("deleted"));
     loadData();
   };
@@ -179,7 +199,7 @@ export default function DiscountsPage() {
                   }}
                 >
                   {" "}
-                  <Plus className="h-4 w-4 mr-2" /> {tdiscounts("addDiscount")}
+                  <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tdiscounts("addDiscount")}
                 </Button>
               </DialogTrigger>
             )}
@@ -223,22 +243,30 @@ export default function DiscountsPage() {
                   <Input
                     placeholder={tdiscounts("value")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.value}
-                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                    onChange={(e) => setForm({ ...form, value: sanitizeInteger(e.target.value) })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     placeholder={tdiscounts("minPurchase")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.minPurchase}
-                    onChange={(e) => setForm({ ...form, minPurchase: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, minPurchase: sanitizeInteger(e.target.value) })
+                    }
                   />
                   <Input
                     placeholder={tdiscounts("maxUses")}
                     type="number"
+                    inputMode="numeric"
+                    step={1}
                     value={form.maxUses}
-                    onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
+                    onChange={(e) => setForm({ ...form, maxUses: sanitizeInteger(e.target.value) })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -303,7 +331,7 @@ export default function DiscountsPage() {
                       >
                         {isActive(d) ? tcommon("active") : tcommon("expired")}
                       </Badge>
-                    </TableCell>{" "}
+                    </TableCell>
                     <TableCell className="text-right">
                       {can(role, "update", "discounts") && (
                         <Button
@@ -325,6 +353,7 @@ export default function DiscountsPage() {
                             setDialogOpen(true);
                           }}
                         >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" />
                           {tcommon("edit")}
                         </Button>
                       )}
@@ -335,6 +364,7 @@ export default function DiscountsPage() {
                           onClick={() => handleDelete(d.id)}
                           className="text-red-500"
                         >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
                           {tcommon("delete")}
                         </Button>
                       )}

@@ -3,18 +3,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
 import {
-  Sun,
-  Moon,
-  Monitor,
-  Check,
-  Sparkles,
-  Search,
-  Grid3X3,
-  List,
-  Palette,
-  Wind,
-  PanelRightOpen,
-} from "lucide-react";
+  CheckIcon,
+  SunIcon,
+  MoonIcon,
+  SparklesIcon,
+  SearchIcon,
+  ListIcon,
+  WindIcon,
+  PanelRightOpenIcon,
+} from "lucide-animated";
+import { Monitor, Grid3X3, Palette } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -166,7 +164,7 @@ const ALL_TOKENS: TokenItem[] = [
       <div className="h-full flex flex-col justify-center p-3">
         <div className="vengeance-card p-3 rounded-xl text-center group">
           <div className="w-8 h-8 mx-auto rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <SparklesIcon size={14} className="w-3.5 h-3.5 text-indigo-500" />
           </div>
           <p className="text-[10px] font-medium text-gray-700 dark:text-gray-300">Premium Card</p>
           <p className="text-[8px] text-gray-400">Hover me</p>
@@ -235,7 +233,7 @@ const ALL_TOKENS: TokenItem[] = [
       <div className="h-full flex flex-col justify-center p-4">
         <div className="vengeance-glass rounded-xl p-3 text-center">
           <div className="w-6 h-6 mx-auto rounded-lg bg-white/50 dark:bg-white/10 flex items-center justify-center mb-1">
-            <Wind className="w-3 h-3 text-indigo-500" />
+            <WindIcon size={12} className="w-3 h-3 text-indigo-500" />
           </div>
           <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
             Frosted Glass
@@ -256,7 +254,7 @@ const ALL_TOKENS: TokenItem[] = [
           <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
             Standard Glass
           </p>
-          <p className="text-[8px] text-gray-400">blur(24px) · inner shine</p>
+          <p className="text-[8px] text-gray-400">blur(36px) · inner shine</p>
         </div>
         <p className="text-[9px] text-gray-400 mt-1.5">Marketing nav glass</p>
       </div>
@@ -285,7 +283,7 @@ const ALL_TOKENS: TokenItem[] = [
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <Button variant="premium" size="sm" className="gap-1.5">
-          <Sparkles className="w-3 h-3" />
+          <SparklesIcon size={12} className="w-3 h-3" />
           Premium
         </Button>
         <Button variant="glass" size="sm">
@@ -320,7 +318,7 @@ const ALL_TOKENS: TokenItem[] = [
     render: () => (
       <div className="h-full flex flex-col items-center justify-center gap-2">
         <span className="badge-premium">
-          <Sparkles className="w-2.5 h-2.5" /> Premium
+          <SparklesIcon size={10} className="w-2.5 h-2.5" /> Premium
         </span>
         <span className="badge-premium !bg-emerald-500/10 !text-emerald-600 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-500/20">
           ✓ Verified
@@ -422,7 +420,7 @@ const ALL_TOKENS: TokenItem[] = [
       <div className="h-full flex flex-col justify-center p-3">
         <div className="feature-card p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-center cursor-default">
           <div className="feature-icon-wrap w-7 h-7 mx-auto rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-1">
-            <Sparkles className="w-3 h-3 text-indigo-500" />
+            <SparklesIcon size={12} className="w-3 h-3 text-indigo-500" />
           </div>
           <p className="text-[9px] font-medium text-gray-700 dark:text-gray-300">Feature Card</p>
           <p className="feature-arrow text-[8px] text-indigo-500 mt-0.5">Hover →</p>
@@ -567,7 +565,7 @@ function SplitViewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: ()
           : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300",
       )}
     >
-      <PanelRightOpen className="w-3.5 h-3.5" />
+      <PanelRightOpenIcon size={14} className="w-3.5 h-3.5" />
       <span className="hidden sm:inline">Split View</span>
     </button>
   );
@@ -604,7 +602,7 @@ function ViewModeToggle({
             : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-400",
         )}
       >
-        <List className="w-3.5 h-3.5" />
+        <ListIcon size={14} className="w-3.5 h-3.5" />
       </button>
     </div>
   );
@@ -622,8 +620,8 @@ function ThemeSwitcher({
   setTheme: (t: string) => void;
 }) {
   const options = [
-    { key: "light", icon: Sun, label: "Light" },
-    { key: "dark", icon: Moon, label: "Dark" },
+    { key: "light", icon: SunIcon, label: "Light" },
+    { key: "dark", icon: MoonIcon, label: "Dark" },
     { key: "system", icon: Monitor, label: "System" },
   ];
 
@@ -642,7 +640,7 @@ function ThemeSwitcher({
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
             )}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <Icon size={14} className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{label}</span>
           </button>
         );
@@ -694,7 +692,10 @@ function FloatingHeader({
         <div className="flex items-center gap-2 sm:ml-auto">
           {/* Search */}
           <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            <SearchIcon
+              size={12}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none"
+            />
             <input
               type="text"
               value={search}
@@ -839,7 +840,7 @@ export function TokenInspector({ className }: { className?: string }) {
           <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
               <span className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <SunIcon size={14} className="w-3.5 h-3.5 text-amber-500" />
                 Light Mode
               </span>
               <div className="flex gap-1">
@@ -894,7 +895,7 @@ export function TokenInspector({ className }: { className?: string }) {
               style={{ background: "hsl(224,18%,14%)", borderColor: "rgba(255,255,255,0.06)" }}
             >
               <span className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
-                <Moon className="w-3.5 h-3.5 text-blue-400" />
+                <MoonIcon size={14} className="w-3.5 h-3.5 text-blue-400" />
                 Dark Mode
               </span>
               <div className="flex gap-1">
@@ -961,7 +962,7 @@ export function TokenInspector({ className }: { className?: string }) {
 
       {shownCount === 0 && search && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Search className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" />
+          <SearchIcon size={32} className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-3" />
           <p className="text-sm text-gray-500 dark:text-gray-400">
             No tokens match &ldquo;{search}&rdquo;
           </p>

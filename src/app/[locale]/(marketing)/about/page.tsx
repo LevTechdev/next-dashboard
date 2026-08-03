@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
-  Target,
-  Eye,
-  Heart,
-  Users,
-  Globe,
-  TrendingUp,
-  Shield,
-  Lightbulb,
-  Sparkles,
-  ArrowRight,
-  LayoutDashboard,
-} from "lucide-react";
+  EyeIcon,
+  HeartIcon,
+  UsersIcon,
+  EarthIcon,
+  TrendingUpIcon,
+  SparklesIcon,
+  ArrowRightIcon,
+} from "lucide-animated";
+import { Target, Shield, Lightbulb, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
@@ -25,8 +24,8 @@ import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 interface Value {
   icon: React.ElementType;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   color: string;
   bg: string;
 }
@@ -34,49 +33,43 @@ interface Value {
 const values: Value[] = [
   {
     icon: Lightbulb,
-    title: "Innovation First",
-    description:
-      "We push the boundaries of what's possible, constantly iterating and improving our platform to deliver cutting-edge solutions.",
+    titleKey: "v1Title",
+    descKey: "v1Desc",
     color: "text-indigo-600 dark:text-indigo-400",
     bg: "bg-indigo-50 dark:bg-indigo-900/20",
   },
   {
     icon: Shield,
-    title: "Trust & Security",
-    description:
-      "Your data is sacred. We employ enterprise-grade security measures, encryption, and compliance standards to keep your business safe.",
+    titleKey: "v2Title",
+    descKey: "v2Desc",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-900/20",
   },
   {
-    icon: Users,
-    title: "Customer Obsessed",
-    description:
-      "Every feature, every decision starts with our users. We listen, learn, and build what businesses actually need to succeed.",
+    icon: UsersIcon,
+    titleKey: "v3Title",
+    descKey: "v3Desc",
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-900/20",
   },
   {
-    icon: Globe,
-    title: "Global Scale",
-    description:
-      "Built for businesses of every size, across every timezone. Our platform handles millions of transactions across 50+ countries.",
+    icon: EarthIcon,
+    titleKey: "v4Title",
+    descKey: "v4Desc",
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-50 dark:bg-purple-900/20",
   },
   {
-    icon: TrendingUp,
-    title: "Growth Mindset",
-    description:
-      "We grow with our customers. Continuous improvement, data-driven decisions, and relentless pursuit of excellence drive everything we do.",
+    icon: TrendingUpIcon,
+    titleKey: "v5Title",
+    descKey: "v5Desc",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-900/20",
   },
   {
-    icon: Heart,
-    title: "People First",
-    description:
-      "Behind every great product is a great team. We invest in our people, foster inclusion, and build a culture where everyone thrives.",
+    icon: HeartIcon,
+    titleKey: "v6Title",
+    descKey: "v6Desc",
     color: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-50 dark:bg-rose-900/20",
   },
@@ -85,54 +78,30 @@ const values: Value[] = [
 // ─── Team Section ────────────────────────────────────────────────────────────
 
 const teamMembers = [
-  { name: "Alex Chen", role: "CEO & Co-Founder", initials: "AC" },
-  { name: "Sarah Mitchell", role: "CTO & Co-Founder", initials: "SM" },
-  { name: "David Park", role: "Head of Design", initials: "DP" },
-  { name: "Lisa Ramirez", role: "VP of Engineering", initials: "LR" },
+  { name: "Alex Chen", roleKey: "roleCeo", initials: "AC" },
+  { name: "Sarah Mitchell", roleKey: "roleCto", initials: "SM" },
+  { name: "David Park", roleKey: "roleDesign", initials: "DP" },
+  { name: "Lisa Ramirez", roleKey: "roleVpe", initials: "LR" },
 ];
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
 
 const stats = [
-  { label: "Active Users", endValue: 50000, prefix: "", suffix: "+" },
-  { label: "Countries Served", endValue: 50, prefix: "", suffix: "+" },
-  { label: "Transactions", endValue: 10, prefix: "", suffix: "M+" },
-  { label: "NPS Score", endValue: 92, prefix: "", suffix: "" },
+  { labelKey: "statUsers", endValue: 50000, prefix: "", suffix: "+" },
+  { labelKey: "statCountries", endValue: 50, prefix: "", suffix: "+" },
+  { labelKey: "statTransactions", endValue: 10, prefix: "", suffix: "M+" },
+  { labelKey: "statNps", endValue: 92, prefix: "", suffix: "" },
 ];
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
 
 const milestones = [
-  {
-    year: "2020",
-    title: "The Beginning",
-    description: "Founded in a small garage with a big vision to transform business management.",
-  },
-  {
-    year: "2021",
-    title: "First 1,000 Users",
-    description: "Hit our first major milestone with 1,000 active businesses using the platform.",
-  },
-  {
-    year: "2022",
-    title: "Series A Funding",
-    description: "Raised $10M to accelerate product development and expand the team.",
-  },
-  {
-    year: "2023",
-    title: "Global Expansion",
-    description: "Launched in 30+ countries with multi-language and multi-currency support.",
-  },
-  {
-    year: "2024",
-    title: "AI-Powered Insights",
-    description: "Introduced AI-driven analytics, predictive forecasting, and smart automation.",
-  },
-  {
-    year: "2025",
-    title: "Enterprise Ready",
-    description: "Achieved SOC 2 compliance, 99.99% uptime, and enterprise-grade security.",
-  },
+  { year: "2020", titleKey: "m2020Title", descKey: "m2020Desc" },
+  { year: "2021", titleKey: "m2021Title", descKey: "m2021Desc" },
+  { year: "2022", titleKey: "m2022Title", descKey: "m2022Desc" },
+  { year: "2023", titleKey: "m2023Title", descKey: "m2023Desc" },
+  { year: "2024", titleKey: "m2024Title", descKey: "m2024Desc" },
+  { year: "2025", titleKey: "m2025Title", descKey: "m2025Desc" },
 ];
 
 // ─── Container Variants ──────────────────────────────────────────────────────
@@ -150,6 +119,9 @@ const itemVariants = {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AboutPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
+  const t = useTranslations("aboutPage");
   return (
     <div className="relative overflow-hidden bg-zinc-50 dark:bg-[#0b0c11]">
       {/* ═══ HERO ═══ */}
@@ -175,8 +147,8 @@ export default function AboutPage() {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-6 border border-indigo-200 dark:border-indigo-800/50">
-              <Sparkles className="h-3.5 w-3.5" />
-              Our Story
+              <SparklesIcon size={14} className="h-3.5 w-3.5" />
+              {t("badge")}
             </div>
           </motion.div>
 
@@ -186,10 +158,10 @@ export default function AboutPage() {
             transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4"
           >
-            <span className="text-zinc-800 dark:text-white">Building the future of </span>
+            <span className="text-zinc-800 dark:text-white">{t("heroPrefix")} </span>
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-300 bg-clip-text text-transparent">
               <FlipFadeText
-                words={["business.", "management.", "growth.", "impact."]}
+                words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                 className="!min-h-0"
                 textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-300 bg-clip-text text-transparent"
               />
@@ -202,8 +174,7 @@ export default function AboutPage() {
             transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto mb-8"
           >
-            We're on a mission to empower every business with the tools, insights, and automation
-            they need to thrive in the digital age.
+            {t("heroSubtitle")}
           </motion.p>
 
           <motion.div
@@ -213,17 +184,17 @@ export default function AboutPage() {
             className="flex items-center justify-center gap-3"
           >
             <Link
-              href="/en/features"
+              href={`/${locale}/features`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-all press-scale"
             >
-              Explore Features
-              <ArrowRight className="h-4 w-4" />
+              {t("exploreFeatures")}
+              <ArrowRightIcon size={16} className="h-4 w-4" />
             </Link>
             <Link
-              href="/en/contact"
+              href={`/${locale}/contact`}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all press-scale"
             >
-              Get in Touch
+              {t("getInTouch")}
             </Link>
           </motion.div>
         </div>
@@ -235,7 +206,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, i) => (
               <motion.div
-                key={stat.label}
+                key={stat.labelKey}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -247,7 +218,7 @@ export default function AboutPage() {
                   <AnimatedCounter end={stat.endValue} duration={2000} />
                   {stat.suffix}
                 </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{stat.label}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{t(stat.labelKey)}</p>
               </motion.div>
             ))}
           </div>
@@ -265,29 +236,18 @@ export default function AboutPage() {
           >
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-4 border border-indigo-200 dark:border-indigo-800/50">
               <Target className="h-3.5 w-3.5" />
-              Our Mission
+              {t("missionBadge")}
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-6 leading-tight">
-              Empowering businesses to{" "}
+              {t("missionTitle")}{" "}
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                achieve more
+                {t("missionTitleGradient")}
               </span>
             </h2>
             <div className="space-y-4 text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              <p>
-                Dashboard was born from a simple insight: businesses deserve better tools. After
-                years of wrestling with fragmented, disconnected software, our founders set out to
-                build a unified platform that brings everything together.
-              </p>
-              <p>
-                What started as a side project in 2020 has grown into a platform serving thousands
-                of businesses worldwide. We've helped companies increase revenue, streamline
-                operations, and make smarter decisions with data they can trust.
-              </p>
-              <p>
-                Today, we're a team of 50+ passionate people across 15 countries, united by a shared
-                belief that great software can transform how businesses work.
-              </p>
+              <p>{t("missionP1")}</p>
+              <p>{t("missionP2")}</p>
+              <p>{t("missionP3")}</p>
             </div>
           </motion.div>
 
@@ -313,8 +273,10 @@ export default function AboutPage() {
                   <p className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5">
                     {m.year}
                   </p>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-white">{m.title}</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{m.description}</p>
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+                    {t(m.titleKey)}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{t(m.descKey)}</p>
                 </motion.div>
               ))}
             </div>
@@ -332,14 +294,14 @@ export default function AboutPage() {
             className="text-center mb-14"
           >
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-4 border border-indigo-200 dark:border-indigo-800/50">
-              <Heart className="h-3.5 w-3.5" />
-              What We Believe
+              <HeartIcon size={14} className="h-3.5 w-3.5" />
+              {t("valuesBadge")}
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-              Our Core Values
+              {t("valuesTitle")}
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
-              The principles that guide every decision we make and every product we build.
+              {t("valuesSubtitle")}
             </p>
           </motion.div>
 
@@ -354,7 +316,7 @@ export default function AboutPage() {
               const Icon = value.icon;
               return (
                 <motion.div
-                  key={value.title}
+                  key={value.titleKey}
                   variants={itemVariants}
                   className="glow-border group relative p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300"
                 >
@@ -364,13 +326,13 @@ export default function AboutPage() {
                       value.bg,
                     )}
                   >
-                    <Icon className={cn("h-5 w-5", value.color)} />
+                    <Icon size={20} className={cn("h-5 w-5", value.color)} />
                   </div>
                   <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-2">
-                    {value.title}
+                    {t(value.titleKey)}
                   </h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    {value.description}
+                    {t(value.descKey)}
                   </p>
                 </motion.div>
               );
@@ -388,15 +350,14 @@ export default function AboutPage() {
           className="text-center mb-14"
         >
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-4 border border-indigo-200 dark:border-indigo-800/50">
-            <Users className="h-3.5 w-3.5" />
-            Leadership
+            {" "}
+            <UsersIcon size={14} className="h-3.5 w-3.5" />
+            {t("teamBadge")}
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-            Meet the Team
+            {t("teamTitle")}
           </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
-            The people driving innovation and building the future of business management.
-          </p>
+          <p className="text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">{t("teamSubtitle")}</p>
         </motion.div>
 
         <motion.div
@@ -416,7 +377,7 @@ export default function AboutPage() {
                 {member.initials}
               </div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{member.name}</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{member.role}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t(member.roleKey)}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -427,14 +388,12 @@ export default function AboutPage() {
           viewport={{ once: true }}
           className="text-center mt-10"
         >
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-            And 40+ more amazing people across 15 countries
-          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{t("teamMore")}</p>
           <Link
-            href="/en/contact"
+            href={`/${locale}/contact`}
             className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
           >
-            Join our team <ArrowRight className="h-3.5 w-3.5" />
+            {t("teamJoin")} <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
           </Link>
         </motion.div>
       </section>
@@ -452,24 +411,22 @@ export default function AboutPage() {
               <LayoutDashboard className="h-7 w-7 text-white" />
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-              Ready to transform your business?
+              {t("ctaTitle")}
             </h2>
-            <p className="text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-8">
-              Join thousands of businesses already using Dashboard to manage, analyze, and grow.
-            </p>
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex items-center justify-center gap-3">
               <Link
-                href="/en/dashboard"
+                href={`/${locale}/dashboard`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-90 transition-all press-scale shadow-lg shadow-black/10 dark:shadow-white/10"
               >
-                Get Started Free
-                <ArrowRight className="h-4 w-4" />
+                {t("ctaGetStarted")}
+                <ArrowRightIcon size={16} className="h-4 w-4" />
               </Link>
               <Link
-                href="/en/pricing"
+                href={`/${locale}/pricing`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all press-scale"
               >
-                View Pricing
+                {t("ctaViewPricing")}
               </Link>
             </div>
           </motion.div>

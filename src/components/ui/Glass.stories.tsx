@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Sparkles, Wind } from "lucide-react";
+import { SparklesIcon, WindIcon } from "lucide-animated";
 
 /**
  * Premium glass and surface components powered by CSS classes from `globals.css`.
  *
  * **CSS Classes:**
  * - `.vengeance-glass` — Frosted glass with `blur(24px) saturate(1.8)` via `--glass-bg` / `--glass-border`
- * - `.glass-panel` — Standard glass with `blur(24px)` and inner top highlight
+ * - `.glass-panel` — Standard glass with `blur(36px)` and inner top highlight
  * - `.vengeance-card` — Hover-lift card with animated gradient border (`--glow-indigo`)
  * - `.gradient-border-card` — Card with `mask-composite: exclude` gradient border
  * - `.spotlight-card` — Card with mouse-tracking radial gradient overlay
@@ -42,7 +42,7 @@ export const VengeanceGlass: StoryObj = {
       <div className="vengeance-glass rounded-2xl p-5 w-full">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 rounded-xl bg-white/50 dark:bg-white/10">
-            <Wind className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <WindIcon size={20} className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -82,7 +82,7 @@ export const GlassPanel: StoryObj = {
       <div className="glass-panel rounded-2xl p-5 w-full text-center">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Standard Glass</h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          blur(24px) · inner top shine
+          blur(36px) · inner top shine
         </p>
         <div className="mt-3 flex justify-center gap-2">
           <span className="text-[10px] font-mono text-gray-400">Light: 60% white</span>
@@ -109,7 +109,7 @@ export const VengeanceCard: StoryObj = {
       <div className="vengeance-card p-6 rounded-xl">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-            <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <SparklesIcon size={20} className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Vengeance Card</h3>
         </div>

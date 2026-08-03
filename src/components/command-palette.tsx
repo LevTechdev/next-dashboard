@@ -1,17 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ComponentType } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  Search,
-  ShoppingBag,
-  Users,
-  Package,
-  ArrowRight,
-  Command,
-  Loader2,
-  type LucideIcon,
-} from "lucide-react";
+import { SearchIcon, ArrowRightIcon, UsersIcon } from "lucide-animated";
+import { ShoppingBag, Package, Command, Loader2 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -54,7 +47,7 @@ interface ResultItem {
   id: string;
   label: string;
   subtitle: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string; size?: number }>;
   iconBg: string;
   iconColor: string;
   href: string;
@@ -87,6 +80,14 @@ export function CommandPalette() {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
 
+  // Reset search state whenever the palette closes (any path).
+  const closePalette = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setResults(null);
+    setSelectedIndex(0);
+  }, []);
+
   // ── ⌘K / Ctrl+K toggle ──
 
   useEffect(() => {
@@ -95,22 +96,17 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closePalette();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [closePalette]);
 
   // Focus input when dialog opens
   useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(timer);
-    } else {
-      setQuery("");
-      setResults(null);
-      setSelectedIndex(0);
-    }
+    if (!open) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [open]);
 
   // Cleanup debounce timer on unmount
@@ -172,7 +168,7 @@ export function CommandPalette() {
         id: c.id,
         label: c.name,
         subtitle: `${c.email || "No email"} · ${c.city || "N/A"}`,
-        icon: Users,
+        icon: UsersIcon,
         iconBg: "bg-purple-50 dark:bg-purple-900/20",
         iconColor: "text-purple-600 dark:text-purple-400",
         href: `/${locale}/customers`,
@@ -212,7 +208,7 @@ export function CommandPalette() {
   };
 
   const navigateTo = (item: ResultItem) => {
-    setOpen(false);
+    closePalette();
     router.push(item.href);
   };
 
@@ -242,7 +238,13 @@ export function CommandPalette() {
   return (
     <>
       {/* Hidden button to make dialog accessible */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (v) setOpen(true);
+          else closePalette();
+        }}
+      >
         <DialogContent
           className="top-[15%] sm:top-[20%] translate-y-0 max-w-xl p-0 gap-0 rounded-xl shadow-2xl border-gray-200 dark:border-gray-800 overflow-hidden"
           onKeyDown={onKeyDown}
@@ -252,7 +254,7 @@ export function CommandPalette() {
             {loading ? (
               <Loader2 className="h-5 w-5 text-gray-400 animate-spin shrink-0" />
             ) : (
-              <Search className="h-5 w-5 text-gray-400 shrink-0" />
+              <SearchIcon size={20} className="h-5 w-5 text-gray-400 shrink-0" />
             )}
             <input
               ref={inputRef}
@@ -280,7 +282,10 @@ export function CommandPalette() {
 
             {!loading && query.length >= 2 && !hasResults && (
               <div className="py-8 text-center">
-                <Search className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <SearchIcon
+                  size={32}
+                  className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2"
+                />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   No results found for &ldquo;{query}&rdquo;
                 </p>
@@ -325,7 +330,7 @@ export function CommandPalette() {
                         onMouseEnter={() => setSelectedIndex(globalIdx)}
                       >
                         <div className={cn("flex-shrink-0 p-2 rounded-lg", item.iconBg)}>
-                          <Icon className={cn("h-4 w-4", item.iconColor)} />
+                          <Icon size={16} className={cn("h-4 w-4", item.iconColor)} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -335,7 +340,8 @@ export function CommandPalette() {
                             {item.subtitle}
                           </p>
                         </div>
-                        <ArrowRight
+                        <ArrowRightIcon
+                          size={16}
                           className={cn(
                             "h-4 w-4 shrink-0 transition-opacity",
                             isSelected

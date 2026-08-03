@@ -271,6 +271,17 @@ describe("ActivityFeed", () => {
     });
 
     it("shows relative timestamps for activities", async () => {
+      // Create the fixture right before rendering so the relative-time
+      // computation (Date.now() at render) stays within the "30s" window —
+      // a describe-scope fixture would drift ("31s ago") under full-suite load.
+      global.fetch = setupFetchMock([
+        createMockApiNotification({
+          id: "ts-1",
+          type: "order",
+          title: "New Order #1001",
+          createdAt: new Date(Date.now() - 30000).toISOString(),
+        }),
+      ]);
       render(<ActivityFeed />);
       await waitFor(() => {
         expect(screen.getByText("30s ago")).toBeInTheDocument();

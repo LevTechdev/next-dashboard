@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "./button";
-import { Sparkles, Sun } from "lucide-react";
+import { SparklesIcon, SunIcon } from "lucide-animated";
 
 /**
  * Premium button system with 8 variants, 5 sizes, and design token integration.
@@ -111,7 +111,7 @@ export const Premium: Story = {
   },
   render: (args) => (
     <Button {...args}>
-      <Sparkles className="h-4 w-4" />
+      <SparklesIcon size={16} className="h-4 w-4" />
       {args.children}
     </Button>
   ),
@@ -144,7 +144,7 @@ export const Sizes: Story = {
       <Button size="lg">Large (h-11)</Button>
       <Button size="xl">XL (h-12)</Button>
       <Button size="icon">
-        <Sun className="h-4 w-4" />
+        <SunIcon size={16} className="h-4 w-4" />
       </Button>
     </div>
   ),
@@ -167,7 +167,7 @@ export const AllVariants: Story = {
       <Button variant="ghost">Ghost</Button>
       <Button variant="link">Link</Button>
       <Button variant="premium" className="gap-1.5">
-        <Sparkles className="h-4 w-4" />
+        <SparklesIcon size={16} className="h-4 w-4" />
         Premium
       </Button>
       <Button variant="glass">Glass</Button>
@@ -188,7 +188,7 @@ export const PremiumCTA: Story = {
   },
   render: () => (
     <Button variant="premium" size="xl" className="gap-2 w-full max-w-xs">
-      <Sparkles className="h-5 w-5" />
+      <SparklesIcon size={20} className="h-5 w-5" />
       Access Workspace
     </Button>
   ),

@@ -22,6 +22,11 @@ model User {
   verificationToken String?
   verificationTokenExpires DateTime?
   isActive       Boolean  @default(true)
+  // ── Security hardening (Phase 1) ──
+  passwordAlgo      String   @default("bcrypt") // "bcrypt" (legacy) | "argon2id"
+  passwordChangedAt DateTime?
+  failedLoginCount  Int      @default(0)
+  lockedUntil       DateTime?
   createdAt      DateTime @default(now())
   updatedAt     DateTime @updatedAt
   orders          Order[]
@@ -33,6 +38,135 @@ model User {
   paymentMethods  PaymentMethod[]
   notifications   Notification[]
   notificationPref NotificationPreference?
+  sessions        Session[]
+  backupCodes     BackupCode[]
+  securityEvents  SecurityEvent[]
+  refreshTokens   RefreshToken[]
+  webauthnCredentials WebAuthnCredential[]
+  tenantId        String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
+}
+
+/// Workspace / organization boundary for app-layer multi-tenancy.
+model Tenant {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  users     User[]
+  customers Customer[]
+  products  Product[]
+  orders    Order[]
+  categories ProductCategory[]
+  discounts Discount[]
+  campaigns Campaign[]
+  ssoConnection SsoConnection?
+
+  @@index([slug])
+}
+
+/// Per-tenant SAML 2.0 identity-provider configuration for enterprise SSO.
+model SsoConnection {
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  name        String              // display name e.g. "Okta", "Azure AD"
+  entryPoint  String              // IdP SSO URL (where AuthnRequests are sent)
+  idpCert     String              // IdP x509 signing certificate (base64, no PEM headers)
+  spIssuer    String              // our SP entity id / issuer
+  emailDomain String?             // optional domain for IdP discovery by email
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([emailDomain])
+}
+
+/// Per-device login session; powers the Active Sessions panel + revocation.
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  tokenHash    String    @unique // SHA-256 of the CURRENT access token (rotated on refresh)
+  familyId     String?           // refresh-token family this session belongs to
+  ip           String?
+  userAgent    String?
+  device       String?
+  browser      String?
+  location     String?
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([familyId])
+}
+
+/// Rotating refresh token (opaque, stored hashed). Reuse of a consumed token
+/// revokes the entire family (stolen-token replay defense).
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  familyId  String
+  tokenHash String    @unique // SHA-256 of the opaque refresh token
+  sessionId String?           // links to the Session for device info + revocation
+  usedAt    DateTime?          // set when rotated (consumed) — reuse ⇒ revoke family
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([tokenHash])
+}
+
+/// FIDO2 / WebAuthn passkey credential registered to a user.
+model WebAuthnCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  credentialId String    @unique // base64url credential ID
+  publicKey    Bytes              // COSE public key
+  counter      Int       @default(0)
+  transports   String?            // comma-joined (usb,nfc,ble,internal,hybrid)
+  deviceName   String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Single-use hashed backup recovery codes for 2FA fallback.
+model BackupCode {
+  id       String    @id @default(cuid())
+  userId   String
+  codeHash String    @unique
+  usedAt   DateTime?
+  createdAt DateTime @default(now())
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// User-visible, append-only security audit trail (also exportable to SIEM).
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  seq       Int      @unique @default(autoincrement())
+  userId    String?
+  type      String   // LOGIN, LOGIN_FAILED, PASSWORD_CHANGE, TOTP_ENABLED, TOTP_DISABLED, BACKUP_CODES_GENERATED, SESSION_REVOKED, STEP_UP_VERIFIED, APIKEY_CREATED
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  prevHash  String?  // hash of the previous event in the chain (tamper-evidence)
+  hash      String?  // sha256(prevHash + canonical(event)) — see lib/audit-chain
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([seq])
 }
 
 model Customer {
@@ -49,16 +183,24 @@ model Customer {
   lastOrderDate  DateTime?
   notes          String?
   isActive       Boolean  @default(true)
+  tenantId       String?
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   orders         Order[]
+
+  @@index([tenantId])
 }
 
 model ProductCategory {
   id        String    @id @default(cuid())
   name      String
   slug      String    @unique
+  tenantId  String?
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
   products  Product[]
+
+  @@index([tenantId])
 }
 
 model Product {
@@ -71,13 +213,19 @@ model Product {
   stock         Int      @default(0)
   sku           String?
   image         String?
+  images        String[] @default([])
   categoryId    String?
   category      ProductCategory? @relation(fields: [categoryId], references: [id])
   isActive      Boolean  @default(true)
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   orderItems    OrderItem[]
   inventoryItems InventoryRecord[]
+  affiliateLinks AffiliateLink[]
+
+  @@index([tenantId])
 }
 
 model SalesChannel {
@@ -108,10 +256,14 @@ model Order {
   paymentStatus   String   @default("UNPAID") // UNPAID, PAID, REFUNDED
   shippingAddress String?
   notes           String?
+  tenantId        String?
+  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   items           OrderItem[]
   discount        OrderDiscount?
+
+  @@index([tenantId])
 }
 
 model OrderItem {
@@ -139,8 +291,12 @@ model Discount {
   startsAt    DateTime
   endsAt      DateTime
   isActive    Boolean  @default(true)
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt   DateTime @default(now())
   orders      OrderDiscount[]
+
+  @@index([tenantId])
 }
 
 model OrderDiscount {
@@ -163,8 +319,12 @@ model Campaign {
   channel     String?  // facebook, instagram, tiktok, email, google
   startsAt    DateTime?
   endsAt      DateTime?
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model InventoryRecord {
@@ -220,7 +380,8 @@ model ApiKey {
   prefix      String             // visible prefix like "dash_abc..."
   userId      String?
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  permissions String    @default("read") // comma-separated: read, write, admin
+  permissions String    @default("read") // comma-separated scopes: read, write, admin
+  ipAllowlist String[]  @default([])     // allowed client IPs/CIDRs (empty = any)
   status      String    @default("ACTIVE") // ACTIVE, REVOKED
   lastUsedAt  DateTime?
   expiresAt   DateTime?
@@ -388,4 +549,79 @@ model Subscription {
   updatedAt       DateTime @updatedAt
   invoices        Invoice[]
   usageRecords    UsageRecord[]
+}
+
+// ─── Affiliate Marketing ─────────────────────────────────────────
+
+model AffiliatePlatform {
+  id         String   @id @default(cuid())
+  name       String   @unique // Facebook, Instagram, TikTok Shop, Shopee, Tokopedia, Lazada
+  slug       String   @unique
+  baseUrl    String?  // storefront base URL used to build product links
+  color      String?  // brand color for UI badges
+  isActive   Boolean  @default(true)
+  headlessEnabled Boolean @default(true) // allow Playwright headless fallback for this platform's URL imports
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  connection PlatformConnection?
+  links      AffiliateLink[]
+}
+
+model PlatformConnection {
+  id             String            @id @default(cuid())
+  platformId     String            @unique
+  platform       AffiliatePlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  status         String            @default("DISCONNECTED") // CONNECTED, DISCONNECTED, ERROR
+  shopId         String?           // shop_id / seller id / catalog id
+  apiKey         String?           // app key / partner id / client id
+  apiSecret      String?           // app secret / partner key
+  accessToken    String?           // OAuth access token
+  storeUrl       String?           // seller storefront URL
+  lastSyncAt     DateTime?
+  lastError      String?
+  productsSynced Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model AffiliateLink {
+  id              String            @id @default(cuid())
+  code            String            @unique // short tracking code used in /api/aff/{code}
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platformId      String
+  platform        AffiliatePlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  targetUrl       String            // destination product URL on the platform
+  commissionType  String            @default("PERCENTAGE") // PERCENTAGE, FIXED
+  commissionValue Float             @default(10)
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  clicks          AffiliateClick[]
+  conversions     AffiliateConversion[]
+}
+
+model AffiliateClick {
+  id        String        @id @default(cuid())
+  linkId    String
+  link      AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  ipHash    String?
+  userAgent String?
+  referrer  String?
+  createdAt DateTime      @default(now())
+
+  @@index([linkId, createdAt])
+}
+
+model AffiliateConversion {
+  id               String        @id @default(cuid())
+  linkId           String
+  link             AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  orderId          String?       @unique // dashboard order that triggered the conversion
+  amount           Float         // order/sale amount attributed
+  commissionAmount Float         // computed commission for this conversion
+  status           String        @default("PENDING") // PENDING, APPROVED, PAID, REJECTED
+  createdAt        DateTime      @default(now())
+
+  @@index([linkId, createdAt])
 }

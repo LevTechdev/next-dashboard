@@ -3,26 +3,48 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { RefreshCwIcon, ClockIcon } from "lucide-animated";
-import { ArrowRight, BarChart3, ShoppingCart, Users, Package, TrendingUp, Shield, Download, Zap, LayoutDashboard, FileText, Megaphone, Tag, UserCheck, PieChart, CheckCircle, Sparkles } from "lucide-react";
+import {
+  RefreshCwIcon,
+  ClockIcon,
+  ArrowRightIcon,
+  UsersIcon,
+  TrendingUpIcon,
+  ZapIcon,
+  FileTextIcon,
+  UserCheckIcon,
+  SparklesIcon,
+  DownloadIcon,
+} from "lucide-animated";
+import {
+  BarChart3,
+  ShoppingCart,
+  Package,
+  Shield,
+  LayoutDashboard,
+  Megaphone,
+  Tag,
+  PieChart,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 import { TextAnimate } from "@/components/ui/text-animate";
 
 interface FeatureGroup {
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   items: {
-    title: string;
-    description: string;
+    titleKey: string;
+    descKey: string;
     icon: React.ComponentType<{ className?: string; [key: string]: unknown }>;
     color: string;
     gradient: string;
@@ -32,40 +54,36 @@ interface FeatureGroup {
 
 const featureGroups: FeatureGroup[] = [
   {
-    title: "Analytics & Insights",
-    description: "Make data-driven decisions with powerful analytics and real-time dashboards.",
+    titleKey: "g1Title",
+    descKey: "g1Desc",
     items: [
       {
-        title: "Live Dashboard",
-        description:
-          "Real-time overview of your key metrics including revenue, orders, customers, and product performance. Auto-refreshes every 15 seconds.",
+        titleKey: "g1f1Title",
+        descKey: "g1f1Desc",
         icon: LayoutDashboard,
         color: "text-indigo-500 dark:text-indigo-400",
         gradient: "from-indigo-500/20 to-indigo-500/5",
         testId: "icon-layoutdashboard",
       },
       {
-        title: "Revenue Analytics",
-        description:
-          "Interactive revenue charts with monthly breakdowns, trend analysis, and channel distribution. Hover for detailed tooltips.",
+        titleKey: "g1f2Title",
+        descKey: "g1f2Desc",
         icon: BarChart3,
         color: "text-blue-500 dark:text-blue-400",
         gradient: "from-blue-500/20 to-blue-500/5",
         testId: "icon-barchart3",
       },
       {
-        title: "Sales Reports",
-        description:
-          "Comprehensive sales reports with channel breakdown, customer summaries, and product performance.",
-        icon: FileText,
+        titleKey: "g1f3Title",
+        descKey: "g1f3Desc",
+        icon: FileTextIcon,
         color: "text-emerald-500 dark:text-emerald-400",
         gradient: "from-emerald-500/20 to-emerald-500/5",
         testId: "icon-filetext",
       },
       {
-        title: "Channel Analytics",
-        description:
-          "Track performance across 6+ sales channels including Online Store, Facebook, Instagram, TikTok, and Shopify.",
+        titleKey: "g1f4Title",
+        descKey: "g1f4Desc",
         icon: PieChart,
         color: "text-purple-500 dark:text-purple-400",
         gradient: "from-purple-500/20 to-purple-500/5",
@@ -74,40 +92,36 @@ const featureGroups: FeatureGroup[] = [
     ],
   },
   {
-    title: "Order & Customer Management",
-    description: "Efficiently manage your orders and build stronger customer relationships.",
+    titleKey: "g2Title",
+    descKey: "g2Desc",
     items: [
       {
-        title: "Multi-Channel Orders",
-        description:
-          "View and manage orders from all sales channels in one unified interface. Track status, payment, and shipping at a glance.",
+        titleKey: "g2f1Title",
+        descKey: "g2f1Desc",
         icon: ShoppingCart,
         color: "text-emerald-500 dark:text-emerald-400",
         gradient: "from-emerald-500/20 to-emerald-500/5",
         testId: "icon-shoppingcart",
       },
       {
-        title: "Customer Profiles",
-        description:
-          "Detailed customer profiles with order history, spending totals, and contact information.",
-        icon: Users,
+        titleKey: "g2f2Title",
+        descKey: "g2f2Desc",
+        icon: UsersIcon,
         color: "text-purple-500 dark:text-purple-400",
         gradient: "from-purple-500/20 to-purple-500/5",
         testId: "icon-users",
       },
       {
-        title: "Inventory Tracking",
-        description:
-          "Monitor stock levels across your product catalog with real-time inventory updates and low-stock alerts.",
+        titleKey: "g2f3Title",
+        descKey: "g2f3Desc",
         icon: Package,
         color: "text-amber-500 dark:text-amber-400",
         gradient: "from-amber-500/20 to-amber-500/5",
         testId: "icon-package",
       },
       {
-        title: "Order Tracking",
-        description:
-          "Track order fulfillment from placement to delivery with a visual timeline showing each status change.",
+        titleKey: "g2f4Title",
+        descKey: "g2f4Desc",
         icon: ClockIcon,
         color: "text-cyan-500 dark:text-cyan-400",
         gradient: "from-cyan-500/20 to-cyan-500/5",
@@ -116,39 +130,37 @@ const featureGroups: FeatureGroup[] = [
     ],
   },
   {
-    title: "Marketing & Growth",
-    description: "Drive growth with powerful marketing tools and promotional features.",
+    titleKey: "g3Title",
+    descKey: "g3Desc",
     items: [
       {
-        title: "Campaign Management",
-        description:
-          "Create, track, and analyze marketing campaigns across channels. Monitor performance metrics and ROI.",
+        titleKey: "g3f1Title",
+        descKey: "g3f1Desc",
         icon: Megaphone,
         color: "text-rose-500 dark:text-rose-400",
         gradient: "from-rose-500/20 to-rose-500/5",
         testId: "icon-megaphone",
       },
       {
-        title: "Discount Engine",
-        description: "Create and manage discount codes, promotional offers, and seasonal pricing.",
+        titleKey: "g3f2Title",
+        descKey: "g3f2Desc",
         icon: Tag,
         color: "text-amber-500 dark:text-amber-400",
         gradient: "from-amber-500/20 to-amber-500/5",
         testId: "icon-tag",
       },
       {
-        title: "Growth Analytics",
-        description:
-          "Track growth metrics across revenue, customers, orders, and products with percentage changes.",
-        icon: TrendingUp,
+        titleKey: "g3f3Title",
+        descKey: "g3f3Desc",
+        icon: TrendingUpIcon,
         color: "text-green-500 dark:text-green-400",
         gradient: "from-green-500/20 to-green-500/5",
         testId: "icon-trendingup",
       },
       {
-        title: "Data Export",
-        description: "Export orders, customers, and reports to CSV with full UTF-8 support.",
-        icon: Download,
+        titleKey: "g3f4Title",
+        descKey: "g3f4Desc",
+        icon: DownloadIcon,
         color: "text-sky-500 dark:text-sky-400",
         gradient: "from-sky-500/20 to-sky-500/5",
         testId: "icon-download",
@@ -156,37 +168,36 @@ const featureGroups: FeatureGroup[] = [
     ],
   },
   {
-    title: "Team & Security",
-    description: "Collaborate effectively with your team while keeping your data secure.",
+    titleKey: "g4Title",
+    descKey: "g4Desc",
     items: [
       {
-        title: "Role-Based Access",
-        description:
-          "Granular permissions with Admin, Manager, and Staff roles. Control access across all sections.",
+        titleKey: "g4f1Title",
+        descKey: "g4f1Desc",
         icon: Shield,
         color: "text-rose-500 dark:text-rose-400",
         gradient: "from-rose-500/20 to-rose-500/5",
         testId: "icon-shield",
       },
       {
-        title: "Team Management",
-        description: "Add team members, assign roles, and manage access permissions.",
-        icon: UserCheck,
+        titleKey: "g4f2Title",
+        descKey: "g4f2Desc",
+        icon: UserCheckIcon,
         color: "text-violet-500 dark:text-violet-400",
         gradient: "from-violet-500/20 to-violet-500/5",
         testId: "icon-usercheck",
       },
       {
-        title: "Real-Time Updates",
-        description: "Server-Sent Events deliver instant updates across all connected clients.",
+        titleKey: "g4f3Title",
+        descKey: "g4f3Desc",
         icon: RefreshCwIcon,
         color: "text-indigo-500 dark:text-indigo-400",
         gradient: "from-indigo-500/20 to-indigo-500/5",
         testId: "icon-refreshcw",
       },
       {
-        title: "Audit Log",
-        description: "Complete activity log tracking every action taken in the system.",
+        titleKey: "g4f4Title",
+        descKey: "g4f4Desc",
         icon: ClockIcon,
         color: "text-zinc-500 dark:text-zinc-400",
         gradient: "from-zinc-500/20 to-zinc-500/5",
@@ -198,22 +209,22 @@ const featureGroups: FeatureGroup[] = [
 
 const performanceHighlights = [
   {
-    title: "Sub-second Response Times",
-    desc: "Database queries optimized under 50ms. Pages render in under 100ms.",
-    icon: Zap,
+    titleKey: "perf1Title",
+    descKey: "perf1Desc",
+    icon: ZapIcon,
     color: "text-amber-500 dark:text-amber-400",
     glowColor: "rgba(245,158,11,0.12)",
   },
   {
-    title: "99.9% Uptime Guarantee",
-    desc: "Distributed infrastructure with automatic failover. Zero planned downtime.",
+    titleKey: "perf2Title",
+    descKey: "perf2Desc",
     icon: CheckCircle,
     color: "text-emerald-500 dark:text-emerald-400",
     glowColor: "rgba(16,185,129,0.12)",
   },
   {
-    title: "Real-Time Data Sync",
-    desc: "Server-Sent Events push updates across all connected clients instantly.",
+    titleKey: "perf3Title",
+    descKey: "perf3Desc",
     icon: RefreshCwIcon,
     color: "text-indigo-500 dark:text-indigo-400",
     glowColor: "rgba(99,102,241,0.12)",
@@ -225,9 +236,12 @@ export default function FeaturesPage() {
   const locale = (params?.locale as string) || "en";
   const { theme } = useTheme();
   const { trackCTA } = useAnalytics();
+  const t = useTranslations("featuresPage");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   const ctaHref = `/${locale}/dashboard`;
   const isDark = mounted && theme === "dark";
@@ -280,9 +294,12 @@ export default function FeaturesPage() {
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+              <SparklesIcon
+                size={14}
+                className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400"
+              />
               <span className="text-[11px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
-                Powerful Capabilities
+                {t("badge")}
               </span>
             </motion.div>
 
@@ -297,15 +314,13 @@ export default function FeaturesPage() {
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
-              Everything You Need to&nbsp;
+              {t("heroPrefix")}&nbsp;
               <span className="inline-flex">
-                <FlipFadeText
-                  words={["grow.", "scale.", "thrive.", "succeed."]}
+                <FlipRevealText
+                  words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                   interval={3000}
                   textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight"
                   className="!min-h-0 inline-flex"
-                  staggerDelay={0.06}
-                  letterDuration={0.4}
                 />
               </span>
             </motion.h1>
@@ -316,8 +331,7 @@ export default function FeaturesPage() {
               className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto"
               once
             >
-              From real-time analytics to team collaboration — explore all the tools that make
-              Dashboard the ultimate business management platform.
+              {t("heroSubtitle")}
             </TextAnimate>
           </motion.div>
         </div>
@@ -328,7 +342,7 @@ export default function FeaturesPage() {
           ════════════════════════ */}
       {featureGroups.map((group, groupIndex) => (
         <AnimateSection
-          key={group.title}
+          key={group.titleKey}
           className={cn(
             "py-20 lg:py-24",
             groupIndex % 2 === 1 && "bg-zinc-100 dark:bg-zinc-900/30 border-t border-border",
@@ -339,19 +353,13 @@ export default function FeaturesPage() {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
                 <span className="text-[10px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
-                  {groupIndex === 0
-                    ? "Core Features"
-                    : groupIndex === 1
-                      ? "Management"
-                      : groupIndex === 2
-                        ? "Growth"
-                        : "Security"}
+                  {t(`groupBadge${groupIndex + 1}`)}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-                {group.title}
+                {t(group.titleKey)}
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">{group.description}</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">{t(group.descKey)}</p>
             </AnimateUp>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 max-w-5xl mx-auto">
@@ -359,7 +367,7 @@ export default function FeaturesPage() {
                 const Icon = feature.icon;
                 return (
                   <motion.div
-                    key={feature.title}
+                    key={feature.titleKey}
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
@@ -393,16 +401,17 @@ export default function FeaturesPage() {
                         )}
                       >
                         <Icon
+                          size={20}
                           data-testid={feature.testId}
                           className={cn("h-5 w-5", feature.color)}
                         />
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-1.5">
-                          {feature.title}
+                          {t(feature.titleKey)}
                         </h3>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                          {feature.description}
+                          {t(feature.descKey)}
                         </p>
                       </div>
                     </div>
@@ -421,11 +430,9 @@ export default function FeaturesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateUp className="text-center max-w-2xl mx-auto mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-              Built for performance
+              {t("perfTitle")}
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Every feature is designed to be fast, reliable, and intuitive.
-            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("perfSubtitle")}</p>
           </AnimateUp>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 auto-rows-[220px]">
@@ -433,7 +440,7 @@ export default function FeaturesPage() {
               const Icon = item.icon;
               return (
                 <motion.div
-                  key={item.title}
+                  key={item.titleKey}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -459,20 +466,21 @@ export default function FeaturesPage() {
                   />
                   <div className="relative z-10">
                     <Icon
+                      size={24}
                       data-testid={
                         item.icon === CheckCircle
                           ? "icon-checkcircle"
-                          : item.icon === Zap
+                          : item.icon === ZapIcon
                             ? "icon-zap"
                             : "icon-refreshcw"
                       }
                       className={cn("h-6 w-6 mb-3", item.color)}
                     />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">
-                      {item.title}
+                      {t(item.titleKey)}
                     </h3>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      {item.desc}
+                      {t(item.descKey)}
                     </p>
                   </div>
                 </motion.div>
@@ -489,20 +497,20 @@ export default function FeaturesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {[
-              { label: "Total Features", end: 48, suffix: "+", icon: LayoutDashboard },
-              { label: "Integrations", end: 70, suffix: "+", icon: Zap },
+              { labelKey: "statFeatures", end: 48, suffix: "+", icon: LayoutDashboard },
+              { labelKey: "statIntegrations", end: 70, suffix: "+", icon: ZapIcon },
               {
-                label: "Active Users",
+                labelKey: "statUsers",
                 end: 2847,
                 format: (v: number) => v.toLocaleString(),
-                icon: Users,
+                icon: UsersIcon,
               },
-              { label: "Countries", end: 30, suffix: "+", icon: CheckCircle },
+              { labelKey: "statCountries", end: 30, suffix: "+", icon: CheckCircle },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <motion.div
-                  key={stat.label}
+                  key={stat.labelKey}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -510,7 +518,7 @@ export default function FeaturesPage() {
                   className="text-center"
                 >
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/20 mb-3">
-                    <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
                     <AnimatedCounter
@@ -520,7 +528,7 @@ export default function FeaturesPage() {
                     />
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 mt-1 font-medium">
-                    {stat.label}
+                    {t(stat.labelKey)}
                   </div>
                 </motion.div>
               );
@@ -547,10 +555,10 @@ export default function FeaturesPage() {
               <div className="relative text-center">
                 <AnimateUp>
                   <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-                    Ready to Get Started?
+                    {t("ctaTitle")}
                   </h2>
                   <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto mb-8">
-                    Start your 14-day free trial. No credit card required.
+                    {t("ctaDesc")}
                   </p>
                   <Link href={ctaHref}>
                     <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
@@ -558,8 +566,8 @@ export default function FeaturesPage() {
                         className="h-11 px-8 text-sm gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium press-scale shadow-xl shadow-zinc-900/20 dark:shadow-black/20"
                         onClick={() => trackCTA("go_to_dashboard_features", { href: ctaHref })}
                       >
-                        Go to Dashboard
-                        <ArrowRight className="h-4 w-4" />
+                        {t("ctaButton")}
+                        <ArrowRightIcon size={16} className="h-4 w-4" />
                       </Button>
                     </motion.div>
                   </Link>

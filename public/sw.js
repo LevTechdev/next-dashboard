@@ -1,16 +1,12 @@
-const CACHE_NAME = "dashboard-cache-v1";
-const STATIC_ASSETS = [
-  "/",
-  "/en/login",
-  "/manifest.json",
-];
+const CACHE_NAME = "dashboard-cache-v2";
+const STATIC_ASSETS = ["/", "/en/login", "/manifest.json"];
 
 // Install event - cache static assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
-    })
+    }),
   );
   self.skipWaiting();
 });
@@ -20,11 +16,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name)),
       );
-    })
+    }),
   );
   self.clients.claim();
 });
@@ -39,6 +33,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Never cache Next.js build assets — they have hashed filenames and
+  // caching them causes "module factory is not available" errors after rebuilds
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // For navigation requests, try network first
   if (request.mode === "navigate") {
     event.respondWith(
@@ -50,23 +51,20 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => {
           return caches.match("/en/login");
-        })
+        }),
     );
     return;
   }
 
-  // For static assets, cache-first strategy
+  // For other static assets, network-first with cache fallback
   event.respondWith(
-    caches.match(request).then((cached) => {
-      return (
-        cached ||
-        fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        })
-      );
-    })
+    fetch(request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        return response;
+      })
+      .catch(() => caches.match(request)),
   );
 });
 
@@ -83,15 +81,11 @@ self.addEventListener("push", (event) => {
     timestamp: Date.now(),
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title || "Dashboard Update", options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title || "Dashboard Update", options));
 });
 
 // Handle notification clicks
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow("/")
-  );
+  event.waitUntil(clients.openWindow("/"));
 });

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { ActivityIcon, RefreshCwIcon, WifiIcon } from "lucide-animated";
+import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RealtimeIndicatorProps {
@@ -49,9 +50,9 @@ export function RealtimeIndicator({
       {error ? (
         <WifiOff className="h-3 w-3" />
       ) : isRefreshing ? (
-        <RefreshCw className="h-3 w-3 animate-spin" />
+        <RefreshCwIcon size={12} className="h-3 w-3 animate-spin" />
       ) : (
-        <Activity className="h-3 w-3" />
+        <ActivityIcon size={12} className="h-3 w-3" />
       )}
       <span className="font-medium">
         {error

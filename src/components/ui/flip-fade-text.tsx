@@ -46,9 +46,11 @@ const defaultWords = ["LOADING", "COMPUTING", "SEARCHING", "RETRIEVING", "ASSEMB
 const Letter = memo(function Letter({
   char,
   letterDuration,
+  letterClassName,
 }: {
   char: string;
   letterDuration: number;
+  letterClassName?: string;
 }) {
   return (
     <motion.span
@@ -81,7 +83,7 @@ const Letter = memo(function Letter({
           },
         },
       }}
-      className="inline-block"
+      className={cn("inline-block", letterClassName)}
     >
       {char}
     </motion.span>
@@ -130,7 +132,15 @@ const Word = memo(function Word({
       }}
     >
       {letters.map((char, i) => (
-        <Letter key={`${char}-${i}`} char={char} letterDuration={letterDuration} />
+        <Letter
+          key={`${char}-${i}`}
+          char={char}
+          letterDuration={letterDuration}
+          // Gradient text classes (bg-clip-text) must be applied per-letter:
+          // each animated span has its own transform/filter paint layer, so a
+          // parent-level background-clip cannot render through it (breaks in light mode).
+          letterClassName={textClassName}
+        />
       ))}
     </motion.div>
   );

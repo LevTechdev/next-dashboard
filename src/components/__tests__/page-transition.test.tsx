@@ -169,11 +169,26 @@ describe("PageTransition", () => {
   it("applies vt-fallback-fade class when view transitions are not supported", () => {
     mockUseViewTransition.mockReturnValue({ isSupported: false });
 
-    const { container } = render(
+    const { container, rerender } = render(
       <PageTransition>
         <div>Content</div>
       </PageTransition>,
     );
+
+    // No fallback fade on the very first paint (prevents blank initial load)
+    expect(container.querySelector(".view-transition-page")?.className).not.toContain(
+      "vt-fallback-fade",
+    );
+
+    // Navigate — the fade fallback applies from the first route change onward
+    mockPathname = "/next";
+    act(() => {
+      rerender(
+        <PageTransition>
+          <div>Content</div>
+        </PageTransition>,
+      );
+    });
 
     const wrapper = container.querySelector(".view-transition-page");
     expect(wrapper).toBeInTheDocument();

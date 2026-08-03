@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -51,6 +52,20 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Dashboard" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Dashboard" />
+        {/* Theme init script — runs before paint to prevent FOUC.
+            Placed here (server-rendered head) so React 19 executes it
+            instead of the client-injected script from next-themes. */}
+        <Script id="theme-init" strategy="beforeInteractive">{`
+          (function(){
+            try {
+              var t = localStorage.getItem('theme');
+              var sys = window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+              var resolved = (t === 'system' || !t) ? sys : t;
+              document.documentElement.classList.toggle('dark', resolved === 'dark');
+              document.documentElement.style.colorScheme = resolved;
+            } catch(e){}
+          })();
+        `}</Script>
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>{children}</Providers>

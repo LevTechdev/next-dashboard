@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./card";
 import { Button } from "./button";
-import { TrendingUp, DollarSign, Users, ArrowUpRight } from "lucide-react";
+import { TrendingUpIcon, DollarSignIcon, UsersIcon, ArrowUpRightIcon } from "lucide-animated";
 
 /**
  * Premium card system with 6 subcomponents and 3 premium class variants.
@@ -76,10 +76,10 @@ export const DashboardCard: Story = {
     <div className="dashboard-card p-5 rounded-xl w-full max-w-xs">
       <div className="flex items-center justify-between mb-3">
         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
-          <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <DollarSignIcon size={20} className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
         </div>
         <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20">
-          <TrendingUp className="h-3 w-3" /> 23.5%
+          <TrendingUpIcon size={12} className="h-3 w-3" /> 23.5%
         </span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
@@ -103,10 +103,10 @@ export const StatCardPremium: Story = {
     <div className="stat-card-premium w-full max-w-xs cursor-pointer">
       <div className="flex items-center justify-between">
         <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <UsersIcon size={20} className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         <span className="flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-full text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20">
-          <TrendingUp className="h-3 w-3" /> 12%
+          <TrendingUpIcon size={12} className="h-3 w-3" /> 12%
         </span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">Active Users</p>
@@ -137,7 +137,7 @@ export const AllVariants: Story = {
           Hover → indigo border glow + shadow lift
         </p>
         <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-          <ArrowUpRight className="h-3 w-3" /> +12.5%
+          <ArrowUpRightIcon size={12} className="h-3 w-3" /> +12.5%
         </div>
       </div>
 

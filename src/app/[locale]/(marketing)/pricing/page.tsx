@@ -8,24 +8,21 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
-  Check,
-  ArrowRight,
-  X,
-  Star,
-  HelpCircle,
-  BarChart3,
-  Users,
-  Globe,
-  TrendingUp,
-  Sparkles,
-  Percent,
-} from "lucide-react";
+  CheckIcon,
+  XIcon,
+  ArrowRightIcon,
+  UsersIcon,
+  EarthIcon,
+  TrendingUpIcon,
+  SparklesIcon,
+} from "lucide-animated";
+import { Star, HelpCircle, BarChart3, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
 import { FaqAccordion, type FaqItem } from "@/components/ui/faq-accordion";
@@ -142,9 +139,12 @@ function FeatureItem({
       transition={{ delay, duration: 0.3 }}
     >
       {included ? (
-        <Check className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400 mt-0.5 shrink-0" />
+        <CheckIcon
+          size={14}
+          className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400 mt-0.5 shrink-0"
+        />
       ) : (
-        <X className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-700 mt-0.5 shrink-0" />
+        <XIcon size={14} className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-700 mt-0.5 shrink-0" />
       )}
       <span
         className={cn(
@@ -292,7 +292,7 @@ function PricingCard({
             >
               <span className="flex items-center justify-center gap-1.5">
                 {meta.key === "enterprise" ? t("ctaContact") : t("cta")}
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
               </span>
             </ShimmerButton>
           ) : (
@@ -307,7 +307,7 @@ function PricingCard({
                 }
               >
                 {meta.key === "enterprise" ? t("ctaContact") : t("cta")}
-                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                <ArrowRightIcon size={14} className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </motion.div>
           )}
@@ -381,11 +381,16 @@ export default function PricingPage() {
     {
       label: t("trustOrders"),
       end: 12400000,
-      icon: TrendingUp,
+      icon: TrendingUpIcon,
       format: (v: number) => `${(v / 1000000).toFixed(1)}M`,
     },
-    { label: t("trustUsers"), end: 8431, icon: Users, format: (v: number) => v.toLocaleString() },
-    { label: t("trustCountries"), end: 30, icon: Globe, suffix: "+" },
+    {
+      label: t("trustUsers"),
+      end: 8431,
+      icon: UsersIcon,
+      format: (v: number) => v.toLocaleString(),
+    },
+    { label: t("trustCountries"), end: 30, icon: EarthIcon, suffix: "+" },
   ];
 
   return (
@@ -426,7 +431,10 @@ export default function PricingPage() {
               }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 dark:border-zinc-700/50 bg-indigo-50/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+              <SparklesIcon
+                size={14}
+                className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400"
+              />
               <span className="text-[11px] font-medium text-indigo-600 dark:text-zinc-400 uppercase tracking-widest">
                 {t("badge")}
               </span>
@@ -445,13 +453,11 @@ export default function PricingPage() {
             >
               {t("title")}&nbsp;
               <span className="inline-flex">
-                <FlipFadeText
+                <FlipRevealText
                   words={["scale.", "fit.", "grow.", "deliver."]}
                   interval={3000}
                   textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight"
                   className="!min-h-0 inline-flex"
-                  staggerDelay={0.06}
-                  letterDuration={0.4}
                 />
               </span>
             </motion.h1>
@@ -546,8 +552,8 @@ export default function PricingPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("compareSubtitle")}</p>
           </AnimateUp>
 
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800/60">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800/60">
+            <table className="w-full text-sm min-w-[560px]">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800/60">
                   <th className="text-left py-4 px-5 text-zinc-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider">
@@ -627,7 +633,7 @@ export default function PricingPage() {
                   className="text-center"
                 >
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/20 mb-3">
-                    <Icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
                     <AnimatedCounter
@@ -676,7 +682,7 @@ export default function PricingPage() {
                         onClick={() => trackCTA("go_to_dashboard_pricing", { href: ctaHref })}
                       >
                         {t("bottomButton")}
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRightIcon size={16} className="h-4 w-4" />
                       </Button>
                     </motion.div>
                   </Link>

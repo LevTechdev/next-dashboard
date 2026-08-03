@@ -25,12 +25,14 @@ export default function PageTransition({ children, className }: PageTransitionPr
   const [showOverlay, setShowOverlay] = useState(false);
   const prevPathname = useRef(pathname);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasNavigated = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
   // Detect route changes and toggle loading overlay with smooth fade
   useEffect(() => {
     if (prevPathname.current !== pathname) {
+      hasNavigated.current = true;
       prevPathname.current = pathname;
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       setShowOverlay(true);
@@ -45,7 +47,11 @@ export default function PageTransition({ children, className }: PageTransitionPr
     return <div className={className}>{children}</div>;
   }
 
-  const wrapperClass = ["view-transition-page", !isSupported && "vt-fallback-fade", className]
+  const wrapperClass = [
+    "view-transition-page",
+    !isSupported && hasNavigated.current && "vt-fallback-fade",
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
 

@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback } from "react";
-import { ClipboardList, Search, Download, RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCwIcon, SearchIcon } from "lucide-animated";
+import { ClipboardList, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,10 @@ export default function AuditLogPage() {
 
   // Fetch when debounced search or global refresh changes
   useEffect(() => {
-    fetchLogs(1);
+    const load = async () => {
+      await fetchLogs(1);
+    };
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchLogs, globalRefreshTrigger]);
 
@@ -117,7 +121,7 @@ export default function AuditLogPage() {
             onClick={() => fetchLogs(pagination.page)}
             disabled={loading}
           >
-            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            <RefreshCwIcon size={16} className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             {tcommon("refresh")}
           </Button>
           <DataExportButton
@@ -141,7 +145,10 @@ export default function AuditLogPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <SearchIcon
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            />
             <Input
               placeholder={tcommon("search")}
               className="pl-10"

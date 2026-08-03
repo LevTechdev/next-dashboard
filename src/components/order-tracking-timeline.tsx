@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/utils";
-import { Check, Clock, Truck, PackageCheck, XCircle } from "lucide-react";
+import { CheckIcon, ClockIcon, TruckIcon } from "lucide-animated";
+import { PackageCheck, XCircle } from "lucide-react";
 
 interface TrackingEvent {
   status: string;
@@ -19,14 +20,18 @@ interface OrderTrackingTimelineProps {
 const STATUS_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  PENDING: { label: "Order Placed", icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
+  PENDING: {
+    label: "Order Placed",
+    icon: ClockIcon,
+    color: "text-yellow-600 dark:text-yellow-400",
+  },
   PROCESSING: {
     label: "Processing",
     icon: PackageCheck,
     color: "text-blue-600 dark:text-blue-400",
   },
-  SHIPPED: { label: "Shipped", icon: Truck, color: "text-purple-600 dark:text-purple-400" },
-  DELIVERED: { label: "Delivered", icon: Check, color: "text-green-600 dark:text-green-400" },
+  SHIPPED: { label: "Shipped", icon: TruckIcon, color: "text-purple-600 dark:text-purple-400" },
+  DELIVERED: { label: "Delivered", icon: CheckIcon, color: "text-green-600 dark:text-green-400" },
   CANCELLED: { label: "Cancelled", icon: XCircle, color: "text-red-600 dark:text-red-400" },
 };
 
@@ -61,7 +66,7 @@ export function OrderTrackingTimeline({
                         "ring-2 ring-indigo-500/30 ring-offset-2 dark:ring-offset-gray-900",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon size={16} className="h-4 w-4" />
                   </div>
                   <span
                     className={cn(
@@ -122,7 +127,7 @@ export function OrderTrackingTimeline({
           <div className="space-y-0">
             {events.map((event, i) => {
               const config = STATUS_CONFIG[event.status];
-              const Icon = config?.icon || Clock;
+              const Icon = config?.icon || ClockIcon;
               const isLast = i === events.length - 1;
               return (
                 <div key={i} className="flex gap-3 relative pb-4 last:pb-0">
@@ -141,6 +146,7 @@ export function OrderTrackingTimeline({
                       )}
                     >
                       <Icon
+                        size={12}
                         className={cn(
                           "h-3 w-3",
                           isLast ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400",

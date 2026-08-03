@@ -40,6 +40,13 @@ vi.mock("@/components/realtime-provider", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/dashboard",
   useParams: () => ({ locale: "en" }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }));
 
 // Mock useTheme
@@ -69,6 +76,12 @@ vi.mock("@/components/notification-panel", () => ({
 // Mock command palette
 vi.mock("@/components/command-palette", () => ({
   CommandPalette: () => <div data-testid="command-palette" />,
+}));
+
+// Mock confirm provider (Header now uses useConfirm for the logout modal)
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn(() => vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
 }));
 
 describe("Header", () => {

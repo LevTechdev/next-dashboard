@@ -34,7 +34,9 @@ export function useRealtimeData<T = unknown>(
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(url);
+      // no-store guarantees the table reflects the latest mutations (avoids the
+      // browser serving a stale cached GET after a create/update/delete).
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
 

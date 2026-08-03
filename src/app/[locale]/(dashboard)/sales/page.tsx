@@ -2,17 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import {
-  ShoppingCart,
-  Store,
-  Filter,
-  TrendingUp,
-  DollarSign,
-  ShoppingBag,
-  Percent,
-  RefreshCw,
-  Download,
-} from "lucide-react";
+import { RefreshCwIcon, TrendingUpIcon, DollarSignIcon } from "lucide-animated";
+import { ShoppingCart, Store, Filter, ShoppingBag, Percent } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +60,7 @@ export default function SalesPage() {
         label: tsales("totalSales"),
         value: totalRevenue,
         formatter: (v: number) => formatCurrency(v),
-        icon: DollarSign,
+        icon: DollarSignIcon,
         color: "text-emerald-600",
         bg: "bg-emerald-50 dark:bg-emerald-900/20",
       },
@@ -84,7 +75,7 @@ export default function SalesPage() {
         label: tsales("avgOrderValue"),
         value: avgOrderValue,
         formatter: (v: number) => formatCurrency(v),
-        icon: TrendingUp,
+        icon: TrendingUpIcon,
         color: "text-purple-600",
         bg: "bg-purple-50 dark:bg-purple-900/20",
       },
@@ -146,7 +137,10 @@ export default function SalesPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+            <RefreshCwIcon
+              size={14}
+              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
           <DataExportButton
@@ -173,7 +167,7 @@ export default function SalesPage() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className={cn("p-2 rounded-lg", stat.bg)}>
-                  <stat.icon className={cn("h-5 w-5", stat.color)} />
+                  <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">{stat.label}</p>

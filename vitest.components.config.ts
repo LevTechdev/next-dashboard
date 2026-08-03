@@ -8,7 +8,7 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     include: ["**/__tests__/**/*.test.{ts,tsx}"],
-    exclude: ["**/node_modules/**", "**/my-app/**"],
+    exclude: ["**/node_modules/**", "**/my-app/**", "src/app/api/**"],
     setupFiles: ["./src/app/[locale]/(marketing)/__tests__/setup.ts"],
     css: false,
     server: {
@@ -20,7 +20,13 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: "./coverage/components",
       include: ["src/components/**", "src/app/[locale]/(dashboard)/**"],
-      exclude: ["**/*.test.ts", "**/*.test.tsx", "**/node_modules/**", "**/my-app/**", "**/__tests__/**"],
+      exclude: [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/node_modules/**",
+        "**/my-app/**",
+        "**/__tests__/**",
+      ],
       thresholds: {
         statements: 30,
         branches: 25,
@@ -32,6 +38,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Real package no-op entry (see vitest.config.ts comment).
+      "server-only": path.resolve(__dirname, "./node_modules/server-only/empty.js"),
     },
   },
 });

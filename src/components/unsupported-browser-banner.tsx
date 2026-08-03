@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useViewTransition } from "@/components/view-transition-provider";
-import { X, AlertTriangle } from "lucide-react";
+import { XIcon } from "lucide-animated";
+import { AlertTriangle } from "lucide-react";
 
 const DISMISSED_KEY = "codebuff-vt-banner-dismissed";
 
@@ -65,7 +66,7 @@ export default function UnsupportedBrowserBanner() {
           className="ml-auto shrink-0 p-1 rounded-md text-amber-500 hover:text-amber-700 dark:text-amber-300 dark:hover:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
           aria-label="Dismiss notification"
         >
-          <X className="h-4 w-4" />
+          <XIcon size={16} className="h-4 w-4" />
         </button>
       </div>
     </div>

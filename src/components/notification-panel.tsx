@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, BellRing, X, CheckCheck, FlaskConical, Filter } from "lucide-react";
+import { BellIcon, XIcon, CheckCheckIcon } from "lucide-animated";
+import { BellRing, FlaskConical, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -102,7 +103,7 @@ export function NotificationPanel() {
         {unreadCount > 0 ? (
           <BellRing className="h-5 w-5 animate-pulse" />
         ) : (
-          <Bell className="h-5 w-5" />
+          <BellIcon size={20} className="h-5 w-5" />
         )}
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-950">
@@ -144,7 +145,7 @@ export function NotificationPanel() {
                   onClick={markAllRead}
                   title="Mark all as read"
                 >
-                  <CheckCheck className="h-4 w-4" />
+                  <CheckCheckIcon size={16} className="h-4 w-4" />
                 </Button>
               )}
               <Button
@@ -153,7 +154,7 @@ export function NotificationPanel() {
                 className="h-7 w-7 text-gray-400 hover:text-gray-600"
                 onClick={() => setOpen(false)}
               >
-                <X className="h-4 w-4" />
+                <XIcon size={16} className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -246,7 +247,7 @@ export function NotificationPanel() {
           <div className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px]">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Bell className="h-10 w-10 mb-3 opacity-30" />
+                <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
                 <p className="text-sm font-medium">No notifications yet</p>
                 <p className="text-xs mt-1">Real-time updates will appear here</p>
                 <Button

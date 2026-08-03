@@ -6,29 +6,38 @@ import { useTranslations } from "next-intl";
 import { TransitionLink } from "@/components/transition-link";
 import { cn } from "@/lib/utils";
 import {
+  BellIcon,
+  UsersIcon,
+  FileTextIcon,
+  BoxIcon,
+  SettingsIcon,
+  UsersRoundIcon,
+  PanelLeftOpenIcon,
+  PanelLeftCloseIcon,
+  CreditCardIcon,
+  SparklesIcon,
+  EarthIcon,
+} from "lucide-animated";
+import {
   LayoutDashboard,
   ShoppingCart,
-  Users,
   Package,
   BarChart3,
   Megaphone,
   Tag,
-  FileText,
   ShoppingBag,
-  Box,
-  Settings,
-  Users2,
   ClipboardList,
   UserCircle,
-  ChevronLeft,
-  ChevronRight,
-  Store,
   Shield,
-  Globe,
-  CreditCard,
-  Bell,
-  Sparkles,
+  Share2,
 } from "lucide-react";
+import {
+  OnlineStoreIcon,
+  FacebookBrandIcon,
+  InstagramBrandIcon,
+  TikTokBrandIcon,
+  ShopifyBrandIcon,
+} from "@/components/ui/brand-icons";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { canAccessPage, getRole } from "@/lib/permissions";
@@ -53,38 +62,64 @@ const navItems = [
 ];
 
 const managementItems = [
-  { label: "customers", href: "/customers", icon: Users },
+  { label: "customers", href: "/customers", icon: UsersIcon },
   { label: "products", href: "/products", icon: Package },
-  { label: "inventory", href: "/inventory", icon: Box },
+  { label: "inventory", href: "/inventory", icon: BoxIcon },
   { label: "marketing", href: "/marketing", icon: Megaphone },
+  { label: "affiliates", href: "/affiliates", icon: Share2 },
   { label: "discounts", href: "/discounts", icon: Tag },
 ];
 
 const insightsItems = [
-  { label: "reports", href: "/reports", icon: FileText },
+  { label: "reports", href: "/reports", icon: FileTextIcon },
   { label: "auditLog", href: "/audit-log", icon: ClipboardList },
 ];
 
 const adminItems = [
   { label: "roles", href: "/roles", icon: Shield },
-  { label: "integrations", href: "/integrations", icon: Globe },
+  { label: "integrations", href: "/integrations", icon: EarthIcon },
 ];
 
 const settingsItems = [
-  { label: "team", href: "/team", icon: Users2 },
-  { label: "billing", href: "/billing", icon: CreditCard },
-  { label: "notifications", href: "/notifications", icon: Bell },
-  { label: "settings", href: "/settings", icon: Settings },
+  { label: "team", href: "/team", icon: UsersRoundIcon },
+  { label: "billing", href: "/billing", icon: CreditCardIcon },
+  { label: "notifications", href: "/notifications", icon: BellIcon },
+  { label: "settings", href: "/settings", icon: SettingsIcon },
   { label: "profile", href: "/profile", icon: UserCircle },
 ];
 
 const channelItems = [
-  { name: "onlineStore", href: "/sales?channel=online-store", color: "text-emerald-500" },
-  { name: "facebook", href: "/sales?channel=facebook", color: "text-blue-500" },
-  { name: "facebookShop", href: "/sales?channel=facebook-shop", color: "text-blue-600" },
-  { name: "instagram", href: "/sales?channel=instagram", color: "text-pink-500" },
-  { name: "tiktok", href: "/sales?channel=tiktok", color: "text-rose-500" },
-  { name: "shopify", href: "/sales?channel=shopify", color: "text-green-600" },
+  {
+    name: "onlineStore",
+    href: "/sales?channel=online-store",
+    icon: OnlineStoreIcon,
+    color: "text-emerald-500",
+  },
+  {
+    name: "facebook",
+    href: "/sales?channel=facebook",
+    icon: FacebookBrandIcon,
+    color: "text-blue-500",
+  },
+  {
+    name: "facebookShop",
+    href: "/sales?channel=facebook-shop",
+    icon: FacebookBrandIcon,
+    color: "text-blue-600",
+  },
+  {
+    name: "instagram",
+    href: "/sales?channel=instagram",
+    icon: InstagramBrandIcon,
+    color: "text-pink-500",
+  },
+  { name: "tiktok", href: "/sales?channel=tiktok", icon: TikTokBrandIcon, color: "text-rose-500" },
+  {
+    name: "shopify",
+    href: "/sales?channel=shopify",
+    icon: ShopifyBrandIcon,
+    color: "text-green-600",
+  },
 ];
 
 interface NavSectionProps {
@@ -122,12 +157,12 @@ function NavSection({ title, items, collapsed, locale, t }: NavSectionProps) {
               )}
               title={collapsed ? t(item.label) : undefined}
             >
-              <Icon className="h-[18px] w-[18px] shrink-0" />
+              <Icon size={18} className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && (
                 <>
                   <span className="truncate">{t(item.label)}</span>
                   {item.badge && (
-                    <span className="ml-auto bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-medium px-2 py-0.5 rounded-full">
+                    <span className="ml-auto bg-primary/15 text-primary text-xs font-medium px-2 py-0.5 rounded-full">
                       {item.badge}
                     </span>
                   )}
@@ -172,14 +207,14 @@ export function Sidebar({
         viewTransitionName="nav-logo"
         className="flex items-center gap-3 h-16 px-4 border-b border-gray-200/70 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group"
       >
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/10 shrink-0 group-hover:scale-105 transition-transform">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl avatar-brand shadow-lg shadow-black/10 dark:shadow-black/30 shrink-0 group-hover:scale-105 transition-transform">
           <LayoutDashboard className="h-5 w-5" />
         </div>
         {!collapsed && (
           <div className="flex flex-col">
             <span className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
               {tApp("name")}
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/40 text-[8px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/15 text-[8px] font-bold text-primary uppercase tracking-wider">
                 Pro
               </span>
             </span>
@@ -237,21 +272,24 @@ export function Sidebar({
               {tnav("channels")}
             </p>
             <div className="space-y-0.5">
-              {channelItems.map((channel) => (
-                <Link
-                  key={channel.href}
-                  href={`/${locale}${channel.href}`}
-                  className={cn(
-                    "sidebar-item",
-                    pathname === channel.href
-                      ? "sidebar-item-active text-indigo-600 dark:text-indigo-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
-                  )}
-                >
-                  <Store className={cn("h-[18px] w-[18px] shrink-0", channel.color)} />
-                  <span className="truncate">{tsales(channel.name)}</span>
-                </Link>
-              ))}
+              {channelItems.map((channel) => {
+                const ChannelIcon = channel.icon;
+                return (
+                  <Link
+                    key={channel.href}
+                    href={`/${locale}${channel.href}`}
+                    className={cn(
+                      "sidebar-item",
+                      pathname === channel.href
+                        ? "sidebar-item-active"
+                        : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
+                    )}
+                  >
+                    <ChannelIcon className={cn("h-[18px] w-[18px] shrink-0", channel.color)} />
+                    <span className="truncate">{tsales(channel.name)}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -269,10 +307,10 @@ export function Sidebar({
           )}
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <PanelLeftOpenIcon size={16} className="h-4 w-4" animateOnHover={false} />
           ) : (
             <>
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <PanelLeftCloseIcon size={16} className="h-4 w-4 mr-1" animateOnHover={false} />
               <span className="text-xs">{tcommon("collapse")}</span>
             </>
           )}

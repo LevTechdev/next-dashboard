@@ -129,6 +129,36 @@ vi.mock("framer-motion", () => {
   };
 });
 
+// ── Mock lucide-animated (Proxy: any icon name resolves to an svg stub) ────
+vi.mock("lucide-animated", () => {
+  const React = require("react");
+  const cache: Record<string, any> = {};
+  const makeIcon = (name: string) => {
+    const Icon = ({ className, size: _size, ...props }: any) =>
+      React.createElement("svg", {
+        className,
+        "data-testid": `icon-${name.toLowerCase()}`,
+        ...props,
+      });
+    Icon.displayName = name;
+    return Icon;
+  };
+  return new Proxy({ __esModule: true } as Record<string, any>, {
+    get: (target, prop) => {
+      if (
+        typeof prop !== "string" ||
+        prop === "then" ||
+        prop === "default" ||
+        prop === "__esModule"
+      ) {
+        return (target as any)[prop];
+      }
+      return (cache[prop] ??= makeIcon(prop));
+    },
+    has: () => true,
+  });
+});
+
 // ── Mock lucide-react (all icons across marketing AND dashboard pages) ──────
 vi.mock("lucide-react", () => {
   const React = require("react");
@@ -241,7 +271,27 @@ vi.mock("lucide-react", () => {
         ...props,
       });
   }
-  return icons;
+  // Proxy fallback: icons not in the list above still resolve to a stub,
+  // so newly added icon imports never break the suite.
+  return new Proxy(icons, {
+    get: (target, prop) => {
+      if (
+        typeof prop !== "string" ||
+        prop === "then" ||
+        prop === "default" ||
+        prop === "__esModule"
+      ) {
+        return (target as any)[prop];
+      }
+      return (target[prop] ??= ({ className, ...props }: any) =>
+        React.createElement("svg", {
+          className,
+          "data-testid": `icon-${prop.toLowerCase()}`,
+          ...props,
+        }));
+    },
+    has: () => true,
+  });
 });
 
 // ── Mock @radix-ui/react-slot ──────────────────────────────────────────────
@@ -256,7 +306,11 @@ vi.mock("@radix-ui/react-slot", () => {
     );
   });
   Slot.displayName = "Slot";
-  return { Slot };
+  // Slottable marks where a component's own children render when using Slot.
+  // As a passthrough marker, it simply renders its children.
+  const Slottable = ({ children }: any) => children;
+  Slottable.displayName = "Slottable";
+  return { Slot, Slottable };
 });
 
 // ── Mock class-variance-authority ───────────────────────────────────────────

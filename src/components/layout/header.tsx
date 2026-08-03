@@ -1,20 +1,17 @@
 "use client";
 
 import {
-  Search,
-  Sun,
-  Moon,
-  Monitor,
-  LogOut,
-  User,
-  Settings as SettingsIcon,
-  Menu,
-  Command,
-  Wifi,
-  WifiOff,
-  Loader2,
-  Check,
-} from "lucide-react";
+  WifiIcon,
+  CheckIcon,
+  SearchIcon,
+  SunIcon,
+  MoonIcon,
+  LogoutIcon,
+  UserIcon,
+  SettingsIcon,
+  MenuIcon,
+} from "lucide-animated";
+import { Monitor, Command, WifiOff, Loader2 } from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
@@ -25,6 +22,7 @@ import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useRealtime } from "@/components/realtime-provider";
 import { NotificationPanel } from "@/components/notification-panel";
 import { CommandPalette } from "@/components/command-palette";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,7 +44,7 @@ function RealtimeConnectionBadge() {
 
   const statusConfig = {
     connected: {
-      icon: Wifi,
+      icon: WifiIcon,
       color: "text-emerald-500",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       label: "Connected",
@@ -85,7 +83,7 @@ function RealtimeConnectionBadge() {
         )}
         title={config.label}
       >
-        <Icon className={cn("h-3.5 w-3.5", config.pulse && "animate-spin")} />
+        <Icon size={14} className={cn("h-3.5 w-3.5", config.pulse && "animate-spin")} />
         <span className="hidden lg:inline">{config.label}</span>
       </button>
 
@@ -96,7 +94,10 @@ function RealtimeConnectionBadge() {
           <div className="absolute right-0 top-full mt-2 z-50 w-64 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg">
             <div className="flex items-center gap-3 mb-3">
               <div className={cn("p-2 rounded-full", config.bg)}>
-                <Icon className={cn("h-4 w-4", config.color, config.pulse && "animate-spin")} />
+                <Icon
+                  size={16}
+                  className={cn("h-4 w-4", config.color, config.pulse && "animate-spin")}
+                />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -135,7 +136,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const tnav = useTranslations("nav");
   const tcommon = useTranslations("common");
   const tsettings = useTranslations("settings");
+  const confirm = useConfirm();
 
+  // Intentional one-time mount guard to avoid hydration mismatch.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const initials =
@@ -148,49 +152,59 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const particleColor = mounted && theme === "dark" ? "#818cf8" : "#6366f1";
 
+  // Opens the command palette the same way the ⌘K shortcut would.
+  const openSearch = () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }),
+    );
+  };
+
   return (
-    <header className="sticky top-0 z-30 h-14 lg:h-16 border-b border-gray-200/70 dark:border-gray-800/50 overflow-hidden">
-      {/* Interactive particle background */}
-      <Particles
-        className="absolute inset-0 h-full w-full"
-        quantity={35}
-        size={0.3}
-        staticity={35}
-        ease={60}
-        color={particleColor}
-        vx={0.02}
-        vy={0.02}
-      />
+    <header className="sticky top-0 z-30 h-14 lg:h-16 border-b border-gray-200/70 dark:border-gray-800/50">
+      {/* Interactive particle background (clipped to the bar so it doesn't bleed,
+          while still letting header dropdowns overflow below) */}
+      <div className="absolute inset-0 overflow-hidden">
+        <Particles
+          className="absolute inset-0 h-full w-full"
+          quantity={35}
+          size={0.3}
+          staticity={35}
+          ease={60}
+          color={particleColor}
+          vx={0.02}
+          vy={0.02}
+        />
+      </div>
       <div className="relative flex items-center justify-between h-full px-3 lg:px-6 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl">
         {/* Mobile menu + Logo */}
         <div className="flex items-center gap-2 lg:hidden">
           <button
             onClick={onMenuClick}
             className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 -ml-2"
+            aria-label="Toggle menu"
           >
-            <Menu className="h-5 w-5" />
+            <MenuIcon size={20} className="h-5 w-5" animateOnHover={false} />
           </button>
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Dashboard</span>
+          {/* Compact search trigger for phones (<640px) — the pill is hidden there */}
+          <button
+            onClick={openSearch}
+            className="sm:hidden p-2 ml-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label={tcommon("search")}
+          >
+            <SearchIcon size={18} className="h-[18px] w-[18px]" />
+          </button>
         </div>
 
         {/* Search / Command Palette Trigger */}
-        <div className="flex-1 max-w-md hidden sm:block">
-          <button
-            onClick={() => {
-              document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                  key: "k",
-                  metaKey: true,
-                  bubbles: true,
-                }),
-              );
-            }}
-            className="relative w-full group"
-          >
-            <div className="flex items-center gap-3 h-9 px-3 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl cursor-pointer group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-all duration-200 group-hover:shadow-sm">
-              <Search className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="flex-1 text-left text-sm text-gray-400">{tcommon("search")}</span>
-              <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono text-gray-400 shadow-sm">
+        <div className="flex-1 max-w-[160px] sm:max-w-[220px] md:max-w-md hidden sm:block">
+          <button onClick={openSearch} className="relative w-full group">
+            <div className="flex items-center gap-2 sm:gap-3 h-9 px-3 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl cursor-pointer group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-all duration-200 group-hover:shadow-sm">
+              <SearchIcon size={16} className="h-4 w-4 text-gray-400 shrink-0" />
+              <span className="flex-1 text-left text-sm text-gray-400 truncate">
+                {tcommon("search")}
+              </span>
+              <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono text-gray-400 shadow-sm shrink-0">
                 <Command className="h-3 w-3" />
                 <span>K</span>
               </kbd>
@@ -212,9 +226,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 className="text-gray-500 active:scale-95 transition-transform duration-150 rounded-xl"
               >
                 {mounted && theme === "dark" ? (
-                  <Moon className="h-5 w-5" />
+                  <MoonIcon size={20} className="h-5 w-5" />
                 ) : mounted && theme === "light" ? (
-                  <Sun className="h-5 w-5" />
+                  <SunIcon size={20} className="h-5 w-5" />
                 ) : (
                   <Monitor className="h-5 w-5" />
                 )}
@@ -224,8 +238,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               <DropdownMenuLabel>{tsettings("appearance")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {[
-                { key: "light", icon: Sun, label: tsettings("light") },
-                { key: "dark", icon: Moon, label: tsettings("dark") },
+                { key: "light", icon: SunIcon, label: tsettings("light") },
+                { key: "dark", icon: MoonIcon, label: tsettings("dark") },
                 { key: "system", icon: Monitor, label: tsettings("system") },
               ].map(({ key, icon: Icon, label }) => {
                 const isSelected = mounted && theme === key;
@@ -236,14 +250,17 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                     className={cn(
                       "flex items-center gap-3 cursor-pointer group rounded-lg",
                       isSelected
-                        ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
+                        ? "bg-primary/10 text-primary font-medium"
                         : "text-gray-700 dark:text-gray-300",
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon size={16} className="h-4 w-4 shrink-0" />
                     <span className="flex-1 text-sm">{label}</span>
                     {isSelected ? (
-                      <Check className="h-4 w-4 text-indigo-500 animate-in zoom-in-50 duration-200" />
+                      <CheckIcon
+                        size={16}
+                        className="h-4 w-4 text-primary animate-in zoom-in-50 duration-200"
+                      />
                     ) : (
                       <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
@@ -266,9 +283,12 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2 px-2 rounded-xl">
-                <Avatar className="h-8 w-8 ring-2 ring-gray-200 dark:ring-gray-700 ring-offset-2 ring-offset-transparent">
-                  <AvatarImage src={(user as any)?.picture || ""} />
-                  <AvatarFallback className="text-xs bg-gradient-to-br from-indigo-500 to-indigo-700 text-white">
+                <Avatar className="h-8 w-8 ring-2 ring-primary/30 dark:ring-primary/40 ring-offset-2 ring-offset-transparent">
+                  <AvatarImage
+                    src={user?.avatar || (user as any)?.picture || ""}
+                    alt={user?.name || ""}
+                  />
+                  <AvatarFallback className="text-xs avatar-brand font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -295,7 +315,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   href={`/${pathname.split("/")[1]}/profile`}
                   className="flex items-center cursor-pointer"
                 >
-                  <User className="h-4 w-4 mr-2" /> {tnav("profile")}
+                  <UserIcon size={16} className="h-4 w-4 mr-2" /> {tnav("profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -303,18 +323,24 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   href={`/${pathname.split("/")[1]}/settings`}
                   className="flex items-center cursor-pointer"
                 >
-                  <SettingsIcon className="h-4 w-4 mr-2" /> {tnav("settings")}
+                  <SettingsIcon size={16} className="h-4 w-4 mr-2" /> {tnav("settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={(e) => {
+                onSelect={async (e) => {
                   e.preventDefault();
-                  logout();
+                  const ok = await confirm({
+                    title: tnav("logoutConfirmTitle"),
+                    description: tnav("logoutConfirmDesc"),
+                    confirmLabel: tnav("logout"),
+                    destructive: true,
+                  });
+                  if (ok) logout();
                 }}
                 className="text-red-600 dark:text-red-400 w-full flex items-center cursor-pointer"
               >
-                <LogOut className="h-4 w-4 mr-2" /> {tnav("logout")}
+                <LogoutIcon size={16} className="h-4 w-4 mr-2" /> {tnav("logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

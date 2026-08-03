@@ -1,23 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  Users,
-  Mail,
-  Phone,
-  MapPin,
-  RefreshCw,
-  Download,
-  DollarSign,
-  ShoppingBag,
-  Sparkles,
-  Crown,
-} from "lucide-react";
+  RefreshCwIcon,
+  PlusIcon,
+  SearchIcon,
+  UsersIcon,
+  MapPinIcon,
+  DollarSignIcon,
+  SparklesIcon,
+  PhoneIcon,
+} from "lucide-animated";
+import { Edit2, Trash2, Mail, ShoppingBag, Crown } from "lucide-react";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,11 +49,15 @@ import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { can } from "@/lib/permissions";
 import { downloadCsv } from "@/lib/csv";
 import { DataExportButton } from "@/components/data-export-button";
+import { CsvImportDialog } from "@/components/csv-import-dialog";
 
 export default function CustomersPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
   const { user } = useAuth();
   const tcustomers = useTranslations("customers");
   const tcommon = useTranslations("common");
@@ -89,34 +91,41 @@ export default function CustomersPage() {
   );
 
   const handleSave = async () => {
-    if (editCustomer) {
-      await fetch("/api/customers", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, id: editCustomer.id }),
-      });
-      toast.success(tcustomers("updated"));
-    } else {
-      await fetch("/api/customers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      toast.success(tcustomers("added"));
+    const res = await fetch("/api/customers", {
+      method: editCustomer ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editCustomer ? { ...form, id: editCustomer.id } : form),
+    });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
     }
+    toast.success(editCustomer ? tcustomers("updated") : tcustomers("added"));
     setDialogOpen(false);
     setEditCustomer(null);
     setForm({ name: "", email: "", phone: "", city: "", segment: "REGULAR" });
     refresh();
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(tcustomers("confirmDelete"))) return;
-    await fetch("/api/customers", {
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tcustomers("confirmDelete"),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch("/api/customers", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      toast.error(tcommon("error"));
+      return;
+    }
     toast.success(tcustomers("deleted"));
     refresh();
   };
@@ -207,7 +216,7 @@ export default function CustomersPage() {
                     });
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-2" /> {tcustomers("addCustomer")}
+                  <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tcustomers("addCustomer")}
                 </Button>
               </DialogTrigger>
             )}
@@ -272,7 +281,7 @@ export default function CustomersPage() {
           {
             label: tcustomers("title") || "Total Customers",
             end: totalCustomers,
-            icon: Users,
+            icon: UsersIcon,
             color: "text-blue-600 dark:text-blue-400",
             bg: "bg-blue-50 dark:bg-blue-900/20",
           },
@@ -286,7 +295,7 @@ export default function CustomersPage() {
           {
             label: tcustomers("totalSpent") || "Total Revenue",
             end: totalSpent,
-            icon: DollarSign,
+            icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
             format: (v: number) => formatCurrency(v),
@@ -315,9 +324,9 @@ export default function CustomersPage() {
                       stat.bg,
                     )}
                   >
-                    <stat.icon className={cn("h-5 w-5", stat.color)} />
+                    <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <Sparkles className="h-3 w-3 text-gray-300 dark:text-gray-600" />
+                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -339,7 +348,10 @@ export default function CustomersPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <SearchIcon
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              />
               <Input
                 placeholder={tcustomers("search") || tcommon("search")}
                 className="pl-10"
@@ -354,8 +366,20 @@ export default function CustomersPage() {
               disabled={isRefreshing}
               className="gap-1"
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              <RefreshCwIcon
+                size={14}
+                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+              />
             </Button>
+            {can(role, "create", "customers") && (
+              <CsvImportDialog
+                endpoint="/api/customers/import"
+                columns={["name", "email", "phone", "city", "country", "segment", "notes"]}
+                requiredColumns={["name"]}
+                sampleRow="Jane Doe,jane@example.com,+1 555 0100,Jakarta,Indonesia,VIP,Repeat buyer"
+                onImported={refresh}
+              />
+            )}
             <DataExportButton
               columns={[
                 { key: "name", header: tcustomers("name") },
@@ -407,20 +431,27 @@ export default function CustomersPage() {
               <TableBody>
                 {filtered.map((c: any) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/${locale}/customers/${c.id}`}
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        {c.name}
+                      </Link>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Mail className="h-3 w-3" /> {c.email || "-"}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" /> {c.phone || "-"}
+                          <PhoneIcon size={12} className="h-3 w-3" /> {c.phone || "-"}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> {c.city || "-"}
+                        <MapPinIcon size={12} className="h-3 w-3" /> {c.city || "-"}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -452,7 +483,7 @@ export default function CustomersPage() {
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <UsersIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       {tcustomers("noCustomers")}
                     </TableCell>
                   </TableRow>

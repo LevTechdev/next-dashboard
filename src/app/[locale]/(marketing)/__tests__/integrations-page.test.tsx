@@ -128,10 +128,11 @@ describe("Integrations Overview Page", () => {
     });
 
     it("renders integration stat icons", () => {
+      // Plug/BarChart3 are static lucide-react; ZapIcon/EarthIcon are animated
       const plugIcon = document.querySelector('[data-testid="icon-plug"]');
       const chartIcon = document.querySelector('[data-testid="icon-barchart3"]');
-      const zapIcon = document.querySelector('[data-testid="icon-zap"]');
-      const globeIcon = document.querySelector('[data-testid="icon-globe"]');
+      const zapIcon = document.querySelector('[data-testid="icon-zapicon"]');
+      const globeIcon = document.querySelector('[data-testid="icon-earthicon"]');
       expect(plugIcon).toBeInTheDocument();
       expect(chartIcon).toBeInTheDocument();
       expect(zapIcon).toBeInTheDocument();

@@ -1,14 +1,16 @@
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { dashboardTools } from "@/lib/ai/tools";
+import { createDashboardTools } from "@/lib/ai/tools";
 import { requireAuth } from "@/lib/api-guard";
+import { getTenantId } from "@/lib/tenancy";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const { response } = await requireAuth(req);
+    const { session, response } = await requireAuth(req);
     if (response) return response;
+    const tenantId = getTenantId(session);
 
     const { messages } = await req.json();
 
@@ -36,7 +38,7 @@ When answering:
 - When showing multiple items, present them in a clean, readable way
 
 If the user asks about something outside your capabilities, politely explain what you can help with instead.`,
-      tools: dashboardTools,
+      tools: createDashboardTools(tenantId),
       messages,
     });
 

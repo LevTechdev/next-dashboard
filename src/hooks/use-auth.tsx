@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { installAuthFetch, refreshAccessToken } from "@/lib/client-refresh";
 
 interface User {
   id: string;
@@ -59,6 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const refreshUser = useCallback(async () => {
+    // Ensure the 401→refresh→retry fetch wrapper is active before the first call.
+    installAuthFetch();
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
@@ -76,8 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check auth status on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
+
+  // Proactively rotate the short-lived access token while authenticated so it
+  // stays fresh (well under its 15m lifetime) and 401s stay rare.
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(
+      () => {
+        refreshAccessToken();
+      },
+      12 * 60 * 1000,
+    );
+    return () => clearInterval(id);
+  }, [user]);
 
   const login = useCallback(
     async (email: string, password: string, totpToken?: string) => {

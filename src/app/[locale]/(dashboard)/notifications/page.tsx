@@ -1,32 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useCallback } from "react";
-import {
-  Bell,
-  BellRing,
-  CheckCheck,
-  Trash2,
-  Mail,
-  Settings2,
-  Loader2,
-  AlertTriangle,
-  Clock,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  X,
-  Save,
-  RefreshCw,
-  Inbox,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { BellIcon, CheckCheckIcon, ClockIcon, XIcon, RefreshCwIcon } from "lucide-animated";
+import { BellRing, Trash2, Mail, Loader2, AlertTriangle, Filter, Save, Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -179,27 +163,29 @@ function InboxTab() {
   const [filterRead, setFilterRead] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState("");
-
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filterType !== "all") params.set("type", filterType);
-      if (filterRead === "unread") params.set("read", "false");
-      if (filterRead === "read") params.set("read", "true");
-      params.set("limit", "100");
-      const res = await fetch(`/api/notifications?${params}`);
-      if (res.ok) setData(await res.json());
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [filterType, filterRead]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    let cancelled = false;
+    const params = new URLSearchParams();
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+    if (filterType !== "all") params.set("type", filterType);
+    if (filterRead === "unread") params.set("read", "false");
+    if (filterRead === "read") params.set("read", "true");
+    params.set("limit", "100");
+    fetch(`/api/notifications?${params}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setData(data);
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterType, filterRead, refreshKey]);
 
   const handleMarkRead = async (id: string) => {
     const res = await fetch("/api/notifications", {
@@ -283,9 +269,17 @@ function InboxTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(tnotif("deleteConfirmToast", { count: selectedIds.size }))) return;
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tnotif("deleteConfirmToast", { count: selectedIds.size }),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
     const idsToDelete = Array.from(selectedIds);
     const res = await fetch("/api/notifications/batch", {
       method: "POST",
@@ -402,12 +396,17 @@ function InboxTab() {
             <option value="read">{tnotif("filterRead")}</option>
           </select>
           <div className="flex-1" />
-          <Button variant="ghost" size="sm" onClick={fetchNotifications} title={tcommon("refresh")}>
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRefreshKey((k) => k + 1)}
+            title={tcommon("refresh")}
+          >
+            <RefreshCwIcon size={16} className="h-4 w-4" />
           </Button>
           {data && data.unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="text-xs gap-1">
-              <CheckCheck className="h-4 w-4" /> {tnotif("markAllRead")}
+              <CheckCheckIcon size={16} className="h-4 w-4" /> {tnotif("markAllRead")}
             </Button>
           )}
           {notifications.filter((n) => n.read).length > 0 && (
@@ -449,7 +448,7 @@ function InboxTab() {
                     className="h-7 text-xs"
                     onClick={handleBatchMarkRead}
                   >
-                    <CheckCheck className="h-3 w-3 mr-1" /> {tnotif("markReadBtn")}
+                    <CheckCheckIcon size={12} className="h-3 w-3 mr-1" /> {tnotif("markReadBtn")}
                   </Button>
                   <Button
                     size="sm"
@@ -468,7 +467,7 @@ function InboxTab() {
           {notifications.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
-                <Bell className="h-12 w-12 text-gray-300 mb-4" />
+                <BellIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
                 <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
                   {tnotif("noNotifications")}
                 </h3>
@@ -564,7 +563,7 @@ function InboxTab() {
                             className="p-1 text-gray-400 hover:text-indigo-500 transition-colors"
                             title={tnotif("markAsRead")}
                           >
-                            <CheckCheck className="h-3.5 w-3.5" />
+                            <CheckCheckIcon size={14} className="h-3.5 w-3.5" />
                           </button>
                         )}
                         <button
@@ -572,7 +571,7 @@ function InboxTab() {
                           className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                           title={tnotif("deleteTitle")}
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <XIcon size={14} className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -613,7 +612,7 @@ function Toggle({
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only peer"
         />
-        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
       </label>
     </div>
   );
@@ -630,28 +629,26 @@ function AlertRulesTab() {
   const [localPendingThreshold, setLocalPendingThreshold] = useState(5);
   const [localBudgetPercent, setLocalBudgetPercent] = useState(80);
 
-  const fetchPrefs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications/preferences");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.preferences) {
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/notifications/preferences")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.preferences) {
           setPrefs(data.preferences);
           setLocalLowStock(data.preferences.lowStockThreshold);
           setLocalPendingThreshold(data.preferences.pendingOrderThreshold);
           setLocalBudgetPercent(data.preferences.campaignBudgetPercent);
         }
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    fetchPrefs();
-  }, [fetchPrefs]);
 
   const updatePref = async (field: string, value: boolean | number) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -846,23 +843,21 @@ function EmailPrefsTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const fetchPrefs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications/preferences");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.preferences) setPrefs(data.preferences);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchPrefs();
-  }, [fetchPrefs]);
+    let cancelled = false;
+    fetch("/api/notifications/preferences")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.preferences) setPrefs(data.preferences);
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const updatePref = async (field: string, value: boolean) => {
     const res = await fetch("/api/notifications/preferences", {

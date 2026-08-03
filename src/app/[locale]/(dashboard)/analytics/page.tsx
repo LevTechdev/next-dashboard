@@ -2,15 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  ShoppingCart,
-  DollarSign,
-  Eye,
-  RefreshCw,
-} from "lucide-react";
+  RefreshCwIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  UsersIcon,
+  DollarSignIcon,
+  EyeIcon,
+} from "lucide-animated";
+import { BarChart3, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,7 @@ import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
+import { LinkedPlatformsBadge } from "@/components/linked-platforms-badge";
 
 interface StatData {
   totalRevenue: number;
@@ -44,6 +44,7 @@ interface TopProduct {
   name: string;
   price: number;
   orderCount?: number;
+  linkedCount?: number;
 }
 
 interface AnalyticsData {
@@ -111,7 +112,10 @@ export default function AnalyticsPage() {
             disabled={isRefreshing}
             className="gap-1"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+            <RefreshCwIcon
+              size={14}
+              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
         </div>
@@ -126,7 +130,7 @@ export default function AnalyticsPage() {
             formatter: (v: number) => formatCurrency(v),
             duration: 1600,
             change: "+12.5%",
-            icon: DollarSign,
+            icon: DollarSignIcon,
             color: "text-emerald-500",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
             positive: true,
@@ -146,7 +150,7 @@ export default function AnalyticsPage() {
             endValue: data.stats.totalCustomers,
             duration: 1400,
             change: "+15.2%",
-            icon: Users,
+            icon: UsersIcon,
             color: "text-purple-500",
             bg: "bg-purple-50 dark:bg-purple-900/20",
             positive: true,
@@ -158,7 +162,7 @@ export default function AnalyticsPage() {
             decimals: 1,
             duration: 1200,
             change: "-0.5%",
-            icon: Eye,
+            icon: EyeIcon,
             color: "text-orange-500",
             bg: "bg-orange-50 dark:bg-orange-900/20",
             positive: false,
@@ -168,7 +172,7 @@ export default function AnalyticsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className={cn("p-2 rounded-lg", metric.bg)}>
-                  <metric.icon className={cn("h-5 w-5", metric.color)} />
+                  <metric.icon size={20} className={cn("h-5 w-5", metric.color)} />
                 </div>
                 <span
                   className={cn(
@@ -177,9 +181,9 @@ export default function AnalyticsPage() {
                   )}
                 >
                   {metric.positive ? (
-                    <TrendingUp className="h-3 w-3 mr-0.5" />
+                    <TrendingUpIcon size={12} className="h-3 w-3 mr-0.5" />
                   ) : (
-                    <TrendingDown className="h-3 w-3 mr-0.5" />
+                    <TrendingDownIcon size={12} className="h-3 w-3 mr-0.5" />
                   )}
                   {metric.change}
                 </span>
@@ -223,7 +227,7 @@ export default function AnalyticsPage() {
               <Card key={i}>
                 <CardContent className="p-5 flex items-start gap-4">
                   <div className={cn("p-2 rounded-lg shrink-0", insight.bg)}>
-                    <insight.icon className={cn("h-5 w-5", insight.color)} />
+                    <insight.icon size={20} className={cn("h-5 w-5", insight.color)} />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">{insight.title}</p>
@@ -263,7 +267,14 @@ export default function AnalyticsPage() {
                         {i + 1}
                       </span>
                       <div>
-                        <p className="text-sm font-medium">{p.name}</p>
+                        <p className="text-sm font-medium">
+                          {p.name}
+                          <LinkedPlatformsBadge
+                            productId={p.id}
+                            count={p.linkedCount || 0}
+                            className="ml-1.5"
+                          />
+                        </p>
                         <p className="text-xs text-gray-500">{p.orderCount || 0} orders</p>
                       </div>
                     </div>
@@ -284,14 +295,14 @@ function generateInsights(data: AnalyticsData, tdash: (key: string) => string) {
     {
       title: tdash("revenueChart"),
       description: tdash("growth"),
-      icon: TrendingUp,
+      icon: TrendingUpIcon,
       color: "text-emerald-600",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
     },
     {
       title: tdash("totalCustomers"),
       description: tdash("insights"),
-      icon: Users,
+      icon: UsersIcon,
       color: "text-blue-600",
       bg: "bg-blue-50 dark:bg-blue-900/20",
     },

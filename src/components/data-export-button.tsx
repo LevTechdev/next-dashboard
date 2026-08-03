@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ComponentType } from "react";
+import { XIcon, DownloadIcon, ChevronDownIcon, FileTextIcon } from "lucide-animated";
 import {
-  Download,
   FileSpreadsheet,
-  FileText,
   ClipboardCopy,
   Printer,
-  ChevronDown,
   FileDown,
   CheckCircle2,
   Table2,
   Columns3,
-  X,
 } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,7 +64,7 @@ interface FormatOption {
   format: ExportFormat;
   label: string;
   description: string;
-  icon: typeof FileSpreadsheet;
+  icon: ComponentType<{ className?: string; size?: number }>;
   color: string;
   bgColor: string;
 }
@@ -76,7 +74,7 @@ const FORMATS: FormatOption[] = [
     format: "csv",
     label: "Export CSV",
     description: "Comma-separated values — opens in Excel",
-    icon: FileText,
+    icon: FileTextIcon,
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
   },
@@ -212,7 +210,10 @@ export function DataExportButton<T = any>({
               {successFormat ? "Exported!" : label || "Export"}
             </span>
             {!successFormat && (
-              <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+              <ChevronDownIcon
+                size={12}
+                className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity"
+              />
             )}
           </Button>
         </DropdownMenuTrigger>
@@ -231,7 +232,7 @@ export function DataExportButton<T = any>({
               className="group/item cursor-pointer"
             >
               <div className={cn("p-1.5 rounded-md mr-3", format.bgColor)}>
-                <format.icon className={cn("h-4 w-4", format.color)} />
+                <format.icon size={16} className={cn("h-4 w-4", format.color)} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{format.label}</p>
@@ -320,7 +321,7 @@ export function DataExportButton<T = any>({
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" size="sm" onClick={resetColumns} className="text-xs">
-              <X className="h-3 w-3 mr-1" />
+              <XIcon size={12} className="h-3 w-3 mr-1" />
               Reset
             </Button>
             <div className="flex gap-2">
@@ -333,7 +334,7 @@ export function DataExportButton<T = any>({
                 disabled={selectedColumns.length === 0}
                 className="gap-1.5"
               >
-                <Download className="h-4 w-4" />
+                <DownloadIcon size={16} className="h-4 w-4" />
                 Export ({selectedColumns.length} columns)
               </Button>
             </div>

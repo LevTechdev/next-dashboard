@@ -1,7 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import {
+  CheckIcon,
+  XIcon,
+  CheckCheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  CopyIcon,
+  MailCheckIcon,
+  ShieldCheckIcon,
+} from "lucide-animated";
 import {
   UserCircle,
   Camera,
@@ -9,22 +19,16 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Check,
-  X,
-  Eye,
-  EyeOff,
   Shield,
-  ShieldCheck,
   ShieldOff,
   Smartphone,
   Mail,
-  MailCheck,
-  Copy,
-  CheckCheck,
 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -35,6 +39,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
+import { SecuritySettings } from "@/components/security-settings";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +54,7 @@ interface ProfileData {
   avatar: string | null;
   role: string;
   totpEnabled: boolean;
+  totpVerifiedAt: string | null;
   emailVerified: string | null;
   createdAt: string;
 }
@@ -55,7 +63,7 @@ export default function ProfilePage() {
   const tprofile = useTranslations("profile");
   const tsettings = useTranslations("settings");
   const tcommon = useTranslations("common");
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +72,7 @@ export default function ProfilePage() {
 
   // Profile form
   const [form, setForm] = useState({ name: "", email: "", phone: "", position: "" });
-  const [hasChanges, setHasChanges] = useState(false);
+  // hasChanges is derived via useMemo below
 
   // Password form
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
@@ -82,6 +90,8 @@ export default function ProfilePage() {
 
   // Avatar
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
 
   // 2FA
   const [twoFADialogOpen, setTwoFADialogOpen] = useState(false);
@@ -137,15 +147,15 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // Track form changes
-  useEffect(() => {
-    if (!profile) return;
-    const changed =
+  // Track form changes (derived state)
+  const hasChanges = useMemo(() => {
+    if (!profile) return false;
+    return (
       form.name !== (profile.name || "") ||
       form.email !== (profile.email || "") ||
       form.phone !== (profile.phone || "") ||
-      form.position !== (profile.position || "");
-    setHasChanges(changed);
+      form.position !== (profile.position || "")
+    );
   }, [form, profile]);
 
   const initials =
@@ -170,7 +180,6 @@ export default function ProfilePage() {
       }
       const updated = await res.json();
       setProfile((prev) => (prev ? { ...prev, ...updated } : null));
-      setHasChanges(false);
       toast.success(tprofile("saved"));
       // await updateSession(); // Refresh via context or page reload
     } catch (err: any) {
@@ -180,7 +189,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -192,40 +201,55 @@ export default function ProfilePage() {
       return;
     }
 
+    // Read the file, then open the crop dialog — the photo is only uploaded
+    // after the user confirms the crop.
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+      setCropDialogOpen(true);
+    };
+    reader.onerror = () => toast.error(tprofile("failedReadImage"));
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarCropSave = async (croppedDataUrl: string): Promise<boolean> => {
     setAvatarUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const res = await fetch("/api/profile/avatar", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ avatar: base64 }),
-        });
-        if (!res.ok) throw new Error(tprofile("failedUploadAvatar"));
-        const updated = await res.json();
-        setProfile((prev) => (prev ? { ...prev, avatar: updated.avatar } : null));
-        toast.success(tprofile("photoUpdated"));
-        // await updateSession();
-      };
-      reader.onerror = () => toast.error(tprofile("failedReadImage"));
-      reader.readAsDataURL(file);
+      const res = await fetch("/api/profile/avatar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar: croppedDataUrl }),
+      });
+      if (!res.ok) throw new Error(tprofile("failedUploadAvatar"));
+      const updated = await res.json();
+      setProfile((prev) => (prev ? { ...prev, avatar: updated.avatar } : null));
+      updateUser({ avatar: updated.avatar });
+      toast.success(tprofile("photoUpdated"));
+      return true;
     } catch (err: any) {
       toast.error(err.message);
+      return false;
     } finally {
       setAvatarUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  const confirm = useConfirm();
+
   const handleRemoveAvatar = async () => {
-    if (!confirm(tprofile("removePhotoConfirm"))) return;
+    const ok = await confirm({
+      description: tprofile("removePhotoConfirm"),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/profile/avatar", { method: "DELETE" });
       if (!res.ok) throw new Error(tprofile("failedRemoveAvatar"));
       setProfile((prev) => (prev ? { ...prev, avatar: null } : null));
+      updateUser({ avatar: null });
       toast.success(tprofile("photoRemoved"));
-      // await updateSession();
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -240,7 +264,7 @@ export default function ProfilePage() {
       toast.error(tprofile("passwordsDontMatch"));
       return;
     }
-    if (passwordForm.new.length < 6) {
+    if (passwordForm.new.length < 8) {
       toast.error(tprofile("passwordMinLength"));
       return;
     }
@@ -251,6 +275,16 @@ export default function ProfilePage() {
 
     setChangingPassword(true);
     try {
+      // Step-up: re-authenticate with the current password before this
+      // sensitive action (unlocks a short-lived step-up cookie server-side).
+      const stepUp = await fetch("/api/auth/step-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purpose: "change_password", password: passwordForm.current }),
+      });
+      if (!stepUp.ok) {
+        throw new Error(tprofile("currentPasswordWrong"));
+      }
       const res = await fetch("/api/profile/password", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -340,7 +374,9 @@ export default function ProfilePage() {
 
       toast.success(tprofile("twoFAEnabledToast"));
       setTwoFADialogOpen(false);
-      setProfile((prev) => (prev ? { ...prev, totpEnabled: true } : null));
+      setProfile((prev) =>
+        prev ? { ...prev, totpEnabled: true, totpVerifiedAt: new Date().toISOString() } : null,
+      );
       setQrCode("");
       setTotpSecret("");
       setTotpCode("");
@@ -373,7 +409,7 @@ export default function ProfilePage() {
       toast.success(tprofile("twoFADisabledToast"));
       setDisable2FADialog(false);
       setDisablePassword("");
-      setProfile((prev) => (prev ? { ...prev, totpEnabled: false } : null));
+      setProfile((prev) => (prev ? { ...prev, totpEnabled: false, totpVerifiedAt: null } : null));
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -431,15 +467,28 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Avatar Card */}
-        <Card className="lg:sticky lg:top-24 h-fit">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="relative mb-4 group">
-              <Avatar className="h-28 w-28 ring-2 ring-gray-200 dark:ring-gray-700">
+        <Card className="lg:sticky lg:top-24 h-fit overflow-hidden">
+          {/* Cover banner — brand-tinted image background */}
+          <div className="relative h-28">
+            <div className="absolute inset-0 avatar-brand" />
+            <div
+              className="absolute inset-0 opacity-[0.18] [background-size:16px_16px]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 0)",
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/15 to-transparent" />
+          </div>
+          <CardContent className="p-6 pt-0 flex flex-col items-center text-center">
+            <div className="relative -mt-14 mb-4 group">
+              <Avatar className="h-28 w-28 ring-4 ring-white dark:ring-gray-900 shadow-xl">
                 <AvatarImage
-                  src={profile?.avatar || (user as any)?.picture || ""}
+                  src={profile?.avatar || user?.avatar || (user as any)?.picture || ""}
+                  alt={profile?.name || ""}
                   className="object-cover"
                 />
-                <AvatarFallback className="text-3xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                <AvatarFallback className="text-3xl avatar-brand font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -477,7 +526,7 @@ export default function ProfilePage() {
                 onClick={handleRemoveAvatar}
                 className="mt-2 text-xs text-gray-400 hover:text-red-500"
               >
-                <X className="h-3 w-3 mr-1" /> {tprofile("removePhoto")}
+                <XIcon size={12} className="h-3 w-3 mr-1" /> {tprofile("removePhoto")}
               </Button>
             )}
 
@@ -503,7 +552,7 @@ export default function ProfilePage() {
                 >
                   {profile?.emailVerified ? (
                     <>
-                      <MailCheck className="h-3.5 w-3.5" /> {tprofile("verified")}
+                      <MailCheckIcon size={14} className="h-3.5 w-3.5" /> {tprofile("verified")}
                     </>
                   ) : (
                     <>
@@ -521,7 +570,7 @@ export default function ProfilePage() {
                 >
                   {profile?.totpEnabled ? (
                     <>
-                      <ShieldCheck className="h-3.5 w-3.5" /> {tprofile("enabled")}
+                      <ShieldCheckIcon size={14} className="h-3.5 w-3.5" /> {tprofile("enabled")}
                     </>
                   ) : (
                     <>
@@ -635,7 +684,7 @@ export default function ProfilePage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 {profile?.emailVerified ? (
-                  <MailCheck className="h-5 w-5 text-green-600" />
+                  <MailCheckIcon size={20} className="h-5 w-5 text-green-600" />
                 ) : (
                   <Mail className="h-5 w-5" />
                 )}
@@ -645,7 +694,7 @@ export default function ProfilePage() {
             <CardContent>
               {profile?.emailVerified ? (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
-                  <Check className="h-5 w-5 text-green-600 shrink-0" />
+                  <CheckIcon size={20} className="h-5 w-5 text-green-600 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-green-800 dark:text-green-300">
                       {tprofile("emailVerified")}
@@ -686,9 +735,9 @@ export default function ProfilePage() {
                           onClick={() => copyToClipboard(verificationUrl)}
                         >
                           {copied ? (
-                            <CheckCheck className="h-4 w-4 text-green-600" />
+                            <CheckCheckIcon size={16} className="h-4 w-4 text-green-600" />
                           ) : (
-                            <Copy className="h-4 w-4" />
+                            <CopyIcon size={16} className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
@@ -719,26 +768,49 @@ export default function ProfilePage() {
           {/* Two-Factor Authentication */}
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
-                {profile?.totpEnabled ? (
-                  <ShieldCheck className="h-5 w-5 text-green-600" />
-                ) : (
-                  <Shield className="h-5 w-5" />
-                )}
-                <CardTitle>{tprofile("twoFATitle")}</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {profile?.totpEnabled ? (
+                    <ShieldCheckIcon size={20} className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Shield className="h-5 w-5" />
+                  )}
+                  <CardTitle>{tprofile("twoFATitle")}</CardTitle>
+                </div>
+                {/* Toggle reflects current 2FA state — auto-ON when active.
+                    Turning on starts setup; turning off opens the disable dialog. */}
+                <Switch
+                  checked={!!profile?.totpEnabled}
+                  disabled={settingUp2FA}
+                  onCheckedChange={(next) => {
+                    if (next) handleSetup2FA();
+                    else setDisable2FADialog(true);
+                  }}
+                  aria-label={tprofile("twoFATitle")}
+                />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {profile?.totpEnabled ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
-                    <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                        {tprofile("twoFAActive")}
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-400">
-                        {tprofile("twoFAActiveDesc")}
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
+                    <ShieldCheckIcon size={20} className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                          {tprofile("twoFAActive")}
+                        </p>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[11px] font-semibold">
+                          <CheckCheckIcon size={12} className="h-3 w-3" />
+                          {tprofile("verified")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                        {profile?.totpVerifiedAt
+                          ? tprofile("verifiedOn", {
+                              date: new Date(profile.totpVerifiedAt).toLocaleDateString(),
+                            })
+                          : tprofile("twoFAActiveDesc")}
                       </p>
                     </div>
                   </div>
@@ -801,9 +873,9 @@ export default function ProfilePage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPasswords.current ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOffIcon size={16} className="h-4 w-4" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <EyeIcon size={16} className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -830,9 +902,9 @@ export default function ProfilePage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPasswords.new ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOffIcon size={16} className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <EyeIcon size={16} className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -864,9 +936,9 @@ export default function ProfilePage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPasswords.confirm ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOffIcon size={16} className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <EyeIcon size={16} className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -875,7 +947,7 @@ export default function ProfilePage() {
                   )}
                   {passwordForm.confirm && passwordForm.new === passwordForm.confirm && (
                     <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                      <Check className="h-3 w-3" /> {tprofile("passwordsMatch")}
+                      <CheckIcon size={12} className="h-3 w-3" /> {tprofile("passwordsMatch")}
                     </p>
                   )}
                 </div>
@@ -905,6 +977,9 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Security: sessions, backup codes, activity */}
+          <SecuritySettings />
+
           {/* Danger Zone - Delete Account */}
           <Card className="border-red-200 dark:border-red-900/50">
             <CardHeader>
@@ -926,6 +1001,18 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      {/* Avatar Crop Dialog (keyed by image so each new photo starts with a fresh crop/zoom) */}
+      <AvatarCropDialog
+        key={cropImageSrc || "closed"}
+        open={cropDialogOpen}
+        imageSrc={cropImageSrc || ""}
+        onOpenChange={(open) => {
+          setCropDialogOpen(open);
+          if (!open) setCropImageSrc(null);
+        }}
+        onSave={handleAvatarCropSave}
+      />
 
       {/* 2FA Setup Dialog */}
       <Dialog
@@ -977,7 +1064,8 @@ export default function ProfilePage() {
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <Copy className="h-4 w-4" />
+                    {" "}
+                    <CopyIcon size={16} className="h-4 w-4" />
                   </button>
                 </div>
               </div>

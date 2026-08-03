@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { CheckIcon, XIcon } from "lucide-animated";
 import {
   Eye,
   EyeOff,
@@ -13,8 +14,6 @@ import {
   User,
   LayoutDashboard,
   Sparkles,
-  Check,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -248,9 +247,11 @@ export default function RegisterPage() {
                 {/* Password Strength Bar */}
                 {password.length > 0 && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="space-y-2 pt-1"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    layout
+                    className="space-y-2 pt-1 overflow-hidden"
                   >
                     <div className="flex gap-1">
                       {[1, 2, 3].map((level) => (
@@ -270,9 +271,9 @@ export default function RegisterPage() {
                     <div className="grid grid-cols-2 gap-1.5">
                       <div className="flex items-center gap-1.5">
                         {hasMinChars ? (
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                          <CheckIcon size={12} className="h-3 w-3 text-green-500 flex-shrink-0" />
                         ) : (
-                          <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+                          <XIcon size={12} className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
                         <span
                           className={cn(
@@ -285,9 +286,9 @@ export default function RegisterPage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         {hasUpper ? (
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                          <CheckIcon size={12} className="h-3 w-3 text-green-500 flex-shrink-0" />
                         ) : (
-                          <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+                          <XIcon size={12} className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
                         <span
                           className={cn(
@@ -300,9 +301,9 @@ export default function RegisterPage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         {hasNumber ? (
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                          <CheckIcon size={12} className="h-3 w-3 text-green-500 flex-shrink-0" />
                         ) : (
-                          <X className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+                          <XIcon size={12} className="h-3 w-3 text-zinc-400 flex-shrink-0" />
                         )}
                         <span
                           className={cn(
@@ -356,7 +357,7 @@ export default function RegisterPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-xs text-red-500 flex items-center gap-1"
                   >
-                    <X className="h-3 w-3" /> Passwords do not match
+                    <XIcon size={12} className="h-3 w-3" /> Passwords do not match
                   </motion.p>
                 )}
                 {confirmPassword && password === confirmPassword && password.length > 0 && (
@@ -365,7 +366,7 @@ export default function RegisterPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-xs text-green-500 flex items-center gap-1"
                   >
-                    <Check className="h-3 w-3" /> Passwords match
+                    <CheckIcon size={12} className="h-3 w-3" /> Passwords match
                   </motion.p>
                 )}
               </motion.div>
