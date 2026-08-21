@@ -63,7 +63,7 @@ export async function PUT(req: Request) {
   const token = getTokenFromRequest(req) || getTokenFromCookie(req);
   if (token) await revokeOtherSessions(user.id, token);
 
-  await logSecurityEvent({ userId: user.id, type: "PASSWORD_CHANGE", req });
+  await logSecurityEvent({ userId: user.id, type: "PASSWORD_CHANGE", req, tenantId: user.tenantId });
 
   return NextResponse.json({ success: true, message: "Password changed successfully" });
 }

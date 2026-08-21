@@ -21,6 +21,10 @@ model User {
   emailVerified  DateTime?
   verificationToken String?
   verificationTokenExpires DateTime?
+  // Email-OTP identity verification (6-digit code, hashed at rest)
+  emailOtpHash     String?
+  emailOtpExpires  DateTime?
+  emailOtpAttempts Int      @default(0)
   isActive       Boolean  @default(true)
   // ── Security hardening (Phase 1) ──
   passwordAlgo      String   @default("bcrypt") // "bcrypt" (legacy) | "argon2id"
@@ -61,6 +65,9 @@ model Tenant {
   discounts Discount[]
   campaigns Campaign[]
   ssoConnection SsoConnection?
+  securityEvents SecurityEvent[]
+  activityLogs    ActivityLog[]
+  auditLogs       AuditLog[]
 
   @@index([slug])
 }
@@ -164,9 +171,12 @@ model SecurityEvent {
   hash      String?  // sha256(prevHash + canonical(event)) — see lib/audit-chain
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
 
   @@index([userId, createdAt])
   @@index([seq])
+  @@index([tenantId])
 }
 
 model Customer {
@@ -256,6 +266,13 @@ model Order {
   paymentStatus   String   @default("UNPAID") // UNPAID, PAID, REFUNDED
   shippingAddress String?
   notes           String?
+  // Fulfillment tracking
+  trackingNumber  String?
+  carrier         String?
+  processingAt    DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  refundedAt      DateTime?
   tenantId        String?
   tenant          Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt       DateTime @default(now())
@@ -345,7 +362,11 @@ model ActivityLog {
   entity    String?
   entityId  String?
   details   String?
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model AuditLog {
@@ -357,7 +378,11 @@ model AuditLog {
   entityId  String?
   details   String?
   ipAddress String?
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model RoleSetting {
@@ -439,6 +464,8 @@ model Plan {
   isActive    Boolean  @default(true)
   popular     Boolean  @default(false)
   sortOrder   Int      @default(0)
+  stripePriceId      String? // Stripe recurring Price ID (monthly) — paid plans only
+  stripeYearlyPriceId String? // Stripe recurring Price ID (yearly), optional
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -541,10 +568,14 @@ model Subscription {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   planId          String
   plan            Plan     @relation(fields: [planId], references: [id])
-  status          String   @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING
+  status          String   @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE
   currentPeriodStart DateTime @default(now())
   currentPeriodEnd   DateTime
   cancelAtPeriodEnd Boolean  @default(false)
+  stripeCustomerId     String? // Stripe Customer ID for the workspace
+  stripeSubscriptionId String? // Stripe Subscription ID (once checkout completes)
+  gateway              String   @default("stripe") // stripe | midtrans — payment provider used to bill this subscription
+  midtransOrderId      String?  // Midtrans Snap order_id for the current (pending/paid) transaction
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   invoices        Invoice[]

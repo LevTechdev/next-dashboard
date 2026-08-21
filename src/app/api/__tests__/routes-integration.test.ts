@@ -82,6 +82,7 @@ const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = v
       auditLog: deepModel({}),
       campaign: deepModel({}),
       discount: deepModel({}),
+      tenant: deepModel({}),
     },
   };
 });

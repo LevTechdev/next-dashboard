@@ -31,7 +31,14 @@ interface AuthContextType {
     name: string,
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    /** True when an email OTP was issued and must be entered to verify. */
+    emailOtpRequired?: boolean;
+    /** Dev-only fallback: the raw 6-digit code (never present in production). */
+    devOtp?: string;
+  }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -150,7 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         router.refresh();
-        return { success: true };
+        return {
+          success: true,
+          emailOtpRequired: data.emailOtpRequired === true,
+          devOtp: typeof data.devOtp === "string" ? data.devOtp : undefined,
+        };
       } catch (err: any) {
         return { success: false, error: "Network error. Please try again." };
       }

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     },
   });
 
-  await logSecurityEvent({ userId: user.id, type: "TOTP_ENABLED", req });
+  await logSecurityEvent({ userId: user.id, type: "TOTP_ENABLED", req, tenantId: user.tenantId });
 
   return NextResponse.json({ success: true });
 }

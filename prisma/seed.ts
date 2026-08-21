@@ -1,5 +1,6 @@
 import { PrismaClient, type Product, type Customer, type SalesChannel } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
 
 const prisma = new PrismaClient();
 
@@ -21,21 +22,173 @@ async function main() {
   await prisma.salesChannel.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create Users
+  // Re-chain the SecurityEvent tamper-evident hash chain. user.deleteMany()
+  // NULLs userId on every event whose user was wiped (onDelete: SetNull), and
+  // since userId is part of the canonical hash payload (src/lib/audit-hash.ts),
+  // the stored hashes stop verifying. Recompute prevHash + hash for every
+  // remaining event so a fresh seed always leaves the chain intact — this is
+  // what keeps CI's post-E2E chain check and GET /api/security/audit/verify
+  // green after any re-seed (idempotent: rows that already match are skipped).
+  {
+    const securityEvents = await prisma.securityEvent.findMany({
+      orderBy: { seq: "asc" },
+    });
+    let prevHash = GENESIS_HASH;
+    let rechained = 0;
+    for (const e of securityEvents) {
+      const hash = computeHash(prevHash, e);
+      if (e.hash !== hash || (e.prevHash ?? GENESIS_HASH) !== prevHash) {
+        await prisma.securityEvent.update({
+          where: { id: e.id },
+          data: { prevHash, hash },
+        });
+        rechained++;
+      }
+      prevHash = hash;
+    }
+    if (rechained > 0) {
+      console.log(`🔗 SecurityEvent chain re-chained (${rechained} rows)`);
+    }
+  }
+
+  // Default tenant — matches scripts/backfill-tenant.mjs + the register route
+  // (both resolve the "default" workspace). Without this row, tenant-scoped
+  // API routes (e.g. /api/auth/saml/connections) fail with "No tenant context"
+  // on any fresh database (CI, act, new dev machines).
+  const defaultTenant = await prisma.tenant.upsert({
+    where: { slug: "default" },
+    update: {},
+    create: { name: "Default Workspace", slug: "default" },
+  });
+
+  // Create Users (assigned to the default tenant, same as registration)
   const adminPassword = await hash("admin123", 10);
   const staffPassword = await hash("staff123", 10);
 
   const admin = await prisma.user.create({
-    data: { name: "Admin", email: "admin@dashboard.com", password: adminPassword, role: "ADMIN", position: "System Administrator", emailVerified: new Date() },
+    data: { name: "Admin", email: "admin@dashboard.com", password: adminPassword, role: "ADMIN", position: "System Administrator", emailVerified: new Date(), tenantId: defaultTenant.id },
   });
   const manager = await prisma.user.create({
-    data: { name: "Sarah Johnson", email: "sarah@dashboard.com", password: staffPassword, role: "MANAGER", position: "Sales Manager" },
+    data: { name: "Sarah Johnson", email: "sarah@dashboard.com", password: staffPassword, role: "MANAGER", position: "Sales Manager", tenantId: defaultTenant.id },
   });
   const staff = await prisma.user.create({
-    data: { name: "Mike Wilson", email: "mike@dashboard.com", password: staffPassword, role: "STAFF", position: "Sales Staff" },
+    data: { name: "Mike Wilson", email: "mike@dashboard.com", password: staffPassword, role: "STAFF", position: "Sales Staff", tenantId: defaultTenant.id },
   });
 
-  console.log("✅ Users created");
+  console.log("✅ Users created (default tenant: ", defaultTenant.slug, ")");
+
+  // Create Plans (Free/Pro/Enterprise) — stripePriceId is wired from env so a
+  // production deploy can point at real Stripe prices. The Free plan is $0 and
+  // is never routed through Stripe Checkout.
+  const planData = [
+    {
+      name: "Free",
+      description: "For personal use and small startups",
+      price: 0,
+      yearlyPrice: null,
+      interval: "MONTHLY",
+      features: ["Up to 100 orders/month", "1 team member", "Email support"],
+      maxOrders: 100,
+      maxTeamMembers: 1,
+      hasAnalytics: false,
+      hasReports: false,
+      hasMultiChannel: false,
+      hasApiAccess: false,
+      hasRoleBasedAccess: false,
+      supportLevel: "email",
+      popular: false,
+      sortOrder: 0,
+      stripePriceId: null,
+    },
+    {
+      name: "Pro",
+      description: "Best for growing businesses with multiple channels",
+      price: 29,
+      yearlyPrice: 290,
+      interval: "MONTHLY",
+      features: [
+        "Up to 1,000 orders/month",
+        "10 team members",
+        "Advanced analytics",
+        "Reports & insights",
+        "Multi-channel sales",
+        "API access",
+        "Priority support",
+      ],
+      maxOrders: 1000,
+      maxTeamMembers: 10,
+      hasAnalytics: true,
+      hasReports: true,
+      hasMultiChannel: true,
+      hasApiAccess: true,
+      hasRoleBasedAccess: true,
+      supportLevel: "priority",
+      popular: true,
+      sortOrder: 1,
+      stripePriceId: process.env.STRIPE_PRICE_PRO ?? null,
+    },
+    {
+      name: "Enterprise",
+      description: "For large organizations with advanced needs",
+      price: 99,
+      yearlyPrice: 990,
+      interval: "MONTHLY",
+      features: [
+        "Unlimited orders",
+        "Unlimited team members",
+        "Role-based access",
+        "Dedicated support",
+        "Everything in Pro",
+      ],
+      maxOrders: null,
+      maxTeamMembers: null,
+      hasAnalytics: true,
+      hasReports: true,
+      hasMultiChannel: true,
+      hasApiAccess: true,
+      hasRoleBasedAccess: true,
+      supportLevel: "dedicated",
+      popular: false,
+      sortOrder: 2,
+      stripePriceId: process.env.STRIPE_PRICE_ENTERPRISE ?? null,
+    },
+  ];
+
+  for (const p of planData) {
+    await prisma.plan.upsert({
+      where: { name: p.name },
+      update: p,
+      create: p,
+    });
+  }
+  console.log("✅ Plans created (Free/Pro/Enterprise)");
+
+  // Seed the admin on the Free plan so the billing page shows plan gating
+  // immediately instead of "No Active Plan".
+  const freePlan = await prisma.plan.findUnique({ where: { name: "Free" } });
+  if (freePlan) {
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    await prisma.subscription.upsert({
+      where: { userId: admin.id },
+      update: {
+        planId: freePlan.id,
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      },
+      create: {
+        userId: admin.id,
+        planId: freePlan.id,
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+      },
+    });
+    console.log("✅ Admin seeded on Free plan");
+  }
 
   // Create Sales Channels
   const channelData = [
@@ -53,13 +206,14 @@ async function main() {
   }
   console.log("✅ Sales channels created");
 
-  // Create Product Categories
+  // Create Product Categories (assigned to the default tenant so the
+  // tenant-scoped product/category queries can see them)
   const categories = await Promise.all([
-    prisma.productCategory.create({ data: { name: "Electronics", slug: "electronics" } }),
-    prisma.productCategory.create({ data: { name: "Clothing", slug: "clothing" } }),
-    prisma.productCategory.create({ data: { name: "Home & Living", slug: "home-living" } }),
-    prisma.productCategory.create({ data: { name: "Accessories", slug: "accessories" } }),
-    prisma.productCategory.create({ data: { name: "Sports", slug: "sports" } }),
+    prisma.productCategory.create({ data: { name: "Electronics", slug: "electronics", tenantId: defaultTenant.id } }),
+    prisma.productCategory.create({ data: { name: "Clothing", slug: "clothing", tenantId: defaultTenant.id } }),
+    prisma.productCategory.create({ data: { name: "Home & Living", slug: "home-living", tenantId: defaultTenant.id } }),
+    prisma.productCategory.create({ data: { name: "Accessories", slug: "accessories", tenantId: defaultTenant.id } }),
+    prisma.productCategory.create({ data: { name: "Sports", slug: "sports", tenantId: defaultTenant.id } }),
   ]);
   console.log("✅ Categories created");
 
@@ -90,6 +244,7 @@ async function main() {
         stock: p.stock,
         sku: p.sku,
         categoryId: categories[p.category].id,
+        tenantId: defaultTenant.id,
       },
     });
     products.push(product);
@@ -117,70 +272,151 @@ async function main() {
         data: {
           ...c,
           lastOrderDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+          tenantId: defaultTenant.id,
         },
       })
     );
   }
   console.log("✅ Customers created");
 
-  // Create Orders with items
-  const statuses = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
-  const paymentStatuses = ["PAID", "UNPAID", "REFUNDED"];
+  // Create Orders with items — spread across the last 12 months so the
+  // dashboard revenue chart and the sales pages look alive. Order counts ramp
+  // up toward the present (gently growing revenue curve across all 12 bars),
+  // and statuses are weighted by order age: fresh orders are in-flight
+  // (PENDING/PROCESSING), older ones are mostly DELIVERED, and a steady ~5%
+  // are CANCELLED — so the sales page status filter has a real mix.
+  const MONTHS = 12;
+  const now = new Date();
+
+  // Per-month order counts: ~15-20 twelve months ago → ~40 this month (+jitter).
+  const monthCounts = Array.from({ length: MONTHS }, (_, i) => {
+    const base = 15 + Math.round((i / (MONTHS - 1)) * 25);
+    return base + Math.floor(Math.random() * 8);
+  });
+
+  const pick = <T,>(arr: readonly T[]): T =>
+    arr[Math.floor(Math.random() * arr.length)];
+
+  /** First day of `count` months back from today. */
+  const monthsAgo = (count: number): Date => {
+    const d = new Date(now);
+    d.setDate(1);
+    d.setMonth(d.getMonth() - count);
+    return d;
+  };
+
+  /** Status weighted by order age (days). */
+  const statusForAge = (ageDays: number): string => {
+    const roll = Math.random();
+    if (ageDays < 7) {
+      if (roll < 0.4) return "PENDING";
+      if (roll < 0.75) return "PROCESSING";
+      if (roll < 0.9) return "SHIPPED";
+      return "DELIVERED";
+    }
+    if (ageDays < 30) {
+      if (roll < 0.15) return "PROCESSING";
+      if (roll < 0.55) return "SHIPPED";
+      if (roll < 0.93) return "DELIVERED";
+      return "CANCELLED";
+    }
+    if (roll < 0.85) return "DELIVERED";
+    if (roll < 0.95) return "CANCELLED";
+    return "SHIPPED";
+  };
+
+  let orderSeq = 1000;
+
   const paymentMethods = ["CREDIT_CARD", "BANK_TRANSFER", "E_WALLET", "COD"];
 
-  for (let i = 0; i < 25; i++) {
-    const customer = customers[Math.floor(Math.random() * customers.length)];
-    const channel = channels[Object.keys(channels)[Math.floor(Math.random() * Object.keys(channels).length)]];
-    const numItems = Math.floor(Math.random() * 3) + 1;
-    const items = [];
-    let totalAmount = 0;
+  for (let m = 0; m < MONTHS; m++) {
+    const monthStart = monthsAgo(MONTHS - 1 - m);
+    const daysInMonth = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth() + 1,
+      0,
+    ).getDate();
+    // Clamp the current month to today so no order is future-dated.
+    const maxDay = m === MONTHS - 1 ? now.getDate() : daysInMonth;
 
-    for (let j = 0; j < numItems; j++) {
-      const product = products[Math.floor(Math.random() * products.length)];
-      const qty = Math.floor(Math.random() * 3) + 1;
-      const total = product.price * qty;
-      totalAmount += total;
-      items.push({ productId: product.id, name: product.name, quantity: qty, price: product.price, total });
+    for (let k = 0; k < monthCounts[m]; k++) {
+      const customer = pick(customers);
+      const channel = pick(Object.values(channels));
+      const numItems = Math.floor(Math.random() * 3) + 1;
+      const items = [];
+      let totalAmount = 0;
+
+      for (let j = 0; j < numItems; j++) {
+        const product = pick(products);
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const total = product.price * qty;
+        totalAmount += total;
+        items.push({
+          productId: product.id,
+          name: product.name,
+          quantity: qty,
+          price: product.price,
+          total,
+        });
+      }
+
+      const discountAmount = Math.random() > 0.7 ? totalAmount * 0.1 : 0;
+      const shippingAmount = totalAmount > 500000 ? 0 : 25000;
+      const taxAmount = totalAmount * 0.11;
+      const grandTotal = totalAmount - discountAmount + shippingAmount + taxAmount;
+
+      const orderDate = new Date(
+        monthStart.getFullYear(),
+        monthStart.getMonth(),
+        1 + Math.floor(Math.random() * maxDay),
+        8 + Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 60),
+        0,
+      );
+
+      const status = statusForAge((Date.now() - orderDate.getTime()) / 86400000);
+      const paymentStatus =
+        status === "CANCELLED"
+          ? Math.random() < 0.5
+            ? "REFUNDED"
+            : "UNPAID"
+          : status === "PENDING"
+            ? "UNPAID"
+            : "PAID";
+
+      await prisma.order.create({
+        data: {
+          orderNumber: `ORD-${String(orderSeq++).padStart(4, "0")}`,
+          customerId: customer.id,
+          userId: pick([admin.id, manager.id, staff.id]),
+          channelId: channel.id,
+          status,
+          totalAmount,
+          discountAmount,
+          shippingAmount,
+          taxAmount,
+          grandTotal,
+          paymentMethod: pick(paymentMethods),
+          paymentStatus,
+          shippingAddress: `${Math.floor(Math.random() * 999) + 1} ${["Jl. Merdeka", "Jl. Sudirman", "Jl. Gatot Subroto", "Jl. Thamrin"][Math.floor(Math.random() * 4)]}, ${customer.city}`,
+          createdAt: orderDate,
+          tenantId: defaultTenant.id,
+          items: { create: items },
+        },
+      });
+
+      // Update customer stats
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          totalSpent: { increment: grandTotal },
+          totalOrders: { increment: 1 },
+          lastOrderDate: orderDate,
+        },
+      });
     }
-
-    const discountAmount = Math.random() > 0.7 ? totalAmount * 0.1 : 0;
-    const shippingAmount = totalAmount > 500000 ? 0 : 25000;
-    const taxAmount = totalAmount * 0.11;
-    const grandTotal = totalAmount - discountAmount + shippingAmount + taxAmount;
-
-    const orderDate = new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000);
-
-    await prisma.order.create({
-      data: {
-        orderNumber: `ORD-${String(1000 + i).padStart(4, "0")}`,
-        customerId: customer.id,
-        userId: [admin.id, manager.id, staff.id][Math.floor(Math.random() * 3)],
-        channelId: channel.id,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        totalAmount,
-        discountAmount,
-        shippingAmount,
-        taxAmount,
-        grandTotal,
-        paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-        paymentStatus: paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)],
-        shippingAddress: `${Math.floor(Math.random() * 999) + 1} ${["Jl. Merdeka", "Jl. Sudirman", "Jl. Gatot Subroto", "Jl. Thamrin"][Math.floor(Math.random() * 4)]}, ${customer.city}`,
-        createdAt: orderDate,
-        items: { create: items },
-      },
-    });
-
-    // Update customer stats
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: {
-        totalSpent: { increment: grandTotal },
-        totalOrders: { increment: 1 },
-        lastOrderDate: orderDate,
-      },
-    });
   }
-  console.log("✅ Orders created");
+  console.log(`✅ Orders created (${orderSeq - 1000} across ${MONTHS} months)`);
 
   // Create Discounts
   const discountData = [
@@ -192,7 +428,7 @@ async function main() {
   ];
 
   for (const d of discountData) {
-    await prisma.discount.create({ data: d });
+    await prisma.discount.create({ data: { ...d, tenantId: defaultTenant.id } });
   }
   console.log("✅ Discounts created");
 
@@ -212,6 +448,7 @@ async function main() {
         ...c,
         startsAt: new Date("2026-01-01"),
         endsAt: new Date("2026-12-31"),
+        tenantId: defaultTenant.id,
       },
     });
   }
@@ -241,7 +478,7 @@ async function main() {
 
   for (const a of activities) {
     await prisma.activityLog.create({
-      data: { userId: admin.id, ...a },
+      data: { userId: admin.id, tenantId: defaultTenant.id, ...a },
     });
   }
   console.log("✅ Activity logs created");

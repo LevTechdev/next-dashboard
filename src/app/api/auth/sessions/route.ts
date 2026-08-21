@@ -45,6 +45,7 @@ export async function DELETE(req: Request) {
     type: "SESSIONS_REVOKED_ALL",
     req,
     metadata: { count },
+    tenantId: session.user.tenantId,
   });
   return NextResponse.json({ success: true, revoked: count });
 }

@@ -117,7 +117,7 @@ export function CsvImportDialog({
           if (!o) reset();
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-indigo-500" />
@@ -158,7 +158,7 @@ export function CsvImportDialog({
                 <p className="text-sm text-gray-500">
                   {timport("previewCount", { count: rows.length, file: fileName })}
                 </p>
-                <div className="border rounded-lg overflow-x-auto max-h-64 overflow-y-auto">
+                <div className="border rounded-lg overflow-x-auto max-h-64 overflow-y-auto scrollbar-thin">
                   <Table>
                     <TableHeader>
                       <TableRow>

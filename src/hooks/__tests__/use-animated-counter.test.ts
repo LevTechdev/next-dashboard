@@ -1,15 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { useRafTimers, advanceAnimationSync } from "@/test-utils/animation-test-utils";
 import { useAnimatedCounter } from "../use-animated-counter";
 
 describe("useAnimatedCounter", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  useRafTimers();
 
   it("returns initial state with value 0 and isAnimating true", () => {
     const { result } = renderHook(() => useAnimatedCounter(100));
@@ -24,9 +19,7 @@ describe("useAnimatedCounter", () => {
     const { result } = renderHook(() => useAnimatedCounter(100));
 
     // Advance the full animation duration
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(100);
     expect(result.current.displayed).toBe("100");
@@ -37,9 +30,7 @@ describe("useAnimatedCounter", () => {
     const { result } = renderHook(() => useAnimatedCounter(99));
 
     // Advance enough to complete
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.displayed).toBe("99");
     // Verify the value is an integer (rounded)
@@ -50,9 +41,7 @@ describe("useAnimatedCounter", () => {
     const formatFn = (v: number) => `${v.toFixed(1)}%`;
     const { result } = renderHook(() => useAnimatedCounter(99, { formatFn }));
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(99);
     expect(result.current.displayed).toBe("99.0%");
@@ -62,18 +51,14 @@ describe("useAnimatedCounter", () => {
     const { result } = renderHook(() => useAnimatedCounter(100, { duration: 500 }));
 
     // Advance only part-way (250ms = 50% duration)
-    act(() => {
-      vi.advanceTimersByTime(250);
-    });
+    advanceAnimationSync(250);
 
     expect(result.current.value).toBeGreaterThan(0);
     expect(result.current.value).toBeLessThan(100);
     expect(result.current.isAnimating).toBe(true);
 
     // Complete the remaining time
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
+    advanceAnimationSync(500);
 
     expect(result.current.value).toBe(100);
     expect(result.current.isAnimating).toBe(false);
@@ -90,9 +75,7 @@ describe("useAnimatedCounter", () => {
     const { result } = renderHook(() => useAnimatedCounter(100));
 
     // Complete the first animation
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(100);
     expect(result.current.isAnimating).toBe(false);
@@ -105,17 +88,13 @@ describe("useAnimatedCounter", () => {
     expect(result.current.isAnimating).toBe(true);
 
     // Advance part-way and check that value is between 0 and 100
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
+    advanceAnimationSync(500);
 
     expect(result.current.value).toBeGreaterThan(0);
     expect(result.current.value).toBeLessThan(100);
 
     // Complete
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(100);
     expect(result.current.isAnimating).toBe(false);
@@ -124,9 +103,7 @@ describe("useAnimatedCounter", () => {
   it("handles end=0 without error", () => {
     const { result } = renderHook(() => useAnimatedCounter(0));
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(0);
     expect(result.current.displayed).toBe("0");
@@ -136,9 +113,7 @@ describe("useAnimatedCounter", () => {
   it("handles negative end values", () => {
     const { result } = renderHook(() => useAnimatedCounter(-50));
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(result.current.value).toBe(-50);
     expect(result.current.displayed).toBe("-50");
@@ -165,9 +140,7 @@ describe("useAnimatedCounter", () => {
       expect(result.current.displayed).toBe("0");
 
       // After animation completes, value becomes NaN; displayed="NaN"
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(result.current.isAnimating).toBe(false);
       expect(result.current.displayed).toBe("NaN");
@@ -176,9 +149,7 @@ describe("useAnimatedCounter", () => {
     it("handles positive Infinity end value without crashing", () => {
       const { result } = renderHook(() => useAnimatedCounter(Infinity));
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(result.current.isAnimating).toBe(false);
       // Math.round(Infinity) returns Infinity
@@ -188,9 +159,7 @@ describe("useAnimatedCounter", () => {
     it("handles negative Infinity end value without crashing", () => {
       const { result } = renderHook(() => useAnimatedCounter(-Infinity));
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(result.current.isAnimating).toBe(false);
       expect(result.current.value).toBe(-Infinity);
@@ -200,9 +169,7 @@ describe("useAnimatedCounter", () => {
       const largeNum = Number.MAX_SAFE_INTEGER;
       const { result } = renderHook(() => useAnimatedCounter(largeNum));
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(result.current.value).toBe(largeNum);
       expect(result.current.isAnimating).toBe(false);
@@ -213,9 +180,7 @@ describe("useAnimatedCounter", () => {
 
       // With duration=0: elapsed/duration = 0/0 = NaN, Math.min(NaN,1) = NaN
       // NaN < 1 is false, so animation completes on the first rAF frame
-      act(() => {
-        vi.advanceTimersByTime(16); // ~1 frame to fire rAF
-      });
+      advanceAnimationSync(16); // ~1 frame to fire rAF
 
       expect(result.current.value).toBe(100);
       expect(result.current.isAnimating).toBe(false);
@@ -229,9 +194,7 @@ describe("useAnimatedCounter", () => {
       // But timestamp advances, so after enough time elapsed > -500? No, negative stays negative
       // Actually this means progress is always negative, so progress < 1 is always true
       // and the animation runs forever until the rAF limit... but we can just check it doesn't crash
-      act(() => {
-        vi.advanceTimersByTime(100);
-      });
+      advanceAnimationSync(100);
 
       // Should still exist without throwing
       expect(result.current).toBeDefined();
@@ -240,9 +203,7 @@ describe("useAnimatedCounter", () => {
     it("handles a very small decimal end value", () => {
       const { result } = renderHook(() => useAnimatedCounter(0.001));
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       // Final setValue(end) sets the raw value, but displayed still rounds
       // displayed = Math.round(0.001).toString() = "0"
@@ -253,9 +214,7 @@ describe("useAnimatedCounter", () => {
     it("handles a very small decimal with no rounding", () => {
       const { result } = renderHook(() => useAnimatedCounter(0.001, { round: false }));
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       // With round: false, .toFixed(1) gives "0.0"
       expect(result.current.value).toBeCloseTo(0.001, 3);

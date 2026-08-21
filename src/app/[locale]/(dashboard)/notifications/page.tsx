@@ -2,23 +2,15 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
-import { BellIcon, CheckCheckIcon, ClockIcon, XIcon, RefreshCwIcon } from "lucide-animated";
+import { BellIcon, CheckCheckIcon, XIcon, RefreshCwIcon } from "lucide-animated";
 import { BellRing, Trash2, Mail, Loader2, AlertTriangle, Filter, Save, Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -109,7 +101,6 @@ function formatDate(dateStr: string | null, t: (key: string, params?: any) => st
 
 export default function NotificationsPage() {
   const tsettings = useTranslations("settings");
-  const tcommon = useTranslations("common");
   const tnotif = useTranslations("notifications");
   const [activeTab, setActiveTab] = useState("inbox");
 
@@ -162,7 +153,6 @@ function InboxTab() {
   const [filterType, setFilterType] = useState("all");
   const [filterRead, setFilterRead] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {

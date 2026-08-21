@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -11,7 +11,6 @@ import {
   UsersIcon,
   MapPinIcon,
   DollarSignIcon,
-  SparklesIcon,
   PhoneIcon,
 } from "lucide-animated";
 import { Edit2, Trash2, Mail, ShoppingBag, Crown } from "lucide-react";
@@ -42,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
@@ -51,9 +51,10 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { can } from "@/lib/permissions";
-import { downloadCsv } from "@/lib/csv";
+
 import { DataExportButton } from "@/components/data-export-button";
 import { CsvImportDialog } from "@/components/csv-import-dialog";
+import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 
 export default function CustomersPage() {
   const params = useParams();
@@ -62,6 +63,9 @@ export default function CustomersPage() {
   const tcustomers = useTranslations("customers");
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [editCustomer, setEditCustomer] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
@@ -84,11 +88,32 @@ export default function CustomersPage() {
 
   const role = (user as any)?.role;
 
-  const filtered = (customers || []).filter(
+  const dateFiltered = useMemo(() => {
+    if (!customers) return [];
+    if (!dateRange.from && !dateRange.to) return customers;
+    return customers.filter((c: any) => {
+      const d = new Date(c.createdAt);
+      if (dateRange.from && d < new Date(dateRange.from)) return false;
+      if (dateRange.to) {
+        const to = new Date(dateRange.to);
+        to.setHours(23, 59, 59, 999);
+        if (d > to) return false;
+      }
+      return true;
+    });
+  }, [customers, dateRange]);
+
+  const filtered = dateFiltered.filter(
     (c: any) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email?.toLowerCase().includes(search.toLowerCase()),
   );
+
+  // Client-side pagination over the filtered list (export still covers all matches).
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(pageStart, pageStart + pageSize);
 
   const handleSave = async () => {
     const res = await fetch("/api/customers", {
@@ -200,7 +225,7 @@ export default function CustomersPage() {
           <p className="text-sm text-gray-500 mt-1">{tcustomers("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             {can(role, "create", "customers") && (
               <DialogTrigger asChild>
@@ -326,7 +351,6 @@ export default function CustomersPage() {
                   >
                     <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -356,7 +380,10 @@ export default function CustomersPage() {
                 placeholder={tcustomers("search") || tcommon("search")}
                 className="pl-10"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
             <Button
@@ -429,7 +456,7 @@ export default function CustomersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c: any) => (
+                {paginated.map((c: any) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">
                       <Link
@@ -491,6 +518,18 @@ export default function CustomersPage() {
               </TableBody>
             </Table>
           </div>
+          {filtered.length > 0 && (
+            <PaginationBar
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </motion.div>

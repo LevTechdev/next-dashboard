@@ -6,6 +6,7 @@ import { createSession } from "@/lib/sessions";
 import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
+import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
 
 export const dynamic = "force-dynamic";
 
@@ -75,14 +76,61 @@ export async function POST(req: Request) {
     const familyId = newFamilyId();
     const sessionId = await createSession({ userId: user.id, token, req, familyId });
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
-    await logSecurityEvent({ userId: user.id, type: "LOGIN", req, metadata: { registered: true } });
+    await logSecurityEvent({
+      userId: user.id,
+      type: "LOGIN",
+      req,
+      metadata: { registered: true },
+      tenantId: user.tenantId,
+    });
 
-    const { password: _, ...safeUser } = user;
+    // Tenant-scoped audit trail entry so the registration shows up in the
+    // workspace's activity log without leaking across tenant boundaries.
+    await prisma.activityLog.create({
+      data: {
+        userId: user.id,
+        action: "REGISTER",
+        entity: "User",
+        entityId: user.id,
+        details: `Account ${user.email} registered`,
+        tenantId: user.tenantId,
+      },
+    });
+
+    // Identity verification: every new account is issued a 6-digit email OTP.
+    // Best-effort — a mail outage must never block account creation; the OTP
+    // can be re-requested from the Security Center (send route) afterwards.
+    const emailOtpRequired = true;
+    let devOtp: string | undefined;
+    try {
+      const issued = await issueEmailOtp({ userId: user.id, email: user.email });
+      if (isDevFallbackAllowed()) devOtp = issued.code;
+    } catch (err) {
+      console.error("Register OTP issue error:", err);
+    }
+
+    // Never return secrets to the client: the password hash, the TOTP secret,
+    // the (one-time) verification token, and the email-OTP hash — a SHA-256 of
+    // a 6-digit code is trivially brute-forceable offline if it leaks.
+    const SENSITIVE_USER_KEYS = new Set([
+      "password",
+      "totpSecret",
+      "verificationToken",
+      "verificationTokenExpires",
+      "emailOtpHash",
+      "emailOtpExpires",
+      "emailOtpAttempts",
+    ]);
+    const safeUser = Object.fromEntries(
+      Object.entries(user).filter(([key]) => !SENSITIVE_USER_KEYS.has(key)),
+    );
 
     const response = NextResponse.json({
       token,
       user: safeUser,
       message: "Account created successfully",
+      emailOtpRequired,
+      ...(isDevFallbackAllowed() && devOtp ? { devOtp } : {}),
     });
 
     setAuthCookies(response, token, refreshToken);

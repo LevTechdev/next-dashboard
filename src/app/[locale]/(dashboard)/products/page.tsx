@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import {
-  RefreshCwIcon,
-  PlusIcon,
-  SearchIcon,
-  DollarSignIcon,
-  LayersIcon,
-  SparklesIcon,
-} from "lucide-animated";
+import { RefreshCwIcon, PlusIcon, SearchIcon, DollarSignIcon, LayersIcon } from "lucide-animated";
 import { Edit2, Trash2, Package, BarChart3, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, cn, shortenName, sanitizeInteger } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
@@ -49,6 +43,7 @@ import { toast } from "sonner";
 import { can } from "@/lib/permissions";
 import { DataExportButton } from "@/components/data-export-button";
 import { CsvImportDialog } from "@/components/csv-import-dialog";
+import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { LinkedPlatformsBadge } from "@/components/linked-platforms-badge";
 import { useConfirm } from "@/components/ui/confirm-provider";
 
@@ -59,6 +54,9 @@ export default function ProductsPage() {
   const tproducts = useTranslations("products");
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [editProduct, setEditProduct] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
@@ -89,7 +87,28 @@ export default function ProductsPage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const filtered = products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const dateFiltered = useMemo(() => {
+    if (!products.length) return [];
+    if (!dateRange.from && !dateRange.to) return products;
+    return products.filter((p: any) => {
+      const d = new Date(p.createdAt);
+      if (dateRange.from && d < new Date(dateRange.from)) return false;
+      if (dateRange.to) {
+        const to = new Date(dateRange.to);
+        to.setHours(23, 59, 59, 999);
+        if (d > to) return false;
+      }
+      return true;
+    });
+  }, [products, dateRange]);
+
+  const filtered = dateFiltered.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()));
+
+  // Client-side pagination over the filtered list (export still covers all matches).
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(pageStart, pageStart + pageSize);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -262,7 +281,7 @@ export default function ProductsPage() {
           <p className="text-sm text-gray-500 mt-1">{tproducts("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             {can(role, "create", "products") && (
               <DialogTrigger asChild>
@@ -411,7 +430,6 @@ export default function ProductsPage() {
                   >
                     <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -439,7 +457,10 @@ export default function ProductsPage() {
                 placeholder={tcommon("search")}
                 className="pl-10"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
             <Button
@@ -537,7 +558,7 @@ export default function ProductsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p: any) => {
+                {paginated.map((p: any) => {
                   const margin =
                     p.price > 0 ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : "0";
                   return (
@@ -613,6 +634,18 @@ export default function ProductsPage() {
               </TableBody>
             </Table>
           </div>
+          {filtered.length > 0 && (
+            <PaginationBar
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   CheckIcon,
@@ -23,6 +23,7 @@ import {
   ShieldOff,
   Smartphone,
   Mail,
+  Timer,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ import { useConfirm } from "@/components/ui/confirm-provider";
 import { SecuritySettings } from "@/components/security-settings";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { cn } from "@/lib/utils";
 
 interface ProfileData {
@@ -63,6 +65,7 @@ export default function ProfilePage() {
   const tprofile = useTranslations("profile");
   const tsettings = useTranslations("settings");
   const tcommon = useTranslations("common");
+  const locale = useLocale();
   const { user, isAuthenticated, updateUser } = useAuth();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -108,6 +111,9 @@ export default function ProfilePage() {
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationUrl, setVerificationUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  // Shared 60s resend cooldown (persisted in localStorage) — the same key the
+  // Security Center card uses, so a send from either surface blocks resends.
+  const { cooldownLeft, startCooldown } = useResendCooldown();
 
   // Load profile data
   useEffect(() => {
@@ -129,11 +135,13 @@ export default function ProfilePage() {
       });
   }, []);
 
-  // Check for email verified query param
+  // Check for email verified query param (?verified=true after a successful
+  // confirm-link click, ?verified=invalid when the token was bad/expired).
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("verified") === "true") {
+      const verified = params.get("verified");
+      if (verified === "true") {
         toast.success(tprofile("emailVerifiedSuccess"));
         // Refresh profile data
         fetch("/api/profile")
@@ -143,8 +151,12 @@ export default function ProfilePage() {
           );
         // Clean URL
         window.history.replaceState({}, "", window.location.pathname);
+      } else if (verified === "invalid") {
+        toast.error(tprofile("emailVerifyLinkInvalid"));
+        window.history.replaceState({}, "", window.location.pathname);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Track form changes (derived state)
@@ -424,14 +436,30 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/auth/verify-email/send", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // `from: "profile"` is forwarded into the confirm link so the post-
+        // confirm redirect lands back on the profile page.
+        body: JSON.stringify({ locale, from: "profile" }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || tprofile("failedToLoad"));
       }
       const data = await res.json();
-      setVerificationUrl(data.verificationUrl);
-      toast.success(tprofile("verificationSent"));
+      if (data.alreadyVerified) {
+        // Account already verified — refresh the status and show a success.
+        toast.success(tprofile("emailVerifiedSuccess"));
+        fetch("/api/profile")
+          .then((r) => r.json())
+          .then((d) =>
+            setProfile((prev) => (prev ? { ...prev, emailVerified: d.emailVerified } : null)),
+          )
+          .catch(() => {});
+      } else {
+        setVerificationUrl(data.verificationUrl);
+        startCooldown();
+        toast.success(tprofile("verificationSent"));
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -518,6 +546,36 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500 capitalize">
               {profile?.role?.toLowerCase() || tprofile("staffFallback")}
             </p>
+
+            {/* Email + verification status badge */}
+            <div className="mt-2 flex flex-col items-center gap-1.5 min-w-0 max-w-full">
+              <div className="flex items-center gap-2 min-w-0 max-w-full">
+                <p
+                  className="text-sm text-gray-600 dark:text-gray-300 truncate"
+                  title={profile?.email || ""}
+                >
+                  {profile?.email || "-"}
+                </p>
+                {profile?.emailVerified ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[11px] font-semibold">
+                    <CheckCheckIcon size={12} className="h-3 w-3" />
+                    {tprofile("verified")}
+                  </span>
+                ) : (
+                  <span className="inline-flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold">
+                    <Mail className="h-3 w-3" />
+                    {tprofile("unverified")}
+                  </span>
+                )}
+              </div>
+              {profile?.emailVerified ? (
+                <p className="text-[11px] text-gray-400">
+                  {tprofile("verifiedOn", {
+                    date: new Date(profile.emailVerified).toLocaleDateString(),
+                  })}
+                </p>
+              ) : null}
+            </div>
 
             {profile?.avatar && (
               <Button
@@ -743,23 +801,39 @@ export default function ProfilePage() {
                       </div>
                       <p className="text-xs text-gray-500">{tprofile("verificationNote")}</p>
                     </div>
-                  ) : (
+                  ) : null}
+
+                  <div className="space-y-2">
                     <Button
                       variant="outline"
                       onClick={handleSendVerification}
-                      disabled={sendingVerification}
+                      disabled={sendingVerification || cooldownLeft > 0}
                     >
                       {sendingVerification ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("sending")}
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                          {tprofile("sending")}
+                        </>
+                      ) : cooldownLeft > 0 ? (
+                        <>
+                          <Timer className="h-4 w-4 mr-2" />{" "}
+                          {tprofile("resendInSeconds", { seconds: cooldownLeft })}
                         </>
                       ) : (
                         <>
-                          <Mail className="h-4 w-4 mr-2" /> {tprofile("sendVerification")}
+                          <Mail className="h-4 w-4 mr-2" />{" "}
+                          {verificationUrl
+                            ? tprofile("resendEmail")
+                            : tprofile("sendVerification")}
                         </>
                       )}
                     </Button>
-                  )}
+                    {cooldownLeft > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {tprofile("emailResendNote", { seconds: cooldownLeft })}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>

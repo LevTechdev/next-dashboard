@@ -43,8 +43,10 @@ export async function POST(req: Request) {
 
   // Verify via TOTP if the user has 2FA, else via password.
   let verified = false;
+  let mfaMethod: string | null = null;
   if (totpToken && user.totpEnabled && user.totpSecret) {
     verified = verifyTotp(totpToken, user.totpSecret);
+    if (verified) mfaMethod = "totp";
   } else if (password) {
     verified = await verifyPassword(password, user.password);
   }
@@ -54,7 +56,22 @@ export async function POST(req: Request) {
   }
 
   const stepUpToken = signStepUpToken(user.id, purpose);
-  await logSecurityEvent({ userId: user.id, type: "STEP_UP_VERIFIED", req, metadata: { purpose } });
+  await logSecurityEvent({
+    userId: user.id,
+    type: "STEP_UP_VERIFIED",
+    req,
+    metadata: { purpose },
+    tenantId: user.tenantId,
+  });
+  if (mfaMethod) {
+    await logSecurityEvent({
+      userId: user.id,
+      type: "MFA_VERIFIED",
+      req,
+      metadata: { method: mfaMethod, purpose },
+      tenantId: user.tenantId,
+    });
+  }
 
   const res = NextResponse.json({ success: true });
   res.cookies.set(STEP_UP_COOKIE, stepUpToken, {

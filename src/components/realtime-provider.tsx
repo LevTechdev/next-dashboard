@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { ClockIcon, UsersIcon, DollarSignIcon } from "lucide-animated";
 import { ShoppingCart, Package, AlertTriangle, Megaphone, Gift, BellRing } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export type NotificationType =
   | "order"
@@ -122,10 +123,34 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     showToast(notification);
   }, []);
 
-  // Connect to SSE endpoint for real-time updates
+  // Connect to the SSE endpoint for real-time updates. /api/realtime requires
+  // an authenticated session (it returns 401 otherwise), so the connection is
+  // gated on the auth state: booting logged-out stays quiet (no 401 retry
+  // storm), and signing in connects IMMEDIATELY with a fresh backoff instead of
+  // waiting out the old exponential retry schedule (which could otherwise leave
+  // the indicator stuck on Disconnected for up to 30s after login). Logging out
+  // closes the stream right away.
+  const { isAuthenticated } = useAuth();
+
   useEffect(() => {
     let reconnectTimeout: NodeJS.Timeout;
     let reconnectAttempts = 0;
+
+    const cleanup = () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      clearTimeout(reconnectTimeout);
+    };
+
+    if (!isAuthenticated) {
+      // Deferred status reset on logout / logged-out boot. The setState is
+      // intentional (the indicator must leave "Connected" when the session
+      // ends) and matches the repo's existing pattern for this rule.
+      setConnectionStatus("disconnected"); // eslint-disable-line react-hooks/set-state-in-effect
+      return cleanup;
+    }
 
     const connect = () => {
       if (eventSourceRef.current) {
@@ -183,15 +208,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     connect();
-
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      clearTimeout(reconnectTimeout);
-    };
+    return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   const detectAllChanges = useCallback(
     (data: any) => {

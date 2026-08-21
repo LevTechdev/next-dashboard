@@ -48,6 +48,7 @@ export async function POST(req: Request) {
         entityId: user.id,
         details: `Password reset for ${user.email}`,
         userId: user.id,
+        tenantId: user.tenantId,
       },
     });
 

@@ -68,6 +68,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       entityId: connection.id,
       details: `${platform.name} connection updated (${status})`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 

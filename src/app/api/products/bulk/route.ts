@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       entity: "Product",
       details: `Bulk ${action} on ${affected} products`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 

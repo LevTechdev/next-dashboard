@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import {
   ClockIcon,
@@ -19,19 +19,16 @@ import {
   Gift,
   BellRing,
   Filter,
-  Loader2,
   ExternalLink,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  useRealtime,
-  type NotificationType,
-  type RealtimeNotification,
-} from "@/components/realtime-provider";
+import { ScrollContainer } from "@/components/ui/scroll-container";
+import { useRealtime, type NotificationType } from "@/components/realtime-provider";
 import { motion, AnimatePresence } from "framer-motion";
+import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
 
 // ── Types ──
 
@@ -45,6 +42,8 @@ interface ActivityItem {
   timestamp: Date;
   read?: boolean;
   isNew?: boolean;
+  /** Epoch ms the item arrived via real-time; drives the "New" badge / count windows. */
+  arrivedAt?: number;
 }
 
 interface ApiNotification {
@@ -138,6 +137,10 @@ const FILTER_ORDER: (ActivityType | "all")[] = [
 
 const MAX_VISIBLE = 15;
 
+// How long real-time arrivals keep their "New" badge / count contribution.
+const NEW_BADGE_MS = 5000;
+const NEW_COUNT_MS = 8000;
+
 // ── Helpers ──
 
 function formatTimeAgo(date: Date): string {
@@ -156,17 +159,23 @@ export function ActivityFeed({ className }: { className?: string }) {
   const locale = (params?.locale as string) || "en";
   const { notifications: realtimeNotifications, connectionStatus } = useRealtime();
 
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  // Single source of truth: the whole feed (fetched + real-time arrivals in
+  // arrival order, capped). Everything else — the visible list, filter
+  // counts, "New" badges and the "+N new" counter — derives from it during
+  // render.
+  const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ActivityType | "all">("all");
-  const [newIds, setNewIds] = useState<Set<string>>(new Set());
-  const [newCount, setNewCount] = useState(0);
   const [paused, setPaused] = useState(false);
-  const knownIdsRef = useRef<Set<string>>(new Set());
-  const pendingItemsRef = useRef<ActivityItem[]>([]);
+  // Clock tick that re-renders when the oldest "New" badge / count expires,
+  // so the derived markers disappear on schedule.
+  const [now, setNow] = useState(() => Date.now());
   const activityListRef = useRef<HTMLDivElement>(null);
-  const newCountTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const newBadgeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const filterRowRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard focus can land on a filter pill clipped by the overflow-x row;
+  // scroll it into view.
+  useScrollFocusedIntoView(filterRowRef);
 
   // ── Fetch initial activities from API ──
   useEffect(() => {
@@ -185,8 +194,7 @@ export function ActivityFeed({ className }: { className?: string }) {
           timestamp: new Date(n.createdAt),
           read: n.read,
         }));
-        setActivities(items);
-        knownIdsRef.current = new Set(items.map((i: ActivityItem) => i.id));
+        setItems(items);
       } catch {
         // keep empty state
       } finally {
@@ -198,98 +206,72 @@ export function ActivityFeed({ className }: { className?: string }) {
     };
   }, []);
 
-  // ── Listen for real-time notifications ──
-  useEffect(() => {
-    // Use the realtimeNotifications snapshot to find truly new items by ID
-    let foundNew = false;
-    const newItems: ActivityItem[] = [];
-    const newIdSet = new Set<string>();
+  // ── Real-time arrivals: derive what's new, then merge it into the feed ──
+  const itemsIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
+  const newArrivals = useMemo(
+    () => realtimeNotifications.filter((n) => !itemsIds.has(n.id)),
+    [realtimeNotifications, itemsIds],
+  );
 
-    for (const n of realtimeNotifications) {
-      if (!knownIdsRef.current.has(n.id)) {
-        knownIdsRef.current.add(n.id);
-        const item: ActivityItem = {
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          description: n.description,
-          timestamp: n.timestamp,
-          isNew: true,
-        };
-        newItems.push(item);
-        newIdSet.add(n.id);
-        foundNew = true;
-      }
-    }
-
-    if (!foundNew) return;
-
-    // Update new IDs for "New" badge animation
-    setNewIds((prev) => {
-      const next = new Set(prev);
-      newIdSet.forEach((id) => next.add(id));
-      return next;
+  // React's "adjusting state during render" pattern (docs: storing info from
+  // previous renders) — merge unseen arrivals into the single source of
+  // truth. Guarded, so it converges in one extra render instead of looping.
+  if (newArrivals.length > 0) {
+    setItems((prev) => {
+      const prevIds = new Set(prev.map((i) => i.id));
+      const fresh = newArrivals.filter((n) => !prevIds.has(n.id));
+      if (fresh.length === 0) return prev;
+      const arrivals: ActivityItem[] = fresh.map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        description: n.description,
+        timestamp: n.timestamp,
+        isNew: true,
+        arrivedAt: n.timestamp.getTime(),
+      }));
+      return [...arrivals, ...prev].slice(0, MAX_VISIBLE);
     });
+  }
 
-    // Track new count
-    setNewCount((prev) => prev + newItems.length);
+  // While paused, arrivals are hidden from the feed but still counted.
+  const visibleItems = paused ? items.filter((a) => a.arrivedAt === undefined) : items;
 
-    // Clear "new" badges after 5 seconds
-    clearTimeout(newBadgeTimerRef.current);
-    newBadgeTimerRef.current = setTimeout(() => {
-      setNewIds(new Set());
-    }, 5000);
+  // Derived "New" badges / "+N new" counter from arrival timestamps.
+  const arrivalItems = useMemo(() => items.filter((a) => a.arrivedAt != null), [items]);
+  const newIds = useMemo(
+    () => new Set(arrivalItems.filter((a) => now - a.arrivedAt! < NEW_BADGE_MS).map((a) => a.id)),
+    [arrivalItems, now],
+  );
+  const newCount = useMemo(
+    () => arrivalItems.filter((a) => now - a.arrivedAt! < NEW_COUNT_MS).length,
+    [arrivalItems, now],
+  );
 
-    // Clear new count after 8 seconds
-    clearTimeout(newCountTimerRef.current);
-    newCountTimerRef.current = setTimeout(() => {
-      setNewCount(0);
-    }, 8000);
-
-    if (paused) {
-      // Queue items while paused — flush on resume
-      pendingItemsRef.current.push(...newItems);
-      return;
-    }
-
-    setActivities((prev) => {
-      const merged = [...newItems, ...prev];
-      return merged.slice(0, MAX_VISIBLE);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realtimeNotifications, paused]);
-
-  // ── Cleanup timers ──
+  // Re-render at the next expiry so the derived markers disappear on time
+  // (setState inside a timer callback is fine).
   useEffect(() => {
-    return () => {
-      clearTimeout(newBadgeTimerRef.current);
-      clearTimeout(newCountTimerRef.current);
-    };
-  }, []);
+    if (arrivalItems.length === 0) return;
+    const nextExpiry = Math.min(
+      ...arrivalItems.map((a) => a.arrivedAt! + NEW_BADGE_MS),
+      ...arrivalItems.map((a) => a.arrivedAt! + NEW_COUNT_MS),
+    );
+    const delay = nextExpiry - now;
+    if (delay <= 0) return;
+    const timer = setTimeout(() => setNow(Date.now()), delay);
+    return () => clearTimeout(timer);
+  }, [arrivalItems, now]);
 
   // ── Filter ──
-  const filtered = filter === "all" ? activities : activities.filter((a) => a.type === filter);
+  const filtered = filter === "all" ? visibleItems : visibleItems.filter((a) => a.type === filter);
 
   const countByType = (type: ActivityType | "all") => {
-    if (type === "all") return activities.length;
-    return activities.filter((a) => a.type === type).length;
+    if (type === "all") return visibleItems.length;
+    return visibleItems.filter((a) => a.type === type).length;
   };
 
-  // ── Pause / Resume for new activity intake ──
-  const handlePauseToggle = () => {
-    setPaused((p) => !p);
-    // If resuming from paused state, flush pending items
-    if (paused) {
-      const pending = pendingItemsRef.current;
-      pendingItemsRef.current = [];
-      if (pending.length > 0) {
-        setActivities((prev) => {
-          const merged = [...pending, ...prev];
-          return merged.slice(0, MAX_VISIBLE);
-        });
-      }
-    }
-  };
+  // ── Pause / Resume: hiding is a render-time filter, so nothing to flush ──
+  const handlePauseToggle = () => setPaused((p) => !p);
 
   // ── Scroll to top of feed ──
   const handleScrollToTop = () => {
@@ -300,7 +282,7 @@ export function ActivityFeed({ className }: { className?: string }) {
   const exportActivities = () => {
     const csvRows = [
       ["Type", "Title", "Description", "Timestamp"].join(","),
-      ...activities.map((a) =>
+      ...visibleItems.map((a) =>
         [a.type, `"${a.title}"`, `"${a.description}"`, new Date(a.timestamp).toISOString()].join(
           ",",
         ),
@@ -413,12 +395,12 @@ export function ActivityFeed({ className }: { className?: string }) {
                 ? "Connecting..."
                 : "Disconnected"}
           </span>
-          {activities.length > 0 && (
+          {visibleItems.length > 0 && (
             <span className="text-[10px] text-gray-300 dark:text-gray-600 mx-1">·</span>
           )}
-          {activities.length > 0 && (
+          {visibleItems.length > 0 && (
             <span className="text-[10px] text-gray-400">
-              {filtered.length} of {activities.length}
+              {filtered.length} of {visibleItems.length}
             </span>
           )}
         </div>
@@ -449,8 +431,13 @@ export function ActivityFeed({ className }: { className?: string }) {
         </div>
       </div>
 
-      {/* Type Filter Pills */}
-      <div className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none shrink-0">
+      {/* Type Filter Pills — scrollbar hidden via the real scrollbar-none
+          utility (like the tabs bar and notification panel); hiding never
+          disables scrolling. */}
+      <div
+        ref={filterRowRef}
+        className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none shrink-0"
+      >
         {FILTER_ORDER.map((t) => {
           const count = countByType(t);
           const config = t !== "all" ? TYPE_CONFIG[t] : null;
@@ -486,9 +473,9 @@ export function ActivityFeed({ className }: { className?: string }) {
       </div>
 
       {/* Activity List */}
-      <div
+      <ScrollContainer
         ref={activityListRef}
-        className="flex-1 overflow-y-auto min-h-[200px] max-h-[380px]"
+        className="flex-1 min-h-[200px] max-h-[380px]"
         role="log"
         aria-live="polite"
         aria-label="Live activity feed"
@@ -511,7 +498,7 @@ export function ActivityFeed({ className }: { className?: string }) {
         )}
 
         {/* Empty State */}
-        {!loading && activities.length === 0 && (
+        {!loading && visibleItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No activity yet</p>
@@ -523,7 +510,7 @@ export function ActivityFeed({ className }: { className?: string }) {
         )}
 
         {/* Filtered Empty */}
-        {!loading && activities.length > 0 && filtered.length === 0 && (
+        {!loading && visibleItems.length > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <Filter className="h-8 w-8 mb-2 opacity-30" />
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -664,7 +651,7 @@ export function ActivityFeed({ className }: { className?: string }) {
             </button>
           </div>
         )}
-      </div>
+      </ScrollContainer>
     </Card>
   );
 }

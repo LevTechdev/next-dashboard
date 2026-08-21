@@ -56,6 +56,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticated so the audit row can be attributed to a real workspace;
+    // the caller's supplied userId is honored as an override (the client
+    // never calls this endpoint today, but keep the old contract working).
+    const { session, response } = await requireAuth(request);
+    if (response) return response;
+
     const body = await request.json();
     const { action, entity, entityId, details, userId } = body;
 
@@ -66,6 +72,8 @@ export async function POST(request: NextRequest) {
           entity,
           entityId: entityId || null,
           details: details || JSON.stringify(body),
+          userId: userId || session.user.id,
+          tenantId: session.user.tenantId,
         },
       });
     }

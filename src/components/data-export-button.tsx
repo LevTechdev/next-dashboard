@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, type ComponentType } from "react";
+import { useTranslations } from "next-intl";
 import { XIcon, DownloadIcon, ChevronDownIcon, FileTextIcon } from "lucide-animated";
 import {
   FileSpreadsheet,
@@ -8,7 +9,6 @@ import {
   Printer,
   FileDown,
   CheckCircle2,
-  Table2,
   Columns3,
 } from "lucide-react";
 
@@ -69,40 +69,42 @@ interface FormatOption {
   bgColor: string;
 }
 
-const FORMATS: FormatOption[] = [
-  {
-    format: "csv",
-    label: "Export CSV",
-    description: "Comma-separated values — opens in Excel",
-    icon: FileTextIcon,
-    color: "text-emerald-600 dark:text-emerald-400",
-    bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
-  },
-  {
-    format: "excel",
-    label: "Export Excel",
-    description: "Formatted .xlsx spreadsheet",
-    icon: FileSpreadsheet,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-900/20",
-  },
-  {
-    format: "copy",
-    label: "Copy to Clipboard",
-    description: "Copy as tabular text",
-    icon: ClipboardCopy,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-900/20",
-  },
-  {
-    format: "print",
-    label: "Print View",
-    description: "Open a print-friendly table",
-    icon: Printer,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-900/20",
-  },
-];
+function getFormats(t: (key: string) => string): FormatOption[] {
+  return [
+    {
+      format: "csv",
+      label: t("exportCsv"),
+      description: t("exportCsvDesc"),
+      icon: FileTextIcon,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+    },
+    {
+      format: "excel",
+      label: t("exportExcel"),
+      description: t("exportExcelDesc"),
+      icon: FileSpreadsheet,
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+    },
+    {
+      format: "copy",
+      label: t("copyClipboard"),
+      description: t("copyClipboardDesc"),
+      icon: ClipboardCopy,
+      color: "text-purple-600 dark:text-purple-400",
+      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+    },
+    {
+      format: "print",
+      label: t("printView"),
+      description: t("printViewDesc"),
+      icon: Printer,
+      color: "text-amber-600 dark:text-amber-400",
+      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+    },
+  ];
+}
 
 export function DataExportButton<T = any>({
   columns,
@@ -123,6 +125,9 @@ export function DataExportButton<T = any>({
   const [pendingFormat, setPendingFormat] = useState<ExportFormat | null>(null);
   const [selectedColumns, setSelectedColumns] = useState<ExportColumn<T>[]>(columns);
   const [successFormat, setSuccessFormat] = useState<ExportFormat | null>(null);
+  const texport = useTranslations("export");
+  const tcommon = useTranslations("common");
+  const FORMATS = getFormats(texport);
 
   const { exportData, isExporting } = useDataExport<T>({
     columns: selectedColumns,
@@ -207,7 +212,7 @@ export function DataExportButton<T = any>({
               <FileDown className="h-4 w-4 transition-transform group-hover:scale-110 duration-200" />
             )}
             <span className="hidden sm:inline">
-              {successFormat ? "Exported!" : label || "Export"}
+              {successFormat ? texport("exported") : label || tcommon("export")}
             </span>
             {!successFormat && (
               <ChevronDownIcon
@@ -220,7 +225,7 @@ export function DataExportButton<T = any>({
 
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            Export as
+            {texport("exportAs")}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
@@ -259,7 +264,7 @@ export function DataExportButton<T = any>({
                 className="text-xs text-gray-500"
               >
                 <Columns3 className="h-3.5 w-3.5 mr-2" />
-                Customize columns...
+                {texport("customizeColumns")}
               </DropdownMenuItem>
             </>
           )}
@@ -268,7 +273,7 @@ export function DataExportButton<T = any>({
             <>
               <DropdownMenuSeparator />
               <p className="px-3 py-1.5 text-[10px] text-gray-400 italic">
-                Showing {data.length} of {totalCount} rows
+                {texport("showingRows", { shown: data.length, total: totalCount })}
               </p>
             </>
           )}
@@ -281,15 +286,18 @@ export function DataExportButton<T = any>({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Columns3 className="h-5 w-5 text-indigo-500" />
-              Select Columns to Export
+              {texport("selectColumns")}
             </DialogTitle>
             <DialogDescription>
-              Choose which columns to include in the export.
-              {selectedColumns.length} of {columns.length} selected
+              {texport("chooseColumns")}{" "}
+              {texport("selectedOf", {
+                selected: selectedColumns.length,
+                total: columns.length,
+              })}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-1 max-h-64 overflow-y-auto -mx-6 px-6">
+          <div className="space-y-1 max-h-64 overflow-y-auto -mx-6 px-6 scrollbar-thin">
             {columns.map((col, index) => {
               const isSelected = selectedColumns.includes(col);
               return (
@@ -322,11 +330,11 @@ export function DataExportButton<T = any>({
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" size="sm" onClick={resetColumns} className="text-xs">
               <XIcon size={12} className="h-3 w-3 mr-1" />
-              Reset
+              {texport("reset")}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowColumnsDialog(false)}>
-                Cancel
+                {tcommon("cancel")}
               </Button>
               <Button
                 size="sm"
@@ -335,7 +343,7 @@ export function DataExportButton<T = any>({
                 className="gap-1.5"
               >
                 <DownloadIcon size={16} className="h-4 w-4" />
-                Export ({selectedColumns.length} columns)
+                {texport("exportCount", { count: selectedColumns.length })}
               </Button>
             </div>
           </DialogFooter>

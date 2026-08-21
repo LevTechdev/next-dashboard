@@ -26,11 +26,16 @@ export async function POST(req: Request) {
   const result = await rotateRefreshToken(raw);
 
   if (result.status === "reuse") {
+    const actor = await prisma.user.findUnique({
+      where: { id: result.userId },
+      select: { tenantId: true },
+    });
     await logSecurityEvent({
       userId: result.userId,
       type: "REFRESH_REUSE",
       req,
       metadata: { familyId: result.familyId },
+      tenantId: actor?.tenantId ?? null,
     });
     const res = NextResponse.json({ error: "Refresh token reuse detected" }, { status: 401 });
     clearAuthCookies(res);

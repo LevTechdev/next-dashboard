@@ -8,7 +8,6 @@ import {
   TrendingUpIcon,
   TrendingDownIcon,
   ZapIcon,
-  SparklesIcon,
   ArrowUpRightIcon,
   FileTextIcon,
   UsersIcon,
@@ -229,10 +228,7 @@ function PremiumStatCard({
             )}
           </p>
         </div>
-        <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-          <SparklesIcon size={12} className="h-3 w-3" />
-          vs. last month
-        </div>
+        <div className="text-xs text-gray-400 mt-1.5">vs. last month</div>
       </div>
     </motion.div>
   );

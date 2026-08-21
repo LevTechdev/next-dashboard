@@ -60,9 +60,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <LocaleProvider>
           <AuthProvider>
             <RealtimeProvider>
+              {/* Toaster mounts before {children} so sonner subscribes first —
+                  mount-time toast calls (e.g. the Security Center's
+                  ?verified=true success toast after a full-page redirect)
+                  would otherwise be dropped before the Toaster subscribes. */}
+              <Toaster richColors position="top-right" />
               {children}
               <ThemeTransitionWatcher />
-              <Toaster richColors position="top-right" />
               <PWARegister />
             </RealtimeProvider>
           </AuthProvider>

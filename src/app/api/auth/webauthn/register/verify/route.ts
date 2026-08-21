@@ -54,7 +54,12 @@ export async function POST(req: Request) {
     },
   });
 
-  await logSecurityEvent({ userId: session.user.id, type: "PASSKEY_ADDED", req });
+  await logSecurityEvent({
+    userId: session.user.id,
+    type: "PASSKEY_ADDED",
+    req,
+    tenantId: session.user.tenantId,
+  });
 
   const res = NextResponse.json({ success: true });
   res.cookies.set(REG_CHALLENGE_COOKIE, "", { path: "/", maxAge: 0 });

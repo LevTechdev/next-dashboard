@@ -81,6 +81,7 @@ export async function POST(req: Request) {
       entity: "ApiKey",
       entityId: apiKey.id,
       details: `Created API key "${name}" with ${permissions || "read"} permissions`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const { response } = await requirePermission("delete", "integrations", req);
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const { id } = await req.json();
   if (!id) {
@@ -120,6 +122,7 @@ export async function DELETE(req: Request) {
       entity: "ApiKey",
       entityId: id,
       details: `Deleted API key "${key.name}"`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -129,6 +132,7 @@ export async function DELETE(req: Request) {
 export async function PUT(req: Request) {
   const { response } = await requirePermission("update", "integrations", req);
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const body = await req.json();
   const { id, status } = body;
@@ -148,6 +152,7 @@ export async function PUT(req: Request) {
       entity: "ApiKey",
       entityId: id,
       details: `${status === "REVOKED" ? "Revoked" : "Reactivated"} API key "${updated.name}"`,
+      tenantId: session.user.tenantId,
     },
   });
 

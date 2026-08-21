@@ -55,8 +55,10 @@ export const PAGE_ACCESS: Record<string, Role[]> = {
   settings: ["ADMIN"],
   profile: ["ADMIN", "MANAGER", "STAFF"],
   "audit-log": ["ADMIN"],
+  security: ["ADMIN", "MANAGER", "STAFF"],
   roles: ["ADMIN"],
   integrations: ["ADMIN"],
+  sso: ["ADMIN"],
   billing: ["ADMIN", "MANAGER"],
   notifications: ["ADMIN", "MANAGER", "STAFF"],
 };

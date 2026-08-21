@@ -184,6 +184,8 @@ const {
           .fn()
           .mockResolvedValue([{ id: "cat-1", name: "Electronics", _count: { products: 10 } }]),
       }),
+
+      tenant: deepModel({}),
     },
   };
 });

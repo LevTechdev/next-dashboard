@@ -897,19 +897,33 @@ describe("Billing Subscription", () => {
       );
     });
 
-    it("creates or updates subscription and generates invoice", async () => {
+    it("rejects paid plans with 400 (they must use Stripe checkout)", async () => {
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-1",
+        name: "Starter",
+        price: 29,
+      });
       const res = await billingSubscriptionRoutes.POST(mockRequest({ planId: "plan-1" }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("checkout");
+    });
+
+    it("creates or updates subscription for free plans and generates invoice", async () => {
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        name: "Free",
+        price: 0,
+      });
+      const res = await billingSubscriptionRoutes.POST(mockRequest({ planId: "plan-free" }));
       expect(res.status).toBe(200);
       const body = await res.json();
       // Response is the upserted subscription with plan included
       expect(body.id).toBe("sub-new"); // from create.userId being truthy
       expect(body.status).toBe("ACTIVE");
-      expect(body.planId).toBe("plan-1");
+      expect(body.planId).toBe("plan-free");
       expect(body.cancelAtPeriodEnd).toBe(false);
       expect(body.plan).toBeDefined();
-      expect(body.plan.id).toBe("plan-1");
-      expect(body.plan.name).toBe("Starter");
-      expect(body.plan.price).toBe(29);
       expect(body.currentPeriodStart).toBeDefined();
       expect(body.currentPeriodEnd).toBeDefined();
       expect(mockPrisma.subscription.upsert).toHaveBeenCalled();

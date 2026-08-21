@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/api-guard";
+import { requirePermission, requireAuth } from "@/lib/api-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   const { response } = await requirePermission("update", "roles");
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const body = await req.json();
   const { id, allowed } = body;
@@ -43,6 +44,7 @@ export async function PUT(req: Request) {
       entity: "RoleSetting",
       entityId: id,
       details: `Changed ${updated.role} ${updated.resource}:${updated.action} to ${updated.allowed ? "ALLOW" : "DENY"}`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -52,6 +54,7 @@ export async function PUT(req: Request) {
 export async function POST(req: Request) {
   const { response } = await requirePermission("create", "roles");
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const body = await req.json();
   const { role, resource, action, allowed } = body;
@@ -75,6 +78,7 @@ export async function POST(req: Request) {
       entity: "RoleSetting",
       entityId: setting.id,
       details: `Created ${role} ${resource}:${action} = ${setting.allowed ? "ALLOW" : "DENY"}`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -84,6 +88,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const { response } = await requirePermission("delete", "roles");
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const { id } = await req.json();
   if (!id) {
@@ -98,6 +103,7 @@ export async function DELETE(req: Request) {
       entity: "RoleSetting",
       entityId: id,
       details: `Deleted role permission setting`,
+      tenantId: session.user.tenantId,
     },
   });
 

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { useRafTimers, advanceAnimationSync } from "@/test-utils/animation-test-utils";
 
 // Undo the global mock from setup.ts so we test the real component
 vi.unmock("@/components/ui/animated-counter");
@@ -7,13 +8,7 @@ vi.unmock("@/components/ui/animated-counter");
 import { AnimatedCounter } from "../animated-counter";
 
 describe("AnimatedCounter", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  useRafTimers();
 
   it("renders a span with the initial value", () => {
     render(<AnimatedCounter end={100} />);
@@ -40,9 +35,7 @@ describe("AnimatedCounter", () => {
   it("displays the animated end value after enough time", () => {
     render(<AnimatedCounter end={42} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("42")).toBeInTheDocument();
   });
@@ -50,9 +43,7 @@ describe("AnimatedCounter", () => {
   it("renders with a prefix", () => {
     render(<AnimatedCounter end={50} prefix="$" />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("$50")).toBeInTheDocument();
   });
@@ -60,9 +51,7 @@ describe("AnimatedCounter", () => {
   it("renders with a suffix", () => {
     render(<AnimatedCounter end={75} suffix="%" />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("75%")).toBeInTheDocument();
   });
@@ -70,9 +59,7 @@ describe("AnimatedCounter", () => {
   it("renders with a custom formatter", () => {
     render(<AnimatedCounter end={2500} formatter={(v) => `${(v / 1000).toFixed(1)}K`} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("2.5K")).toBeInTheDocument();
   });
@@ -80,9 +67,7 @@ describe("AnimatedCounter", () => {
   it("respects decimal places", () => {
     render(<AnimatedCounter end={99} decimals={1} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("99.0")).toBeInTheDocument();
   });
@@ -90,9 +75,7 @@ describe("AnimatedCounter", () => {
   it("applies custom className", () => {
     render(<AnimatedCounter end={100} className="font-bold" />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     const span = screen.getByText("100");
     expect(span.className).toContain("font-bold");
@@ -109,9 +92,7 @@ describe("AnimatedCounter", () => {
   it("removes opacity-90 after animation completes", () => {
     render(<AnimatedCounter end={100} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     const span = screen.getByText("100");
     expect(span.className).not.toContain("opacity-90");
@@ -120,9 +101,7 @@ describe("AnimatedCounter", () => {
   it("completes within the default 1500ms duration", () => {
     render(<AnimatedCounter end={100} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     const span = screen.getByText("100");
     expect(span).toBeInTheDocument();
@@ -131,9 +110,7 @@ describe("AnimatedCounter", () => {
   it("handles zero as end value", () => {
     render(<AnimatedCounter end={0} />);
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
+    advanceAnimationSync(2000);
 
     expect(screen.getByText("0")).toBeInTheDocument();
   });
@@ -142,9 +119,7 @@ describe("AnimatedCounter", () => {
     it("handles NaN end value without crashing", () => {
       render(<AnimatedCounter end={NaN} />);
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       // value.toFixed(0) on NaN returns "NaN"
       expect(screen.getByText("NaN")).toBeInTheDocument();
@@ -153,9 +128,7 @@ describe("AnimatedCounter", () => {
     it("handles Infinity end value without crashing", () => {
       render(<AnimatedCounter end={Infinity} />);
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(screen.getByText("Infinity")).toBeInTheDocument();
     });
@@ -163,9 +136,7 @@ describe("AnimatedCounter", () => {
     it("handles -Infinity end value without crashing", () => {
       render(<AnimatedCounter end={-Infinity} />);
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(screen.getByText(/-?Infinity/)).toBeInTheDocument();
     });
@@ -174,9 +145,7 @@ describe("AnimatedCounter", () => {
       render(<AnimatedCounter end={100} duration={0} />);
 
       // Advance by ~1 frame so rAF fires (advanceTimersByTime(0) may not trigger rAF)
-      act(() => {
-        vi.advanceTimersByTime(16);
-      });
+      advanceAnimationSync(16);
 
       expect(screen.getByText("100")).toBeInTheDocument();
     });
@@ -184,9 +153,7 @@ describe("AnimatedCounter", () => {
     it("handles very large numbers", () => {
       render(<AnimatedCounter end={Number.MAX_SAFE_INTEGER} />);
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(screen.getByText(Number.MAX_SAFE_INTEGER.toString())).toBeInTheDocument();
     });
@@ -194,9 +161,7 @@ describe("AnimatedCounter", () => {
     it("handles very small decimal end value with decimals prop", () => {
       render(<AnimatedCounter end={0.001} decimals={4} />);
 
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
+      advanceAnimationSync(2000);
 
       expect(screen.getByText("0.0010")).toBeInTheDocument();
     });
@@ -205,9 +170,7 @@ describe("AnimatedCounter", () => {
       render(<AnimatedCounter end={100} duration={-500} />);
 
       // Should render without throwing
-      act(() => {
-        vi.advanceTimersByTime(100);
-      });
+      advanceAnimationSync(100);
 
       // Animation may not complete with negative duration, but component should exist
       const span = document.querySelector(".tabular-nums");

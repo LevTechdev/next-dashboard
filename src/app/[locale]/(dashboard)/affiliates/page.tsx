@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lightbox } from "@/components/ui/lightbox";
+import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
 import { ShareLinkDialog } from "@/components/share-link-dialog";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -134,6 +135,11 @@ export default function AffiliatesPage() {
 
   // Fullscreen image lightbox (shared by preview + links table)
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+
+  // Import-preview thumbnail gallery is an overflow-x row; keyboard focus on
+  // a clipped thumbnail should scroll it into view.
+  const galleryRowRef = useRef<HTMLDivElement>(null);
+  useScrollFocusedIntoView(galleryRowRef);
 
   // Share-link dialog (QR + social share)
   const [shareLink, setShareLink] = useState<any>(null);
@@ -1135,7 +1141,7 @@ export default function AffiliatesPage() {
                       {t("chooseCover")}{" "}
                       <span className="font-normal text-gray-400">· {t("dragToReorder")}</span>
                     </p>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div ref={galleryRowRef} className="flex gap-2 overflow-x-auto pb-1">
                       {importPreview.product.images.map((img: string, idx: number) => (
                         <button
                           key={img}

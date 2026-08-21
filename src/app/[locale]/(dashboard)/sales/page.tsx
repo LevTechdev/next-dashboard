@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { RefreshCwIcon, TrendingUpIcon, DollarSignIcon } from "lucide-animated";
 import { ShoppingCart, Store, Filter, ShoppingBag, Percent } from "lucide-react";
@@ -22,18 +22,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDateTime, getStatusColor, salesChannels, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { DataExportButton } from "@/components/data-export-button";
-import { downloadCsv } from "@/lib/csv";
+
+// Maps salesChannels util slugs to sales namespace keys (brand names keep their English form)
+const CHANNEL_KEYS: Record<string, string> = {
+  "online-store": "onlineStore",
+  facebook: "facebook",
+  "facebook-shop": "facebookShop",
+  instagram: "instagram",
+  tiktok: "tiktok",
+  shopify: "shopify",
+};
 
 export default function SalesPage() {
   const tsales = useTranslations("sales");
   const tcommon = useTranslations("common");
+  const tstatus = useTranslations("status");
   const [channelFilter, setChannelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const {
     data: orders,
@@ -53,6 +66,12 @@ export default function SalesPage() {
     () => (orders && orders.length > 0 ? totalRevenue / orders.length : 0),
     [totalRevenue, orders],
   );
+
+  // Client-side pagination over the fetched orders (export still covers all rows).
+  const totalPages = Math.max(1, Math.ceil((orders?.length || 0) / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const paginated = (orders || []).slice(pageStart, pageStart + pageSize);
 
   const stats = useMemo(
     () => [
@@ -145,24 +164,30 @@ export default function SalesPage() {
           </Button>
           <DataExportButton
             columns={[
-              { key: (o: any) => `#${o.orderNumber}`, header: "Order #" },
-              { key: (o: any) => o.customer?.name || "Guest", header: "Customer" },
-              { key: (o: any) => o.channel?.name || "N/A", header: "Channel" },
-              { key: "status", header: "Status" },
-              { key: "paymentStatus", header: "Payment" },
-              { key: (o: any) => o.grandTotal, header: "Amount" },
-              { key: (o: any) => new Date(o.createdAt).toLocaleDateString(), header: "Date" },
+              { key: (o: any) => `#${o.orderNumber}`, header: tsales("orderNumber") },
+              { key: (o: any) => o.customer?.name || tsales("guest"), header: tsales("customer") },
+              {
+                key: (o: any) => o.channel?.name || tcommon("na"),
+                header: tsales("channel"),
+              },
+              { key: "status", header: tsales("status") },
+              { key: "paymentStatus", header: tsales("payment") },
+              { key: (o: any) => o.grandTotal, header: tsales("amount") },
+              {
+                key: (o: any) => new Date(o.createdAt).toLocaleDateString(),
+                header: tsales("date"),
+              },
             ]}
             data={orders || []}
             filename={`sales-export-${new Date().toISOString().split("T")[0]}`}
-            label="Export"
+            label={tcommon("export")}
           />
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
+        {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -193,7 +218,13 @@ export default function SalesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-gray-400" />
-              <Select value={channelFilter} onValueChange={setChannelFilter}>
+              <Select
+                value={channelFilter}
+                onValueChange={(v) => {
+                  setChannelFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder={tsales("allChannels")} />
                 </SelectTrigger>
@@ -201,7 +232,7 @@ export default function SalesPage() {
                   <SelectItem value="all">{tsales("allChannels")}</SelectItem>
                   {salesChannels.map((ch) => (
                     <SelectItem key={ch.slug} value={ch.slug}>
-                      {ch.name}
+                      {tsales(CHANNEL_KEYS[ch.slug] ?? ch.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -209,17 +240,23 @@ export default function SalesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder={tcommon("all")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{tcommon("all")}</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="PROCESSING">Processing</SelectItem>
-                  <SelectItem value="SHIPPED">Shipped</SelectItem>
-                  <SelectItem value="DELIVERED">Delivered</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="PENDING">{tstatus("pending")}</SelectItem>
+                  <SelectItem value="PROCESSING">{tstatus("processing")}</SelectItem>
+                  <SelectItem value="SHIPPED">{tstatus("shipped")}</SelectItem>
+                  <SelectItem value="DELIVERED">{tstatus("delivered")}</SelectItem>
+                  <SelectItem value="CANCELLED">{tstatus("cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -240,14 +277,14 @@ export default function SalesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(orders || []).map((order: any) => (
+                {paginated.map((order: any) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-sm font-medium">
                       #{order.orderNumber}
                     </TableCell>
-                    <TableCell>{order.customer?.name || "Guest"}</TableCell>
+                    <TableCell>{order.customer?.name || tsales("guest")}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{order.channel?.name || "N/A"}</Badge>
+                      <Badge variant="outline">{order.channel?.name || tcommon("na")}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
@@ -276,6 +313,18 @@ export default function SalesPage() {
               </TableBody>
             </Table>
           </div>
+          {orders && orders.length > 0 && (
+            <PaginationBar
+              total={orders.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

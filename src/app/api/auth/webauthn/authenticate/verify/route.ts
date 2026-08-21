@@ -78,7 +78,7 @@ export async function POST(req: Request) {
   const familyId = newFamilyId();
   const sessionId = await createSession({ userId: user.id, token, req, familyId });
   const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
-  await logSecurityEvent({ userId: user.id, type: "PASSKEY_LOGIN", req });
+  await logSecurityEvent({ userId: user.id, type: "PASSKEY_LOGIN", req, tenantId: user.tenantId });
 
   const { password: _pw, totpSecret: _ts, ...safeUser } = user;
   void _pw;

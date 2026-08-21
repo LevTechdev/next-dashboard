@@ -100,6 +100,6 @@ describe("Team Page", () => {
     expect(screen.getByText("Role")).toBeInTheDocument();
     expect(screen.getByText("Position")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
-    expect(screen.getByText("Date")).toBeInTheDocument();
+    expect(screen.getByText("Joined")).toBeInTheDocument();
   });
 });

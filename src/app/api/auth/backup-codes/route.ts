@@ -19,6 +19,11 @@ export async function POST(req: Request) {
   if (response) return response;
 
   const codes = await regenerateBackupCodes(session.user.id);
-  await logSecurityEvent({ userId: session.user.id, type: "BACKUP_CODES_GENERATED", req });
+  await logSecurityEvent({
+    userId: session.user.id,
+    type: "BACKUP_CODES_GENERATED",
+    req,
+    tenantId: session.user.tenantId,
+  });
   return NextResponse.json({ codes });
 }

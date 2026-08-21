@@ -372,7 +372,7 @@ export default function ProductDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin">
                 {(product.inventoryItems || []).map((rec: any) => (
                   <div key={rec.id} className="flex items-start gap-3 text-sm">
                     <div

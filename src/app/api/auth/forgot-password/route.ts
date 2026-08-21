@@ -1,17 +1,21 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 /**
  * POST /api/auth/forgot-password
- * Accepts { email }, generates a one-hour reset token and stores it on the
- * user record. Always returns a generic success response to avoid leaking
- * which emails exist. In development the reset link is logged to the console
- * (no mailer is configured); returns resetUrl in dev mode for testing.
+ * Accepts { email }, generates a one-hour reset token, stores it on the user
+ * record, and emails the reset link via the configured mailer (Resend). Always
+ * returns a generic success response to avoid leaking which emails exist. In
+ * development (or with no mailer configured) the reset link is logged to the
+ * console and returned in the response for testing.
  */
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { email } = body;
+    const locale = typeof body.locale === "string" && body.locale ? body.locale : "en";
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
@@ -29,10 +33,13 @@ export async function POST(req: Request) {
       });
 
       const origin = req.headers.get("origin") || `http://localhost:${process.env.PORT || 3010}`;
-      const resetUrl = `${origin}/en/reset-password?token=${token}`;
+      const resetUrl = `${origin}/${locale}/reset-password?token=${token}`;
 
-      // No mailer configured — log the link so it can be used in development
-      console.log(`[forgot-password] Reset link for ${email}: ${resetUrl}`);
+      const { sent } = await sendPasswordResetEmail({ to: email, url: resetUrl, locale });
+      if (!sent) {
+        // No mailer configured — log the link so it can be used in development
+        console.log(`[forgot-password] Reset link for ${email}: ${resetUrl}`);
+      }
 
       if (process.env.NODE_ENV !== "production") {
         return NextResponse.json({ success: true, resetUrl });

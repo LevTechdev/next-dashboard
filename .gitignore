@@ -71,3 +71,5 @@ next-env.d.ts
 # local verification / audit screenshots (never commit)
 /test-results/icon-check*/
 /test-results/visual-qa-*/
+scripts/dev-idp/
+.next-prod/

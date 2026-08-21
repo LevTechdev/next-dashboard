@@ -224,6 +224,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 variant="ghost"
                 size="icon"
                 className="text-gray-500 active:scale-95 transition-transform duration-150 rounded-xl"
+                aria-label={tsettings("appearance")}
               >
                 {mounted && theme === "dark" ? (
                   <MoonIcon size={20} className="h-5 w-5" />

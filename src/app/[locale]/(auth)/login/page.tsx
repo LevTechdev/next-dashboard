@@ -5,15 +5,15 @@ import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon, LoaderCircleIcon, SparklesIcon } from "lucide-animated";
-import { LogIn, Smartphone, Mail, LayoutDashboard } from "lucide-react";
+import { LogIn, Smartphone, Mail, LayoutDashboard, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Fingerprint, Building2 } from "lucide-react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -65,16 +65,18 @@ function LoginForm() {
     }
   };
 
-  const handleTotpVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (totpCode.length < 6) {
+  const totpSubmittingRef = useRef(false);
+
+  const handleTotpVerification = async (code: string) => {
+    if (code.length < 6) {
       toast.error("Please enter a valid 6-digit code");
       return;
     }
-
+    if (totpSubmittingRef.current) return;
+    totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await login(savedEmail, savedPassword, totpCode);
+      const result = await login(savedEmail, savedPassword, code);
       if (result.success) {
         toast.success("Welcome back!");
         router.push(redirect);
@@ -84,6 +86,7 @@ function LoginForm() {
     } catch {
       toast.error("An error occurred");
     } finally {
+      totpSubmittingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -165,48 +168,62 @@ function LoginForm() {
         </div>
 
         {/* Ambient glow */}
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/8 rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-purple-500/8 dark:bg-purple-500/6 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/3 w-64 h-64 sm:w-96 sm:h-96 bg-lime-500/10 dark:bg-indigo-500/8 rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/3 w-48 h-48 sm:w-64 sm:h-64 bg-lime-500/8 dark:bg-purple-500/6 rounded-full blur-[120px] pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-md"
+          className="relative z-10 w-full max-w-xs sm:max-w-sm md:max-w-md"
         >
           <Card className="backdrop-blur-xl bg-white/80 dark:bg-zinc-900/80 border border-white/20 dark:border-zinc-800/50 shadow-2xl shadow-black/5 dark:shadow-black/20">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Smartphone className="h-7 w-7 text-white" />
+              <div className="mx-auto mb-4 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-lime-500 to-lime-600 dark:from-indigo-500 dark:to-purple-600 flex items-center justify-center shadow-lg shadow-lime-500/20 dark:shadow-indigo-500/20">
+                <Smartphone className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <CardTitle className="text-xl">Two-Factor Authentication</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Two-Factor Authentication</CardTitle>
               <CardDescription>Enter the 6-digit code from your authenticator app</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleTotpVerification} className="space-y-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleTotpVerification(totpCode);
+                }}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    Authentication Code
-                  </label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
-                    className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 dark:focus:border-indigo-500"
-                    autoFocus
-                    disabled={isLoading}
-                  />
+                  <Label className="text-lime-700">Authentication Code</Label>
+                  <div className="relative group">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-lime-500 dark:group-focus-within:text-indigo-500 transition-colors" />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={totpCode}
+                      onChange={(e) => {
+                        const next = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setTotpCode(next);
+                        // Auto-verify as soon as all 6 digits are entered.
+                        if (next.length === 6) {
+                          void handleTotpVerification(next);
+                        }
+                      }}
+                      placeholder="000000"
+                      className="h-12 sm:h-14 pl-10 text-center text-xl sm:text-2xl tracking-[0.5em] font-mono bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-lime-500 dark:focus:border-indigo-500 focus:ring-lime-500/30 dark:focus:ring-indigo-500/30"
+                      autoFocus
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
 
                 <ShimmerButton
                   type="submit"
                   className="w-full h-11 text-sm font-medium"
                   disabled={totpCode.length < 6 || isLoading}
-                  shimmerColor="rgba(99, 102, 241, 0.5)"
+                  shimmerColor="rgba(132, 204, 22, 0.5)"
                 >
                   {isLoading ? (
                     <>
@@ -253,8 +270,8 @@ function LoginForm() {
       </div>
 
       {/* Ambient glow blobs */}
-      <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/8 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-purple-500/8 dark:bg-purple-500/6 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-lime-500/10 dark:bg-indigo-500/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-lime-500/8 dark:bg-purple-500/6 rounded-full blur-[120px] pointer-events-none" />
 
       {/* ═══ LOGIN CARD ═══ */}
       <motion.div
@@ -273,7 +290,7 @@ function LoginForm() {
           className="flex justify-center mb-6"
         >
           <Link href="/en" className="flex items-center gap-2.5 group">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-foreground text-background shadow-lg transition-shadow group-hover:shadow-xl">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-lime-500 text-white dark:bg-foreground dark:text-background shadow-lg shadow-lime-500/30 dark:shadow-none transition-shadow group-hover:shadow-xl">
               <LayoutDashboard className="h-[20px] w-[20px]" />
             </div>
             <span className="text-sm font-semibold text-foreground">Dashboard</span>
@@ -287,14 +304,14 @@ function LoginForm() {
           }}
         >
           {/* Subtle gradient top border */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500/0 via-indigo-500/50 to-purple-500/0" />
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-lime-500/0 via-lime-500/50 to-lime-600/0 dark:from-indigo-500/0 dark:via-indigo-500/50 dark:to-purple-500/0" />
 
           <CardHeader className="text-center pt-8 pb-4">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.4 }}
-              className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"
+              className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-gradient-to-br from-lime-500 to-lime-600 dark:from-indigo-500 dark:to-purple-600 flex items-center justify-center shadow-lg shadow-lime-500/20 dark:shadow-indigo-500/20"
             >
               <LogIn className="h-7 w-7 text-white" />
             </motion.div>
@@ -303,7 +320,7 @@ function LoginForm() {
             </CardTitle>
             <CardDescription className="flex items-center justify-center gap-1">
               Sign in to your dashboard
-              <SparklesIcon size={12} className="h-3 w-3 text-indigo-400" />
+              <SparklesIcon size={12} className="h-3 w-3 text-lime-500 dark:text-indigo-400" />
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-8">
@@ -314,17 +331,15 @@ function LoginForm() {
                 transition={{ delay: 0.2, duration: 0.4 }}
                 className="space-y-2"
               >
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Email
-                </label>
+                <Label>Email</Label>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-lime-500 dark:group-focus-within:text-indigo-500 transition-colors" />
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@dashboard.com"
-                    className="pl-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+                    className="pl-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-lime-400 dark:focus:border-indigo-500 transition-all"
                     disabled={isLoading}
                     autoComplete="email"
                   />
@@ -338,12 +353,10 @@ function LoginForm() {
                 className="space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    Password
-                  </label>
+                  <Label>Password</Label>
                   <Link
                     href={`/${locale}/forgot-password`}
-                    className="text-xs text-indigo-500 hover:text-indigo-400 transition-colors"
+                    className="text-xs text-lime-600 hover:text-lime-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                   >
                     Forgot?
                   </Link>
@@ -354,7 +367,7 @@ function LoginForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="pr-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+                    className="pr-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-lime-400 dark:focus:border-indigo-500 transition-all"
                     disabled={isLoading}
                     autoComplete="current-password"
                   />
@@ -381,7 +394,7 @@ function LoginForm() {
                   type="submit"
                   className="w-full h-11 text-sm font-medium"
                   disabled={!email || !password || isLoading}
-                  shimmerColor="rgba(99, 102, 241, 0.5)"
+                  shimmerColor="rgba(132, 204, 22, 0.5)"
                 >
                   {isLoading ? (
                     <>
@@ -475,7 +488,7 @@ function LoginForm() {
               Don&apos;t have an account?{" "}
               <Link
                 href="/en/register"
-                className="text-indigo-600 hover:text-indigo-400 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors"
+                className="text-lime-600 hover:text-lime-500 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors"
               >
                 Create one
               </Link>
@@ -501,7 +514,10 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-[#0b0c11]">
-          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-indigo-500" />
+          <LoaderCircleIcon
+            size={32}
+            className="h-8 w-8 animate-spin text-lime-500 dark:text-indigo-500"
+          />
         </div>
       }
     >

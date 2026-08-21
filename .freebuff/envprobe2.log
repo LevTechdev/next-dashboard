@@ -1,0 +1,52 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 db:seed
+> npx tsx prisma/seed.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+🌱 Seeding database...
+🔗 SecurityEvent chain re-chained (1 rows)
+✅ Users created (default tenant:  default )
+✅ Plans created (Free/Pro/Enterprise)
+✅ Admin seeded on Free plan
+✅ Sales channels created
+✅ Categories created
+✅ Products created
+✅ Customers created
+✅ Orders created (361 across 12 months)
+✅ Discounts created
+✅ Campaigns created
+✅ Inventory records created
+✅ Activity logs created
+
+🎉 Database seeded successfully!
+📧 Admin login: admin@dashboard.com / admin123
+📧 Staff login: sarah@dashboard.com / staff123
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 repair:audit-chain
+> npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/repair-audit-chain.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+rows: 4332 | broken before: 0 | updated: 0 | broken after: 0 | verified: 4332
+Chain repaired — /api/security/audit/verify should now report ok: true
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › e2e\tmp-env-probe.spec.ts:3:5 › probe AI_MOCK env in worker
+[chromium] › e2e\tmp-env-probe.spec.ts:3:5 › probe AI_MOCK env in worker
+AI_MOCK in worker = "1 "
+
+  1 passed (6.5s)

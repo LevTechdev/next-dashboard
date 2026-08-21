@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useState, useEffect, useCallback } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   CheckIcon,
   XIcon,
@@ -16,7 +16,16 @@ import {
   CircleHelpIcon,
   DownloadIcon,
 } from "lucide-animated";
-import { ShoppingCart, Shield, BarChart3, Loader2, AlertTriangle } from "lucide-react";
+import {
+  ShoppingCart,
+  Shield,
+  BarChart3,
+  Loader2,
+  AlertTriangle,
+  ChevronDown,
+  Wallet,
+} from "lucide-react";
+import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
@@ -54,6 +63,7 @@ interface Plan {
   isActive: boolean;
   popular: boolean;
   sortOrder: number;
+  stripePriceId: string | null;
 }
 
 interface SubscriptionData {
@@ -66,6 +76,8 @@ interface SubscriptionData {
     currentPeriodStart: string;
     currentPeriodEnd: string;
     cancelAtPeriodEnd: boolean;
+    stripeCustomerId: string | null;
+    stripeSubscriptionId: string | null;
     createdAt: string;
   } | null;
 }
@@ -134,6 +146,29 @@ const SUPPORT_LABELS: Record<string, string> = {
   priority: "Priority Support",
   dedicated: "24/7 Dedicated",
 };
+
+/** Midtrans local payment channels offered in the plan-confirm dialog. */
+const PAYMENT_CHANNELS = ["dana", "gopay", "qris", "bank_transfer", "credit_card"] as const;
+
+const channelKey = (channel: string) =>
+  `channel${channel
+    .split("_") // snake → CapitalizedCamel: bank_transfer → channelBankTransfer
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("")}`;
+
+/** Currency-aware invoice amount (plan prices stay USD; Midtrans invoices are IDR). */
+function formatInvoiceAmount(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency || "USD"} ${amount}`;
+  }
+}
 
 function getPlanFeatures(plan: Plan) {
   return [
@@ -283,6 +318,32 @@ function OverviewTab() {
     }
   };
 
+  const locale = useLocale();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // Open the Stripe Customer Portal (payment methods, invoices, subscription)
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tbilling("portalError"));
+      }
+    } catch {
+      toast.error(tbilling("portalError"));
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -354,7 +415,17 @@ function OverviewTab() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              {sub?.stripeCustomerId && (
+                <Button variant="outline" onClick={handleOpenPortal} disabled={portalLoading}>
+                  {portalLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCardIcon size={16} className="h-4 w-4 mr-2" />
+                  )}
+                  {tbilling("manageBilling")}
+                </Button>
+              )}
               {sub?.cancelAtPeriodEnd ? (
                 <Button variant="outline" onClick={handleReactivate}>
                   <RefreshCwIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("reactivate")}
@@ -486,7 +557,10 @@ function OverviewTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">{formatCurrencyUSD(inv.amount)}</span>
+                    {" "}
+                    <span className="text-sm font-medium">
+                      {formatInvoiceAmount(inv.amount, inv.currency)}
+                    </span>
                     <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
                       {inv.status}
                     </Badge>
@@ -508,11 +582,14 @@ function OverviewTab() {
 function PlansTab() {
   const tbilling = useTranslations("billing");
   const tcommon = useTranslations("common");
+  const locale = useLocale();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
   const [confirmPlan, setConfirmPlan] = useState<Plan | null>(null);
+  const [paymentGateway, setPaymentGateway] = useState<"stripe" | "midtrans">("stripe");
+  const [paymentChannel, setPaymentChannel] = useState("dana");
 
   const fetchData = useCallback(async () => {
     try {
@@ -537,13 +614,46 @@ function PlansTab() {
     fetchData();
   }, [fetchData]);
 
-  const handleSwitchPlan = async (planId: string) => {
-    setSwitching(planId);
+  const handleSwitchPlan = async (plan: Plan) => {
+    setSwitching(plan.id);
     try {
+      if (plan.price > 0) {
+        // Paid plan → hosted checkout. gateway selects the provider: Stripe
+        // (international card) or Midtrans (local payments) with a channel
+        // restriction (DANA / GoPay / QRIS / bank transfer / card).
+        const res = await fetch("/api/billing/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: plan.id,
+            locale,
+            gateway: paymentGateway,
+            channel: paymentGateway === "midtrans" ? paymentChannel : undefined,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) {
+            setConfirmPlan(null);
+            toast.info(
+              paymentGateway === "midtrans"
+                ? tbilling("checkoutLocalRedirect")
+                : tbilling("checkoutRedirect"),
+            );
+            window.location.href = data.url;
+            return;
+          }
+        }
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tbilling("checkoutError"));
+        return;
+      }
+
+      // Free plan → direct switch (no payment required)
       const res = await fetch("/api/billing/subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId: plan.id }),
       });
       if (res.ok) {
         toast.success(tbilling("planUpdated"));
@@ -554,7 +664,7 @@ function PlansTab() {
         toast.error(err.error || tbilling("switchFailed"));
       }
     } catch {
-      toast.error(tbilling("switchFailed"));
+      toast.error(tbilling("checkoutError"));
     } finally {
       setSwitching(null);
     }
@@ -635,7 +745,10 @@ function PlansTab() {
                     !isCurrent && plan.popular && "bg-indigo-600 hover:bg-indigo-700",
                   )}
                   disabled={isCurrent || switching === plan.id}
-                  onClick={() => setConfirmPlan(plan)}
+                  onClick={() => {
+                    setPaymentGateway("stripe");
+                    setConfirmPlan(plan);
+                  }}
                 >
                   {isCurrent ? (
                     <>{tbilling("currentPlan")}</>
@@ -643,10 +756,14 @@ function PlansTab() {
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tbilling("switching")}
                     </>
-                  ) : (
+                  ) : plan.price > 0 ? (
                     <>
                       <ZapIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("switchPlan")}{" "}
                       {plan.name}
+                    </>
+                  ) : (
+                    <>
+                      <ZapIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("downgradeToFree")}
                     </>
                   )}
                 </Button>
@@ -708,6 +825,60 @@ function PlansTab() {
                     {formatCurrencyUSD(confirmPlan.price)}/{confirmPlan.interval.toLowerCase()}
                   </span>
                 </div>
+
+                {/* Payment provider chooser — shown for paid plans. */}
+                {confirmPlan.price > 0 && (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      {tbilling("payWith")}
+                    </p>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <input
+                          type="radio"
+                          name="payment-gateway"
+                          checked={paymentGateway === "stripe"}
+                          onChange={() => setPaymentGateway("stripe")}
+                          className="h-3.5 w-3.5 accent-indigo-600"
+                        />
+                        <span className="text-sm">{tbilling("gatewayStripe")}</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <input
+                          type="radio"
+                          name="payment-gateway"
+                          checked={paymentGateway === "midtrans"}
+                          onChange={() => setPaymentGateway("midtrans")}
+                          className="h-3.5 w-3.5 accent-indigo-600"
+                        />
+                        <span className="text-sm">{tbilling("gatewayMidtrans")}</span>
+                      </label>
+                    </div>
+                    {paymentGateway === "midtrans" && (
+                      <div className="mt-2 ml-6 space-y-1">
+                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                          {tbilling("midtransChannel")}
+                        </p>
+                        {PAYMENT_CHANNELS.map((ch) => (
+                          <label
+                            key={ch}
+                            className="flex items-center gap-2.5 p-1.5 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                          >
+                            <input
+                              type="radio"
+                              name="payment-channel"
+                              checked={paymentChannel === ch}
+                              onChange={() => setPaymentChannel(ch)}
+                              className="h-3.5 w-3.5 accent-indigo-600"
+                            />
+                            <span className="text-sm">{tbilling(channelKey(ch))}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="text-sm text-gray-500 space-y-2">
                   <div className="flex items-center gap-2">
                     <CircleCheckIcon size={16} className="h-4 w-4 text-emerald-500" />
@@ -732,7 +903,7 @@ function PlansTab() {
               {tcommon("cancel")}
             </Button>
             <Button
-              onClick={() => confirmPlan && handleSwitchPlan(confirmPlan.id)}
+              onClick={() => confirmPlan && handleSwitchPlan(confirmPlan)}
               disabled={switching === confirmPlan?.id}
             >
               {switching ? (
@@ -756,7 +927,6 @@ function PlansTab() {
 
 function InvoicesTab() {
   const tbilling = useTranslations("billing");
-  const tcommon = useTranslations("common");
   const [invoicesData, setInvoicesData] = useState<InvoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
@@ -873,83 +1043,116 @@ function InvoicesTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((inv) => (
-                    <>
-                      <tr
-                        key={inv.id}
-                        className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                        onClick={() =>
-                          setExpandedInvoice(expandedInvoice === inv.id ? null : inv.id)
-                        }
-                      >
-                        <td className="py-3 px-2">
-                          <div>
-                            <span className="font-medium">{inv.invoiceNumber}</span>
-                            {inv.description && (
-                              <p className="text-xs text-gray-500">{inv.description}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-gray-600 dark:text-gray-400">
-                          {inv.periodStart && inv.periodEnd
-                            ? `${formatDate(inv.periodStart)} - ${formatDate(inv.periodEnd)}`
-                            : "—"}
-                        </td>
-                        <td className="py-3 px-2 font-medium">{formatCurrencyUSD(inv.amount)}</td>
-                        <td className="py-3 px-2">
-                          <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
-                            {inv.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-2 text-gray-500 text-xs">
-                          {inv.paymentMethod ? inv.paymentMethod.replace("_", " ") : "—"}
-                        </td>
-                        <td className="py-3 px-2 text-right text-gray-500 text-xs">
-                          {formatDate(inv.createdAt)}
-                        </td>
-                      </tr>
-                      {expandedInvoice === inv.id && (
-                        <tr className="bg-gray-50 dark:bg-gray-800/30">
-                          <td colSpan={6} className="p-4">
-                            <div className="flex items-center gap-4 text-sm">
-                              <span className="text-gray-500">
-                                Status: <strong>{inv.status}</strong>
-                              </span>
-                              {inv.paidAt && (
-                                <span className="text-gray-500">
-                                  Paid: <strong>{formatDate(inv.paidAt)}</strong>
-                                </span>
+                  {invoices.map((inv) => {
+                    const isExpanded = expandedInvoice === inv.id;
+                    const detailsId = `invoice-details-${inv.id}`;
+                    const toggleInvoice = () => setExpandedInvoice(isExpanded ? null : inv.id);
+                    return (
+                      <Fragment key={inv.id}>
+                        <tr
+                          className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                          onClick={toggleInvoice}
+                          aria-expanded={isExpanded}
+                          aria-controls={detailsId}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleInvoice();
+                            }
+                          }}
+                        >
+                          <td className="py-3 px-2">
+                            <div>
+                              <span className="font-medium">{inv.invoiceNumber}</span>
+                              {inv.description && (
+                                <p className="text-xs text-gray-500">{inv.description}</p>
                               )}
-                              {inv.paymentMethod && (
-                                <span className="text-gray-500">
-                                  Method:{" "}
-                                  <strong className="capitalize">
-                                    {inv.paymentMethod.replace("_", " ")}
-                                  </strong>
-                                </span>
-                              )}
-                              {inv.plan?.name && (
-                                <span className="text-gray-500">
-                                  Plan: <strong>{inv.plan.name}</strong>
-                                </span>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="ml-auto"
-                                onClick={() =>
-                                  window.open(`/api/billing/invoices/${inv.id}/download`, "_blank")
-                                }
-                              >
-                                <DownloadIcon size={16} className="h-4 w-4 mr-1" />{" "}
-                                {tbilling("pdf")}
-                              </Button>
                             </div>
                           </td>
+                          <td className="py-3 px-2 text-gray-600 dark:text-gray-400">
+                            {inv.periodStart && inv.periodEnd
+                              ? `${formatDate(inv.periodStart)} - ${formatDate(inv.periodEnd)}`
+                              : "—"}
+                          </td>
+                          <td className="py-3 px-2 font-medium">
+                            {formatInvoiceAmount(inv.amount, inv.currency)}
+                          </td>
+                          <td className="py-3 px-2">
+                            <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
+                              {inv.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-2 text-gray-500 text-xs">
+                            {inv.paymentMethod ? inv.paymentMethod.replace("_", " ") : "—"}
+                          </td>
+                          <td className="py-3 px-2 text-right text-gray-500 text-xs">
+                            <span className="inline-flex items-center justify-end gap-1.5">
+                              {formatDate(inv.createdAt)}
+                              <ChevronDown
+                                size={14}
+                                className={cn(
+                                  "h-3.5 w-3.5 text-gray-400 transition-transform duration-200",
+                                  isExpanded && "rotate-180",
+                                )}
+                              />
+                            </span>
+                          </td>
                         </tr>
-                      )}
-                    </>
-                  ))}
+                        <tr className="bg-gray-50 dark:bg-gray-800/30">
+                          <td colSpan={6} className="p-0">
+                            {/* Content-only disclosure: the summary row above is
+                                the trigger (it carries aria-expanded/controls +
+                                keyboard handling), this region provides the
+                                animated open/close height tween. */}
+                            <AnimatedDisclosure
+                              open={isExpanded}
+                              onToggle={toggleInvoice}
+                              contentId={detailsId}
+                            >
+                              <div className="flex items-center gap-4 text-sm p-4">
+                                <span className="text-gray-500">
+                                  Status: <strong>{inv.status}</strong>
+                                </span>
+                                {inv.paidAt && (
+                                  <span className="text-gray-500">
+                                    Paid: <strong>{formatDate(inv.paidAt)}</strong>
+                                  </span>
+                                )}
+                                {inv.paymentMethod && (
+                                  <span className="text-gray-500">
+                                    Method:{" "}
+                                    <strong className="capitalize">
+                                      {inv.paymentMethod.replace("_", " ")}
+                                    </strong>
+                                  </span>
+                                )}
+                                {inv.plan?.name && (
+                                  <span className="text-gray-500">
+                                    Plan: <strong>{inv.plan.name}</strong>
+                                  </span>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="ml-auto"
+                                  onClick={() =>
+                                    window.open(
+                                      `/api/billing/invoices/${inv.id}/download`,
+                                      "_blank",
+                                    )
+                                  }
+                                >
+                                  <DownloadIcon size={16} className="h-4 w-4 mr-1" />{" "}
+                                  {tbilling("pdf")}
+                                </Button>
+                              </div>
+                            </AnimatedDisclosure>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -964,10 +1167,46 @@ function InvoicesTab() {
 
 function PaymentTab() {
   const tbilling = useTranslations("billing");
-  const tcommon = useTranslations("common");
+  const locale = useLocale();
+  const [sub, setSub] = useState<SubscriptionData["subscription"]>(null);
+  const [loading, setLoading] = useState(true);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/subscription")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setSub(data?.subscription ?? null))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tbilling("portalError"));
+      }
+    } catch {
+      toast.error(tbilling("portalError"));
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const hasPortal = Boolean(sub?.stripeCustomerId);
+
   return (
     <div className="space-y-6">
-      {/* Saved Cards */}
+      {/* Payment Methods via Stripe Customer Portal */}
       <Card>
         <CardHeader>
           <CardTitle>{tbilling("paymentMethods")}</CardTitle>
@@ -977,18 +1216,28 @@ function PaymentTab() {
           <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
             <CreditCardIcon size={48} className="h-12 w-12 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-1">
-              {tbilling("noPaymentMethods")}
+              {hasPortal ? tbilling("noPaymentMethods") : tbilling("paymentAfterSubscribe")}
             </h3>
-            <p className="text-sm text-gray-400 mb-4">{tbilling("paymentComingSoon")}</p>
-            <Button disabled>
-              <CreditCardIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("addPaymentMethod")}
-            </Button>
-            <p className="text-xs text-gray-400 mt-3">{tbilling("paymentComingSoon")}</p>
+            <p className="text-sm text-gray-400 mb-4">{tbilling("portalDesc")}</p>
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-gray-400 mx-auto" />
+            ) : hasPortal ? (
+              <Button onClick={handleOpenPortal} disabled={portalLoading}>
+                {portalLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CreditCardIcon size={16} className="h-4 w-4 mr-2" />
+                )}
+                {tbilling("manageBilling")}
+              </Button>
+            ) : (
+              <p className="text-xs text-gray-400">{tbilling("paymentAfterSubscribe")}</p>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Billing Info */}
+      {/* Billing Info via Stripe Customer Portal */}
       <Card>
         <CardHeader>
           <CardTitle>{tbilling("billingInfo")}</CardTitle>
@@ -997,8 +1246,40 @@ function PaymentTab() {
         <CardContent>
           <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
             <CircleHelpIcon size={48} className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-            <p className="text-sm text-gray-400">{tbilling("billingInfoPlaceholder")}</p>
+            <p className="text-sm text-gray-400 mb-4">{tbilling("portalDesc")}</p>
+            {!loading && hasPortal && (
+              <Button variant="outline" onClick={handleOpenPortal} disabled={portalLoading}>
+                {portalLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CircleHelpIcon size={16} className="h-4 w-4 mr-2" />
+                )}
+                {tbilling("manageBilling")}
+              </Button>
+            )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Local payment methods (Midtrans) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{tbilling("localPaymentsTitle")}</CardTitle>
+          <CardDescription>{tbilling("localPaymentsDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {PAYMENT_CHANNELS.map((ch) => (
+              <div
+                key={ch}
+                className="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300"
+              >
+                <Wallet className="h-4 w-4 text-indigo-500 shrink-0" />
+                {tbilling(channelKey(ch))}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-3">{tbilling("localPaymentsNote")}</p>
         </CardContent>
       </Card>
     </div>

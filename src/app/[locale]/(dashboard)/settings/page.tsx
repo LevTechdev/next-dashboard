@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useViewTransition } from "@/components/view-transition-provider";
 import { setLocaleCookie } from "@/lib/locale-cookie";
 import {
@@ -22,12 +22,37 @@ import {
   Palette,
   Type,
   AlignVerticalSpaceAround,
+  Key,
+  Globe,
+  AlertCircle,
+  Download,
+  Copy,
+  Check,
+  Trash2,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { cn, formatLocaleNumber } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
 import { toast } from "sonner";
@@ -44,6 +69,125 @@ export default function SettingsPage() {
   const { budgetThreshold, setBudgetThreshold } = useRealtime();
   const [localThreshold, setLocalThreshold] = useState(budgetThreshold);
   const { settings: appearance, update: updateAppearance } = useAppearance();
+  const confirm = useConfirm();
+
+  // ── API Keys ──
+  interface ApiKey {
+    id: string;
+    name: string;
+    prefix: string;
+    permissions: string;
+    status: string;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+  }
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [apiKeysLoading, setApiKeysLoading] = useState(true);
+  const [showCreateKey, setShowCreateKey] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyPerms, setNewKeyPerms] = useState("read");
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [createdKeyValue, setCreatedKeyValue] = useState<string | null>(null);
+  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+
+  const fetchApiKeys = useCallback(async () => {
+    try {
+      const res = await fetch("/api/api-keys");
+      if (res.ok) {
+        const data = await res.json();
+        setApiKeys(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setApiKeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchApiKeys();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [fetchApiKeys]);
+
+  const handleCreateApiKey = async () => {
+    if (!newKeyName.trim()) return;
+    setCreatingKey(true);
+    try {
+      const res = await fetch("/api/api-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newKeyName, permissions: newKeyPerms }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || tcommon("error"));
+        return;
+      }
+      const data = await res.json();
+      setCreatedKeyValue(data.key);
+      setShowCreateKey(false);
+      setNewKeyName("");
+      setNewKeyPerms("read");
+      await fetchApiKeys();
+      toast.success(tsettings("apiKeyCopied"));
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleRevokeApiKey = async (id: string) => {
+    const key = apiKeys.find((k) => k.id === id);
+    const newStatus = key?.status === "ACTIVE" ? "REVOKED" : "ACTIVE";
+    try {
+      const res = await fetch("/api/api-keys", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      if (!res.ok) {
+        toast.error(tcommon("error"));
+        return;
+      }
+      await fetchApiKeys();
+      toast.success(newStatus === "REVOKED" ? tsettings("apiKeyRevoked") : tsettings("apiKeyCopied"));
+    } catch {
+      toast.error(tcommon("error"));
+    }
+  };
+
+  const handleDeleteApiKey = async (id: string) => {
+    const ok = await confirm({
+      title: tsettings("apiKeyRevoke"),
+      description: tsettings("apiKeyRevokeConfirm"),
+      confirmLabel: tsettings("apiKeyRevoke"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch("/api/api-keys", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        toast.error(tcommon("error"));
+        return;
+      }
+      await fetchApiKeys();
+      toast.success(tsettings("apiKeyRevoked"));
+    } catch {
+      toast.error(tcommon("error"));
+    }
+  };
+
+  const handleCopyKey = (key: ApiKey) => {
+    navigator.clipboard.writeText(key.prefix);
+    setCopiedKeyId(key.id);
+    setTimeout(() => setCopiedKeyId(null), 2000);
+  };
 
   useEffect(() => {
     setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
@@ -521,7 +665,235 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* API Keys */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                <div>
+                  <CardTitle>{tsettings("apiKeys")}</CardTitle>
+                  <p className="text-xs text-gray-500 mt-0.5">{tsettings("apiKeysDesc")}</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowCreateKey(true)}>
+                <Plus className="h-3.5 w-3.5" /> {tsettings("apiKeyCreate")}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {apiKeysLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-16 shimmer rounded-lg" />
+                ))}
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">{tsettings("apiKeyEmpty")}</p>
+            ) : (
+              apiKeys.map((key) => (
+                <div key={key.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                      <Key className="h-4 w-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{key.name}</p>
+                        <Badge variant={key.status === "ACTIVE" ? "success" : "danger"}>
+                          {key.status === "ACTIVE" ? tsettings("webhookActive") : tsettings("webhookInactive")}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 font-mono">{key.prefix}</p>
+                        <span className="text-xs text-gray-400">•</span>
+                        <span className="text-xs text-gray-400 capitalize">{key.permissions}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">
+                      {key.lastUsedAt ? key.lastUsedAt : tsettings("apiKeyNeverUsed")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                      onClick={() => handleCopyKey(key)}
+                      title="Copy prefix"
+                    >
+                      {copiedKeyId === key.id ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("h-7 w-7", key.status === "ACTIVE" ? "text-orange-500 hover:text-orange-600" : "text-emerald-500 hover:text-emerald-600")}
+                      onClick={() => handleRevokeApiKey(key.id)}
+                      title={key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 text-red-400 hover:text-red-600"
+                      onClick={() => handleDeleteApiKey(key.id)}
+                      title={tsettings("apiKeyRevoke")}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Webhooks */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                <div>
+                  <CardTitle>{tsettings("webhooks")}</CardTitle>
+                  <p className="text-xs text-gray-500 mt-0.5">{tsettings("webhooksDesc")}</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> {tsettings("webhookAdd")}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[
+              { url: "https://api.example.com/webhooks/orders", events: ["order.created", "order.updated"], active: true },
+              { url: "https://hooks.slack.com/services/T00/B00/xxx", events: ["customer.created"], active: false },
+            ].map((wh) => (
+              <div key={wh.url} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={cn("w-2 h-2 rounded-full shrink-0", wh.active ? "bg-emerald-500" : "bg-gray-300")} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{wh.url}</p>
+                    <p className="text-xs text-gray-500">{wh.events.join(", ")}</p>
+                  </div>
+                </div>
+                <Badge variant={wh.active ? "success" : "outline"} className="shrink-0">
+                  {wh.active ? tsettings("webhookActive") : tsettings("webhookInactive")}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Danger Zone — full width outside the grid */}
+      <Card className="border-red-200 dark:border-red-900/50">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            <div>
+              <CardTitle className="text-red-600 dark:text-red-400">{tsettings("dangerZone")}</CardTitle>
+              <p className="text-xs text-gray-500 mt-0.5">{tsettings("dangerZoneDesc")}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <Download className="h-5 w-5 text-gray-500" />
+              <div>
+                <p className="text-sm font-medium">{tsettings("exportData")}</p>
+                <p className="text-xs text-gray-500">{tsettings("exportDataDesc")}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => toast.success(tsettings("dataExported"))}>
+              <Download className="h-3.5 w-3.5 mr-1.5" /> {tsettings("exportData")}
+            </Button>
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10">
+            <div className="flex items-center gap-3">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              <div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">{tsettings("deleteAccount")}</p>
+                <p className="text-xs text-gray-500">{tsettings("deleteAccountDesc")}</p>
+              </div>
+            </div>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> {tsettings("deleteAccount")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Created API Key Reveal */}
+      {createdKeyValue && (
+        <Card className="border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <Check className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">API Key Created</p>
+                  <p className="text-xs text-gray-500 mt-1">Copy this key now. It won&apos;t be shown again.</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setCreatedKeyValue(null)}>
+                ×
+              </Button>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <code className="flex-1 p-2 bg-white dark:bg-gray-800 rounded text-xs font-mono break-all border">
+                {createdKeyValue}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(createdKeyValue);
+                  toast.success(tsettings("apiKeyCopied"));
+                }}
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create API Key Dialog */}
+      <Dialog open={showCreateKey} onOpenChange={setShowCreateKey}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tsettings("apiKeyCreate")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <Input
+              placeholder={tsettings("apiKeyName")}
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+            />
+            <Select value={newKeyPerms} onValueChange={setNewKeyPerms}>
+              <SelectTrigger>
+                <SelectValue placeholder="Permissions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="read">Read</SelectItem>
+                <SelectItem value="readwrite">Read & Write</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleCreateApiKey} disabled={creatingKey || !newKeyName.trim()} className="w-full">
+              {creatingKey ? "Creating..." : tsettings("apiKeyCreate")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex justify-end">
         <Button onClick={handleSave}>

@@ -5,18 +5,32 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { ClockIcon, UserIcon, MapPinIcon, CreditCardIcon, ArrowLeftIcon } from "lucide-animated";
-import { ShoppingBag, Store } from "lucide-react";
+import {
+  ClockIcon,
+  UserIcon,
+  MapPinIcon,
+  CreditCardIcon,
+  ArrowLeftIcon,
+  TruckIcon,
+} from "lucide-animated";
+import { ShoppingBag, Store, RotateCcw, PackageSearch, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDateTime, getStatusColor } from "@/lib/utils";
+import { isTerminalOrderStatus } from "@/lib/order-status";
 import {
   OrderTrackingTimeline,
   getTrackingEventsFromOrder,
 } from "@/components/order-tracking-timeline";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+
+interface FulfillmentStamp {
+  label: string;
+  at: string | null;
+}
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -30,6 +44,11 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Fulfillment form state (tracking number + carrier)
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("");
+  const [savingTracking, setSavingTracking] = useState(false);
 
   const refresh = () => setReloadKey((k) => k + 1);
 
@@ -52,6 +71,16 @@ export default function OrderDetailPage() {
     };
   }, [id, reloadKey]);
 
+  // Sync the fulfillment form whenever the order loads/refreshes
+  useEffect(() => {
+    if (order) {
+      setTrackingNumber(order.trackingNumber ?? "");
+      setCarrier(order.carrier ?? "");
+    }
+  }, [order?.id, order?.trackingNumber, order?.carrier]);
+
+  const confirm = useConfirm();
+
   const updateStatus = async (status: string) => {
     const res = await fetch(`/api/orders/${id}`, {
       method: "PATCH",
@@ -62,11 +91,10 @@ export default function OrderDetailPage() {
       toast.success(torders("markedAs", { status }));
       refresh();
     } else {
-      toast.error(tcommon("error"));
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error || tcommon("error"));
     }
   };
-
-  const confirm = useConfirm();
 
   const handleCancelOrder = async () => {
     const ok = await confirm({
@@ -75,14 +103,51 @@ export default function OrderDetailPage() {
       destructive: true,
     });
     if (!ok) return;
+    await updateStatus("CANCELLED");
+  };
+
+  const handleRefundOrder = async () => {
+    const ok = await confirm({
+      description: torders("refundConfirm"),
+      confirmLabel: tcommon("confirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/orders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "CANCELLED" }),
+      body: JSON.stringify({ status: "REFUNDED" }),
     });
     if (res.ok) {
-      toast.success(torders("orderCancelled"));
+      toast.success(torders("refundedToast"));
       refresh();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error || tcommon("error"));
+    }
+  };
+
+  const saveTracking = async () => {
+    setSavingTracking(true);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trackingNumber: trackingNumber.trim(),
+          carrier: carrier.trim(),
+        }),
+      });
+      if (res.ok) {
+        toast.success(torders("trackingSaved"));
+        refresh();
+      } else {
+        toast.error(torders("trackingSaveFailed"));
+      }
+    } catch {
+      toast.error(torders("trackingSaveFailed"));
+    } finally {
+      setSavingTracking(false);
     }
   };
 
@@ -126,6 +191,26 @@ export default function OrderDetailPage() {
     );
   }
 
+  // Next actionable step per the state machine (PENDING → PROCESSING → SHIPPED → DELIVERED)
+  const nextAction: { status: string; label: string } | null =
+    order.status === "PENDING"
+      ? { status: "PROCESSING", label: torders("processBtn") }
+      : order.status === "PROCESSING"
+        ? { status: "SHIPPED", label: torders("shipBtn") }
+        : order.status === "SHIPPED"
+          ? { status: "DELIVERED", label: torders("deliverBtn") }
+          : null;
+
+  const terminal = isTerminalOrderStatus(order.status);
+  const canEditFulfillment = ["PENDING", "PROCESSING", "SHIPPED"].includes(order.status);
+
+  const fulfillmentStamps: FulfillmentStamp[] = [
+    { label: torders("processedOn"), at: order.processingAt },
+    { label: torders("shippedOn"), at: order.shippedAt },
+    { label: torders("deliveredOn"), at: order.deliveredAt },
+    { label: torders("refundedOn"), at: order.refundedAt },
+  ].filter((s) => Boolean(s.at));
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -151,20 +236,21 @@ export default function OrderDetailPage() {
             <p className="text-sm text-gray-500 mt-1">{formatDateTime(order.createdAt)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {order.status === "PENDING" && (
-            <Button size="sm" onClick={() => updateStatus("PROCESSING")}>
-              {torders("processBtn")}
+        <div className="flex items-center gap-2 flex-wrap">
+          {nextAction && (
+            <Button size="sm" onClick={() => updateStatus(nextAction.status)}>
+              {nextAction.label}
             </Button>
           )}
-          {order.status === "PROCESSING" && (
-            <Button size="sm" onClick={() => updateStatus("SHIPPED")}>
-              {torders("shipBtn")}
-            </Button>
-          )}
-          {order.status === "SHIPPED" && (
-            <Button size="sm" onClick={() => updateStatus("DELIVERED")}>
-              {torders("deliverBtn")}
+          {!terminal && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/20"
+              onClick={handleRefundOrder}
+            >
+              <RotateCcw size={14} className="h-4 w-4 mr-1" />
+              {torders("refundBtn")}
             </Button>
           )}
           {(order.status === "PENDING" || order.status === "PROCESSING") && (
@@ -315,18 +401,96 @@ export default function OrderDetailPage() {
           )}
         </div>
 
-        {/* Right: tracking timeline */}
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-base">{torders("tabTracking")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrderTrackingTimeline
-              currentStatus={order.status}
-              events={getTrackingEventsFromOrder(order)}
-            />
-          </CardContent>
-        </Card>
+        {/* Right: fulfillment + tracking */}
+        <div className="space-y-6">
+          {/* Fulfillment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <PackageSearch className="h-4 w-4" />
+                {torders("fulfillmentTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {canEditFulfillment ? (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">
+                      {torders("trackingNumber")}
+                    </label>
+                    <Input
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder={torders("trackingNumberPlaceholder")}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">
+                      {torders("carrier")}
+                    </label>
+                    <Input
+                      value={carrier}
+                      onChange={(e) => setCarrier(e.target.value)}
+                      placeholder={torders("carrierPlaceholder")}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={saveTracking}
+                    disabled={savingTracking}
+                    className="w-full"
+                  >
+                    {savingTracking ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <TruckIcon size={16} className="h-4 w-4 mr-2" />
+                    )}
+                    {torders("trackingSave")}
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">{torders("trackingNumber")}</span>
+                    <span className="text-sm font-medium">
+                      {order.trackingNumber || torders("na")}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">{torders("carrier")}</span>
+                    <span className="text-sm font-medium capitalize">
+                      {order.carrier || torders("na")}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {fulfillmentStamps.length > 0 && (
+                <div className="border-t pt-3 space-y-1.5">
+                  {fulfillmentStamps.map((stamp) => (
+                    <div key={stamp.label} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">{stamp.label}</span>
+                      <span className="font-medium">{formatDateTime(stamp.at!)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tracking timeline */}
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="text-base">{torders("tabTracking")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderTrackingTimeline
+                currentStatus={order.status}
+                events={getTrackingEventsFromOrder(order)}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </motion.div>
   );

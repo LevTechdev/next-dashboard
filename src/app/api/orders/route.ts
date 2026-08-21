@@ -84,6 +84,7 @@ export async function POST(req: Request) {
       entityId: order.id,
       details: `Order ${orderNumber} created`,
       userId: session!.user.id,
+      tenantId,
     },
   });
 
@@ -120,6 +121,7 @@ export async function PUT(req: Request) {
       entityId: order.id,
       details: `Order ${order.orderNumber} updated to ${body.status}`,
       userId: session!.user.id,
+      tenantId,
     },
   });
 

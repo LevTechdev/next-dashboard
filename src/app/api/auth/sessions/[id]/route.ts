@@ -21,6 +21,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     type: "SESSION_REVOKED",
     req,
     metadata: { sessionId: id },
+    tenantId: session.user.tenantId,
   });
   return NextResponse.json({ success: true });
 }

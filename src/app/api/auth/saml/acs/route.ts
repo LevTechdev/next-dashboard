@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     type: "SAML_LOGIN",
     req,
     metadata: { connection: conn.name },
+    tenantId: user.tenantId,
   });
 
   // 303 so the browser switches POST → GET on the dashboard.

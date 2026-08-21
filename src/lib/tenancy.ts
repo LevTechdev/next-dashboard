@@ -1,4 +1,5 @@
 import "server-only";
+import { prisma } from "@/lib/db";
 
 type SessionLike = { user: { tenantId?: string | null } };
 
@@ -33,3 +34,27 @@ export function sameTenant(
   if (!row) return false;
   return (row.tenantId ?? null) === tenantId;
 }
+
+/**
+ * Effective workspace for a session. The JWT tenant claim wins; legacy
+ * sessions without a claim operate on the default (first-created) workspace —
+ * the same semantic `scripts/backfill-tenant.mjs` applies when backfilling
+ * null-tenant rows (and that the SAML connections route mirrors).
+ */
+export async function effectiveTenantId(session: SessionLike): Promise<string | null> {
+  const claimed = getTenantId(session);
+  if (claimed) return claimed;
+  const fallback = await prisma.tenant.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  return fallback?.id ?? null;
+}
+
+/**
+ * Audit READS (ActivityLog, SecurityEvent) use the same strict tenant filter
+ * as every other tenant-scoped query (`tenantWhere`). Every audit write now
+ * carries a tenantId and `scripts/backfill-audit-tenants.mjs` assigns legacy
+ * pre-tenancy rows to the default workspace, so no OR-null fallback is
+ * needed — a row without a tenant belongs to nobody and stays invisible.
+ */

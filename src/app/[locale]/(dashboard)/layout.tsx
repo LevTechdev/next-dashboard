@@ -36,7 +36,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <AiCopilotProvider>
         <ViewTransitionProvider>
           <UnsupportedBrowserBanner />
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+          {/* min-h-dvh (not min-h-screen): on mobile the browser URL bar
+              collapses/expands, and 100vh tracks the *largest* viewport, so a
+              vh-based page is taller than the visible area and the bottom dock
+              floats over a gap. dvh tracks the visible height, keeping the
+              dock pinned correctly at the bottom. */}
+          <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
               <Sidebar

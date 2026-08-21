@@ -1,0 +1,166 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 db:seed
+> npx tsx prisma/seed.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+🌱 Seeding database...
+🔗 SecurityEvent chain re-chained (9 rows)
+✅ Users created (default tenant:  default )
+✅ Plans created (Free/Pro/Enterprise)
+✅ Admin seeded on Free plan
+✅ Sales channels created
+✅ Categories created
+✅ Products created
+✅ Customers created
+✅ Orders created (393 across 12 months)
+✅ Discounts created
+✅ Campaigns created
+✅ Inventory records created
+✅ Activity logs created
+
+🎉 Database seeded successfully!
+📧 Admin login: admin@dashboard.com / admin123
+📧 Staff login: sarah@dashboard.com / staff123
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 repair:audit-chain
+> npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/repair-audit-chain.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+rows: 4243 | broken before: 0 | updated: 0 | broken after: 0 | verified: 4243
+Chain repaired — /api/security/audit/verify should now report ok: true
+
+Running 78 tests using 2 workers
+
+[1/78] [chromium] › e2e\activity-feed-mobile.spec.ts:38:7 › Activity feed filter pills on mobile › tab focus scrolls the last filter pill into view
+[2/78] [chromium] › e2e\2fa-modal-mobile.spec.ts:41:7 › 2FA modal at a 375px viewport › card stays in viewport at 320px with a lime focus ring on the OTP input
+[3/78] [chromium] › e2e\activity-feed-mobile.spec.ts:107:7 › Activity feed filter pills on mobile › pill row hides its scrollbar via the real scrollbar-none utility and still scrolls
+[4/78] [chromium] › e2e\activity-feed-mobile.spec.ts:115:7 › Activity feed filter pills on mobile › pill row keeps its scrollbar hidden under the dark theme
+[5/78] [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active
+[6/78] [chromium] › e2e\ai-copilot-rate-limit.spec.ts:16:5 › rate-limit banner ticks down, expands the why-note, and auto-retries
+[7/78] [chromium] › e2e\dashboard-seeded-data.spec.ts:23:7 › Dashboard seeded data › API returns non-zero tenant-scoped stats for the seed admin
+[8/78] [chromium] › e2e\dashboard-seeded-data.spec.ts:47:7 › Dashboard seeded data › dashboard stat cards render non-zero seeded values
+[9/78] [chromium] › e2e\dashboard-tabs-mobile.spec.ts:77:7 › Dashboard tab bars at a 375px viewport › every tabbed page keeps its tab bar inside the viewport
+  1) [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active 
+
+    Error: expect(locator).not.toBeVisible() failed
+
+    Locator:  getByTestId('ai-copilot-panel').getByTestId('ai-dev-mode-badge')
+    Expected: not visible
+    Received: visible
+    Timeout:  20000ms
+
+    Call log:
+      - Expect "not toBeVisible" with timeout 20000ms
+      - waiting for getByTestId('ai-copilot-panel').getByTestId('ai-dev-mode-badge')
+        43 × locator resolved to <span data-testid="ai-dev-mode-badge" class="rounded-full border border-dashed border-amber-400/70 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">dev mode</span>
+           - unexpected value "visible"
+
+
+      101 |       "Gemini stayed rate-limited/errored across retries — free-tier quota or provider availability",
+      102 |     ).toBe(false);
+    > 103 |     await expect(badge).not.toBeVisible();
+          |                             ^
+      104 |
+      105 |     // The revenue question triggers a real Gemini tool call
+      106 |     // (getDashboardStats), which renders an inline tool chip above the
+        at D:\Project\next-dashboard\e2e\ai-copilot-mock.spec.ts:103:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ai-copilot-mock-copilot-re-b9bfd-dge-when-the-mock-is-active-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ai-copilot-mock-copilot-re-b9bfd-dge-when-the-mock-is-active-chromium\error-context.md
+
+
+[10/78] [chromium] › e2e\faq-accordion.spec.ts:41:7 › FAQ accordion collapse (keepMounted) › keeps the answer mounted through the collapse tween and clipped-but-attached after
+[11/78] [chromium] › e2e\forgot-password.spec.ts:87:7 › Forgot Password › full flow: request link → reset password → old password fails → new password logs in
+[12/78] [chromium] › e2e\dashboard-tabs-mobile.spec.ts:119:7 › Dashboard tab bars at a 375px viewport › tab bar's page surfaces recolor their thin scrollbar thumb in both directions
+[13/78] [chromium] › e2e\dashboard-tabs-mobile.spec.ts:148:7 › Dashboard tab bars at a 375px viewport › every tab on every page is reachable and activates
+[14/78] [chromium] › e2e\forgot-password.spec.ts:134:7 › Forgot Password › rejects a bogus token when submitting the reset form
+[15/78] [chromium] › e2e\forgot-password.spec.ts:148:7 › Forgot Password › shows an error on /reset-password without a token
+[16/78] [chromium] › e2e\forgot-password.spec.ts:156:7 › Forgot Password › returns the generic sent view for an unknown email without exposing a reset link
+[17/78] [chromium] › e2e\integrations-playground-mobile.spec.ts:32:7 › Integrations Playground tab on mobile › Playground content renders within the 375px viewport
+[18/78] [chromium] › e2e\integrations-playground-mobile.spec.ts:82:7 › Integrations Playground tab on mobile › a whoami request with a real key renders the JSON response in viewport
+[19/78] [chromium] › e2e\integrations-tabs-mobile.spec.ts:27:7 › Integrations tab bar on mobile › keeps the tab bar inside the viewport, scrollable internally
+[20/78] [chromium] › e2e\integrations-playground-mobile.spec.ts:131:7 › Integrations Playground tab on mobile › Delivery Log content renders within the 375px viewport
+[21/78] [chromium] › e2e\integrations-tabs-mobile.spec.ts:46:7 › Integrations tab bar on mobile › every tab is clickable and activates its panel
+[22/78] [chromium] › e2e\integrations-playground-mobile.spec.ts:204:7 › Integrations Playground at a 1280px desktop viewport › the 5-column grid lays the builder and quick-start out side by side
+[23/78] [chromium] › e2e\integrations-tabs-mobile.spec.ts:62:7 › Integrations tab bar on mobile › arrow-key focus auto-scrolls the focused tab into view
+[24/78] [chromium] › e2e\integrations.spec.ts:19:7 › Integrations developer portal › redirects unauthenticated visitors to the login page
+[25/78] [chromium] › e2e\integrations.spec.ts:29:9 › Integrations developer portal › authenticated › creates an API key, reveals it once, and lists it
+[26/78] [chromium] › e2e\integrations-tabs-mobile.spec.ts:89:7 › Integrations tab bar on mobile › Home/End/PageUp/PageDown roving focus scrolls the pill to the first/last tab
+[27/78] [chromium] › e2e\integrations.spec.ts:49:9 › Integrations developer portal › authenticated › revokes, reactivates, and deletes an API key with confirmation
+[28/78] [chromium] › e2e\login.spec.ts:16:7 › Login › logs in with valid seed credentials and lands on the dashboard
+[29/78] [chromium] › e2e\login.spec.ts:23:7 › Login › shows an error and stays on /login for invalid credentials
+[30/78] [chromium] › e2e\logout.spec.ts:20:7 › Logout › logs out from the header menu and returns to /login
+[31/78] [chromium] › e2e\integrations.spec.ts:77:9 › Integrations developer portal › authenticated › hits /api/v1/whoami from the playground with a freshly created key
+[32/78] [chromium] › e2e\logout.spec.ts:27:7 › Protected route › returns 401 from /api/auth/me without a session cookie
+[33/78] [chromium] › e2e\notification-filters-mobile.spec.ts:39:7 › Notification panel filter pills on mobile › tab focus scrolls the last filter pill into view
+[34/78] [chromium] › e2e\integrations.spec.ts:100:9 › Integrations developer portal › authenticated › creates, pauses, edits, and deletes a webhook endpoint
+[35/78] [chromium] › e2e\notification-filters-mobile.spec.ts:90:7 › Notification panel filter pills on mobile › close button is keyboard-reachable and Enter closes the popover
+[36/78] [chromium] › e2e\notification-filters-mobile.spec.ts:141:7 › Notification panel filter pills on mobile › pill row hides its scrollbar via the real scrollbar-none utility and still scrolls
+[37/78] [chromium] › e2e\order-fulfillment.spec.ts:15:5 › order detail walks the fulfillment state machine end-to-end
+[38/78] [chromium] › e2e\profile-email-verification.spec.ts:31:7 › Profile email verification › sends a verification link from the profile, confirms it, and shows the verified status
+[39/78] [chromium] › e2e\notification-filters-mobile.spec.ts:169:7 › Notification panel filter pills on mobile › pill row keeps its scrollbar hidden under the dark theme
+[40/78] [chromium] › e2e\profile-email-verification.spec.ts:73:7 › Profile email verification › rejects an invalid or expired verification token
+[41/78] [chromium] › e2e\register.spec.ts:33:7 › Register › creates an account, verifies the email OTP, and lands on the dashboard
+[42/78] [chromium] › e2e\register.spec.ts:45:7 › Register › shows an attempts-left error for an incorrect verification code
+[43/78] [chromium] › e2e\profile-email-verification.spec.ts:95:7 › Profile email verification › shows the success toast and refreshes the verified status on direct ?verified=true navigation
+[44/78] [chromium] › e2e\register.spec.ts:58:7 › Register › rejects a password shorter than 6 characters and stays on /register
+[45/78] [chromium] › e2e\register.spec.ts:69:7 › Register › rejects a duplicate email and stays on /register
+[46/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:33:7 › vertical scrollbars are thin (4px) on mobile › activity feed list shows a 4px thin vertical scrollbar
+[47/78] [chromium] › e2e\profile-email-verification.spec.ts:136:7 › Profile email verification › does not fake verification from the query param alone
+[48/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:53:7 › vertical scrollbars are thin (4px) on mobile › activity feed list stays thin with the dark-theme thumb color
+[49/78] [chromium] › e2e\security-center.spec.ts:17:7 › Security Center › redirects unauthenticated visitors to the login page
+[50/78] [chromium] › e2e\security-center.spec.ts:27:9 › Security Center › authenticated › renders the score banner, stat tiles, and section cards
+[51/78] [chromium] › e2e\security-center.spec.ts:58:9 › Security Center › authenticated › marks the current browser session as this device
+[52/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:83:7 › vertical scrollbars are thin (4px) on mobile › AI copilot message thread shows a 4px thin vertical scrollbar
+[53/78] [chromium] › e2e\security-center.spec.ts:65:9 › Security Center › authenticated › generates backup recovery codes
+[54/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:101:7 › vertical scrollbars are thin (4px) on mobile › AI copilot message thread stays thin with the dark-theme thumb color
+[55/78] [chromium] › e2e\security-center.spec.ts:76:9 › Security Center › authenticated › shows the two-factor card in its unset state
+[56/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:136:7 › vertical scrollbars are thin (4px) on mobile › AI copilot composer textarea reports scrollbar-width: thin at a small viewport
+[57/78] [chromium] › e2e\security-center.spec.ts:87:9 › Security Center › authenticated › regenerating codes asks for confirmation when codes exist
+[58/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:164:7 › vertical scrollbars are thin (4px) on mobile › AI copilot composer textarea stays thin with the dark-theme thumb color
+[59/78] [chromium] › e2e\security-center.spec.ts:103:9 › Security Center › authenticated › shows the email-verification card in its verified state
+[60/78] [chromium] › e2e\scrollbar-thin-mobile.spec.ts:205:7 › vertical scrollbars are thin (4px) on mobile › Select dropdown keeps its thin scrollbar with the dark-theme thumb color
+[61/78] [chromium] › e2e\security-center.spec.ts:118:9 › Security Center › email verification flow (fresh user) › registers, sends a verification link, and confirms it
+[62/78] [chromium] › e2e\security-chain-tamper.spec.ts:96:5 › reports a clean chain when untouched (baseline)
+[63/78] [chromium] › e2e\security-chain-tamper.spec.ts:114:5 › catches a content modification and reports the exact break
+[64/78] [chromium] › e2e\security-chain-tamper.spec.ts:147:5 › catches a deletion and reports the exact break at the successor
+[65/78] [chromium] › e2e\sso.spec.ts:16:7 › SSO / Enterprise settings › redirects unauthenticated visitors to the login page
+[66/78] [chromium] › e2e\sso.spec.ts:26:9 › SSO / Enterprise settings › authenticated › creates an SSO connection from the empty state
+[67/78] [chromium] › e2e\security-center.spec.ts:151:9 › Security Center › email verification flow (fresh user) › rejects an invalid or expired verification token
+[68/78] [chromium] › e2e\sso.spec.ts:53:9 › SSO / Enterprise settings › authenticated › disables and re-enables SSO
+[69/78] [chromium] › e2e\security-center.spec.ts:164:9 › Security Center › email verification flow (fresh user) › verifies the email with the 6-digit OTP from the Security Center
+[70/78] [chromium] › e2e\sso.spec.ts:63:9 › SSO / Enterprise settings › authenticated › removes the connection after confirmation
+[71/78] [chromium] › e2e\tenant-isolation.spec.ts:61:7 › Audit tenant isolation › the default workspace sees its own audit rows but never the other workspace's
+
+[chromium] › e2e\tenant-isolation.spec.ts:61:7 › Audit tenant isolation › the default workspace sees its own audit rows but never the other workspace's
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+[72/78] [chromium] › e2e\two-factor-auth.spec.ts:59:7 › Two-Factor Authentication › registers a user and enables 2FA from the Security Center
+[73/78] [chromium] › e2e\tenant-isolation.spec.ts:81:7 › Audit tenant isolation › the non-default workspace is strictly isolated from the default workspace's rows
+[74/78] [chromium] › e2e\tenant-isolation.spec.ts:103:7 › Audit tenant isolation › the audit-log page renders only the caller workspace's rows
+[75/78] [chromium] › e2e\two-factor-auth.spec.ts:99:7 › Two-Factor Authentication › requires a TOTP code at sign-in and rejects an invalid code
+[76/78] [chromium] › e2e\ai-copilot-mobile.spec.ts:16:5 › mobile: copilot button sits above the dock and the dock stays visible when the panel opens
+[77/78] [chromium] › e2e\two-factor-auth.spec.ts:121:7 › Two-Factor Authentication › disables 2FA from the Security Center with password confirmation
+[78/78] [chromium] › e2e\two-factor-auth.spec.ts:140:7 › Two-Factor Authentication › signs in without a TOTP prompt after 2FA is disabled
+  1 failed
+    [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active 
+  77 passed (4.1m)

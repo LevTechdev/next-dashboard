@@ -63,6 +63,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       entityId: product.id,
       details: `Product ${product.name} updated`,
       userId: session!.user.id,
+      tenantId,
     },
   });
 
@@ -93,6 +94,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       entityId: product.id,
       details: `Product ${product.name} deactivated`,
       userId: session!.user.id,
+      tenantId,
     },
   });
 

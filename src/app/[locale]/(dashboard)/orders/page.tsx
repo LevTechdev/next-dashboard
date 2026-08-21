@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -13,8 +13,6 @@ import {
   CreditCardIcon,
   UserIcon,
   DollarSignIcon,
-  TrendingUpIcon,
-  SparklesIcon,
 } from "lucide-animated";
 import { ShoppingBag, Store, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
@@ -42,8 +41,8 @@ import {
 } from "@/components/order-tracking-timeline";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
-import { downloadCsv } from "@/lib/csv";
 import { DataExportButton } from "@/components/data-export-button";
+import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 
 export default function OrdersPage() {
   const params = useParams();
@@ -53,6 +52,9 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
 
   const {
     data: orders,
@@ -64,16 +66,37 @@ export default function OrdersPage() {
     interval: 15000,
   });
 
-  // Compute stats from orders data
-  const totalRevenue = (orders || []).reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
-  const pendingCount = (orders || []).filter((o: any) => o.status === "PENDING").length;
-  const avgOrderValue = orders && orders.length > 0 ? totalRevenue / orders.length : 0;
+  const dateFiltered = useMemo(() => {
+    if (!orders) return [];
+    if (!dateRange.from && !dateRange.to) return orders;
+    return orders.filter((o: any) => {
+      const d = new Date(o.createdAt);
+      if (dateRange.from && d < new Date(dateRange.from)) return false;
+      if (dateRange.to) {
+        const to = new Date(dateRange.to);
+        to.setHours(23, 59, 59, 999);
+        if (d > to) return false;
+      }
+      return true;
+    });
+  }, [orders, dateRange]);
 
-  const filtered = (orders || []).filter(
+  // Compute stats from date-filtered orders data
+  const totalRevenue = dateFiltered.reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
+  const pendingCount = dateFiltered.filter((o: any) => o.status === "PENDING").length;
+  const avgOrderValue = dateFiltered.length > 0 ? totalRevenue / dateFiltered.length : 0;
+
+  const filtered = dateFiltered.filter(
     (o: any) =>
       o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
       o.customer?.name?.toLowerCase().includes(search.toLowerCase()),
   );
+
+  // Client-side pagination over the filtered list (export still covers all matches).
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(pageStart, pageStart + pageSize);
 
   const updateStatus = async (id: string, status: string) => {
     const res = await fetch("/api/orders", {
@@ -155,7 +178,7 @@ export default function OrdersPage() {
           <p className="text-sm text-gray-500 mt-1">{torders("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Button
             variant="ghost"
             size="sm"
@@ -251,7 +274,6 @@ export default function OrdersPage() {
                   >
                     <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                   </div>
-                  <SparklesIcon size={12} className="h-3 w-3 text-gray-300 dark:text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
@@ -278,7 +300,10 @@ export default function OrdersPage() {
               placeholder={tcommon("search")}
               className="pl-10"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </CardHeader>
@@ -299,12 +324,12 @@ export default function OrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((order: any) => (
+                {paginated.map((order: any) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-sm font-medium">
                       <Link
                         href={`/${locale}/orders/${order.id}`}
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="text-lime-600 dark:text-indigo-400 hover:underline"
                       >
                         #{order.orderNumber}
                       </Link>
@@ -396,12 +421,24 @@ export default function OrdersPage() {
               </TableBody>
             </Table>
           </div>
+          {filtered.length > 0 && (
+            <PaginationBar
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
       {/* Enhanced Order Detail Dialog with Tracking */}
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Order #{selectedOrder?.orderNumber}
@@ -412,7 +449,7 @@ export default function OrdersPage() {
           </DialogHeader>
           {selectedOrder && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="w-full justify-start">
+              <TabsList className="md:w-full md:justify-start">
                 <TabsTrigger value="details">{torders("tabDetails")}</TabsTrigger>
                 <TabsTrigger value="tracking">{torders("tabTracking")}</TabsTrigger>
                 <TabsTrigger value="items">{torders("tabItems")}</TabsTrigger>

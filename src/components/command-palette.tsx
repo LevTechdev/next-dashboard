@@ -7,6 +7,7 @@ import { ShoppingBag, Package, Command, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollContainer } from "@/components/ui/scroll-container";
 
 // ── Types ──
 
@@ -72,7 +73,7 @@ export function CommandPalette() {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
+  const [, setTotalItems] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -272,7 +273,7 @@ export function CommandPalette() {
           </div>
 
           {/* Results */}
-          <div className="max-h-[360px] overflow-y-auto py-2">
+          <ScrollContainer className="max-h-[360px] py-2">
             {loading && query.length >= 2 && (
               <div className="flex items-center justify-center py-8 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -354,7 +355,7 @@ export function CommandPalette() {
                   })}
                 </div>
               ))}
-          </div>
+          </ScrollContainer>
 
           {/* Footer hints */}
           <div className="flex items-center gap-4 px-4 h-10 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">

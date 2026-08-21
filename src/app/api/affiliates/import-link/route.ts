@@ -163,6 +163,7 @@ export async function POST(req: Request) {
       entityId: link.id,
       details: `Imported ${name} from ${platform.name} (source: ${data?.source || "manual"})`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 

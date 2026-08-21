@@ -97,6 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       entityId: connection.id,
       details: `${platform.name}: ${products.length} products synced (${created} new, ${updated} updated)`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 

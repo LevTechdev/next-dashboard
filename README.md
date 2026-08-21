@@ -35,6 +35,44 @@ npm run dev
 
 Open [http://localhost:3010](http://localhost:3010) to view the dashboard.
 
+## Environment Variables
+
+Copy the commented vars from `.env` into your environment as needed. Key ones:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | ✅ | SQLite/Postgres connection string |
+| `JWT_SECRET` | ✅ (prod) | Secret for signing auth JWTs |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | for Google login | Google OAuth (see `src/app/api/auth/google/`) |
+| `GOOGLE_REDIRECT_URI` | for Google login | OAuth redirect URI (defaults to `http://localhost:3010/api/auth/google/callback`) |
+| `PII_ENCRYPTION_KEY` | ✅ (prod) | AES-256-GCM key (64 hex chars) for encrypted customer PII |
+| `GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | for AI Copilot | Gemini API key for the dashboard Copilot panel (`/api/ai/chat`) — **preferred provider** (model `gemini-flash-latest` by default, override with `GEMINI_MODEL`); `GOOGLE_GENERATIVE_AI_API_KEY` is what the Google AI SDK reads, `GEMINI_API_KEY` is the alias the route checks |
+| `OPENAI_API_KEY` | for AI Copilot | OpenAI API key — fallback provider when no Gemini key is set; in dev, the route falls back to an instant mock reply when no provider key is configured |
+| `AI_MOCK` | optional | Set `1` to force the dev-mode mock Copilot even when a provider key is set (demos/tests/CI — CI sets this so E2E runs are deterministic without a provider key) |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | optional | PostHog product analytics (see `src/components/analytics/posthog-provider.tsx`) |
+| `STRIPE_SECRET_KEY` | for billing | Stripe secret key — enables Checkout + Customer Portal on the billing page (see `src/lib/stripe.ts`) |
+| `STRIPE_WEBHOOK_SECRET` | for billing | `whsec_...` for verifying Stripe events at `POST /api/billing/webhook` |
+| `STRIPE_PRICE_PRO` / `STRIPE_PRICE_ENTERPRISE` | for billing | Stripe recurring Price IDs for the Pro/Enterprise plans (the seed reads them; without them paid checkout is disabled with a clear 503) |
+| `NEXT_PUBLIC_APP_URL` | optional | Public origin used for Checkout success/cancel + portal return URLs (defaults to the request origin) |
+| `SAML_SP_ISSUER` | for SSO | SAML Service Provider issuer for the SSO page (defaults to `next-dashboard`) |
+| `AFFILIATE_HEADLESS` | optional | Enables the headless-browser path for affiliate link imports |
+| `SMTP_HOST` | for email | SMTP server hostname — enables the SMTP transport (preferred; see below) |
+| `SMTP_PORT` | for email | SMTP port (default `587`, or `465` with `SMTP_SECURE=true`) |
+| `SMTP_SECURE` | for email | `true`/`1` for implicit TLS (port 465) |
+| `SMTP_USER` / `SMTP_PASS` | for email | SMTP credentials (omit for open relays) |
+| `RESEND_API_KEY` | for email | Resend API key — fallback transport when no `SMTP_HOST` is set |
+| `EMAIL_FROM` | for email | Verified sender, e.g. `Dashboard <no-reply@yourdomain.com>` (defaults to Resend's test sender) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | optional | OpenTelemetry traces endpoint |
+| `SIEM_WEBHOOK_URL` / `SIEM_WEBHOOK_TOKEN` | optional | Real-time forwarding of security audit events |
+
+**Email transport priority:** `SMTP_HOST` (your own server/relay via nodemailer) → `RESEND_API_KEY` (Resend) → dev console fallback. Every new account is issued a 6-digit email OTP at signup and must verify it from the Security Center; verification and password-reset emails go through this chain.
+
+**Email without any mailer configured:** verification links, reset links, and OTP codes are logged to the server console and returned in the API response (dev mode only) — this is what the E2E suite relies on.
+
+**AI Copilot:** `/api/ai/chat` uses Gemini (`GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY`, model `gemini-flash-latest` by default — Google's stable alias for the newest flash line (currently gemini-3.7-flash); the retired 2.x flash models (`gemini-2.0-flash` / `gemini-2.5-flash`) 404, and specific 3.x preview names each have their own free-tier daily quota, so the alias is a safer default; set `GEMINI_MODEL` to override, e.g. `gemini-3-flash-preview`) with OpenAI (`OPENAI_API_KEY`) as a fallback. When no provider key is configured the route falls back to an instant canned mock reply in every non-production environment — local dev, tests, and preview/staging deploys (Vercel `VERCEL_ENV=preview`, or `APP_ENV=staging`); `AI_MOCK=1` forces the mock anywhere, which is how CI keeps E2E runs deterministic without a provider key. Mock replies are flagged with an `X-AI-Mock` response header, and the Copilot panel shows a subtle "dev mode" badge in its header when a reply came from the mock. In real production a missing key returns a 503 with a clear error instead of a generic failure.
+
+**Stripe billing:** the billing page gates Free/Pro/Enterprise plans. The Free plan ($0) switches directly; Pro/Enterprise go through Stripe Checkout (`POST /api/billing/checkout`), and the Stripe Customer Portal is wired for payment methods/invoices/subscription management (`POST /api/billing/portal`). A webhook at `POST /api/billing/webhook` keeps the local subscription/invoice rows in sync (`checkout.session.completed`, `customer.subscription.updated/deleted`). In dev, run `stripe listen --forward-to localhost:3010/api/billing/webhook` and set `STRIPE_WEBHOOK_SECRET` to the printed `whsec_...`. Without `STRIPE_SECRET_KEY` the routes return 503 with a clear error so the page still works (Free plan only).
+
 ## Available Scripts
 
 | Command | Description |

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
@@ -22,9 +22,29 @@ vi.mock("next-intl", () => {
 
   const tFn = (namespace: string) => {
     const ns = (messages as Record<string, any>)[namespace] || {};
-    const t = (key: string) => (ns as Record<string, any>)[key] ?? key;
-    t.raw = (key: string) => (ns as Record<string, any>)[key] ?? key;
-    t.rich = (key: string) => (ns as Record<string, any>)[key] ?? key;
+    // Interpolates {placeholder} values like the real next-intl t(), so
+    // tests asserting interpolated strings (e.g. "3 attempt(s) left")
+    // behave identically to production.
+    const interpolate = (str: string, values?: Record<string, any>) => {
+      if (!values) return str;
+      let out = str;
+      for (const [key, value] of Object.entries(values)) {
+        out = out.replaceAll(`{${key}}`, String(value));
+      }
+      return out;
+    };
+    // next-intl t() resolves dotted paths through the namespace tree
+    // (e.g. "tools.getDashboardStats"); mirror that instead of a flat lookup.
+    const resolve = (obj: any, path: string): any =>
+      path
+        .split(".")
+        .reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), obj);
+    const t = (key: string, values?: Record<string, any>) =>
+      interpolate(resolve(ns, key) ?? key, values);
+    t.raw = (key: string, values?: Record<string, any>) =>
+      interpolate((ns as Record<string, any>)[key] ?? key, values);
+    t.rich = (key: string, values?: Record<string, any>) =>
+      interpolate((ns as Record<string, any>)[key] ?? key, values);
     return t;
   };
 
@@ -101,10 +121,16 @@ vi.mock("framer-motion", () => {
     return React.createElement(tag === "details" ? "details" : "div", domProps, children);
   };
 
+  // Cache per-tag components: real motion.div etc. are stable component
+  // identities, and an unstable identity would make React treat the element
+  // as a NEW type on every render — remounting the whole subtree (and
+  // orphaning previously captured DOM references in tests).
+  const motionCache: Record<string, any> = {};
   const motion = new Proxy(
     {},
     {
-      get: (_: any, tag: any) => (props: any) => React.createElement(noop, { ...props, tag }),
+      get: (_: any, tag: any) =>
+        (motionCache[tag] ??= (props: any) => React.createElement(noop, { ...props, tag })),
     },
   );
 

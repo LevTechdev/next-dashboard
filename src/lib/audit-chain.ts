@@ -1,6 +1,8 @@
 import "server-only";
-import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
+import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
+
+export { computeHash, GENESIS_HASH, type ChainableEvent } from "@/lib/audit-hash";
 
 /**
  * Tamper-evident audit chain for SecurityEvent.
@@ -9,46 +11,9 @@ import { prisma } from "@/lib/db";
  * is the hash of the immediately preceding event (by seq). Any insertion,
  * modification, deletion, or reordering of a past event breaks the chain and is
  * detectable by re-walking it. The first hashed event links to GENESIS_HASH.
+ * The canonical form lives in src/lib/audit-hash.ts (shared with the seed's
+ * re-chain step so they can never drift).
  */
-
-export const GENESIS_HASH = "0".repeat(64);
-
-export interface ChainableEvent {
-  userId: string | null;
-  type: string;
-  ip: string | null;
-  userAgent: string | null;
-  metadata: unknown;
-  createdAt: Date | string;
-}
-
-/** Deterministic serialization independent of object key order. */
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
-  if (Array.isArray(value)) return "[" + value.map(stableStringify).join(",") + "]";
-  const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).sort();
-  return "{" + keys.map((k) => JSON.stringify(k) + ":" + stableStringify(obj[k])).join(",") + "}";
-}
-
-function canonicalEvent(e: ChainableEvent): string {
-  const createdAt = e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt);
-  return stableStringify({
-    userId: e.userId ?? null,
-    type: e.type,
-    ip: e.ip ?? null,
-    userAgent: e.userAgent ?? null,
-    metadata: e.metadata ?? null,
-    createdAt: createdAt.toISOString(),
-  });
-}
-
-/** Compute the chain hash for an event given the previous event's hash. */
-export function computeHash(prevHash: string, e: ChainableEvent): string {
-  return createHash("sha256")
-    .update(prevHash + "|" + canonicalEvent(e))
-    .digest("hex");
-}
 
 export interface ChainVerification {
   ok: boolean;

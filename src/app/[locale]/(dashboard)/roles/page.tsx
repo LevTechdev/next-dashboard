@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLES = ["ADMIN", "MANAGER", "STAFF"] as const;
@@ -118,8 +117,6 @@ export default function RolesPage() {
     },
     [troles],
   );
-  const { user } = useAuth();
-  const role = (user as any)?.role;
 
   const [roleSettings, setRoleSettings] = useState<RoleSetting[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -378,7 +375,7 @@ export default function RolesPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 sm:p-6 overflow-x-auto">
+            <CardContent className="p-0 sm:p-6 overflow-x-auto scrollbar-thin">
               <div className="min-w-[800px]">
                 <table className="w-full">
                   <thead>
@@ -532,8 +529,8 @@ export default function RolesPage() {
                 {troles("teamRoleAssignments")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 sm:p-6 overflow-x-auto">
-              <div className="overflow-x-auto">
+            <CardContent className="p-0 sm:p-6 overflow-x-auto scrollbar-thin">
+              <div className="overflow-x-auto scrollbar-thin">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">

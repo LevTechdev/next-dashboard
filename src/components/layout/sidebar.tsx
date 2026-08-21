@@ -5,6 +5,7 @@ import { usePathname, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TransitionLink } from "@/components/transition-link";
 import { cn } from "@/lib/utils";
+import { ScrollContainer } from "@/components/ui/scroll-container";
 import {
   BellIcon,
   UsersIcon,
@@ -15,7 +16,6 @@ import {
   PanelLeftOpenIcon,
   PanelLeftCloseIcon,
   CreditCardIcon,
-  SparklesIcon,
   EarthIcon,
 } from "lucide-animated";
 import {
@@ -30,6 +30,7 @@ import {
   UserCircle,
   Shield,
   Share2,
+  Building2,
 } from "lucide-react";
 import {
   OnlineStoreIcon,
@@ -38,16 +39,8 @@ import {
   TikTokBrandIcon,
   ShopifyBrandIcon,
 } from "@/components/ui/brand-icons";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { canAccessPage, getRole } from "@/lib/permissions";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  badge?: number;
-}
+import { canAccessPage } from "@/lib/permissions";
 
 function useLocale() {
   const params = useParams();
@@ -78,12 +71,14 @@ const insightsItems = [
 const adminItems = [
   { label: "roles", href: "/roles", icon: Shield },
   { label: "integrations", href: "/integrations", icon: EarthIcon },
+  { label: "sso", href: "/sso", icon: Building2 },
 ];
 
 const settingsItems = [
   { label: "team", href: "/team", icon: UsersRoundIcon },
   { label: "billing", href: "/billing", icon: CreditCardIcon },
   { label: "notifications", href: "/notifications", icon: BellIcon },
+  { label: "security", href: "/security", icon: Shield },
   { label: "settings", href: "/settings", icon: SettingsIcon },
   { label: "profile", href: "/profile", icon: UserCircle },
 ];
@@ -226,7 +221,7 @@ export function Sidebar({
       </TransitionLink>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
+      <ScrollContainer className="flex-1 px-3 py-4">
         <NavSection
           title="management"
           items={navItems.filter((i) =>
@@ -293,7 +288,7 @@ export function Sidebar({
             </div>
           </div>
         )}
-      </div>
+      </ScrollContainer>
 
       {/* Collapse button */}
       <div className="border-t border-gray-200/70 dark:border-gray-800/50 p-3">

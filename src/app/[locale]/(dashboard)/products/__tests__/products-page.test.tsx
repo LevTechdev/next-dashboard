@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import ProductsPage from "../page";
 
 // Ensure real implementations are used for icon/ui modules
@@ -76,6 +76,21 @@ const loadedState = {
   error: null,
 };
 
+const makeProducts = (count: number) => ({
+  products: Array.from({ length: count }, (_, i) => ({
+    id: String(i + 1),
+    name: `Product ${i + 1}`,
+    description: `Product ${i + 1} description`,
+    price: 10 + i,
+    costPrice: 5 + i,
+    stock: 20,
+    sku: `SKU-${String(i + 1).padStart(3, "0")}`,
+    categoryId: "cat1",
+    category: { name: "Widgets" },
+  })),
+  categories: [{ id: "cat1", name: "Widgets" }],
+});
+
 const mockUser = {
   user: { name: "Admin", email: "admin@test.com", role: "ADMIN" },
   isLoading: false,
@@ -132,5 +147,42 @@ describe("Products Page", () => {
     expect(screen.getByText("In Stock (50)")).toBeInTheDocument();
     expect(screen.getByText("Low Stock (5)")).toBeInTheDocument();
     expect(screen.getByText("Out of Stock")).toBeInTheDocument();
+  });
+
+  it("paginates the product table with page controls", () => {
+    (useRealtimeData as any).mockReturnValue({ ...loadedState, data: makeProducts(12) });
+    render(<ProductsPage />);
+
+    // Page 1 shows the first 10 rows; the 11th is not rendered yet.
+    expect(screen.getByText("Product 1")).toBeInTheDocument();
+    expect(screen.getByText("Product 10")).toBeInTheDocument();
+    expect(screen.queryByText("Product 11")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 1–10 of 12")).toBeInTheDocument();
+
+    // Jump to page 2: tail rows render, range updates, page 1 rows unmount.
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(screen.getByText("Product 11")).toBeInTheDocument();
+    expect(screen.getByText("Product 12")).toBeInTheDocument();
+    expect(screen.queryByText("Product 1")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 11–12 of 12")).toBeInTheDocument();
+
+    // Previous returns to page 1.
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    expect(screen.getByText("Product 1")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1–10 of 12")).toBeInTheDocument();
+  });
+
+  it("resets to page 1 when the search query changes", () => {
+    (useRealtimeData as any).mockReturnValue({ ...loadedState, data: makeProducts(12) });
+    render(<ProductsPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(screen.getByText("Showing 11–12 of 12")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Search..."), {
+      target: { value: "Product 11" },
+    });
+    expect(screen.getByText("Showing 1–1 of 1")).toBeInTheDocument();
+    expect(screen.getByText("Product 11")).toBeInTheDocument();
   });
 });

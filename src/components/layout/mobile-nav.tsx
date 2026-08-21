@@ -87,7 +87,7 @@ export function MobileNav() {
   const currentLang = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+    <nav data-testid="mobile-dock" className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="flex items-center justify-around h-16 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 safe-area-bottom">
         {mobileNavItems.map((item) => {
           const fullHref = `/${locale}${item.href}`;
@@ -187,7 +187,12 @@ export function MobileNav() {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="absolute bottom-full right-0 mb-3 z-50 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden min-w-[184px]"
+                  // Cap the popover to the space above the dock (100dvh minus
+                  // the ~5rem the dock + gap occupy) and let it scroll with the
+                  // app's thin bar: on very short viewports it would otherwise
+                  // clip its header against the top of the screen (overflow
+                  // hidden, nothing reachable).
+                  className="absolute bottom-full right-0 mb-3 z-50 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-y-auto max-h-[calc(100dvh-5rem)] scrollbar-thin min-w-[184px]"
                 >
                   {/* Header */}
                   <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">

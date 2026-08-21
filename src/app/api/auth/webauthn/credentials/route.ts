@@ -45,6 +45,11 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Passkey not found" }, { status: 404 });
   }
 
-  await logSecurityEvent({ userId: session.user.id, type: "PASSKEY_REMOVED", req });
+  await logSecurityEvent({
+    userId: session.user.id,
+    type: "PASSKEY_REMOVED",
+    req,
+    tenantId: session.user.tenantId,
+  });
   return NextResponse.json({ success: true });
 }

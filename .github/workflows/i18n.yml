@@ -1,0 +1,33 @@
+name: i18n
+
+# Fast, dedicated guard for missing translations: runs the i18n locale-parity
+# tests (src/i18n/__tests__/) on every push and pull request (all branches),
+# so an incomplete locale merge fails CI in ~1 minute instead of being buried
+# in the full component suite (vitest.components.config.ts) or surfacing only
+# on PRs to main. No database or env vars required — the tests only compare
+# the locale JSON trees.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: i18n-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  i18n-parity:
+    name: Locale parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - name: Run i18n locale-parity tests
+        run: npm run test:i18n

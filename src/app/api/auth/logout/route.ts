@@ -24,7 +24,8 @@ export async function POST(req: Request) {
   // Best-effort actor for the audit log.
   const access = getTokenFromCookie(req);
   const decoded = access ? verifyToken(access) : null;
-  if (decoded) await logSecurityEvent({ userId: decoded.id, type: "LOGOUT", req });
+  if (decoded)
+    await logSecurityEvent({ userId: decoded.id, type: "LOGOUT", req, tenantId: decoded.tenantId });
 
   const response = NextResponse.json({ success: true, message: "Logged out successfully" });
   clearAuthCookies(response);

@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       entity: "Customer",
       details: `Imported ${imported} customers (${skipped.length} skipped)`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 

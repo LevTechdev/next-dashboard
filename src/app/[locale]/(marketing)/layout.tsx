@@ -299,7 +299,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-white/90 dark:bg-black/80 backdrop-blur-3xl lg:hidden pt-24"
+              className="fixed inset-0 z-40 bg-white/90 dark:bg-black/80 backdrop-blur-3xl lg:hidden overflow-y-auto"
             >
               <motion.div
                 initial="hidden"
@@ -311,14 +311,19 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                     transition: { staggerChildren: 0.06, delayChildren: 0.1 },
                   },
                 }}
-                className="px-6 py-6 space-y-1"
+                // min-h-full + flex-col + mb-auto on the last nav item keeps
+                // the profile / sign-in section pinned to the bottom edge, and
+                // overflow-y-auto on the overlay keeps it reachable by
+                // scrolling on short viewports instead of being cut off.
+                className="min-h-full flex flex-col px-6 pt-16 pb-6"
               >
-                {navLinks.map((link) => {
+                {navLinks.map((link, idx) => {
                   const isActive = pathname === `/${locale}${link.href}`;
                   const Icon = link.icon;
                   return (
                     <motion.div
                       key={link.href}
+                      className={idx === navLinks.length - 1 ? "mb-auto" : undefined}
                       variants={{
                         hidden: { opacity: 0, y: 20, x: -10 },
                         visible: {

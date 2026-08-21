@@ -45,7 +45,11 @@ const SelectContent = React.forwardRef<
     >
       <SelectPrimitive.Viewport
         className={cn(
-          "p-1",
+          // Radix injects its own scrollbar-hiding CSS for the viewport; the
+          // app's .scrollbar-thin utility needs a compound selector to win
+          // that tie (see globals.css), so the dropdown shows the thin 4px bar
+          // instead of either Radix's hidden bar or a chunky default.
+          "p-1 scrollbar-thin",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
         )}

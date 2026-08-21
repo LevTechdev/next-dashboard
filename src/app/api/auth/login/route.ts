@@ -57,6 +57,7 @@ export async function POST(req: Request) {
         type: lock ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
         req,
         metadata: { email, attempt: failed },
+        tenantId: user.tenantId,
       });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
@@ -72,11 +73,27 @@ export async function POST(req: Request) {
       let passed = false;
       if (totpToken) {
         passed = verifyTotp(totpToken, user.totpSecret);
+        if (passed) {
+          await logSecurityEvent({
+            userId: user.id,
+            type: "MFA_VERIFIED",
+            req,
+            metadata: { method: "totp" },
+            tenantId: user.tenantId,
+          });
+        }
       }
       if (!passed && backupCode) {
         passed = await consumeBackupCode(user.id, backupCode);
         if (passed) {
-          await logSecurityEvent({ userId: user.id, type: "BACKUP_CODE_USED", req });
+          await logSecurityEvent({ userId: user.id, type: "BACKUP_CODE_USED", req, tenantId: user.tenantId });
+          await logSecurityEvent({
+            userId: user.id,
+            type: "MFA_VERIFIED",
+            req,
+            metadata: { method: "backup_code" },
+            tenantId: user.tenantId,
+          });
         }
       }
       if (!passed) {
@@ -108,7 +125,7 @@ export async function POST(req: Request) {
     const familyId = newFamilyId();
     const sessionId = await createSession({ userId: user.id, token, req, familyId });
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
-    await logSecurityEvent({ userId: user.id, type: "LOGIN", req });
+    await logSecurityEvent({ userId: user.id, type: "LOGIN", req, tenantId: user.tenantId });
 
     const { password: _pw, totpSecret: _ts, ...safeUser } = user;
     void _pw;

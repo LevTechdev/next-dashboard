@@ -97,6 +97,7 @@ export async function POST(req: Request) {
       entityId: link.id,
       details: `Affiliate link ${code} for ${product.name} on ${platform.name}`,
       userId: session.user.id,
+      tenantId: session.user.tenantId,
     },
   });
 
