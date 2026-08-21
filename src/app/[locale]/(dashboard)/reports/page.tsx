@@ -14,6 +14,7 @@ import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
 import { DataExportButton } from "@/components/data-export-button";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
+import { motion } from "framer-motion";
 
 export default function ReportsPage() {
   const treports = useTranslations("reports");

@@ -31,12 +31,17 @@ import {
   Trash2,
   Plus,
   RefreshCw,
+  FlaskConical,
+  Power,
+  PowerOff,
+  Pencil,
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -104,11 +109,6 @@ export default function SettingsPage() {
       setApiKeysLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchApiKeys();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-  }, [fetchApiKeys]);
 
   const handleCreateApiKey = async () => {
     if (!newKeyName.trim()) return;
@@ -187,6 +187,160 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(key.prefix);
     setCopiedKeyId(key.id);
     setTimeout(() => setCopiedKeyId(null), 2000);
+  };
+
+  // ── Webhooks ──
+  interface WebhookEndpoint {
+    id: string;
+    name: string;
+    url: string;
+    subscribedEvents: string[];
+    status: string;
+    description: string | null;
+    lastTriggeredAt: string | null;
+    lastStatus: string | null;
+    createdAt: string;
+    _count: { deliveries: number };
+  }
+  const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([]);
+  const [webhooksLoading, setWebhooksLoading] = useState(true);
+  const [showCreateWebhook, setShowCreateWebhook] = useState(false);
+  const [editWebhook, setEditWebhook] = useState<WebhookEndpoint | null>(null);
+  const [webhookForm, setWebhookForm] = useState({ name: "", url: "", description: "", events: [] as string[] });
+  const [savingWebhook, setSavingWebhook] = useState(false);
+  const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
+
+  const WEBHOOK_EVENTS = [
+    "order.created", "order.updated", "order.cancelled", "order.refunded",
+    "customer.created", "customer.updated",
+    "product.created", "product.updated", "product.low_stock",
+    "payment.completed", "payment.failed",
+  ];
+  const EVENT_GROUPS = [
+    { label: "Orders", events: ["order.created", "order.updated", "order.cancelled", "order.refunded"] },
+    { label: "Customers", events: ["customer.created", "customer.updated"] },
+    { label: "Products", events: ["product.created", "product.updated", "product.low_stock"] },
+    { label: "Payments", events: ["payment.completed", "payment.failed"] },
+  ];
+
+  const fetchWebhooks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/webhooks");
+      if (res.ok) setWebhooks(await res.json());
+    } catch { /* ignore */ }
+    finally { setWebhooksLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchApiKeys();
+    fetchWebhooks();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, []);
+
+  const openCreateWebhook = () => {
+    setEditWebhook(null);
+    setWebhookForm({ name: "", url: "", description: "", events: [] });
+    setShowCreateWebhook(true);
+  };
+  const openEditWebhook = (wh: WebhookEndpoint) => {
+    setEditWebhook(wh);
+    setWebhookForm({ name: wh.name, url: wh.url, description: wh.description || "", events: [...wh.subscribedEvents] });
+    setShowCreateWebhook(true);
+  };
+
+  const handleSaveWebhook = async () => {
+    if (!webhookForm.name.trim() || !webhookForm.url.trim()) {
+      toast.error(tsettings("webhookSelectEvents"));
+      return;
+    }
+    if (webhookForm.events.length === 0) {
+      toast.error(tsettings("webhookSelectEvents"));
+      return;
+    }
+    setSavingWebhook(true);
+    try {
+      const method = editWebhook ? "PUT" : "POST";
+      const body = editWebhook
+        ? { id: editWebhook.id, ...webhookForm }
+        : webhookForm;
+      const res = await fetch("/api/webhooks", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tcommon("error"));
+        return;
+      }
+      await fetchWebhooks();
+      setShowCreateWebhook(false);
+      toast.success(editWebhook ? tsettings("webhookUpdated") : tsettings("webhookCreated"));
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setSavingWebhook(false);
+    }
+  };
+
+  const handleToggleWebhook = async (wh: WebhookEndpoint) => {
+    const newStatus = wh.status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    try {
+      const res = await fetch("/api/webhooks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: wh.id, status: newStatus }),
+      });
+      if (!res.ok) { toast.error(tcommon("error")); return; }
+      await fetchWebhooks();
+      toast.success(newStatus === "ACTIVE" ? tsettings("webhookActivated") : tsettings("webhookPaused"));
+    } catch {
+      toast.error(tcommon("error"));
+    }
+  };
+
+  const handleDeleteWebhook = async (id: string) => {
+    const ok = await confirm({
+      title: tsettings("webhookDelete"),
+      description: tsettings("webhookConfirmDelete"),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch("/api/webhooks", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) { toast.error(tcommon("error")); return; }
+      await fetchWebhooks();
+      toast.success(tsettings("webhookDeleted"));
+    } catch {
+      toast.error(tcommon("error"));
+    }
+  };
+
+  const handleTestWebhook = async (id: string) => {
+    setTestingWebhook(id);
+    try {
+      const res = await fetch("/api/webhooks/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpointId: id }),
+      });
+      const data = await res.json();
+      if (data.status === "DELIVERED") {
+        toast.success(tsettings("webhookTestSuccess", { statusCode: data.statusCode, durationMs: data.durationMs }));
+      } else {
+        toast.error(tsettings("webhookTestFailed", { code: data.statusCode || "N/A" }));
+      }
+      await fetchWebhooks();
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setTestingWebhook(null);
+    }
   };
 
   useEffect(() => {
@@ -765,29 +919,67 @@ export default function SettingsPage() {
                   <p className="text-xs text-gray-500 mt-0.5">{tsettings("webhooksDesc")}</p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateWebhook}>
                 <Plus className="h-3.5 w-3.5" /> {tsettings("webhookAdd")}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {[
-              { url: "https://api.example.com/webhooks/orders", events: ["order.created", "order.updated"], active: true },
-              { url: "https://hooks.slack.com/services/T00/B00/xxx", events: ["customer.created"], active: false },
-            ].map((wh) => (
-              <div key={wh.url} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={cn("w-2 h-2 rounded-full shrink-0", wh.active ? "bg-emerald-500" : "bg-gray-300")} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{wh.url}</p>
-                    <p className="text-xs text-gray-500">{wh.events.join(", ")}</p>
+            {webhooksLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-20 shimmer rounded-lg" />
+                ))}
+              </div>
+            ) : webhooks.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">{tsettings("webhookEmpty")}</p>
+            ) : (
+              webhooks.map((wh) => (
+                <div key={wh.id} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("w-2 h-2 rounded-full shrink-0", wh.status === "ACTIVE" ? "bg-emerald-500" : "bg-gray-300")} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{wh.name}</p>
+                          <Badge variant={wh.status === "ACTIVE" ? "success" : "outline"}>
+                            {wh.status === "ACTIVE" ? tsettings("webhookActive") : tsettings("webhookInactive")}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 font-mono truncate">{wh.url}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 text-blue-500 hover:text-blue-600"
+                        onClick={() => handleTestWebhook(wh.id)} disabled={testingWebhook === wh.id}
+                        title={tsettings("webhookTest")}>
+                        <FlaskConical className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                        onClick={() => handleToggleWebhook(wh)}
+                        title={wh.status === "ACTIVE" ? tsettings("webhookPaused") : tsettings("webhookActivated")}>
+                        {wh.status === "ACTIVE" ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                        onClick={() => openEditWebhook(wh)} title="Edit">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 text-red-400 hover:text-red-600"
+                        onClick={() => handleDeleteWebhook(wh.id)} title="Delete">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-gray-400 pl-5">
+                    <span>{wh.subscribedEvents.length} events</span>
+                    <span>•</span>
+                    <span>{wh._count.deliveries} {tsettings("webhookDeliveries")?.toLowerCase()}</span>
+                    <span>•</span>
+                    <span>{wh.lastTriggeredAt ? tsettings("webhookLastTriggered") : tsettings("webhookNeverTriggered")}</span>
                   </div>
                 </div>
-                <Badge variant={wh.active ? "success" : "outline"} className="shrink-0">
-                  {wh.active ? tsettings("webhookActive") : tsettings("webhookInactive")}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -892,6 +1084,89 @@ export default function SettingsPage() {
               {creatingKey ? "Creating..." : tsettings("apiKeyCreate")}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create / Edit Webhook Dialog */}
+      <Dialog open={showCreateWebhook} onOpenChange={setShowCreateWebhook}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editWebhook ? tsettings("webhookEdit") : tsettings("webhookAdd")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{tsettings("webhookName")}</label>
+              <Input
+                placeholder={tsettings("webhookNamePlaceholder")}
+                value={webhookForm.name}
+                onChange={(e) => setWebhookForm({ ...webhookForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{tsettings("webhookUrl")}</label>
+              <Input
+                placeholder={tsettings("webhookUrlPlaceholder")}
+                value={webhookForm.url}
+                onChange={(e) => setWebhookForm({ ...webhookForm, url: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{tsettings("webhookDescLabel")}</label>
+              <Input
+                placeholder={tsettings("webhookDescPlaceholder")}
+                value={webhookForm.description}
+                onChange={(e) => setWebhookForm({ ...webhookForm, description: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">{tsettings("webhookSubscribeEvents")}</label>
+              <div className="space-y-3">
+                {EVENT_GROUPS.map((group) => (
+                  <div key={group.label}>
+                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">{group.label}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.events.map((ev) => {
+                        const selected = webhookForm.events.includes(ev);
+                        return (
+                          <button
+                            key={ev}
+                            type="button"
+                            onClick={() => {
+                              setWebhookForm({
+                                ...webhookForm,
+                                events: selected
+                                  ? webhookForm.events.filter((e) => e !== ev)
+                                  : [...webhookForm.events, ev],
+                              });
+                            }}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-xs font-medium border transition-all",
+                              selected
+                                ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
+                                : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300",
+                            )}
+                          >
+                            {ev}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {webhookForm.events.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">{tsettings("webhookSelectEvents")}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateWebhook(false)}>
+              {tcommon("cancel")}
+            </Button>
+            <Button onClick={handleSaveWebhook} disabled={savingWebhook}>
+              {savingWebhook ? "..." : editWebhook ? tsettings("webhookUpdate") : tsettings("webhookAdd")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
