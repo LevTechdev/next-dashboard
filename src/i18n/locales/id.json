@@ -1030,7 +1030,11 @@
     "showingOf": "Menampilkan {from}–{to} dari {total}",
     "rowsPerPage": "Baris per halaman",
     "previous": "Sebelumnya",
-    "next": "Berikutnya"
+    "next": "Berikutnya",
+    "emailNotVerified": "Email Anda belum diverifikasi",
+    "emailNotVerifiedDesc": "Verifikasi email Anda untuk mengamankan akun dan mengaktifkan semua fitur.",
+    "sendCode": "Kirim kode",
+    "verifyNow": "Verifikasi sekarang"
   },
   "notifications": {
     "title": "Pusat Notifikasi",

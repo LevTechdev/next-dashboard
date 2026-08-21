@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import type { SecurityData } from "@/components/security/use-security-data";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
+import { useAuth } from "@/hooks/use-auth";
 
 /**
  * Email-verification status card shown in the Security Center.
@@ -41,6 +42,7 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
 
   // Shared 60s resend cooldown (persisted in localStorage).
   const { cooldownLeft, startCooldown } = useResendCooldown();
+  const { refreshUser } = useAuth();
 
   const sendVerification = async () => {
     setSending(true);
@@ -103,6 +105,7 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
       toast.success(t("emailVerifiedToast"));
       setOtp("");
       data.refresh();
+      refreshUser();
     } catch {
       setOtpError(t("otpGenericError"));
     } finally {

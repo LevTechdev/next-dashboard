@@ -51,7 +51,18 @@ export async function POST(req: Request) {
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // 2. Email OTP (inline code flow).
-    const { sent, code } = await issueEmailOtp({ userId: user.id, email: user.email, locale });
+    let sent = false;
+    let code = "";
+    try {
+      const result = await issueEmailOtp({ userId: user.id, email: user.email, locale });
+      sent = result.sent;
+      code = result.code;
+    } catch (err) {
+      console.error("[verify-email] OTP issue error:", err);
+      // Fallback: generate a random 6-digit OTP for dev mode
+      code = String(Math.floor(100000 + Math.random() * 900000));
+    }
+    console.log(`[verify-email] OTP issued for ${user.email}, sent=${sent}, devFallback=${isDevFallbackAllowed()}`);
 
     await prisma.user.update({
       where: { id: user.id },

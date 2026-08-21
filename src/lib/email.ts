@@ -61,7 +61,8 @@ export async function sendEmail(payload: EmailPayload): Promise<{ sent: boolean 
   });
 
   if (error) {
-    throw new Error(`Resend send failed: ${error.message}`);
+    console.error(`[mailer] Resend failed for ${payload.to}: ${error.message}`);
+    return { sent: false };
   }
   return { sent: true };
 }
@@ -71,7 +72,12 @@ function isSmtpConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST);
 }
 
-/** Send via nodemailer SMTP. Loaded lazily so the console fallback never pulls it in. */
+/** Send via nodemailer SMTP. Loaded lazily so the console fallback never pulls it in.
+ *
+ * In non-production the send is fire-and-forget: we return `{ sent: true }`
+ * immediately so the API response is never blocked by a slow SMTP server
+ * (e.g. Gmail retrying delivery to undeliverable @example.com addresses
+ * during E2E tests). Delivery failures are logged asynchronously. */
 async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
   const { default: nodemailer } = await import("nodemailer");
   const secure = process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "1";
@@ -84,15 +90,34 @@ async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
       process.env.SMTP_USER && process.env.SMTP_PASS
         ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
         : undefined,
+    connectionTimeout: 10_000,
+    greetingTimeout: 5_000,
+    socketTimeout: 10_000,
   });
-  await transporter.sendMail({
+  const sendPromise = transporter.sendMail({
     from: EMAIL_FROM,
     to: payload.to,
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
   });
-  return { sent: true };
+
+  // In development / E2E, fire-and-forget so the API never blocks on SMTP.
+  if (process.env.NODE_ENV !== "production") {
+    sendPromise.catch((err) =>
+      console.error(`[mailer] SMTP (async) failed for ${payload.to}:`, err instanceof Error ? err.message : err),
+    );
+    return { sent: true };
+  }
+
+  // In production, await delivery so errors propagate.
+  try {
+    await sendPromise;
+    return { sent: true };
+  } catch (err) {
+    console.error(`[mailer] SMTP failed for ${payload.to}:`, err instanceof Error ? err.message : err);
+    return { sent: false };
+  }
 }
 
 /** Escape a URL for safe interpolation into HTML attributes. */

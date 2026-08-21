@@ -167,7 +167,7 @@ test.describe("Security Center", () => {
       await page.goto("/en/security");
       await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
       // The unverified alert banner links to the verification card.
-      await expect(page.getByText("Your email is not verified")).toBeVisible();
+      await expect(page.getByText("Your email is not verified").first()).toBeVisible();
       await expect(page.getByText("Email Not Verified")).toBeVisible();
 
       // Send → dev mode surfaces the 6-digit code inline.

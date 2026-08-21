@@ -1030,7 +1030,11 @@
     "showingOf": "Showing {from}–{to} of {total}",
     "rowsPerPage": "Rows per page",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "emailNotVerified": "Your email is not verified",
+    "emailNotVerifiedDesc": "Verify your email to secure your account and enable all features.",
+    "sendCode": "Send code",
+    "verifyNow": "Verify now"
   },
   "notifications": {
     "title": "Notification Center",

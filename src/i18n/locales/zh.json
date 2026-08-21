@@ -965,7 +965,11 @@
     "showingOf": "显示 {from}–{to}，共 {total} 条",
     "rowsPerPage": "每页行数",
     "previous": "上一页",
-    "next": "下一页"
+    "next": "下一页",
+    "emailNotVerified": "您的邮箱尚未验证",
+    "emailNotVerifiedDesc": "验证您的邮箱以保护帐户并启用所有功能。",
+    "sendCode": "发送验证码",
+    "verifyNow": "立即验证"
   },
   "notifications": {
     "title": "通知中心",

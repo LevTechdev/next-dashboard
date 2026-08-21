@@ -127,9 +127,18 @@ export async function POST(req: Request) {
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
     await logSecurityEvent({ userId: user.id, type: "LOGIN", req, tenantId: user.tenantId });
 
-    const { password: _pw, totpSecret: _ts, ...safeUser } = user;
-    void _pw;
-    void _ts;
+    const SENSITIVE_USER_KEYS = new Set([
+      "password",
+      "totpSecret",
+      "verificationToken",
+      "verificationTokenExpires",
+      "emailOtpHash",
+      "emailOtpExpires",
+      "emailOtpAttempts",
+    ]);
+    const safeUser = Object.fromEntries(
+      Object.entries(user).filter(([key]) => !SENSITIVE_USER_KEYS.has(key)),
+    );
 
     const response = NextResponse.json({
       token,

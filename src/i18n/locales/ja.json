@@ -965,7 +965,11 @@
     "showingOf": "{from}–{to} 件を表示中（全 {total} 件）",
     "rowsPerPage": "1ページあたりの行数",
     "previous": "前へ",
-    "next": "次へ"
+    "next": "次へ",
+    "emailNotVerified": "メールアドレスが未確認です",
+    "emailNotVerifiedDesc": "アカウントを保護し、すべての機能を利用するにはメールアドレスを確認してください。",
+    "sendCode": "コードを送信",
+    "verifyNow": "今すぐ確認"
   },
   "notifications": {
     "title": "通知センター",

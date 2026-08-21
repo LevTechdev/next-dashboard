@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import PageTransition from "@/components/page-transition";
 import { ViewTransitionProvider } from "@/components/view-transition-provider";
 import UnsupportedBrowserBanner from "@/components/unsupported-browser-banner";
+import EmailVerificationBanner from "@/components/email-verification-banner";
 import { AiCopilotProvider, AiCopilotButton, AiCopilotPanel } from "@/components/ai";
 import { ConfirmProvider } from "@/components/ui/confirm-provider";
 
@@ -97,6 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Header onMenuClick={() => setMobileSidebarOpen(true)} />
 
               <main className="p-3 sm:p-4 lg:p-6 pb-24 lg:pb-6">
+                <EmailVerificationBanner />
                 <PageTransition>{children}</PageTransition>
               </main>
             </div>
