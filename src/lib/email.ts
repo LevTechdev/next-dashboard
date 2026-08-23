@@ -76,8 +76,8 @@ function isSmtpConfigured(): boolean {
  *
  * In non-production the send is fire-and-forget: we return `{ sent: true }`
  * immediately so the API response is never blocked by a slow SMTP server
- * (e.g. Gmail retrying delivery to undeliverable @example.com addresses
- * during E2E tests). Delivery failures are logged asynchronously. */
+ * SMTP delivery errors are logged and return { sent: false } so callers
+ * can keep their dev-mode fallback. */
 async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
   const { default: nodemailer } = await import("nodemailer");
   const secure = process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "1";
@@ -102,17 +102,10 @@ async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
     text: payload.text,
   });
 
-  // In development / E2E, fire-and-forget so the API never blocks on SMTP.
-  if (process.env.NODE_ENV !== "production") {
-    sendPromise.catch((err) =>
-      console.error(`[mailer] SMTP (async) failed for ${payload.to}:`, err instanceof Error ? err.message : err),
-    );
-    return { sent: true };
-  }
-
-  // In production, await delivery so errors propagate.
+  // Always await delivery so emails are actually sent before the API responds.
   try {
-    await sendPromise;
+    const info = await sendPromise;
+    console.log(`[mailer] SMTP delivered to ${payload.to} — messageId: ${info.messageId}`);
     return { sent: true };
   } catch (err) {
     console.error(`[mailer] SMTP failed for ${payload.to}:`, err instanceof Error ? err.message : err);

@@ -77,7 +77,7 @@ export default function ProductsPage() {
     refresh,
   } = useRealtimeData<{ products: any[]; categories: any[] }>(
     "/api/products?includeCategories=true",
-    { interval: 30000 },
+    { interval: 30000, realtime: { table: "Product", event: "*" } },
   );
 
   const products = productsData?.products || [];

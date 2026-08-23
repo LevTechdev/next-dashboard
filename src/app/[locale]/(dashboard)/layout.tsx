@@ -12,6 +12,9 @@ import UnsupportedBrowserBanner from "@/components/unsupported-browser-banner";
 import EmailVerificationBanner from "@/components/email-verification-banner";
 import { AiCopilotProvider, AiCopilotButton, AiCopilotPanel } from "@/components/ai";
 import { ConfirmProvider } from "@/components/ui/confirm-provider";
+import { RoleGuard } from "@/components/auth/role-guard";
+import { canAccessPage, type Role } from "@/lib/permissions";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -99,7 +102,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               <main className="p-3 sm:p-4 lg:p-6 pb-24 lg:pb-6">
                 <EmailVerificationBanner />
-                <PageTransition>{children}</PageTransition>
+                <RoleGuard page={getPageKey(pathname)}>
+                  <PageTransition>{children}</PageTransition>
+                </RoleGuard>
               </main>
             </div>
 
@@ -112,4 +117,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </AiCopilotProvider>
     </ConfirmProvider>
   );
+}
+
+/** Extract the page key from a pathname like /en/team → "team". */
+function getPageKey(pathname: string): string {
+  const parts = pathname.split("/").filter(Boolean);
+  // First part is locale, second is the page key
+  return parts[1] || "dashboard";
 }

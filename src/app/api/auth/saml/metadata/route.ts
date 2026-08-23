@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   }
 
   const saml = buildSaml(
-    { entryPoint: "https://idp.example.com/sso", idpCert: "placeholder", spIssuer },
+    { entryPoint: "https://idp.your-domain.com/sso", idpCert: "placeholder", spIssuer },
     req,
   );
   const xml = saml.generateServiceProviderMetadata(null, null);

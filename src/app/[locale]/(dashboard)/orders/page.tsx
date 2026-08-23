@@ -64,6 +64,7 @@ export default function OrdersPage() {
     refresh,
   } = useRealtimeData<any[]>("/api/orders", {
     interval: 15000,
+    realtime: { table: "Order", event: "*" },
   });
 
   const dateFiltered = useMemo(() => {

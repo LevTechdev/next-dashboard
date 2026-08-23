@@ -84,6 +84,7 @@ export default function CustomersPage() {
     refresh,
   } = useRealtimeData<any[]>("/api/customers", {
     interval: 30000,
+    realtime: { table: "Customer", event: "*" },
   });
 
   const role = (user as any)?.role;

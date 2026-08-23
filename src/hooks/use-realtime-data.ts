@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface RealtimeOptions<T = unknown> {
   /** Polling interval in ms (default: 30000) */
@@ -9,6 +10,15 @@ interface RealtimeOptions<T = unknown> {
   enabled?: boolean;
   /** Called when data changes significantly */
   onUpdate?: (data: T) => void;
+  /** Supabase Realtime: subscribe to Postgres Changes on a table for instant updates. */
+  realtime?: {
+    /** Database table name (e.g. "orders") */
+    table: string;
+    /** Event filter — default "*" (all changes) */
+    event?: "INSERT" | "UPDATE" | "DELETE" | "*";
+    /** Schema — default "public" */
+    schema?: string;
+  };
 }
 
 interface RealtimeState<T> {
@@ -24,13 +34,14 @@ export function useRealtimeData<T = unknown>(
   url: string,
   options: RealtimeOptions<T> = {},
 ): RealtimeState<T> {
-  const { interval = 30000, enabled = true, onUpdate } = options;
+  const { interval = 30000, enabled = true, onUpdate, realtime } = options;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const prevDataRef = useRef<string>("");
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -63,6 +74,60 @@ export function useRealtimeData<T = unknown>(
     await fetchData();
   }, [fetchData]);
 
+  // Supabase Realtime subscription — triggers immediate refresh on table changes
+  useEffect(() => {
+    if (!enabled || !realtime?.table) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        if (cancelled) return;
+        const supabase = createClient();
+
+        const ch = supabase
+          .channel(`rt:${realtime.table}`)
+          .on(
+            "postgres_changes",
+            {
+              event: realtime.event ?? "*",
+              schema: realtime.schema ?? "public",
+              table: realtime.table,
+            },
+            () => {
+              // Instant refresh when a row changes — no need to wait for poll
+              if (!cancelled) refresh();
+            },
+          )
+          .subscribe((status) => {
+            if (status === "CHANNEL_ERROR" && !cancelled) {
+              console.error(`[realtime] Channel error on table "${realtime.table}"`);
+            }
+          });
+
+        channelRef.current = ch;
+      } catch {
+        // Supabase client not configured — fall back to polling only
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channelRef.current) {
+        // Best-effort cleanup
+        import("@/lib/supabase/client")
+          .then(({ createClient }) => {
+            const supabase = createClient();
+            supabase.removeChannel(channelRef.current!);
+          })
+          .catch(() => {});
+        channelRef.current = null;
+      }
+    };
+  }, [enabled, realtime?.table, realtime?.event, realtime?.schema, refresh]);
+
+  // Polling — always active as a fallback (e.g. when Supabase Realtime is unavailable)
   useEffect(() => {
     if (!enabled) return;
 

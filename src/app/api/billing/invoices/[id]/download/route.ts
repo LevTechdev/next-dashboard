@@ -73,7 +73,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   <div class="header">
     <div>
       <div class="brand">Next<span>Dashboard</span></div>
-      <div style="font-size:12px;color:#a1a1aa;margin-top:4px;">dashboard.example.com</div>
+      <div style="font-size:12px;color:#a1a1aa;margin-top:4px;">next-dashboard-apps.vercel.app</div>
     </div>
     <div class="invoice-meta">
       <div class="invoice-title">INVOICE</div>
