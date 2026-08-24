@@ -14,11 +14,13 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() || "";
+  const actionFilter = searchParams.get("action")?.trim() || "";
+  const dateFrom = searchParams.get("from")?.trim() || "";
+  const dateTo = searchParams.get("to")?.trim() || "";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(50, Math.max(10, parseInt(searchParams.get("limit") || "25")));
 
-  // Build search filter if query provided (AND-combined with the tenant scope
-  // so the two never collide on the same `OR` key).
+  // Build filter if query/action/dates provided (AND-combined with tenant scope).
   const whereFilter: any = { AND: [tenantScope] };
   if (q) {
     whereFilter.AND.push({
@@ -29,6 +31,17 @@ export async function GET(req: Request) {
         { user: { name: { contains: q, mode: "insensitive" } } },
       ],
     });
+  }
+  if (actionFilter) {
+    whereFilter.AND.push({ action: { contains: actionFilter, mode: "insensitive" } });
+  }
+  if (dateFrom) {
+    whereFilter.AND.push({ createdAt: { gte: new Date(dateFrom) } });
+  }
+  if (dateTo) {
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+    whereFilter.AND.push({ createdAt: { lte: to } });
   }
 
   const [logs, totalCount] = await Promise.all([

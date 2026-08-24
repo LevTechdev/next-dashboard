@@ -315,5 +315,125 @@ export function createDashboardTools(tenantId: string | null) {
         };
       },
     },
+
+    getTeamMembers: {
+      description: "Get the list of team members with their roles and status.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const users = await prisma.user.findMany({
+          where: { tenantId },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        });
+        return users.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: decryptPII(u.email),
+          role: u.role,
+          isActive: u.isActive,
+          joinedAt: u.createdAt.toISOString(),
+        }));
+      },
+    },
+
+    getSecurityOverview: {
+      description: "Get the current security status of the user's account (2FA, email verification).",
+      inputSchema: z.object({
+        userId: z.string().describe("The user's ID"),
+      }),
+      execute: async ({ userId }: { userId: string }) => {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            emailVerified: true,
+            totpEnabled: true,
+          },
+        });
+        if (!user) return { error: "User not found" };
+        const securityEvents = await prisma.securityEvent.count({
+          where: { userId, type: { contains: "suspicious", mode: "insensitive" } },
+        });
+        return {
+          totpEnabled: user.totpEnabled,
+          emailVerified: !!user.emailVerified,
+          suspiciousEvents: securityEvents,
+        };
+      },
+    },
+
+    getRecentAuditLogs: {
+      description: "Get recent audit log entries for tracking user activity and security events.",
+      inputSchema: z.object({
+        limit: z.number().optional().default(10),
+        action: z.string().optional().describe("Filter by action type, e.g. LOGIN, LOGOUT, CREATE, UPDATE"),
+      }),
+      execute: async ({ limit, action }: { limit?: number; action?: string }) => {
+        const where: any = { tenantId };
+        if (action) where.action = { contains: action, mode: "insensitive" };
+        const logs = await prisma.activityLog.findMany({
+          where,
+          take: Math.min(limit || 10, 50),
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { name: true } } },
+        });
+        return logs.map((log) => ({
+          id: log.id,
+          action: log.action,
+          entity: log.entity,
+          entityId: log.entityId,
+          details: log.details,
+          user: log.user?.name || "System",
+          timestamp: log.createdAt.toISOString(),
+        }));
+      },
+    },
+
+    getChartData: {
+      description: "Get formatted chart data for a specific metric over time. Use for generating visualization data.",
+      inputSchema: z.object({
+        metric: z.enum(["revenue", "orders", "customers"]).describe("The metric to chart"),
+        months: z.number().optional().default(6).describe("Number of months to include"),
+      }),
+      execute: async ({ metric, months }: { metric: string; months?: number }) => {
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - (months || 6));
+        const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        if (metric === "revenue") {
+          const orders = await prisma.order.findMany({
+            where: { tenantId, createdAt: { gte: startDate } },
+            select: { createdAt: true, grandTotal: true },
+            orderBy: { createdAt: "asc" },
+          });
+          const map: Record<string, number> = {};
+          orders.forEach((o) => {
+            const m = monthNames[new Date(o.createdAt).getMonth()];
+            map[m] = (map[m] || 0) + o.grandTotal;
+          });
+          return { type: "bar", metric: "Revenue", data: monthNames.filter((m) => map[m] !== undefined).map((m) => ({ label: m, value: map[m] })) };
+        }
+        if (metric === "orders") {
+          const orders = await prisma.order.findMany({
+            where: { tenantId, createdAt: { gte: startDate } },
+            select: { createdAt: true },
+            orderBy: { createdAt: "asc" },
+          });
+          const map: Record<string, number> = {};
+          orders.forEach((o) => {
+            const m = monthNames[new Date(o.createdAt).getMonth()];
+            map[m] = (map[m] || 0) + 1;
+          });
+          return { type: "line", metric: "Orders", data: monthNames.filter((m) => map[m] !== undefined).map((m) => ({ label: m, value: map[m] })) };
+        }
+        return { type: "line", metric: "Customers", data: [] };
+      },
+    },
   };
 }

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback } from "react";
 import { RefreshCwIcon, SearchIcon } from "lucide-animated";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { ClipboardList, Loader2, Filter, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { downloadCsv } from "@/lib/csv";
 import { useRealtime } from "@/components/realtime-provider";
 import { DataExportButton } from "@/components/data-export-button";
+import { toast } from "sonner";
 
 interface AuditEntry {
   id: string;
@@ -44,16 +45,24 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const { globalRefreshTrigger } = useRealtime();
+
 
   const fetchLogs = useCallback(
     async (page = 1) => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (debouncedSearch) params.set("q", debouncedSearch);
-        params.set("page", String(page));
-        params.set("limit", "25");
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.set("q", debouncedSearch);
+      if (actionFilter) params.set("action", actionFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      params.set("page", String(page));
+      params.set("limit", "25");
 
         const res = await fetch(`/api/audit-log?${params}`);
         if (!res.ok) throw new Error("Failed to fetch");
@@ -66,7 +75,7 @@ export default function AuditLogPage() {
         setLoading(false);
       }
     },
-    [debouncedSearch],
+    [debouncedSearch, actionFilter, dateFrom, dateTo],
   );
 
   // Debounce search input
@@ -83,6 +92,46 @@ export default function AuditLogPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchLogs, globalRefreshTrigger]);
+
+  const handleComplianceReport = async () => {
+    try {
+      const res = await fetch(`/api/audit-log/compliance-report?days=30`);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      const report = data.report;
+      const lines = [
+        `COMPLIANCE REPORT — ${report.period.days}-Day Audit Summary`,
+        `Period: ${report.period.from} to ${report.period.to}`,
+        ``,
+        `Total Activity Events: ${report.totalActivity}`,
+        `Total Security Events: ${report.totalSecurityEvents}`,
+        ``,
+        `Login Activity:`,
+        `  Total: ${report.loginActivity.total}`,
+        `  Failed: ${report.loginActivity.failed}`,
+        `  Success Rate: ${report.loginActivity.successRate}`,
+        ``,
+        `Action Breakdown:`,
+        ...report.actionBreakdown.map((a: any) => `  ${a.action}: ${a.count}`),
+        ``,
+        `Top Actors:`,
+        ...report.topActors.map((a: any) => `  ${a.user?.name || "System"} (${a.user?.role || "SYSTEM"}): ${a.activityCount} events`),
+        ``,
+        `Daily Activity:`,
+        ...report.dailyActivity.map((d: any) => `  ${d.date}: ${d.count} events`),
+      ].join("\n");
+      const blob = new Blob([lines], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `compliance-report-${new Date().toISOString().split("T")[0]}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Compliance report downloaded (${report.period.days}-day summary)`);
+    } catch {
+      toast.error("Failed to generate report");
+    }
+  };
 
   const handleExport = () => {
     downloadCsv(
@@ -124,6 +173,10 @@ export default function AuditLogPage() {
             <RefreshCwIcon size={16} className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             {tcommon("refresh")}
           </Button>
+          <Button variant="outline" size="sm" onClick={handleComplianceReport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Compliance Report
+          </Button>
           <DataExportButton
             columns={[
               { key: (l: AuditEntry) => l.user.name, header: "User" },
@@ -144,18 +197,67 @@ export default function AuditLogPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="relative max-w-sm">
-            <SearchIcon
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-            />
-            <Input
-              placeholder={tcommon("search")}
-              className="pl-10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <SearchIcon
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              />
+              <Input
+                placeholder={tcommon("search")}
+                className="pl-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {(actionFilter || dateFrom || dateTo) && (
+                <span className="ml-1 h-2 w-2 rounded-full bg-primary" />
+              )}
+            </Button>
           </div>
+          {showFilters && (
+            <div className="mt-3 flex flex-wrap gap-3 items-end p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Action Type</label>
+                <select
+                  value={actionFilter}
+                  onChange={(e) => setActionFilter(e.target.value)}
+                  className="flex h-9 w-[180px] rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">All actions</option>
+                  <option value="LOGIN">Login</option>
+                  <option value="LOGOUT">Logout</option>
+                  <option value="CREATE">Create</option>
+                  <option value="UPDATE">Update</option>
+                  <option value="DELETE">Delete</option>
+                  <option value="PASSWORD">Password</option>
+                  <option value="MFA">MFA/2FA</option>
+                  <option value="EMAIL">Email</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">From</label>
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">To</label>
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
+              </div>
+              {(actionFilter || dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" onClick={() => { setActionFilter(""); setDateFrom(""); setDateTo(""); }}>
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {/* Loading state */}

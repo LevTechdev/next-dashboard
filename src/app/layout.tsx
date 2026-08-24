@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
+import { PWARegister } from "@/components/pwa-register";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { OfflineIndicator } from "@/components/offline-indicator";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -10,7 +13,7 @@ export const metadata: Metadata = {
   title: "Dashboard - All-in-One Business Management Platform",
   description:
     "Comprehensive business management platform with real-time analytics, multi-channel order management, team collaboration, and powerful reporting. Run your business with real-time intelligence.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -68,7 +71,10 @@ export default async function RootLayout({
         `}</Script>
       </head>
       <body className={inter.className} suppressHydrationWarning>
+        <PWARegister />
+        <OfflineIndicator />
         <Providers>{children}</Providers>
+        <PWAInstallPrompt />
       </body>
     </html>
   );
