@@ -18,7 +18,7 @@ vi.mock("next/link", () => ({
       <a href={href} {...props}>
         {children}
       </a>
-    )
+    ),
   ),
 }));
 
@@ -27,7 +27,7 @@ describe("TransitionLink", () => {
     render(
       <TransitionLink href="/test">
         <span data-testid="child">Click me</span>
-      </TransitionLink>
+      </TransitionLink>,
     );
 
     expect(screen.getByTestId("child")).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("TransitionLink", () => {
     render(
       <TransitionLink href="/page" viewTransitionName="my-transition">
         Animated Link
-      </TransitionLink>
+      </TransitionLink>,
     );
 
     const link = screen.getByText("Animated Link");
@@ -61,13 +61,9 @@ describe("TransitionLink", () => {
 
   it("forwards additional props to the link", () => {
     render(
-      <TransitionLink
-        href="/page"
-        className="custom-class"
-        aria-label="Custom label"
-      >
+      <TransitionLink href="/page" className="custom-class" aria-label="Custom label">
         Styled Link
-      </TransitionLink>
+      </TransitionLink>,
     );
 
     const link = screen.getByText("Styled Link");
@@ -78,13 +74,9 @@ describe("TransitionLink", () => {
   it("renders with custom ref and accessible name", () => {
     const ref = { current: null };
     render(
-      <TransitionLink
-        ref={ref as any}
-        href="/ref-test"
-        aria-label="Ref link"
-      >
+      <TransitionLink ref={ref as any} href="/ref-test" aria-label="Ref link">
         Ref Link
-      </TransitionLink>
+      </TransitionLink>,
     );
 
     const link = screen.getByText("Ref Link");
@@ -95,7 +87,7 @@ describe("TransitionLink", () => {
     render(
       <TransitionLink href="/styled" className="text-blue-500 font-bold">
         Styled
-      </TransitionLink>
+      </TransitionLink>,
     );
 
     const link = screen.getByText("Styled");

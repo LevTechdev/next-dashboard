@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/api-guard";
+import { requirePermission, requireAuth } from "@/lib/api-guard";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const { response } = await requirePermission("update", "integrations");
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const body = await req.json();
   const { endpointId } = body;
@@ -34,10 +35,7 @@ export async function POST(req: Request) {
   });
 
   // Compute HMAC signature
-  const signature = crypto
-    .createHmac("sha256", endpoint.secret)
-    .update(testPayload)
-    .digest("hex");
+  const signature = crypto.createHmac("sha256", endpoint.secret).update(testPayload).digest("hex");
 
   const startTime = Date.now();
   let statusCode = 0;
@@ -95,6 +93,7 @@ export async function POST(req: Request) {
       entity: "WebhookEndpoint",
       entityId: endpoint.id,
       details: `Tested webhook "${endpoint.name}" → ${deliveryStatus} (${statusCode || "N/A"}) in ${duration}ms`,
+      tenantId: session.user.tenantId,
     },
   });
 

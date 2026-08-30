@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
@@ -14,17 +15,36 @@ vi.mock("next/navigation", () => ({
 }));
 
 // ── Mock next-intl (uses real en.json translations; individual test files can override) ────
-// Load the real translations so all dashboard/marketing page tests get correct text
-const enMessages = require("../../../../i18n/locales/en.json");
+import enMessages from "../../../../i18n/locales/en.json";
 
 vi.mock("next-intl", () => {
   const messages = enMessages;
 
   const tFn = (namespace: string) => {
-    const ns = (messages as any)[namespace] || {};
-    const t = (key: string) => (ns as any)[key] ?? key;
-    t.raw = (key: string) => (ns as any)[key] ?? key;
-    t.rich = (key: string) => (ns as any)[key] ?? key;
+    const ns = (messages as Record<string, any>)[namespace] || {};
+    // Interpolates {placeholder} values like the real next-intl t(), so
+    // tests asserting interpolated strings (e.g. "3 attempt(s) left")
+    // behave identically to production.
+    const interpolate = (str: string, values?: Record<string, any>) => {
+      if (!values) return str;
+      let out = str;
+      for (const [key, value] of Object.entries(values)) {
+        out = out.replaceAll(`{${key}}`, String(value));
+      }
+      return out;
+    };
+    // next-intl t() resolves dotted paths through the namespace tree
+    // (e.g. "tools.getDashboardStats"); mirror that instead of a flat lookup.
+    const resolve = (obj: any, path: string): any =>
+      path
+        .split(".")
+        .reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), obj);
+    const t = (key: string, values?: Record<string, any>) =>
+      interpolate(resolve(ns, key) ?? key, values);
+    t.raw = (key: string, values?: Record<string, any>) =>
+      interpolate((ns as Record<string, any>)[key] ?? key, values);
+    t.rich = (key: string, values?: Record<string, any>) =>
+      interpolate((ns as Record<string, any>)[key] ?? key, values);
     return t;
   };
 
@@ -54,9 +74,25 @@ global.ResizeObserver = class {
   disconnect() {}
 };
 
+// ── Mock IntersectionObserver (required by framer-motion whileInView) ─────
+global.IntersectionObserver = class {
+  constructor() {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  root = null;
+  rootMargin = "";
+  thresholds: number[] = [];
+  takeRecords = (): IntersectionObserverEntry[] => [];
+} as unknown as typeof IntersectionObserver;
+
 // ── Mock next-themes ───────────────────────────────────────────────────────
 vi.mock("next-themes", () => ({
-  useTheme: vi.fn(() => ({ theme: "light", setTheme: vi.fn(), themes: ["light", "dark", "system"] })),
+  useTheme: vi.fn(() => ({
+    theme: "light",
+    setTheme: vi.fn(),
+    themes: ["light", "dark", "system"],
+  })),
   ThemeProvider: ({ children }: any) => children,
 }));
 
@@ -68,19 +104,34 @@ vi.mock("framer-motion", () => {
     const tag = rest.tag || "div";
     // Extract framer-motion specific props that shouldn't be passed to DOM
     const {
-      initial, animate, exit, variants, whileInView, whileHover,
-      whileTap, viewport, transition, layout, layoutId, onAnimationComplete,
+      initial,
+      animate,
+      exit,
+      variants,
+      whileInView,
+      whileHover,
+      whileTap,
+      viewport,
+      transition,
+      layout,
+      layoutId,
+      onAnimationComplete,
       ...domProps
     } = rest;
     return React.createElement(tag === "details" ? "details" : "div", domProps, children);
   };
 
+  // Cache per-tag components: real motion.div etc. are stable component
+  // identities, and an unstable identity would make React treat the element
+  // as a NEW type on every render — remounting the whole subtree (and
+  // orphaning previously captured DOM references in tests).
+  const motionCache: Record<string, any> = {};
   const motion = new Proxy(
     {},
     {
-      get: (_, tag: any) =>
-        (props: any) => React.createElement(noop, { ...props, tag }),
-    }
+      get: (_: any, tag: any) =>
+        (motionCache[tag] ??= (props: any) => React.createElement(noop, { ...props, tag })),
+    },
   );
 
   return {
@@ -92,16 +143,46 @@ vi.mock("framer-motion", () => {
       set: () => {},
       onChange: () => {},
     }),
-    useTransform: (value: any, _input: any, _output: any) => ({
+    useTransform: (value: any, inputRange: any, outputRange: any) => ({
       get: () => 0,
       set: () => {},
     }),
     useScroll: () => ({ scrollY: { get: () => 0 } }),
     useSpring: (value: any) => value,
     useAnimation: () => ({ start: () => {}, stop: () => {} }),
-    useAnimationFrame: () => {},
-    useDragControls: () => ({})
+    useAnimationFrame: (callback: any) => {},
+    useDragControls: () => ({}),
   };
+});
+
+// ── Mock lucide-animated (Proxy: any icon name resolves to an svg stub) ────
+vi.mock("lucide-animated", () => {
+  const React = require("react");
+  const cache: Record<string, any> = {};
+  const makeIcon = (name: string) => {
+    const Icon = ({ className, size: _size, ...props }: any) =>
+      React.createElement("svg", {
+        className,
+        "data-testid": `icon-${name.toLowerCase()}`,
+        ...props,
+      });
+    Icon.displayName = name;
+    return Icon;
+  };
+  return new Proxy({ __esModule: true } as Record<string, any>, {
+    get: (target, prop) => {
+      if (
+        typeof prop !== "string" ||
+        prop === "then" ||
+        prop === "default" ||
+        prop === "__esModule"
+      ) {
+        return (target as any)[prop];
+      }
+      return (cache[prop] ??= makeIcon(prop));
+    },
+    has: () => true,
+  });
 });
 
 // ── Mock lucide-react (all icons across marketing AND dashboard pages) ──────
@@ -110,46 +191,152 @@ vi.mock("lucide-react", () => {
   // All icon names used across the entire application
   const iconNames = [
     // Marketing page icons
-    "ArrowRight", "Zap", "Sparkles", "Bug", "Rocket", "RefreshCw", "Shield",
-    "BarChart3", "Package", "LayoutDashboard", "Menu", "X", "ChevronRight",
-    "Rows", "Layers", "Globe", "ShoppingCart", "CreditCard", "Mail",
-    "MessageSquare", "Database", "Cloud", "Share2", "Check", "TrendingUp",
-    "Users", "Activity", "GitBranch", "Bell", "Star", "HelpCircle",
-    "FileText", "Megaphone", "Tag", "UserCheck", "Clock", "PieChart",
-    "CheckCircle", "Download", "Copy", "CopyCheck", "Github", "Twitter",
-    "GitCommit", "Plug",
+    "ArrowRight",
+    "Zap",
+    "Sparkles",
+    "Bug",
+    "Rocket",
+    "RefreshCw",
+    "Shield",
+    "BarChart3",
+    "Package",
+    "LayoutDashboard",
+    "Menu",
+    "X",
+    "ChevronRight",
+    "Rows",
+    "Layers",
+    "Globe",
+    "ShoppingCart",
+    "CreditCard",
+    "Mail",
+    "MessageSquare",
+    "Database",
+    "Cloud",
+    "Share2",
+    "Check",
+    "TrendingUp",
+    "Users",
+    "Activity",
+    "GitBranch",
+    "Bell",
+    "Star",
+    "HelpCircle",
+    "FileText",
+    "Megaphone",
+    "Tag",
+    "UserCheck",
+    "Clock",
+    "PieChart",
+    "CheckCircle",
+    "Download",
+    "Copy",
+    "CopyCheck",
+    "Github",
+    "Twitter",
+    "GitCommit",
+    "Plug",
+    "PlugZap",
+    "CheckCircle2",
     // Dashboard page icons
-    "Search", "Plus", "Settings", "Sun", "Moon", "Monitor", "Command", "Loader2",
-    "Hash", "File", "Text", "Layout", "LogOut", "User", "ChevronLeft",
-    "AlertCircle", "AlertTriangle", "Info", "Trash2", "Box", "Users2",
-    "Gift", "BellRing", "ExternalLink",
-    "ArrowUpDown", "ChevronDown", "MoreHorizontal", "Filter", "Eye",
-    "DollarSign", "Palette", "Smartphone", "Key", "ShoppingBag", "MapPin",
-    "Store", "Wifi", "WifiOff", "ArrowUpRight", "UserCircle", "ClipboardList",
-    "Truck", "PackageCheck", "XCircle", "Pencil"," Monitor", "CopyCheck",
+    "Search",
+    "Plus",
+    "Settings",
+    "Sun",
+    "Moon",
+    "Monitor",
+    "Command",
+    "Loader2",
+    "Hash",
+    "File",
+    "Text",
+    "Layout",
+    "LogOut",
+    "User",
+    "ChevronLeft",
+    "AlertCircle",
+    "AlertTriangle",
+    "Info",
+    "Trash2",
+    "Box",
+    "Users2",
+    "Gift",
+    "BellRing",
+    "ExternalLink",
+    "ArrowUpDown",
+    "ChevronDown",
+    "MoreHorizontal",
+    "Filter",
+    "Eye",
+    "DollarSign",
+    "Palette",
+    "Smartphone",
+    "Key",
+    "ShoppingBag",
+    "MapPin",
+    "Store",
+    "Wifi",
+    "WifiOff",
+    "ArrowUpRight",
+    "UserCircle",
+    "ClipboardList",
+    "Truck",
+    "PackageCheck",
+    "XCircle",
+    "Pencil",
+    "Monitor",
+    "CopyCheck",
   ];
 
   const icons: Record<string, any> = {};
   for (const name of iconNames) {
     icons[name] = ({ className, ...props }: any) =>
-      React.createElement("svg", { className, "data-testid": `icon-${name.toLowerCase()}`, ...props });
+      React.createElement("svg", {
+        className,
+        "data-testid": `icon-${name.toLowerCase()}`,
+        ...props,
+      });
   }
-  return icons;
+  // Proxy fallback: icons not in the list above still resolve to a stub,
+  // so newly added icon imports never break the suite.
+  return new Proxy(icons, {
+    get: (target, prop) => {
+      if (
+        typeof prop !== "string" ||
+        prop === "then" ||
+        prop === "default" ||
+        prop === "__esModule"
+      ) {
+        return (target as any)[prop];
+      }
+      return (target[prop] ??= ({ className, ...props }: any) =>
+        React.createElement("svg", {
+          className,
+          "data-testid": `icon-${prop.toLowerCase()}`,
+          ...props,
+        }));
+    },
+    has: () => true,
+  });
 });
 
 // ── Mock @radix-ui/react-slot ──────────────────────────────────────────────
 vi.mock("@radix-ui/react-slot", () => {
   const React = require("react");
-  return {
-    Slot: React.forwardRef((props: any, ref: any) => {
-      const { children, ...rest } = props;
-      if (!children) return null;
-      return React.cloneElement(
-        React.Children.only(Array.isArray(children) ? children[0] : children),
-        { ...rest, ref }
-      );
-    }),
-  };
+  const Slot = React.forwardRef((props: any, ref: any) => {
+    const { children, ...rest } = props;
+    if (!children) return null;
+    return React.cloneElement(
+      React.Children.only(Array.isArray(children) ? children[0] : children),
+      { ...rest, ref },
+    );
+  });
+  Slot.displayName = "Slot";
+  // Slottable marks where a component's own children render when using Slot.
+  // As a passthrough marker, it simply renders its children.
+  const Slottable = ({ children }: any) => children;
+  Slottable.displayName = "Slottable";
+  return { Slot, Slottable };
 });
 
 // ── Mock class-variance-authority ───────────────────────────────────────────
@@ -161,9 +348,7 @@ vi.mock("class-variance-authority", () => ({
       default: "bg-white text-black",
       outline: "border rounded",
     };
-    return [base, variantMap[v] || "", variants.className || ""]
-      .filter(Boolean)
-      .join(" ");
+    return [base, variantMap[v] || "", variants.className || ""].filter(Boolean).join(" ");
   },
 }));
 
@@ -178,22 +363,20 @@ vi.mock("@/lib/utils", async () => {
   const actual = await vi.importActual<typeof import("@/lib/utils")>("@/lib/utils");
   return {
     ...actual,
-    cn: (...inputs: any[]) =>
-      inputs
-        .filter(Boolean)
-        .flat()
-        .join(" "),
+    cn: (...inputs: any[]) => inputs.filter(Boolean).flat().join(" "),
   };
 });
 
 // ── Mock @/components/ui/button ────────────────────────────────────────────
 vi.mock("@/components/ui/button", () => {
   const React = require("react");
+  const Button = React.forwardRef(
+    ({ children, className, variant, size, asChild, ...props }: any, ref: any) =>
+      React.createElement("button", { className, ref, ...props }, children),
+  );
+  Button.displayName = "Button";
   return {
-    Button: React.forwardRef(
-      ({ children, className, variant, size, asChild, ...props }: any, ref: any) =>
-        React.createElement("button", { className, ref, ...props }, children)
-    ),
+    Button,
     buttonVariants: "",
   };
 });

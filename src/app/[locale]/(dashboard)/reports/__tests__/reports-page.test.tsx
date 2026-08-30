@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ReportsPage from "../page";
 
-// Ensure real implementations are used for icon/ui modules
+// Mock lucide-react icons used by the page
 vi.mock("lucide-react", async () => {
   const actual = await vi.importActual("lucide-react");
   return actual;
@@ -16,20 +16,37 @@ vi.mock("@/hooks/use-realtime-data", () => ({
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 
 const mockData = {
-  stats: { totalRevenue: 124000, totalOrders: 2847, totalCustomers: 1250, totalProducts: 342, revenueGrowth: 12.5, ordersGrowth: 8.3, customersGrowth: 15.2, productsGrowth: 5.1 },
+  stats: {
+    totalRevenue: 124000,
+    totalOrders: 2847,
+    totalCustomers: 1250,
+    totalProducts: 342,
+    revenueGrowth: 12.5,
+    ordersGrowth: 8.3,
+    customersGrowth: 15.2,
+    productsGrowth: 5.1,
+  },
   salesByChannel: [{ name: "Online Store", value: 65000, color: "#6366f1" }],
   revenueData: [{ month: "Jan", revenue: 10000 }],
   topProducts: [{ id: "1", name: "Widget Pro", price: 29.99, orderCount: 145 }],
 };
 
-const loadedState = {
-  data: mockData,
+const mockOrders = [
+  { id: "1", grandTotal: 29.99, status: "COMPLETED", createdAt: "2026-08-01", customer: { name: "Test" } },
+];
+
+const mockCustomers = [
+  { id: "1", name: "Test Customer", email: "test@test.com", createdAt: "2026-08-01" },
+];
+
+const makeLoadedState = (data: any) => ({
+  data,
   loading: false,
   lastUpdated: new Date(),
   isRefreshing: false,
   refresh: vi.fn(),
   error: null,
-};
+});
 
 const loadingState = {
   data: null,
@@ -52,31 +69,42 @@ describe("Reports Page", () => {
   });
 
   it("renders the page heading with data", () => {
-    (useRealtimeData as any).mockReturnValue(loadedState);
+    (useRealtimeData as any)
+      .mockReturnValueOnce(makeLoadedState(mockData))
+      .mockReturnValueOnce(makeLoadedState(mockOrders))
+      .mockReturnValueOnce(makeLoadedState(mockCustomers));
     render(<ReportsPage />);
     expect(screen.getByText("Reports")).toBeInTheDocument();
     expect(screen.getByText("Generate and view business reports")).toBeInTheDocument();
   });
 
-  it("renders report type tabs", () => {
-    (useRealtimeData as any).mockReturnValue(loadedState);
+  it("renders the date range filter", () => {
+    (useRealtimeData as any)
+      .mockReturnValueOnce(makeLoadedState(mockData))
+      .mockReturnValueOnce(makeLoadedState(mockOrders))
+      .mockReturnValueOnce(makeLoadedState(mockCustomers));
     render(<ReportsPage />);
-    expect(screen.getByText("Sales Report")).toBeInTheDocument();
-    expect(screen.getByText("Customer Report")).toBeInTheDocument();
-    expect(screen.getByText("Product Report")).toBeInTheDocument();
+    expect(screen.getByText("Date Range")).toBeInTheDocument();
   });
 
-  it("renders the Export Report button", () => {
-    (useRealtimeData as any).mockReturnValue(loadedState);
+  it("renders the report tabs", () => {
+    (useRealtimeData as any)
+      .mockReturnValueOnce(makeLoadedState(mockData))
+      .mockReturnValueOnce(makeLoadedState(mockOrders))
+      .mockReturnValueOnce(makeLoadedState(mockCustomers));
     render(<ReportsPage />);
-    expect(screen.getByText("Export Report")).toBeInTheDocument();
+    expect(screen.getByText("Overview")).toBeInTheDocument();
   });
 
-  it("renders sales metrics", () => {
-    (useRealtimeData as any).mockReturnValue(loadedState);
+  it("renders sales metrics with correct i18n keys", () => {
+    (useRealtimeData as any)
+      .mockReturnValueOnce(makeLoadedState(mockData))
+      .mockReturnValueOnce(makeLoadedState(mockOrders))
+      .mockReturnValueOnce(makeLoadedState(mockCustomers));
     render(<ReportsPage />);
-    expect(screen.getByText("Total Revenue")).toBeInTheDocument();
-    expect(screen.getByText("Total Orders")).toBeInTheDocument();
-    expect(screen.getByText("Avg Order Value")).toBeInTheDocument();
+    // The reports page uses reports.* i18n keys, not dashboard.*
+    expect(screen.getByText("Revenue in range")).toBeInTheDocument();
+    expect(screen.getByText("Orders in range")).toBeInTheDocument();
+    expect(screen.getByText("New customers in range")).toBeInTheDocument();
   });
 });

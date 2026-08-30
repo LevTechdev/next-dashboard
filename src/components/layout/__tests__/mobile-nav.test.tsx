@@ -30,7 +30,7 @@ describe("MobileNav", () => {
   it("highlights the active route", () => {
     render(<MobileNav />);
     const homeLink = screen.getByText("Home").closest("a");
-    expect(homeLink?.className).toContain("text-indigo");
+    expect(homeLink?.className).toContain("text-primary");
   });
 
   it("renders icons for each navigation item", () => {

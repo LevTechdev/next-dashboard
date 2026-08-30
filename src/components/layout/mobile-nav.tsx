@@ -7,14 +7,8 @@ import { cn } from "@/lib/utils";
 import { useViewTransition } from "@/components/view-transition-provider";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Globe,
-  Check,
-} from "lucide-react";
+import { CheckIcon, UsersIcon, EarthIcon } from "lucide-animated";
+import { LayoutDashboard, ShoppingCart, Package } from "lucide-react";
 
 const LANGUAGES = [
   { code: "en", label: "EN", name: "English", flag: "🇬🇧" },
@@ -26,7 +20,7 @@ const LANGUAGES = [
 const mobileNavItems = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/orders", icon: ShoppingCart },
-  { label: "Customers", href: "/customers", icon: Users },
+  { label: "Customers", href: "/customers", icon: UsersIcon },
   { label: "Products", href: "/products", icon: Package },
 ];
 
@@ -35,7 +29,7 @@ const popoverVariants = {
     opacity: 0,
     y: 12,
     scale: 0.92,
-    transformOrigin: "bottom center",
+    transformOrigin: "bottom right",
   },
   visible: {
     opacity: 1,
@@ -93,7 +87,7 @@ export function MobileNav() {
   const currentLang = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+    <nav data-testid="mobile-dock" className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="flex items-center justify-around h-16 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 safe-area-bottom">
         {mobileNavItems.map((item) => {
           const fullHref = `/${locale}${item.href}`;
@@ -110,23 +104,21 @@ export function MobileNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 px-3 py-1 min-w-[64px] transition-colors duration-200 relative",
                 isActive
-                  ? "text-indigo-600 dark:text-indigo-400"
-                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  ? "text-primary"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300",
               )}
             >
               <div
                 className={cn(
                   "flex items-center justify-center w-10 h-8 rounded-lg transition-all duration-200",
-                  isActive && "bg-indigo-50 dark:bg-indigo-900/20"
+                  isActive && "bg-primary/10",
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon size={20} className="h-5 w-5" />
               </div>
-              <span className="text-[10px] font-medium leading-none">
-                {item.label}
-              </span>
+              <span className="text-[10px] font-medium leading-none">{item.label}</span>
               {isActive && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
               )}
             </Link>
           );
@@ -140,26 +132,30 @@ export function MobileNav() {
             className={cn(
               "flex flex-col items-center justify-center gap-0.5 px-3 py-1 min-w-[64px] transition-colors duration-200 relative",
               showLangMenu
-                ? "text-indigo-600 dark:text-indigo-400"
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-indigo-500"
+                ? "text-primary"
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:text-primary",
             )}
             aria-label="Switch language"
           >
             <motion.div
-              animate={showLangMenu ? { scale: [1, 1.15, 1], rotate: [0, -8, 8, 0] } : { scale: 1, rotate: 0 }}
+              animate={
+                showLangMenu
+                  ? { scale: [1, 1.15, 1], rotate: [0, -8, 8, 0] }
+                  : { scale: 1, rotate: 0 }
+              }
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className={cn(
                 "flex items-center justify-center w-10 h-8 rounded-lg transition-all duration-200",
-                showLangMenu && "bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-200 dark:ring-indigo-800"
+                showLangMenu && "bg-primary/10 ring-2 ring-primary/30",
               )}
             >
               <span className="text-sm leading-none mr-0.5">{currentLang.flag}</span>
-              <Globe className="h-4 w-4" />
+              <EarthIcon size={16} className="h-4 w-4" />
             </motion.div>
             <span
               className={cn(
                 "text-[10px] font-semibold leading-none transition-all duration-200",
-                showLangMenu ? "text-indigo-600 dark:text-indigo-400" : "text-gray-500 dark:text-gray-400"
+                showLangMenu ? "text-primary" : "text-gray-500 dark:text-gray-400",
               )}
             >
               {currentLang.label}
@@ -167,7 +163,7 @@ export function MobileNav() {
             {showLangMenu && (
               <motion.span
                 layoutId="mobileLangActiveBar"
-                className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"
+                className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full"
               />
             )}
           </motion.button>
@@ -191,7 +187,12 @@ export function MobileNav() {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden min-w-[184px]"
+                  // Cap the popover to the space above the dock (100dvh minus
+                  // the ~5rem the dock + gap occupy) and let it scroll with the
+                  // app's thin bar: on very short viewports it would otherwise
+                  // clip its header against the top of the screen (overflow
+                  // hidden, nothing reachable).
+                  className="absolute bottom-full right-0 mb-3 z-50 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-y-auto max-h-[calc(100dvh-5rem)] scrollbar-thin min-w-[184px]"
                 >
                   {/* Header */}
                   <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
@@ -216,16 +217,18 @@ export function MobileNav() {
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors",
                           isSelected
-                            ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50",
                         )}
                       >
                         <span className="text-base shrink-0">{lang.flag}</span>
                         <div className="flex-1 text-left min-w-0">
-                          <span className={cn(
-                            "block text-sm leading-tight",
-                            isSelected && "text-indigo-600 dark:text-indigo-400"
-                          )}>
+                          <span
+                            className={cn(
+                              "block text-sm leading-tight",
+                              isSelected && "text-primary",
+                            )}
+                          >
                             {lang.label}
                           </span>
                           <span className="block text-[10px] text-gray-400 dark:text-gray-500 leading-tight mt-0.5 truncate">
@@ -238,7 +241,7 @@ export function MobileNav() {
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ type: "spring", stiffness: 400, damping: 20 }}
                           >
-                            <Check className="h-4 w-4 text-indigo-500" />
+                            <CheckIcon size={16} className="h-4 w-4 text-primary" />
                           </motion.span>
                         ) : (
                           <span className="h-1.5 w-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />

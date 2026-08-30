@@ -37,7 +37,15 @@ describe("requirePermission", () => {
 
   it("returns 401 for any action or resource without request", async () => {
     const actions = ["create", "read", "update", "delete"] as const;
-    const resources = ["orders", "customers", "products", "team", "settings", "marketing", "discounts"];
+    const resources = [
+      "orders",
+      "customers",
+      "products",
+      "team",
+      "settings",
+      "marketing",
+      "discounts",
+    ];
 
     for (const action of actions) {
       for (const resource of resources) {

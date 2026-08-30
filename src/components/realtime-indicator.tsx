@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { ActivityIcon, RefreshCwIcon, WifiIcon } from "lucide-animated";
+import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RealtimeIndicatorProps {
@@ -26,13 +27,10 @@ export function RealtimeIndicator({
     }
 
     const updateTimeAgo = () => {
-      const seconds = Math.floor(
-        (Date.now() - lastUpdated.getTime()) / 1000
-      );
+      const seconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
       if (seconds < 5) setTimeAgo("Just now");
       else if (seconds < 60) setTimeAgo(`${seconds}s ago`);
-      else if (seconds < 3600)
-        setTimeAgo(`${Math.floor(seconds / 60)}m ago`);
+      else if (seconds < 3600) setTimeAgo(`${Math.floor(seconds / 60)}m ago`);
       else setTimeAgo(`${Math.floor(seconds / 3600)}h ago`);
     };
 
@@ -45,25 +43,23 @@ export function RealtimeIndicator({
     <div
       className={cn(
         "flex items-center gap-2 text-xs transition-all duration-300",
-        error
-          ? "text-red-500 dark:text-red-400"
-          : "text-emerald-600 dark:text-emerald-400",
-        className
+        error ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
+        className,
       )}
     >
       {error ? (
         <WifiOff className="h-3 w-3" />
       ) : isRefreshing ? (
-        <RefreshCw className="h-3 w-3 animate-spin" />
+        <RefreshCwIcon size={12} className="h-3 w-3 animate-spin" />
       ) : (
-        <Activity className="h-3 w-3" />
+        <ActivityIcon size={12} className="h-3 w-3" />
       )}
       <span className="font-medium">
         {error
           ? "Disconnected"
           : isRefreshing
-          ? "Updating..."
-          : `Live${timeAgo ? ` • Updated ${timeAgo}` : ""}`}
+            ? "Updating..."
+            : `Live${timeAgo ? ` • Updated ${timeAgo}` : ""}`}
       </span>
     </div>
   );

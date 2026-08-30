@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["../src/*"],
+      "server-only": ["../node_modules/server-only/empty.js"]
+    }
+  },
+  "include": [
+    "seed-tenant-isolation.ts",
+    "check-audit-chain.ts",
+    "seed-chain-events.ts",
+    "repair-audit-chain.ts"
+  ]
+}

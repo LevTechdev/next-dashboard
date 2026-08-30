@@ -45,15 +45,11 @@ interface TransitionLinkProps extends NextLinkProps {
 const TransitionLink = forwardRef<HTMLAnchorElement, TransitionLinkProps>(
   ({ viewTransitionName, children, ...props }, ref) => {
     return (
-      <Link
-        ref={ref}
-        data-view-transition-name={viewTransitionName}
-        {...props}
-      >
+      <Link ref={ref} data-view-transition-name={viewTransitionName} {...props}>
         {children}
       </Link>
     );
-  }
+  },
 );
 
 TransitionLink.displayName = "TransitionLink";

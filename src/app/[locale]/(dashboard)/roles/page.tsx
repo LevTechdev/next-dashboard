@@ -3,37 +3,49 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
-  Shield,
-  Users2,
-  Search,
-  Save,
-  RotateCcw,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  SlidersHorizontal,
-  Lock,
-  KeyRound,
-} from "lucide-react";
+  SearchIcon,
+  CircleCheckIcon,
+  SlidersHorizontalIcon,
+  RotateCcwIcon,
+  LockIcon,
+} from "lucide-animated";
+import { Shield, Users2, Save, Loader2, XCircle, AlertTriangle, KeyRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLES = ["ADMIN", "MANAGER", "STAFF"] as const;
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
-  MANAGER: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  STAFF: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+  ADMIN:
+    "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+  MANAGER:
+    "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  STAFF:
+    "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
-const RESOURCE_KEYS = ["dashboard", "analytics", "sales", "orders", "customers", "products", "inventory", "marketing", "discounts", "reports", "team", "settings", "profile", "audit-log", "roles"];
+const RESOURCE_KEYS = [
+  "dashboard",
+  "analytics",
+  "sales",
+  "orders",
+  "customers",
+  "products",
+  "inventory",
+  "marketing",
+  "discounts",
+  "reports",
+  "team",
+  "settings",
+  "profile",
+  "audit-log",
+  "roles",
+];
 
 // System defaults — mirrors src/lib/permissions.ts PAGE_ACCESS
 const SYSTEM_PAGE_DEFAULTS: Record<string, string[]> = {
@@ -69,11 +81,11 @@ function getEffectiveAccess(
   role: string,
   action: string,
   pending: { id: string; allowed: boolean }[],
-  dbSettings: RoleSetting[]
+  dbSettings: RoleSetting[],
 ): boolean {
   // 1. Check pending changes (saved or new)
   const setting = dbSettings.find(
-    (s) => s.role === role && s.resource === resource && s.action === action
+    (s) => s.role === role && s.resource === resource && s.action === action,
   );
   if (setting) {
     const pendingChange = pending.find((c) => c.id === setting.id);
@@ -99,11 +111,12 @@ export default function RolesPage() {
   const tcommon = useTranslations("common");
   const troles = useTranslations("roles");
 
-  const getResourceLabel = useCallback((resource: string) => {
-    return troles(`res_${resource.replace(/-/g, "_")}`);
-  }, [troles]);
-  const { user } = useAuth();
-  const role = (user as any)?.role;
+  const getResourceLabel = useCallback(
+    (resource: string) => {
+      return troles(`res_${resource.replace(/-/g, "_")}`);
+    },
+    [troles],
+  );
 
   const [roleSettings, setRoleSettings] = useState<RoleSetting[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -114,20 +127,19 @@ export default function RolesPage() {
   const [dirty, setDirty] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<{ id: string; allowed: boolean }[]>([]);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/roles");
-      const data = await res.json();
-      setRoleSettings(data.roleSettings || []);
-      setUsers(data.users || []);
-    } catch {
-      toast.error(troles("loadFailed"));
-    } finally {
-      setLoading(false);
-    }
+  const loadData = () => {
+    fetch("/api/roles", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setRoleSettings(data.roleSettings || []);
+        setUsers(data.users || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        toast.error(troles("loadFailed"));
+        setLoading(false);
+      });
   };
-
   useEffect(() => {
     loadData();
   }, []);
@@ -135,10 +147,10 @@ export default function RolesPage() {
   const getOverrideSetting = (
     resource: string,
     role: string,
-    action: string
+    action: string,
   ): RoleSetting | undefined => {
     return roleSettings.find(
-      (s) => s.role === role && s.resource === resource && s.action === action
+      (s) => s.role === role && s.resource === resource && s.action === action,
     );
   };
 
@@ -146,7 +158,12 @@ export default function RolesPage() {
     return getEffectiveAccess(resource, role, action, pendingChanges, roleSettings);
   };
 
-  const togglePermission = (setting: RoleSetting | undefined, resource: string, role: string, action: string) => {
+  const togglePermission = (
+    setting: RoleSetting | undefined,
+    resource: string,
+    role: string,
+    action: string,
+  ) => {
     const current = getToggleState(resource, role, action);
     const newAllowed = !current;
 
@@ -180,17 +197,19 @@ export default function RolesPage() {
           const action = parts.pop()!;
           const role = parts.pop()!;
           const resource = parts.join("-");
-          await fetch("/api/roles", {
+          const res = await fetch("/api/roles", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role, resource, action, allowed: change.allowed }),
           });
+          if (!res.ok) throw new Error("save failed");
         } else {
-          await fetch("/api/roles", {
+          const res = await fetch("/api/roles", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: change.id, allowed: change.allowed }),
           });
+          if (!res.ok) throw new Error("save failed");
         }
         success++;
       } catch {
@@ -224,9 +243,10 @@ export default function RolesPage() {
     return counts;
   }, [users]);
 
-  const filteredResources = RESOURCE_KEYS.filter((r) =>
-    r.toLowerCase().includes(search.toLowerCase()) ||
-    getResourceLabel(r).toLowerCase().includes(search.toLowerCase())
+  const filteredResources = RESOURCE_KEYS.filter(
+    (r) =>
+      r.toLowerCase().includes(search.toLowerCase()) ||
+      getResourceLabel(r).toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -243,15 +263,13 @@ export default function RolesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{troles("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {troles("subtitle")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{troles("subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
             <>
               <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcwIcon size={16} className="h-4 w-4 mr-2" />
                 Discard
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -274,12 +292,19 @@ export default function RolesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Shield className={cn(
-                    "h-5 w-5",
-                    r === "ADMIN" ? "text-purple-500" : r === "MANAGER" ? "text-blue-500" : "text-emerald-500"
-                  )} />
+                  <Shield
+                    className={cn(
+                      "h-5 w-5",
+                      r === "ADMIN"
+                        ? "text-purple-500"
+                        : r === "MANAGER"
+                          ? "text-blue-500"
+                          : "text-emerald-500",
+                    )}
+                  />
                   <h3 className="font-semibold">{r}</h3>
-                </div>                  <Badge className={ROLE_COLORS[r]}>
+                </div>{" "}
+                <Badge className={ROLE_COLORS[r]}>
                   {troles("roleUsers", { count: usersByRole[r] || 0 })}
                 </Badge>
               </div>
@@ -287,8 +312,8 @@ export default function RolesPage() {
                 {r === "ADMIN"
                   ? troles("roleDescAdmin")
                   : r === "MANAGER"
-                  ? troles("roleDescManager")
-                  : troles("roleDescStaff")}
+                    ? troles("roleDescManager")
+                    : troles("roleDescStaff")}
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {(["dashboard", "orders", "customers", "products"] as const).map((res) => {
@@ -301,7 +326,7 @@ export default function RolesPage() {
                         "text-[10px] px-1.5 py-0",
                         access
                           ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
-                          : "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-300 border-red-200 dark:border-red-800"
+                          : "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-300 border-red-200 dark:border-red-800",
                       )}
                     >
                       {access ? getResourceLabel(res) : "✗"}
@@ -318,7 +343,7 @@ export default function RolesPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="matrix" className="gap-2">
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontalIcon size={16} className="h-4 w-4" />
             {troles("tabMatrix")}
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
@@ -333,11 +358,14 @@ export default function RolesPage() {
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
+                  <LockIcon size={16} className="h-4 w-4" />
                   {troles("resourcePermissions")}
                 </CardTitle>
                 <div className="relative max-w-xs w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <SearchIcon
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                  />
                   <Input
                     placeholder={troles("searchResources")}
                     className="pl-10"
@@ -347,7 +375,7 @@ export default function RolesPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 sm:p-6 overflow-x-auto">
+            <CardContent className="p-0 sm:p-6 overflow-x-auto scrollbar-thin">
               <div className="min-w-[800px]">
                 <table className="w-full">
                   <thead>
@@ -357,9 +385,7 @@ export default function RolesPage() {
                       </th>
                       {ROLES.map((r) => (
                         <th key={r} colSpan={3} className="text-center pb-3 px-1">
-                          <Badge className={cn("text-xs", ROLE_COLORS[r])}>
-                            {r}
-                          </Badge>
+                          <Badge className={cn("text-xs", ROLE_COLORS[r])}>{r}</Badge>
                         </th>
                       ))}
                     </tr>
@@ -367,15 +393,12 @@ export default function RolesPage() {
                       <th className="pb-2 px-4 sticky left-0 bg-white dark:bg-gray-950 z-10"></th>
                       {ROLES.map((r) =>
                         ["access", "create", "delete"].map((action) => (
-                          <th
-                            key={`${r}-${action}`}
-                            className="text-center pb-2 px-1"
-                          >
+                          <th key={`${r}-${action}`} className="text-center pb-2 px-1">
                             <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                               {troles(`action${action.charAt(0).toUpperCase() + action.slice(1)}`)}
                             </span>
                           </th>
-                        ))
+                        )),
                       )}
                     </tr>
                   </thead>
@@ -390,7 +413,10 @@ export default function RolesPage() {
                             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {getResourceLabel(resource)}
                             </span>
-                            <Badge variant="outline" className="text-[10px] font-mono text-gray-400">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-mono text-gray-400"
+                            >
                               {resource}
                             </Badge>
                           </div>
@@ -401,29 +427,53 @@ export default function RolesPage() {
                             const allowed = getToggleState(resource, r, action);
                             const isPending = pendingChanges.some(
                               (c) =>
-                                (c.id === setting?.id) ||
-                                (c.id === `new-${r}-${resource}-${action}`)
+                                c.id === setting?.id || c.id === `new-${r}-${resource}-${action}`,
                             );
 
-                            const pageOnlyResources = ["dashboard", "analytics", "sales", "inventory", "reports", "audit-log", "profile"];
-                            const isDisabled = pageOnlyResources.includes(resource) && action !== "access";
+                            const pageOnlyResources = [
+                              "dashboard",
+                              "analytics",
+                              "sales",
+                              "inventory",
+                              "reports",
+                              "audit-log",
+                              "profile",
+                            ];
+                            const isDisabled =
+                              pageOnlyResources.includes(resource) && action !== "access";
 
                             return (
-                              <td key={`${r}-${resource}-${action}`} className="py-1.5 px-1 text-center">
+                              <td
+                                key={`${r}-${resource}-${action}`}
+                                className="py-1.5 px-1 text-center"
+                              >
                                 {!isDisabled ? (
                                   <button
                                     onClick={() => togglePermission(setting, resource, r, action)}
                                     className={cn(
                                       "inline-flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150",
-                                      isPending && "ring-2 ring-offset-1 ring-indigo-400 dark:ring-offset-gray-900",
+                                      isPending &&
+                                        "ring-2 ring-offset-1 ring-indigo-400 dark:ring-offset-gray-900",
                                       allowed
                                         ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
-                                        : "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                        : "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30",
                                     )}
-                                    title={allowed ? troles("toggleRevoke", { action, resource: getResourceLabel(resource), role: r }) : troles("toggleGrant", { action, resource: getResourceLabel(resource), role: r })}
+                                    title={
+                                      allowed
+                                        ? troles("toggleRevoke", {
+                                            action,
+                                            resource: getResourceLabel(resource),
+                                            role: r,
+                                          })
+                                        : troles("toggleGrant", {
+                                            action,
+                                            resource: getResourceLabel(resource),
+                                            role: r,
+                                          })
+                                    }
                                   >
                                     {allowed ? (
-                                      <CheckCircle2 className="h-4 w-4" />
+                                      <CircleCheckIcon size={16} className="h-4 w-4" />
                                     ) : (
                                       <XCircle className="h-4 w-4" />
                                     )}
@@ -435,14 +485,14 @@ export default function RolesPage() {
                                 )}
                               </td>
                             );
-                          })
+                          }),
                         )}
                       </tr>
                     ))}
                     {filteredResources.length === 0 && (
                       <tr>
                         <td colSpan={10} className="text-center py-12 text-gray-500">
-                          <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          <SearchIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-30" />
                           {troles("noMatch", { search })}
                         </td>
                       </tr>
@@ -454,7 +504,7 @@ export default function RolesPage() {
               {/* Legend */}
               <div className="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 px-4 sm:px-0">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                  <CircleCheckIcon size={14} className="h-3.5 w-3.5 text-green-500" />
                   {troles("legendAllowed")}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -479,8 +529,8 @@ export default function RolesPage() {
                 {troles("teamRoleAssignments")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 sm:p-6 overflow-x-auto">
-              <div className="overflow-x-auto">
+            <CardContent className="p-0 sm:p-6 overflow-x-auto scrollbar-thin">
+              <div className="overflow-x-auto scrollbar-thin">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -498,7 +548,9 @@ export default function RolesPage() {
                       >
                         <td className="py-3 px-4">
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{u.name}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {u.name}
+                            </p>
                             <p className="text-xs text-gray-500">{u.email}</p>
                           </div>
                         </td>
@@ -515,7 +567,10 @@ export default function RolesPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              window.location.href = window.location.pathname.replace(/\/roles(\/.*)?$/, "/team");
+                              window.location.href = window.location.pathname.replace(
+                                /\/roles(\/.*)?$/,
+                                "/team",
+                              );
                             }}
                           >
                             <KeyRound className="h-3.5 w-3.5 mr-1.5" />
@@ -539,12 +594,14 @@ export default function RolesPage() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               <p className="text-sm font-medium">
-                {troles(pendingChanges.length === 1 ? "unsavedCount" : "unsavedCount_plural", { count: pendingChanges.length })}
+                {troles(pendingChanges.length === 1 ? "unsavedCount" : "unsavedCount_plural", {
+                  count: pendingChanges.length,
+                })}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcwIcon size={16} className="h-4 w-4 mr-2" />
                 {troles("discard")}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -566,10 +623,12 @@ export default function RolesPage() {
 /* ─── helper component for table headers ─────────────────────────────── */
 function TableHead({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th className={cn(
-      "text-left text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 pb-3 px-4",
-      className
-    )}>
+    <th
+      className={cn(
+        "text-left text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 pb-3 px-4",
+        className,
+      )}
+    >
       {children}
     </th>
   );

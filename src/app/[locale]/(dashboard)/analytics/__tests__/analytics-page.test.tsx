@@ -18,7 +18,16 @@ import { useRealtimeData } from "@/hooks/use-realtime-data";
 const mockUseRealtimeData = vi.mocked(useRealtimeData);
 
 const mockData = {
-  stats: { totalRevenue: 124000, totalOrders: 2847, totalCustomers: 1250, totalProducts: 342, revenueGrowth: 12.5, ordersGrowth: 8.3, customersGrowth: 15.2, productsGrowth: 5.1 },
+  stats: {
+    totalRevenue: 124000,
+    totalOrders: 2847,
+    totalCustomers: 1250,
+    totalProducts: 342,
+    revenueGrowth: 12.5,
+    ordersGrowth: 8.3,
+    customersGrowth: 15.2,
+    productsGrowth: 5.1,
+  },
   salesByChannel: [{ name: "Online Store", value: 65000, color: "#6366f1" }],
   revenueData: [{ month: "Jan", revenue: 10000 }],
   topProducts: [{ id: "1", name: "Widget Pro", price: 29.99, orderCount: 145 }],

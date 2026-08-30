@@ -80,6 +80,7 @@ export async function POST(req: Request) {
       entity: "WebhookEndpoint",
       entityId: endpoint.id,
       details: `Created webhook endpoint "${name}" → ${url}`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   const { response } = await requirePermission("update", "integrations", req);
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const body = await req.json();
   const { id, name, url, events, status, description } = body;
@@ -126,6 +128,7 @@ export async function PUT(req: Request) {
       entity: "WebhookEndpoint",
       entityId: id,
       details: `Updated webhook "${updated.name}"`,
+      tenantId: session.user.tenantId,
     },
   });
 
@@ -135,6 +138,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   const { response } = await requirePermission("delete", "integrations", req);
   if (response) return response;
+  const { session } = await requireAuth(req);
 
   const { id } = await req.json();
   if (!id) {
@@ -154,6 +158,7 @@ export async function DELETE(req: Request) {
       entity: "WebhookEndpoint",
       entityId: id,
       details: `Deleted webhook "${endpoint.name}"`,
+      tenantId: session.user.tenantId,
     },
   });
 

@@ -8,6 +8,12 @@ vi.mock("lucide-react", async () => {
   return actual;
 });
 
+// Mock confirm provider (page uses useConfirm for confirm dialogs)
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn(() => vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
+}));
+
 // Mock useAuth
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(),
@@ -36,9 +42,33 @@ beforeEach(() => {
     ok: true,
     json: () =>
       Promise.resolve([
-        { id: "1", name: "Alice", email: "alice@test.com", role: "ADMIN", position: "CEO", isActive: true, createdAt: "2024-01-15" },
-        { id: "2", name: "Bob", email: "bob@test.com", role: "MANAGER", position: "Team Lead", isActive: true, createdAt: "2024-03-20" },
-        { id: "3", name: "Charlie", email: "charlie@test.com", role: "STAFF", position: "Developer", isActive: false, createdAt: "2024-06-10" },
+        {
+          id: "1",
+          name: "Alice",
+          email: "alice@test.com",
+          role: "ADMIN",
+          position: "CEO",
+          isActive: true,
+          createdAt: "2024-01-15",
+        },
+        {
+          id: "2",
+          name: "Bob",
+          email: "bob@test.com",
+          role: "MANAGER",
+          position: "Team Lead",
+          isActive: true,
+          createdAt: "2024-03-20",
+        },
+        {
+          id: "3",
+          name: "Charlie",
+          email: "charlie@test.com",
+          role: "STAFF",
+          position: "Developer",
+          isActive: false,
+          createdAt: "2024-06-10",
+        },
       ]),
   } as Response);
 });
@@ -70,6 +100,6 @@ describe("Team Page", () => {
     expect(screen.getByText("Role")).toBeInTheDocument();
     expect(screen.getByText("Position")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
-    expect(screen.getByText("Date")).toBeInTheDocument();
+    expect(screen.getByText("Joined")).toBeInTheDocument();
   });
 });

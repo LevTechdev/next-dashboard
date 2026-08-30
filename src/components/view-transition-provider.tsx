@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -32,16 +33,15 @@ const ViewTransitionContext = createContext<ViewTransitionContextValue>({
  * Also sets up a global click handler to intercept same-origin <a> clicks
  * (including Next.js <Link> components).
  */
-export function ViewTransitionProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const isSupported =
-    typeof document !== "undefined" &&
-    typeof document.startViewTransition === "function";
+  const [isSupported, setIsSupported] = useState(false);
+
+  // Defer browser-only check to avoid hydration mismatch
+  useEffect(() => {
+    setIsSupported(typeof document.startViewTransition === "function");
+  }, []);
 
   // Wrap router.push with startViewTransition
   const pushWithTransition = useCallback(
@@ -58,7 +58,7 @@ export function ViewTransitionProvider({
         router.push(href);
       });
     },
-    [router, pathname, isSupported]
+    [router, pathname, isSupported],
   );
 
   const replaceWithTransition = useCallback(
@@ -74,7 +74,7 @@ export function ViewTransitionProvider({
         router.replace(href);
       });
     },
-    [router, pathname, isSupported]
+    [router, pathname, isSupported],
   );
 
   // Global click handler to intercept <a> tag clicks (including <Link>)
@@ -85,8 +85,7 @@ export function ViewTransitionProvider({
 
     const handleClick = (e: MouseEvent) => {
       // Ignore non-left clicks, modified clicks, etc.
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
-        return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
       const link = (e.target as HTMLElement).closest<HTMLAnchorElement>("a");
       if (!link || !link.href) return;
@@ -106,8 +105,7 @@ export function ViewTransitionProvider({
       const href = link.pathname + link.search + link.hash;
 
       // Skip hash-only changes on the same page
-      if (href === window.location.pathname + window.location.search)
-        return;
+      if (href === window.location.pathname + window.location.search) return;
 
       e.preventDefault();
       navigatingRef.current = true;
@@ -116,18 +114,16 @@ export function ViewTransitionProvider({
       // before the browser captures the old state. This enables shared-element
       // morphing animations (e.g., logo, nav active indicator).
       const morphedElements: HTMLElement[] = [];
-      document
-        .querySelectorAll<HTMLElement>("[data-view-transition-name]")
-        .forEach((el) => {
-          const name = el.getAttribute("data-view-transition-name");
-          if (name) {
-            // Only set if not already set by the element itself
-            if (!el.style.viewTransitionName) {
-              el.style.viewTransitionName = name;
-              morphedElements.push(el);
-            }
+      document.querySelectorAll<HTMLElement>("[data-view-transition-name]").forEach((el) => {
+        const name = el.getAttribute("data-view-transition-name");
+        if (name) {
+          // Only set if not already set by the element itself
+          if (!el.style.viewTransitionName) {
+            el.style.viewTransitionName = name;
+            morphedElements.push(el);
           }
-        });
+        }
+      });
 
       // Also check if the clicked link itself has a transition name
       const linkName = link.getAttribute("data-view-transition-name");
@@ -150,8 +146,7 @@ export function ViewTransitionProvider({
     };
 
     document.addEventListener("click", handleClick, { capture: true });
-    return () =>
-      document.removeEventListener("click", handleClick, { capture: true });
+    return () => document.removeEventListener("click", handleClick, { capture: true });
   }, [router, pathname, isSupported]);
 
   // Reset navigating flag when pathname changes

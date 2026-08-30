@@ -47,7 +47,9 @@ beforeEach(() => {
 describe("Roles Page", () => {
   it("renders the page heading", async () => {
     render(<RolesPage />);
-    expect(await screen.findByText("Manage role-based access control across all resources")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Manage role-based access control across all resources"),
+    ).toBeInTheDocument();
   });
 
   it("renders role overview cards", async () => {

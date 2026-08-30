@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./card";
 import { Button } from "./button";
-import { TrendingUp, DollarSign, Users, ArrowUpRight } from "lucide-react";
+import { TrendingUpIcon, DollarSignIcon, UsersIcon, ArrowUpRightIcon } from "lucide-animated";
 
 /**
  * Premium card system with 6 subcomponents and 3 premium class variants.
@@ -40,7 +40,9 @@ type Story = StoryObj<typeof Card>;
 // ── Subcomponents ──────────────────────────────────────────────────
 
 export const Default: Story = {
-  parameters: { docs: { description: { story: "Standard card with header, content, and footer sections." } } },
+  parameters: {
+    docs: { description: { story: "Standard card with header, content, and footer sections." } },
+  },
   render: () => (
     <Card className="w-full max-w-sm">
       <CardHeader>
@@ -53,7 +55,9 @@ export const Default: Story = {
         </p>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
-        <Button variant="outline" size="sm">Cancel</Button>
+        <Button variant="outline" size="sm">
+          Cancel
+        </Button>
         <Button size="sm">Save</Button>
       </CardFooter>
     </Card>
@@ -61,15 +65,21 @@ export const Default: Story = {
 };
 
 export const DashboardCard: Story = {
-  parameters: { docs: { description: { story: "Revenue stat card using `.dashboard-card`. Hover to see the indigo border glow." } } },
+  parameters: {
+    docs: {
+      description: {
+        story: "Revenue stat card using `.dashboard-card`. Hover to see the indigo border glow.",
+      },
+    },
+  },
   render: () => (
     <div className="dashboard-card p-5 rounded-xl w-full max-w-xs">
       <div className="flex items-center justify-between mb-3">
         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
-          <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <DollarSignIcon size={20} className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
         </div>
         <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20">
-          <TrendingUp className="h-3 w-3" /> 23.5%
+          <TrendingUpIcon size={12} className="h-3 w-3" /> 23.5%
         </span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
@@ -81,15 +91,22 @@ export const DashboardCard: Story = {
 // ── Stat Card Premium ──────────────────────────────────────────────
 
 export const StatCardPremium: Story = {
-  parameters: { docs: { description: { story: "Premium stat card using `.stat-card-premium`. Hover to reveal the gradient top bar (`--gradient-premium`)." } } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Premium stat card using `.stat-card-premium`. Hover to reveal the gradient top bar (`--gradient-premium`).",
+      },
+    },
+  },
   render: () => (
     <div className="stat-card-premium w-full max-w-xs cursor-pointer">
       <div className="flex items-center justify-between">
         <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <UsersIcon size={20} className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         <span className="flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-full text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20">
-          <TrendingUp className="h-3 w-3" /> 12%
+          <TrendingUpIcon size={12} className="h-3 w-3" /> 12%
         </span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">Active Users</p>
@@ -101,21 +118,34 @@ export const StatCardPremium: Story = {
 // ── All Card Variants Grid ─────────────────────────────────────────
 
 export const AllVariants: Story = {
-  parameters: { docs: { description: { story: "Side-by-side comparison of all card variants. Hover each to see the different effects." } } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Side-by-side comparison of all card variants. Hover each to see the different effects.",
+      },
+    },
+  },
   render: () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
       {/* Dashboard Card */}
       <div className="dashboard-card p-4 rounded-xl">
-        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">dashboard-card</p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">Hover → indigo border glow + shadow lift</p>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          dashboard-card
+        </p>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Hover → indigo border glow + shadow lift
+        </p>
         <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-          <ArrowUpRight className="h-3 w-3" /> +12.5%
+          <ArrowUpRightIcon size={12} className="h-3 w-3" /> +12.5%
         </div>
       </div>
 
       {/* Stat Card Premium */}
       <div className="stat-card-premium cursor-pointer">
-        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">stat-card-premium</p>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          stat-card-premium
+        </p>
         <p className="text-sm text-gray-700 dark:text-gray-300">Hover → gradient top bar + lift</p>
         <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-2">$12.4k</p>
       </div>
@@ -123,7 +153,9 @@ export const AllVariants: Story = {
       {/* Double Bezel */}
       <div className="double-bezel">
         <div className="double-bezel-inner">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">double-bezel</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            double-bezel
+          </p>
           <p className="text-sm text-gray-700 dark:text-gray-300">Nested outer + inner surfaces</p>
         </div>
       </div>
@@ -134,7 +166,14 @@ export const AllVariants: Story = {
 // ── KPI Row Example ────────────────────────────────────────────────
 
 export const KPIRow: Story = {
-  parameters: { docs: { description: { story: "Real-world KPI row using `.dashboard-card` (first) and `.stat-card-premium` (second) classes." } } },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Real-world KPI row using `.dashboard-card` (first) and `.stat-card-premium` (second) classes.",
+      },
+    },
+  },
   render: () => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
       <div className="dashboard-card p-4 rounded-xl">

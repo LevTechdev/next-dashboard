@@ -8,8 +8,9 @@
     --foreground: 225 25% 7%;
     --card: 0 0% 100%;
     --card-foreground: 225 25% 7%;
-    --primary: 225 25% 7%;
-    --primary-foreground: 210 40% 98%;
+    /* Base/brand color — light mode: green oklch(0.84 0.21 124.02) */
+    --primary: 73 100% 44%;
+    --primary-foreground: 80 45% 10%;
     --secondary: 210 20% 96%;
     --secondary-foreground: 225 25% 7%;
     --muted: 210 20% 96%;
@@ -20,7 +21,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 225 15% 90%;
     --input: 225 15% 90%;
-    --ring: 225 25% 7%;
+    --ring: 73 100% 40%;
 
     /* Marketing surface tokens (light mode) */
     --surface-base: 0 0% 100%;
@@ -34,13 +35,24 @@
     --glow-emerald: 160 84% 39%;
     --glow-purple: 271 81% 56%;
     --glow-blue: 221 83% 53%;
+    /* AI accent green — oklch(0.78 0.22 147.35) */
+    --glow-green: 152 82% 46%;
+    --ai-green: oklch(0.78 0.22 147.35);
+
+    /* AI copilot + order-tracking accent — light mode: lime.
+       Consumed via hsl(var(--ai-accent)) so the accent-color scheme in
+       Settings → Appearance can override both at once. */
+    --ai-accent: 84 81% 44%; /* ≈ lime-500 #84cc16 */
+    --ai-accent-strong: 84 85% 35%; /* ≈ lime-600 #65a30d */
+    --ai-accent-soft: 84 55% 93%; /* light lime tint (avatars, chips) */
+    --ai-accent-soft-2: 84 65% 96%; /* paler lime tint (header wash) */
 
     /* ===== 21st.dev / Vengeance UI Premium Tokens ===== */
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
     --radius-3xl: 2rem;
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
-    --card-shadow-hover: 0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
     --glass-bg: rgba(255, 255, 255, 0.6);
     --glass-border: rgba(0, 0, 0, 0.06);
     --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -55,8 +67,9 @@
     --foreground: 210 40% 98%;
     --card: 225 20% 12%;
     --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 225 25% 7%;
+    /* Base/brand color — dark mode: purple */
+    --primary: 265 77% 66%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 224 18% 14%;
     --secondary-foreground: 210 40% 98%;
     --muted: 224 18% 14%;
@@ -67,7 +80,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 225 15% 26%;
     --input: 225 12% 22%;
-    --ring: 210 40% 90%;
+    --ring: 265 77% 66%;
 
     /* Marketing surface tokens (dark mode) */
     --surface-base: 225 25% 7%;
@@ -80,9 +93,15 @@
     --glass-bg: rgba(10, 11, 16, 0.8);
     --glass-border: rgba(255, 255, 255, 0.07);
     --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
-    --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
     --gradient-premium: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
+
+    /* AI copilot + order-tracking accent — dark mode: indigo (#5046e5). */
+    --ai-accent: 245 77% 58%; /* #5046e5 — brand indigo-violet */
+    --ai-accent-strong: 239 84% 67%; /* ≈ indigo-400 #818cf8 */
+    --ai-accent-soft: 245 45% 20%; /* dark indigo tint (avatars, chips) */
+    --ai-accent-soft-2: 245 40% 15%; /* deeper indigo tint (header wash) */
   }
 
   .theme {
@@ -97,7 +116,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "ss02" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1,
+      "ss01" 1,
+      "ss02" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -113,18 +136,20 @@
 
   /* Selection color */
   ::selection {
-    background-color: hsl(226 70% 55% / 0.2);
+    background-color: hsl(var(--primary) / 0.2);
   }
 
   /* Focus visible styles */
   :focus-visible {
-    outline: 2px solid hsl(226 70% 55%);
+    outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   /* Tap highlight color */
-  * { -webkit-tap-highlight-color: transparent; }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* ===== 21st.dev Premium Component Layers ===== */
@@ -234,11 +259,19 @@
 
   /* Rich dark mode ambient glow */
   .dark .ambient-glow-indigo {
-    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(129, 140, 248, 0.15) 0%, transparent 60%);
+    background: radial-gradient(
+      ellipse 60% 40% at 50% 0%,
+      rgba(129, 140, 248, 0.15) 0%,
+      transparent 60%
+    );
   }
 
   .dark .ambient-glow-purple {
-    background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(192, 132, 252, 0.1) 0%, transparent 60%);
+    background: radial-gradient(
+      ellipse 60% 40% at 50% 100%,
+      rgba(192, 132, 252, 0.1) 0%,
+      transparent 60%
+    );
   }
 
   /* Dark mode double-bezel - richer shadow */
@@ -269,7 +302,12 @@
       hsl(var(--glow-purple) / 0.3),
       hsl(var(--glow-blue) / 0.3)
     );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
@@ -343,8 +381,9 @@
 
   /* ===== Vengeance UI: Displacement Hover ===== */
   .displacement-hover {
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .displacement-hover:hover {
@@ -404,17 +443,31 @@
      ═══════════════════════════════════ */
 
   /* Surface layers */
-  .fb-surface-base { background-color: hsl(var(--surface-base)); }
-  .fb-surface-raised { background-color: hsl(var(--surface-raised)); }
-  .fb-surface-strong { background-color: hsl(var(--surface-strong)); }
+  .fb-surface-base {
+    background-color: hsl(var(--surface-base));
+  }
+  .fb-surface-raised {
+    background-color: hsl(var(--surface-raised));
+  }
+  .fb-surface-strong {
+    background-color: hsl(var(--surface-strong));
+  }
 
   /* Border layers */
-  .fb-border-default { border-color: hsl(var(--border)); }
-  .fb-border-muted { border-color: hsl(var(--border-muted)); }
+  .fb-border-default {
+    border-color: hsl(var(--border));
+  }
+  .fb-border-muted {
+    border-color: hsl(var(--border-muted));
+  }
 
   /* Text layers */
-  .fb-text-primary { color: hsl(var(--foreground)); }
-  .fb-text-inverse { color: hsl(var(--text-inverse)); }
+  .fb-text-primary {
+    color: hsl(var(--foreground));
+  }
+  .fb-text-inverse {
+    color: hsl(var(--text-inverse));
+  }
 
   /* ═══════════════════════════════════
      DOUBLE-BEZEL NESTED CARD
@@ -450,9 +503,15 @@
      PREMIUM MOTION UTILITIES
      ═══════════════════════════════════ */
 
-  .motion-spring { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-  .motion-spring-fast { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-  .motion-spring-slow { transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1); }
+  .motion-spring {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .motion-spring-fast {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .motion-spring-slow {
+    transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+  }
 
   .motion-enter {
     opacity: 0;
@@ -470,17 +529,91 @@
      ═══════════════════════════════════ */
 
   .glass-panel {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.55));
+    backdrop-filter: blur(36px) saturate(2);
+    -webkit-backdrop-filter: blur(36px) saturate(2);
     border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 4px 24px rgba(0, 0, 0, 0.06);
   }
 
   .dark .glass-panel {
-    background: rgba(10, 11, 16, 0.75);
-    border-color: rgba(255, 255, 255, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(to bottom, rgba(16, 18, 26, 0.78), rgba(10, 11, 16, 0.66));
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  /* ═══════════════════════════════════
+     APPLE HIG FROSTED-GLASS NAV MATERIAL
+     ═══════════════════════════════════ */
+
+  /* The translucent "material": backdrop-filter samples the pixels painted
+     BEHIND the bar, blurs them (blur 20px ≈ Tailwind backdrop-blur-xl) and
+     boosts saturation (180%) so colors stay vivid through the frost — the
+     signature macOS/iOS toolbar look. -webkit- prefix is required for Safari.
+     A semi-opaque background tint sits on top so text stays legible. */
+  .apple-glass {
+    background-color: rgba(255, 255, 255, 0.75);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    /* 1px inset specular highlight — light catching the top rim of the glass */
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+    transition:
+      background-color 0.3s ease,
+      box-shadow 0.3s ease,
+      height 0.3s ease;
+    /* San Francisco system font stack for authentic Apple typography */
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+  /* Gradient accent hairline over the bottom rim (the ::before "design").
+     Sits on top of the 1px border so the bar keeps its frosted blur while
+     getting a subtle indigo→violet→indigo glow. */
+  .apple-glass::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(99, 102, 241, 0.45) 18%,
+      rgba(168, 85, 247, 0.45) 50%,
+      rgba(99, 102, 241, 0.45) 82%,
+      transparent 100%
+    );
+    opacity: 0.55;
+    transition: opacity 0.3s ease;
+  }
+  .apple-glass-scrolled::before {
+    opacity: 0.95;
+  }
+  .dark .apple-glass {
+    background-color: rgba(22, 22, 23, 0.75);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+  /* Once scrolled past the top: slightly more opaque + a soft drop shadow */
+  .apple-glass-scrolled {
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+  .dark .apple-glass-scrolled {
+    background-color: rgba(22, 22, 23, 0.8);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+      0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   /* ═══════════════════════════════════
@@ -490,7 +623,7 @@
   .dark .mesh-gradient-dark {
     background:
       radial-gradient(ellipse 80% 60% at 0% 20%, rgba(129, 140, 248, 0.15) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 100% 80%, rgba(192, 132, 252, 0.10) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 50% at 100% 80%, rgba(192, 132, 252, 0.1) 0%, transparent 50%),
       radial-gradient(ellipse 50% 40% at 50% 50%, rgba(216, 180, 254, 0.06) 0%, transparent 50%);
   }
 
@@ -502,11 +635,19 @@
 
   /* ===== Vengeance UI: Premium Ambient Glow ===== */
   .ambient-glow-indigo {
-    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
+    background: radial-gradient(
+      ellipse 60% 40% at 50% 0%,
+      rgba(99, 102, 241, 0.12) 0%,
+      transparent 60%
+    );
   }
 
   .ambient-glow-purple {
-    background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 60%);
+    background: radial-gradient(
+      ellipse 60% 40% at 50% 100%,
+      rgba(168, 85, 247, 0.08) 0%,
+      transparent 60%
+    );
   }
 
   /* ═══════════════════════════════════
@@ -523,7 +664,12 @@
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    background: linear-gradient(135deg, transparent 40%, rgba(99, 102, 241, 0.15) 50%, transparent 60%);
+    background: linear-gradient(
+      135deg,
+      transparent 40%,
+      rgba(99, 102, 241, 0.15) 50%,
+      transparent 60%
+    );
     background-size: 200% 200%;
     z-index: -2;
     animation: glow-shimmer 4s ease-in-out infinite;
@@ -533,7 +679,12 @@
   }
 
   .dark .glow-border::before {
-    background: linear-gradient(135deg, transparent 40%, rgba(129, 140, 248, 0.25) 50%, transparent 60%);
+    background: linear-gradient(
+      135deg,
+      transparent 40%,
+      rgba(129, 140, 248, 0.25) 50%,
+      transparent 60%
+    );
     animation: glow-shimmer 3s ease-in-out infinite;
   }
 
@@ -560,12 +711,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(0, 0, 0, 0.06) 50%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.06) 50%, transparent 100%);
     background-size: 200% 100%;
     animation: shimmer-move 1.8s ease-in-out infinite;
   }
@@ -665,6 +811,32 @@
     background-color: hsl(var(--border-muted) / 0.6);
   }
 
+  /* The Radix Select viewport ships its own scrollbar-hiding CSS
+     (`[data-radix-select-viewport]{scrollbar-width:none;...}`), which ties
+     with the bare .scrollbar-thin rule on specificity, so the app's thin bar
+     must win on the standard property too (Firefox reads scrollbar-width;
+     WebKit already picks up the 4px ::-webkit-scrollbar rules). */
+  .scrollbar-thin[data-radix-select-viewport],
+  [data-radix-select-viewport].scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  /* Radix also hides the WebKit pseudo (display: none); un-hide it so the
+     app's 4px bar renders in Chromium too. */
+  .scrollbar-thin[data-radix-select-viewport]::-webkit-scrollbar,
+  [data-radix-select-viewport].scrollbar-thin::-webkit-scrollbar {
+    display: block;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* ═══════════════════════════════════
      21st.dev: Premium Sidebar Styles
      ═══════════════════════════════════ */
@@ -686,7 +858,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, hsl(var(--glow-indigo) / 0.08), transparent);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), transparent);
     opacity: 0;
     transition: opacity 0.2s ease;
     border-radius: 0.75rem;
@@ -701,14 +873,18 @@
   }
 
   .sidebar-item-active {
-    background: hsl(226 70% 55% / 0.08);
-    color: hsl(226 70% 55%);
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--foreground));
     font-weight: 600;
   }
 
+  .sidebar-item-active svg {
+    color: hsl(var(--primary));
+  }
+
   .dark .sidebar-item-active {
-    background: hsl(226 70% 55% / 0.18);
-    color: hsl(226 70% 65%);
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
   }
 
   .sidebar-item-active::before {
@@ -725,7 +901,13 @@
     width: 3px;
     height: 60%;
     border-radius: 0 3px 3px 0;
-    background: hsl(226 70% 55%);
+    background: hsl(var(--primary));
+  }
+
+  /* Brand-tinted avatar fallback — follows the accent/base color */
+  .avatar-brand {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.72));
+    color: hsl(var(--primary-foreground));
   }
 
   /* ═══════════════════════════════════
@@ -774,9 +956,18 @@
   }
 
   @keyframes pulse-ring {
-    0% { transform: scale(0.8); opacity: 0.6; }
-    50% { transform: scale(1.3); opacity: 0.2; }
-    100% { transform: scale(0.8); opacity: 0.6; }
+    0% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.3);
+      opacity: 0.2;
+    }
+    100% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
   }
 }
 
@@ -785,18 +976,31 @@
    ═══════════════════════════════════════ */
 
 @keyframes glow-shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes shimmer-move {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes progress-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -810,13 +1014,14 @@ html.theme-transitioning,
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
-  transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              background-image 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              fill 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              stroke 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition:
+    background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background-image 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    fill 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    stroke 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   transition-delay: 0s !important;
 }
 
@@ -825,14 +1030,24 @@ html.theme-transitioning *::after {
    ═══════════════════════════════════════ */
 
 @supports (padding-top: env(safe-area-inset-top)) {
-  .safe-area-top { padding-top: env(safe-area-inset-top); }
-  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-  .safe-area-left { padding-left: env(safe-area-inset-left); }
-  .safe-area-right { padding-right: env(safe-area-inset-right); }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 @supports (-webkit-overflow-scrolling: touch) {
-  body { -webkit-overflow-scrolling: touch; }
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -848,13 +1063,25 @@ html.theme-transitioning *::after {
 }
 
 @keyframes vt-old {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-8px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 @keyframes vt-new {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 ::view-transition-old(nav-logo) {
@@ -866,13 +1093,21 @@ html.theme-transitioning *::after {
 }
 
 @keyframes vt-morph-out {
-  from { opacity: 1; }
-  to   { opacity: 0.5; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
 }
 
 @keyframes vt-morph-in {
-  from { opacity: 0.3; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes vt-fallback-fade {
@@ -884,6 +1119,10 @@ html.theme-transitioning *::after {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.vt-fallback-fade {
+  animation: vt-fallback-fade 0.35s ease both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -902,23 +1141,157 @@ html.theme-transitioning *::after {
 
 @theme inline {
   @keyframes shimmer-slide {
-    to { transform: translate(calc(100cqw - 100%), 0); }
+    to {
+      transform: translate(calc(100cqw - 100%), 0);
+    }
   }
 
   @keyframes spin-around {
-    0% { transform: translateZ(0) rotate(0); }
-    15%, 35% { transform: translateZ(0) rotate(90deg); }
-    65%, 85% { transform: translateZ(0) rotate(270deg); }
-    100% { transform: translateZ(0) rotate(360deg); }
+    0% {
+      transform: translateZ(0) rotate(0);
+    }
+    15%,
+    35% {
+      transform: translateZ(0) rotate(90deg);
+    }
+    65%,
+    85% {
+      transform: translateZ(0) rotate(270deg);
+    }
+    100% {
+      transform: translateZ(0) rotate(360deg);
+    }
   }
 
   @keyframes marquee {
-    from { transform: translateX(0); }
-    to { transform: translateX(calc(-100% - var(--gap))); }
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
   }
 
   @keyframes marquee-vertical {
-    from { transform: translateY(0); }
-    to { transform: translateY(calc(-100% - var(--gap))); }
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
   }
+}
+
+/* ═══════════════════════════════════
+   APPEARANCE PREFERENCES
+   (Settings → Appearance; applied as data attributes on <html>)
+   ═══════════════════════════════════ */
+
+/* — Accent color themes: override --primary (buttons, controls) — */
+html[data-accent="green"],
+html[data-accent="green"].dark {
+  --primary: 152 82% 40%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 152 82% 40%;
+  --ai-accent: 152 82% 40%;
+  --ai-accent-strong: 152 70% 32%;
+  --ai-accent-soft: 152 60% 93%;
+  --ai-accent-soft-2: 152 65% 96%;
+}
+html[data-accent="indigo"],
+html[data-accent="indigo"].dark {
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 239 84% 67%;
+  --ai-accent: 239 84% 67%;
+  --ai-accent-strong: 243 75% 59%;
+  --ai-accent-soft: 239 60% 93%;
+  --ai-accent-soft-2: 239 65% 96%;
+}
+html[data-accent="rose"],
+html[data-accent="rose"].dark {
+  --primary: 350 89% 60%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 350 89% 60%;
+  --ai-accent: 350 89% 60%;
+  --ai-accent-strong: 350 89% 46%;
+  --ai-accent-soft: 350 70% 95%;
+  --ai-accent-soft-2: 350 75% 97%;
+}
+html[data-accent="amber"],
+html[data-accent="amber"].dark {
+  --primary: 38 92% 50%;
+  --primary-foreground: 26 83% 14%;
+  --ring: 38 92% 50%;
+  --ai-accent: 38 92% 50%;
+  --ai-accent-strong: 32 95% 40%;
+  --ai-accent-soft: 38 90% 94%;
+  --ai-accent-soft-2: 40 95% 97%;
+}
+
+/* — Text size (root font-size scales all rem-based type) — */
+html[data-text="sm"] {
+  font-size: 14.5px;
+}
+html[data-text="lg"] {
+  font-size: 17.5px;
+}
+
+/* — Density / spacing (compact | regular | large) — */
+html[data-density="compact"] .dashboard-card .p-6 {
+  padding: 1rem;
+}
+html[data-density="compact"] .dashboard-card .pt-0 {
+  padding-top: 0;
+}
+html[data-density="compact"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem;
+}
+html[data-density="large"] .dashboard-card .p-6 {
+  padding: 2rem;
+}
+html[data-density="large"] .dashboard-card .pt-0 {
+  padding-top: 0;
+}
+html[data-density="large"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 2rem;
+}
+
+/* ═══════════════════════════════════════
+   BROWSER AUTOFILL — match the active theme
+   Chrome/Safari/Edge paint autofilled inputs with a pale blue/yellow
+   background + black text by default. These overrides restyle them so
+   autofill looks native in both light and dark mode. The "5000s" box-
+   shadow trick keeps the fill from flashing back on focus.   ═══════════════ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827;
+  caret-color: #111827;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  background-color: #ffffff;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark select:-webkit-autofill,
+.dark select:-webkit-autofill:hover,
+.dark select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f3f4f6;
+  caret-color: #f3f4f6;
+  -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
+  box-shadow: 0 0 0 1000px #1f2937 inset;
+  background-color: #1f2937;
 }

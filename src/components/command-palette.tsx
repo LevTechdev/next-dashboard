@@ -1,27 +1,13 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useCallback, useRef, type ComponentType } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  Search,
-  ShoppingBag,
-  Users,
-  Package,
-  ArrowRight,
-  Command,
-  Loader2,
-  type LucideIcon,
-} from "lucide-react";
+import { SearchIcon, ArrowRightIcon, UsersIcon } from "lucide-animated";
+import { ShoppingBag, Package, Command, Loader2 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollContainer } from "@/components/ui/scroll-container";
 
 // ── Types ──
 
@@ -62,7 +48,7 @@ interface ResultItem {
   id: string;
   label: string;
   subtitle: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string; size?: number }>;
   iconBg: string;
   iconColor: string;
   href: string;
@@ -87,13 +73,21 @@ export function CommandPalette() {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
+  const [, setTotalItems] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || "en";
+
+  // Reset search state whenever the palette closes (any path).
+  const closePalette = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setResults(null);
+    setSelectedIndex(0);
+  }, []);
 
   // ── ⌘K / Ctrl+K toggle ──
 
@@ -103,22 +97,17 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closePalette();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [closePalette]);
 
   // Focus input when dialog opens
   useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(timer);
-    } else {
-      setQuery("");
-      setResults(null);
-      setSelectedIndex(0);
-    }
+    if (!open) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [open]);
 
   // Cleanup debounce timer on unmount
@@ -141,8 +130,7 @@ export function CommandPalette() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data: SearchResult = await res.json();
       setResults(data);
-      const count =
-        data.orders.length + data.customers.length + data.products.length;
+      const count = data.orders.length + data.customers.length + data.products.length;
       setTotalItems(count);
       setSelectedIndex(0);
     } catch {
@@ -173,7 +161,7 @@ export function CommandPalette() {
         iconBg: "bg-blue-50 dark:bg-blue-900/20",
         iconColor: "text-blue-600 dark:text-blue-400",
         href: `/${locale}/orders`,
-      })
+      }),
     );
 
     results.customers.forEach((c) =>
@@ -181,11 +169,11 @@ export function CommandPalette() {
         id: c.id,
         label: c.name,
         subtitle: `${c.email || "No email"} · ${c.city || "N/A"}`,
-        icon: Users,
+        icon: UsersIcon,
         iconBg: "bg-purple-50 dark:bg-purple-900/20",
         iconColor: "text-purple-600 dark:text-purple-400",
         href: `/${locale}/customers`,
-      })
+      }),
     );
 
     results.products.forEach((p) =>
@@ -197,7 +185,7 @@ export function CommandPalette() {
         iconBg: "bg-orange-50 dark:bg-orange-900/20",
         iconColor: "text-orange-600 dark:text-orange-400",
         href: `/${locale}/products`,
-      })
+      }),
     );
 
     return items;
@@ -221,7 +209,7 @@ export function CommandPalette() {
   };
 
   const navigateTo = (item: ResultItem) => {
-    setOpen(false);
+    closePalette();
     router.push(item.href);
   };
 
@@ -251,7 +239,13 @@ export function CommandPalette() {
   return (
     <>
       {/* Hidden button to make dialog accessible */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (v) setOpen(true);
+          else closePalette();
+        }}
+      >
         <DialogContent
           className="top-[15%] sm:top-[20%] translate-y-0 max-w-xl p-0 gap-0 rounded-xl shadow-2xl border-gray-200 dark:border-gray-800 overflow-hidden"
           onKeyDown={onKeyDown}
@@ -261,7 +255,7 @@ export function CommandPalette() {
             {loading ? (
               <Loader2 className="h-5 w-5 text-gray-400 animate-spin shrink-0" />
             ) : (
-              <Search className="h-5 w-5 text-gray-400 shrink-0" />
+              <SearchIcon size={20} className="h-5 w-5 text-gray-400 shrink-0" />
             )}
             <input
               ref={inputRef}
@@ -279,7 +273,7 @@ export function CommandPalette() {
           </div>
 
           {/* Results */}
-          <div className="max-h-[360px] overflow-y-auto py-2">
+          <ScrollContainer className="max-h-[360px] py-2">
             {loading && query.length >= 2 && (
               <div className="flex items-center justify-center py-8 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -289,7 +283,10 @@ export function CommandPalette() {
 
             {!loading && query.length >= 2 && !hasResults && (
               <div className="py-8 text-center">
-                <Search className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <SearchIcon
+                  size={32}
+                  className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2"
+                />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   No results found for &ldquo;{query}&rdquo;
                 </p>
@@ -328,13 +325,13 @@ export function CommandPalette() {
                           "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors",
                           isSelected
                             ? "bg-indigo-50 dark:bg-indigo-900/20"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-800/50",
                         )}
                         onClick={() => navigateTo(item)}
                         onMouseEnter={() => setSelectedIndex(globalIdx)}
                       >
                         <div className={cn("flex-shrink-0 p-2 rounded-lg", item.iconBg)}>
-                          <Icon className={cn("h-4 w-4", item.iconColor)} />
+                          <Icon size={16} className={cn("h-4 w-4", item.iconColor)} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -344,12 +341,13 @@ export function CommandPalette() {
                             {item.subtitle}
                           </p>
                         </div>
-                        <ArrowRight
+                        <ArrowRightIcon
+                          size={16}
                           className={cn(
                             "h-4 w-4 shrink-0 transition-opacity",
                             isSelected
                               ? "text-indigo-500 opacity-100"
-                              : "text-gray-300 dark:text-gray-600 opacity-0"
+                              : "text-gray-300 dark:text-gray-600 opacity-0",
                           )}
                         />
                       </button>
@@ -357,7 +355,7 @@ export function CommandPalette() {
                   })}
                 </div>
               ))}
-          </div>
+          </ScrollContainer>
 
           {/* Footer hints */}
           <div className="flex items-center gap-4 px-4 h-10 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">

@@ -54,6 +54,7 @@ export const navMessages: TranslationMessages = {
     notifications: "Notifications",
     settings: "Settings",
     profile: "Profile",
+    security: "Security",
     channels: "Sales Channels",
     logout: "Logout",
     management: "Main",
@@ -146,7 +147,9 @@ export const headerMessages: TranslationMessages = {
  * Merge multiple TranslationMessages into one.
  * Later sources override earlier ones for the same namespace+key.
  */
-export function mergeMessages(...sources: (TranslationMessages | undefined)[]): TranslationMessages {
+export function mergeMessages(
+  ...sources: (TranslationMessages | undefined)[]
+): TranslationMessages {
   const result: TranslationMessages = {};
   for (const source of sources) {
     if (!source) continue;
@@ -181,9 +184,15 @@ export function createTranslationsMock(overrides?: TranslationMessages) {
   return {
     useTranslations: (namespace: string) => {
       const ns = merged[namespace] ?? {};
-      const t = (key: string) => (ns as Record<string, string>)[key] ?? key;
-      t.raw = (key: string) => (ns as Record<string, string>)[key] ?? key;
-      t.rich = (key: string) => (ns as Record<string, string>)[key] ?? key;
+      // Resolve dotted keys through the namespace tree like real next-intl
+      // (e.g. "tools.getDashboardStats").
+      const resolve = (key: string) =>
+        key
+          .split(".")
+          .reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), ns);
+      const t = (key: string) => resolve(key) ?? key;
+      t.raw = (key: string) => resolve(key) ?? key;
+      t.rich = (key: string) => resolve(key) ?? key;
       return t;
     },
     NextIntlClientProvider: ({ children }: { children: any }) => children,

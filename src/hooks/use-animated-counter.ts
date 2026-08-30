@@ -17,10 +17,7 @@ interface UseAnimatedCounterOptions {
  * Hook that animates a number counting up from 0 to the target value.
  * Uses requestAnimationFrame for smooth interpolation.
  */
-export function useAnimatedCounter(
-  end: number,
-  options: UseAnimatedCounterOptions = {}
-) {
+export function useAnimatedCounter(end: number, options: UseAnimatedCounterOptions = {}) {
   const { duration = 1500, startOnMount = true, round = true, formatFn } = options;
   const [value, setValue] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -70,7 +67,11 @@ export function useAnimatedCounter(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [end, duration, startOnMount]);
 
-  const displayed = formatFn ? formatFn(value) : round ? Math.round(value).toString() : value.toFixed(1);
+  const displayed = formatFn
+    ? formatFn(value)
+    : round
+      ? Math.round(value).toString()
+      : value.toFixed(1);
 
   return { value, displayed, isAnimating, restart: animate };
 }

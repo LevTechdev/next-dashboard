@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface Plan {
   id: string;
@@ -25,7 +25,7 @@ export function useSaas(userId?: string) {
     async function fetchSaasData() {
       try {
         // Fetch plans
-        const resPlans = await fetch('/api/saas/plans');
+        const resPlans = await fetch("/api/saas/plans");
         if (resPlans.ok) {
           const data = await resPlans.json();
           setPlans(data.plans || []);
@@ -33,14 +33,14 @@ export function useSaas(userId?: string) {
 
         // Fetch subscription if user is logged in
         if (userId) {
-          const resSub = await fetch('/api/saas/subscription');
+          const resSub = await fetch("/api/saas/subscription");
           if (resSub.ok) {
             const subData = await resSub.json();
             setSubscription(subData.subscription || null);
           }
         }
       } catch (err) {
-        console.error('Failed to fetch SaaS data', err);
+        console.error("Failed to fetch SaaS data", err);
       } finally {
         setIsLoading(false);
       }

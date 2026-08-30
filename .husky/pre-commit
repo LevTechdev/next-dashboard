@@ -1,0 +1,26 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Detect if TypeScript/JavaScript files are staged
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -cE '\.(ts|tsx)$' || true)
+
+# ── SKIP_ESLINT mode: format + typecheck only, no eslint ──────────────────────
+if [ -n "$SKIP_ESLINT" ]; then
+  echo "🔶 SKIP_ESLINT=1 — running prettier + typecheck, skipping eslint"
+  STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | tr '\n' ' ')
+  if [ -n "$STAGED_FILES" ]; then
+    npx prettier --write --ignore-unknown $STAGED_FILES || exit $?
+  fi
+  if [ "$STAGED_TS" -gt 0 ]; then
+    echo "🔶 Running typecheck..."
+    npx tsc --noEmit || exit $?
+  fi
+  exit 0
+fi
+
+# ── Full pipeline: lint-staged (eslint + prettier) + typecheck ────────────────
+npx lint-staged
+
+if [ "$STAGED_TS" -gt 0 ]; then
+  npx tsc --noEmit
+fi

@@ -1,55 +1,49 @@
 import { requireAuth } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { compare, hash } from "bcryptjs";
+import { verifyPassword } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
   const userId = session.user.id;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      position: true,
-      avatar: true,
-      role: true,
-      isActive: true,
-      totpEnabled: true,
-      emailVerified: true,
-      createdAt: true,
-    },
-  });
+  const select = {
+    id: true,
+    name: true,
+    email: true,
+    phone: true,
+    position: true,
+    avatar: true,
+    role: true,
+    isActive: true,
+    totpEnabled: true,
+    emailVerified: true,
+    createdAt: true,
+  } as const;
 
+  // Try the token's user id first, fall back to the first admin (mock-id dev setup).
+  let user = await prisma.user.findUnique({ where: { id: userId }, select });
   if (!user) {
-    // Fallback: return first admin user if mock ID doesn't match DB
-    const admin = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        position: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        totpEnabled: true,
-        emailVerified: true,
-        createdAt: true,
-      },
-    });
-    if (!admin) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-    return NextResponse.json(admin);
+    user = await prisma.user.findFirst({ where: { role: "ADMIN" }, select });
+  }
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  return NextResponse.json(user);
+  // Derive the 2FA "verified on" date from the immutable TOTP_ENABLED audit
+  // event so the profile can show when two-factor was activated.
+  let totpVerifiedAt: Date | null = null;
+  if (user.totpEnabled) {
+    const evt = await prisma.securityEvent.findFirst({
+      where: { userId: user.id, type: "TOTP_ENABLED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    totpVerifiedAt = evt?.createdAt ?? null;
+  }
+
+  return NextResponse.json({ ...user, totpVerifiedAt });
 }
 
 export async function PUT(req: Request) {
@@ -125,7 +119,7 @@ export async function DELETE(req: Request) {
   }
 
   if (password) {
-    const isValid = await compare(password, user.password);
+    const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: "Invalid password" }, { status: 403 });
     }
