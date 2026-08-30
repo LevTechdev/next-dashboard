@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import { renderOtpEmail, renderPasswordResetEmail } from "./email-templates";
 
-
-
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -10,8 +8,7 @@ export interface EmailPayload {
   text: string;
 }
 
-const EMAIL_FROM =
-  process.env.EMAIL_FROM || "Dashboard <onboarding@resend.dev>";
+const EMAIL_FROM = process.env.EMAIL_FROM || "Dashboard <onboarding@resend.dev>";
 
 /**
  * Send a transactional email.
@@ -43,7 +40,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ sent: boolean 
 
   if (error) {
     console.error(`[mailer] Resend failed for ${payload.to}: ${error.message}`);
-    return { sent: false };
+    throw new Error(error.message);
   }
   return { sent: true };
 }
@@ -84,19 +81,10 @@ async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
   });
 
   // Always await delivery so emails are actually sent before the API responds.
-  try {
-    const info = await sendPromise;
-    console.log(`[mailer] SMTP delivered to ${payload.to} — messageId: ${info.messageId}`);
-    return { sent: true };
-  } catch (err) {
-    console.error(`[mailer] SMTP failed for ${payload.to}:`, err instanceof Error ? err.message : err);
-    return { sent: false };
-  }
+  const info = await sendPromise;
+  console.log(`[mailer] SMTP delivered to ${payload.to} — messageId: ${info.messageId}`);
+  return { sent: true };
 }
-
-
-
-
 
 /** Email OTP (signup / identity verification). Uses localized templates. */
 export async function sendOtpEmail(opts: {
