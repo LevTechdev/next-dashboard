@@ -23,6 +23,11 @@ const {
   mockCreateRefreshToken,
   mockGetFamilyForToken,
   mockRevokeFamily,
+  mockRotateRefreshToken,
+  mockRotateSessionAccessToken,
+  mockRegenerateBackupCodes,
+  mockCountUnusedBackupCodes,
+  mockSignStepUpToken,
   mockSetAuthCookies,
   mockClearAuthCookies,
   mockConsumeBackupCode,
@@ -127,6 +132,32 @@ const {
     mockNewFamilyId: vi.fn().mockReturnValue("family-1"),
     mockCreateRefreshToken: vi.fn().mockResolvedValue("refresh-token-xxx"),
     mockGetFamilyForToken: vi.fn().mockResolvedValue("family-1"),
+    mockRotateRefreshToken: vi
+      .fn()
+      .mockResolvedValue({
+        status: "ok",
+        userId: "user-1",
+        familyId: "family-1",
+        sessionId: "sess-1",
+        token: "new-refresh-token",
+      }),
+    mockRotateSessionAccessToken: vi.fn().mockResolvedValue(undefined),
+    mockRegenerateBackupCodes: vi
+      .fn()
+      .mockResolvedValue([
+        "aaaa-bbbb",
+        "cccc-dddd",
+        "eeee-ffff",
+        "gggg-hhhh",
+        "iiii-jjjj",
+        "kkkk-llll",
+        "mmmm-nnnn",
+        "oooo-pppp",
+        "qqqq-rrrr",
+        "ssss-tttt",
+      ]),
+    mockCountUnusedBackupCodes: vi.fn().mockResolvedValue(7),
+    mockSignStepUpToken: vi.fn().mockReturnValue("step-up-token-xxx"),
     mockRevokeFamily: vi.fn().mockResolvedValue(undefined),
     mockSetAuthCookies: vi.fn(),
     mockClearAuthCookies: vi.fn(),
@@ -181,6 +212,7 @@ vi.mock("@/lib/sessions", () => ({
   createSession: mockCreateSession,
   listActiveSessions: mockListActiveSessions,
   revokeOtherSessions: mockRevokeOtherSessions,
+  rotateSessionAccessToken: mockRotateSessionAccessToken,
 }));
 
 vi.mock("@/lib/refresh-tokens", () => ({
@@ -188,6 +220,7 @@ vi.mock("@/lib/refresh-tokens", () => ({
   createRefreshToken: mockCreateRefreshToken,
   getFamilyForToken: mockGetFamilyForToken,
   revokeFamily: mockRevokeFamily,
+  rotateRefreshToken: mockRotateRefreshToken,
 }));
 
 vi.mock("@/lib/auth-cookies", () => ({
@@ -197,6 +230,8 @@ vi.mock("@/lib/auth-cookies", () => ({
 
 vi.mock("@/lib/backup-codes", () => ({
   consumeBackupCode: mockConsumeBackupCode,
+  regenerateBackupCodes: mockRegenerateBackupCodes,
+  countUnusedBackupCodes: mockCountUnusedBackupCodes,
 }));
 
 vi.mock("@/lib/security-events", () => ({
@@ -219,6 +254,13 @@ vi.mock("@/lib/api-guard", () => ({
 }));
 
 vi.mock("qrcode", () => ({ default: mockQrCode }));
+
+vi.mock("@/lib/step-up", () => ({
+  signStepUpToken: mockSignStepUpToken,
+  verifyStepUpToken: vi.fn().mockReturnValue(true),
+  STEP_UP_COOKIE: "step_up",
+  getStepUpToken: vi.fn().mockReturnValue("step-up-token"),
+}));
 
 vi.mock("@/lib/request-meta", () => ({
   getRequestMeta: () => ({
@@ -243,6 +285,9 @@ import * as sessionsRoutes from "../auth/sessions/route";
 import * as totpSetupRoutes from "../auth/totp/setup/route";
 import * as totpVerifyRoutes from "../auth/totp/verify/route";
 import * as totpDisableRoutes from "../auth/totp/disable/route";
+import * as refreshRoutes from "../auth/refresh/route";
+import * as backupCodesRoutes from "../auth/backup-codes/route";
+import * as stepUpRoutes from "../auth/step-up/route";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -879,6 +924,224 @@ describe("TOTP Disable", () => {
       mockPrisma.user.findFirst.mockResolvedValueOnce(null);
       const res = await totpDisableRoutes.POST(post({ password: "correct" }));
       expect(res.status).toBe(404);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Refresh Token
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Refresh Token", () => {
+  const mockUser = {
+    id: "user-1",
+    name: "Admin",
+    email: "a@test.com",
+    role: "ADMIN",
+    isActive: true,
+    tenantId: "tenant-1",
+    totpEnabled: false,
+    totpSecret: null,
+    password: "$argon2id$xxx",
+    failedLoginCount: 0,
+    lockedUntil: null,
+  };
+
+  describe("POST", () => {
+    it("rotates token and returns success on valid refresh", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      const res = await refreshRoutes.POST(post({}, "refresh_token=valid-refresh"));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockSetAuthCookies).toHaveBeenCalled();
+      expect(mockRotateSessionAccessToken).toHaveBeenCalled();
+    });
+
+    it("returns 401 on invalid refresh token", async () => {
+      mockRotateRefreshToken.mockResolvedValueOnce({ status: "invalid" });
+      const res = await refreshRoutes.POST(post({}, "refresh_token=bad"));
+      expect(res.status).toBe(401);
+      expect(mockClearAuthCookies).toHaveBeenCalled();
+    });
+
+    it("returns 401 when no refresh cookie present", async () => {
+      mockRotateRefreshToken.mockResolvedValueOnce({ status: "invalid" });
+      const res = await refreshRoutes.POST(post());
+      expect(res.status).toBe(401);
+    });
+
+    it("detects reuse and logs security event", async () => {
+      mockRotateRefreshToken.mockResolvedValueOnce({
+        status: "reuse",
+        userId: "user-1",
+        familyId: "family-1",
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-1", tenantId: "tenant-1" });
+      const res = await refreshRoutes.POST(post({}, "refresh_token=reused"));
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error).toContain("reuse");
+      expect(mockClearAuthCookies).toHaveBeenCalled();
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "REFRESH_REUSE" }),
+      );
+    });
+
+    it("returns 401 when user is inactive", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ ...mockUser, isActive: false });
+      const res = await refreshRoutes.POST(post({}, "refresh_token=valid"));
+      expect(res.status).toBe(401);
+      expect(mockRevokeFamily).toHaveBeenCalled();
+    });
+
+    it("returns 401 when user not found in DB", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const res = await refreshRoutes.POST(post({}, "refresh_token=valid"));
+      expect(res.status).toBe(401);
+      expect(mockRevokeFamily).toHaveBeenCalled();
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Backup Codes
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Backup Codes", () => {
+  describe("GET", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockRequireAuth.mockResolvedValueOnce({
+        session: null,
+        response: new Response("Unauthorized", { status: 401 }),
+      });
+      const res = await backupCodesRoutes.GET(get());
+      expect(res.status).toBe(401);
+    });
+
+    it("returns remaining backup code count", async () => {
+      const res = await backupCodesRoutes.GET(get());
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.remaining).toBe(7);
+    });
+  });
+
+  describe("POST", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockRequireAuth.mockResolvedValueOnce({
+        session: null,
+        response: new Response("Unauthorized", { status: 401 }),
+      });
+      const res = await backupCodesRoutes.POST(post());
+      expect(res.status).toBe(401);
+    });
+
+    it("generates new backup codes and logs event", async () => {
+      const res = await backupCodesRoutes.POST(post());
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.codes).toHaveLength(10);
+      expect(body.codes[0]).toBe("aaaa-bbbb");
+      expect(mockRegenerateBackupCodes).toHaveBeenCalledWith("user-1");
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "BACKUP_CODES_GENERATED" }),
+      );
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Step-Up Authentication
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Step-Up Authentication", () => {
+  const mockUser = {
+    id: "user-1",
+    name: "Admin",
+    email: "a@test.com",
+    role: "ADMIN",
+    tenantId: "tenant-1",
+    totpEnabled: false,
+    totpSecret: null,
+    password: "$argon2id$xxx",
+  };
+
+  describe("POST", () => {
+    it("returns 400 when purpose is invalid", async () => {
+      const res = await stepUpRoutes.POST(post({ purpose: "invalid" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when purpose is missing", async () => {
+      const res = await stepUpRoutes.POST(post({ password: "pass" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 when user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      const res = await stepUpRoutes.POST(post({ purpose: "change_password", password: "pass" }));
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 401 when password is wrong", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUser);
+      mockVerifyPassword.mockResolvedValueOnce(false);
+      const res = await stepUpRoutes.POST(post({ purpose: "change_password", password: "wrong" }));
+      expect(res.status).toBe(401);
+    });
+
+    it("succeeds with valid password", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUser);
+      const res = await stepUpRoutes.POST(
+        post({ purpose: "change_password", password: "correct" }),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockSignStepUpToken).toHaveBeenCalledWith("user-1", "change_password");
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "STEP_UP_VERIFIED" }),
+      );
+    });
+
+    it("succeeds with valid TOTP when 2FA is enabled", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      const res = await stepUpRoutes.POST(post({ purpose: "manage_2fa", totpToken: "123456" }));
+      expect(res.status).toBe(200);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "MFA_VERIFIED" }),
+      );
+    });
+
+    it("returns 401 when TOTP code is invalid", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      mockVerifyTotp.mockReturnValueOnce(false);
+      const res = await stepUpRoutes.POST(post({ purpose: "manage_2fa", totpToken: "000000" }));
+      expect(res.status).toBe(401);
+    });
+
+    it("accepts all valid purposes", async () => {
+      const purposes = [
+        "change_password",
+        "change_email",
+        "update_billing",
+        "delete_account",
+        "manage_2fa",
+      ];
+      for (const purpose of purposes) {
+        mockPrisma.user.findUnique.mockResolvedValueOnce(mockUser);
+        const res = await stepUpRoutes.POST(post({ purpose, password: "pass" }));
+        expect(res.status).toBe(200);
+      }
     });
   });
 });
