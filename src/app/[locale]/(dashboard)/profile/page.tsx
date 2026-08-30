@@ -29,6 +29,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -670,6 +671,7 @@ export default function ProfilePage() {
                   <Input
                     type="email"
                     value={form.email}
+                    disabled
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder={tprofile("emailPlaceholder")}
                   />

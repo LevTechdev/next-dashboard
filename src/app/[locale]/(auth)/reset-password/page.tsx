@@ -9,6 +9,7 @@ import { LoaderCircleIcon, EyeIcon, EyeOffIcon } from "lucide-animated";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordStrength } from "@/components/ui/password-strength";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 

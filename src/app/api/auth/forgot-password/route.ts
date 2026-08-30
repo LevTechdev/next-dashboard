@@ -41,7 +41,8 @@ export async function POST(req: Request) {
         console.log(`[forgot-password] Reset link for ${email}: ${resetUrl}`);
       }
 
-      if (process.env.NODE_ENV !== "production") {
+      const hasMailer = Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY);
+      if (process.env.NODE_ENV !== "production" && !hasMailer) {
         return NextResponse.json({ success: true, resetUrl });
       }
     }

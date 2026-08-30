@@ -1,989 +1,832 @@
 "use client";
 
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useAnalytics } from "@/hooks/use-analytics";
-import { motion, useMotionValue, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { ActivityIcon, RefreshCwIcon, BellIcon, ClockIcon } from "lucide-animated";
+import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  BarChart3,
+  TrendingUp,
   ShoppingCart,
   Users,
+  Package,
   Shield,
-  Sparkles,
-  TrendingUp,
   Zap,
-  Star,
-  Layers,
-  LineChart,
-  CheckCircle2,
-  ArrowUpRight,
   Globe,
+  CreditCard,
+  BarChart3,
+  Lock,
+  ArrowRight,
+  Check,
+  Activity,
+  Layers,
+  Key,
+  Bell,
+  ChevronRight,
+  Star,
+  BadgeCheck,
+  Sparkles,
+  RefreshCw,
+  Webhook,
+  Bot,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { RadialGlowButton } from "@/components/ui/radial-glow-button";
 import { cn } from "@/lib/utils";
-import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
-import { AnimatedRays } from "@/components/ui/animated-rays";
-import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
-import { LogoSlider } from "@/components/ui/logo-slider";
-import { Particles } from "@/components/ui/particles";
 
-// ─── Spring presets ────────────────────────────────────────────────────────
-const springGentle = { type: "spring" as const, stiffness: 100, damping: 20 };
-const springSnap = { type: "spring" as const, stiffness: 200, damping: 15 };
-const easeSmooth = [0.16, 1, 0.3, 1] as const;
+// ─── Static demo data that mirrors the actual dashboard API shape ────────────
 
-// ─── Magnetic button ───────────────────────────────────────────
-function MagneticButton({
-  children,
-  className,
-  href,
-  onClick,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  href: string;
-  onClick?: () => void;
+const DEMO_STATS = {
+  totalRevenue: 284_750,
+  totalOrders: 1_847,
+  totalCustomers: 892,
+  totalProducts: 156,
+  revenueGrowth: 12.5,
+  ordersGrowth: 8.3,
+  customersGrowth: 15.2,
+  productsGrowth: 5.1,
+};
+
+const DEMO_ORDERS = [
+  { id: "ORD-2841", customer: "Sarah Johnson", amount: 249.99, status: "completed", channel: "Online Store" },
+  { id: "ORD-2840", customer: "Michael Chen", amount: 89.50, status: "processing", channel: "Instagram" },
+  { id: "ORD-2839", customer: "Emma Wilson", amount: 420.00, status: "completed", channel: "Shopify" },
+  { id: "ORD-2838", customer: "James Park", amount: 175.25, status: "shipped", channel: "TikTok" },
+  { id: "ORD-2837", customer: "Lisa Anderson", amount: 55.00, status: "completed", channel: "Facebook" },
+];
+
+const DEMO_PRODUCTS = [
+  { name: "Premium Dashboard Pro", price: 299, orders: 482, growth: 24 },
+  { name: "Analytics Suite", price: 149, orders: 361, growth: 18 },
+  { name: "Team Collaboration Pack", price: 89, orders: 284, growth: 12 },
+  { name: "API Integration Bundle", price: 199, orders: 203, growth: 9 },
+];
+
+const DEMO_CHANNELS = [
+  { name: "Online Store", value: 42, color: "#10B981" },
+  { name: "Instagram", value: 24, color: "#EC4899" },
+  { name: "Shopify", value: 18, color: "#059669" },
+  { name: "TikTok", value: 10, color: "#F43F5E" },
+  { name: "Facebook", value: 6, color: "#3B82F6" },
+];
+
+const DEMO_MONTHLY = [28, 45, 38, 62, 55, 78, 72, 88, 95, 82, 104, 118];
+const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+
+const INTEGRATIONS = [
+  { name: "Stripe", desc: "Payments & billing", color: "#635BFF", icon: "💳" },
+  { name: "Midtrans", desc: "Indonesia gateway", color: "#0084FF", icon: "🏦" },
+  { name: "Shopify", desc: "E-commerce sync", color: "#059669", icon: "🛒" },
+  { name: "Tokopedia", desc: "Marketplace orders", color: "#42B549", icon: "🛍️" },
+  { name: "Instagram", desc: "Social commerce", color: "#E1306C", icon: "📸" },
+  { name: "OpenAI", desc: "AI-powered insights", color: "#10A37F", icon: "🤖" },
+  { name: "Supabase", desc: "Real-time data", color: "#3ECF8E", icon: "⚡" },
+  { name: "Resend", desc: "Transactional email", color: "#000000", icon: "✉️" },
+];
+
+const STATUS_COLOR: Record<string, string> = {
+  completed: "bg-emerald-100 text-emerald-700",
+  processing: "bg-amber-100 text-amber-700",
+  shipped: "bg-blue-100 text-blue-700",
+  cancelled: "bg-red-100 text-red-700",
+};
+
+const TESTIMONIALS = [
+  {
+    name: "Ahmad Rizki",
+    role: "CEO, TokoBaju.id",
+    avatar: "AR",
+    text: "We went from manual spreadsheets to real-time dashboards in one afternoon. The multi-channel order management saved us 20+ hours per week.",
+    stars: 5,
+  },
+  {
+    name: "Jessica Wu",
+    role: "Head of Growth, NexCommerce",
+    avatar: "JW",
+    text: "The Stripe + Midtrans dual-payment integration is a game-changer for our Indonesian market. Revenue reconciliation is now fully automated.",
+    stars: 5,
+  },
+  {
+    name: "Budi Santoso",
+    role: "CTO, Startup Accelerator",
+    avatar: "BS",
+    text: "The 2FA, WebAuthn, and SSO enterprise features gave us SOC 2 compliance out of the box. Our security team was genuinely impressed.",
+    stars: 5,
+  },
+];
+
+// ─── Animated Counter ────────────────────────────────────────────────────────
+
+function AnimatedStat({ value, prefix = "", suffix = "", decimals = 0 }: {
+  value: number; prefix?: string; suffix?: string; decimals?: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    const duration = 1800;
+    const step = 16;
+    const increment = (end / duration) * step;
+    const timer = setInterval(() => {
+      start = Math.min(start + increment, end);
+      setDisplay(start);
+      if (start >= end) clearInterval(timer);
+    }, step);
+    return () => clearInterval(timer);
+  }, [value]);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      const rect = ref.current?.getBoundingClientRect();
-      if (!rect) return;
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      x.set((e.clientX - cx) * 0.3);
-      y.set((e.clientY - cy) * 0.3);
-    },
-    [x, y],
+  const formatted = decimals > 0
+    ? display.toFixed(decimals)
+    : display >= 1000
+    ? (display / 1000).toFixed(1) + "k"
+    : Math.round(display).toString();
+
+  return <span>{prefix}{formatted}{suffix}</span>;
+}
+
+// ─── Mini Bar Chart ──────────────────────────────────────────────────────────
+
+function MiniBarChart({ data, color = "#6366f1" }: { data: number[]; color?: string }) {
+  const max = Math.max(...data);
+  return (
+    <div className="flex items-end gap-0.5 h-12 w-full">
+      {data.map((v, i) => (
+        <div key={i} className="flex-1 flex flex-col justify-end" title={`${MONTHS[i]}: ${v}`}>
+          <div
+            className="rounded-sm transition-all duration-700 opacity-80 hover:opacity-100"
+            style={{ height: `${(v / max) * 100}%`, background: color }}
+          />
+        </div>
+      ))}
+    </div>
   );
+}
 
-  const handleMouseLeave = useCallback(() => {
-    x.set(0);
-    y.set(0);
-  }, [x, y]);
+// ─── Donut Chart (simple SVG) ────────────────────────────────────────────────
+
+function DonutChart({ data }: { data: typeof DEMO_CHANNELS }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let offset = 0;
+  const r = 36;
+  const circ = 2 * Math.PI * r;
 
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{ x, y }}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ scale: 1.03 }}
-      transition={springGentle}
-    >
-      <RadialGlowButton asChild className={className}>
-        <Link href={href} onClick={onClick}>
-          {children}
-        </Link>
-      </RadialGlowButton>
-    </motion.div>
+    <svg viewBox="0 0 100 100" className="w-24 h-24" style={{ transform: "rotate(-90deg)" }}>
+      {data.map((d) => {
+        const pct = d.value / total;
+        const dash = pct * circ;
+        const gap = circ - dash;
+        const el = (
+          <circle
+            key={d.name}
+            cx="50" cy="50" r={r}
+            fill="none"
+            stroke={d.color}
+            strokeWidth="14"
+            strokeDasharray={`${dash} ${gap}`}
+            strokeDashoffset={-offset}
+          />
+        );
+        offset += dash;
+        return el;
+      })}
+    </svg>
   );
 }
 
-// ─── Partner Logos ─────────────────────────────────────────────
-const partnerLogos = [
-  <svg key="stripe" viewBox="0 0 100 32" fill="currentColor">
-    <path d="M16.2 11.3c0-1.2.8-1.7 2-1.7.6 0 1.2.1 1.9.3V6.9c-.7-.2-1.4-.3-2.1-.3-3.3 0-5.5 1.8-5.5 4.8 0 4.7 6.4 3.9 6.4 6 0 1.4-1 1.9-2.5 1.9-1.5 0-2.8-.4-4-1v3.5c1.2.3 2.4.5 3.6.5 3.8 0 6.3-1.8 6.3-5 0-5.3-6.1-4.3-6.1-6.1z" />
-    <path d="M24.9 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H24.9zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z" />
-    <path d="M36.6 9.5l-.1 1.9c-.7-.9-1.7-1.4-2.8-1.4-2.6 0-4.6 2.4-4.6 5.3s2 5.3 4.6 5.3c1.1 0 2.1-.5 2.8-1.4l.1 1.2h3.3V9.5H36.6zm-.3 7.6c-.8 1-2 1.1-2.8.1-.4-.5-.6-1.2-.6-2 0-.7.2-1.4.6-1.9.8-1 2-1 2.8.1.4.5.6 1.2.6 1.9 0 .7-.2 1.4-.6 1.8z" />
-  </svg>,
-  <svg key="shopify" viewBox="0 0 100 32" fill="currentColor">
-    <path d="M23.5 6.7l-1.2-4.2c-.1-.4-.4-.6-.8-.5l-3.2.7c-.2-.5-.5-1-.9-1.4-.7-.6-1.5-.8-2.3-.6l-.3.1c-.1 0-.2 0-.2.1-1.4.3-2.4 1.3-2.9 2.8l-4.2.9c-.4.1-.7.4-.6.8l1.3 5.8c-1.1.5-1.8 1.4-1.8 2.5 0 .8.4 1.5 1.1 2.1-.4.2-.7.5-.9.9-.3.6-.3 1.3-.1 2.1.4 1.6 1.8 2.7 3.8 2.7 2.3 0 4.2-1.3 5.5-3.7l5.5-1.2c.4-.1.7-.4.6-.8l-.9-3.9z" />
-  </svg>,
-  <svg key="slack" viewBox="0 0 100 32" fill="currentColor">
-    <path d="M12.5 3.2c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h2.7V5.9c0-1.5-1.2-2.7-2.7-2.7zm0 7.2H5.9c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z" />
-    <path d="M29.3 10.4c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7 2.7-1.2 2.7-2.7-1.2-2.7-2.7-2.7zm-7.2 0H15.5c-1.5 0-2.7 1.2-2.7 2.7s1.2 2.7 2.7 2.7h6.6c1.5 0 2.7-1.2 2.7-2.7s-1.2-2.7-2.7-2.7z" />
-  </svg>,
-  <svg key="posthog" viewBox="0 0 100 32" fill="currentColor">
-    <path d="M12.5 5.5L8.2 9.8l-3-3L9.5 2.5c.4-.4 1-.4 1.4 0l1.6 1.6V5.5zm3.5 3.5l-4.3 4.3h2.8l4.3-4.3H16zm6.3 0l3.5 3.5c.4.4.4 1 0 1.4l-8.5 8.5L12.8 17l6.7-6.7 1.4-1.4H22.3zm-8.5 8.5l-1.4 1.4-2.8-2.8 1.4-1.4 2.8 2.8zm-4.2 4.2L6.1 19l4.3-4.3v-2.8L2.5 21.5c-.4.4-.4 1 0 1.4l1.6 1.6h10.2l1.8-1.8-4.2-4.2z" />
-  </svg>,
-];
+// ─── Feature Bento Card ──────────────────────────────────────────────────────
 
-// ─── Feature card with 21st.dev premium spotlight effect ────────
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  className?: string;
-  iconColor: string;
-  borderColor: string;
-  bgGradient: string;
-  glowColor: string;
-  tag: string;
-  index: number;
-  learnMoreLabel: string;
-}
-
-function FeatureCard({
-  title,
-  description,
-  icon: Icon,
+function BentoCard({
   className,
-  iconColor,
-  borderColor,
-  bgGradient,
-  glowColor,
-  tag,
-  index,
-  learnMoreLabel,
-}: FeatureCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
+  children,
+  gradient = false,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  gradient?: boolean;
+}) {
   return (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: index * 0.12, ...springGentle }}
+    <div
       className={cn(
-        "spotlight-card vengeance-card relative p-7 lg:p-8 rounded-2xl border flex flex-col justify-between overflow-hidden group transition-all",
+        "rounded-2xl border border-border bg-background p-5 overflow-hidden relative group",
+        gradient && "bg-gradient-to-br from-primary/5 to-primary/0",
         className,
-        borderColor,
-        "bg-gradient-to-br",
-        bgGradient,
       )}
-      style={{ boxShadow: `0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onPointerMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const px = ((e.clientX - rect.left) / rect.width) * 100;
-        const py = ((e.clientY - rect.top) / rect.height) * 100;
-        e.currentTarget.style.setProperty("--mouse-x", `${px}%`);
-        e.currentTarget.style.setProperty("--mouse-y", `${py}%`);
-      }}
     >
-      {/* Hover glow overlay */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none rounded-2xl"
-        animate={{ opacity: isHovered ? 1 : 0 }}
-        transition={{ duration: 0.5 }}
-        style={{
-          background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), ${glowColor}, transparent 40%)`,
-        }}
-      />
-
-      {/* Perpetual floating indicator */}
-      <motion.div
-        className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full"
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0.4, 0.8, 0.4],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        style={{ backgroundColor: glowColor.replace("0.15)", "0.5)") }}
-      />
-
-      <div className="z-10 relative flex flex-col h-full">
-        {/* Tag badge */}
-        <div className="mb-3">
-          <span className="badge-premium text-[10px]">{tag}</span>
-        </div>
-
-        {/* Icon with micro-interaction */}
-        <motion.div
-          className="feature-icon-wrap inline-flex p-2.5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm mb-4 border border-black/5 dark:border-white/5 w-fit transition-all"
-          animate={{ y: isHovered ? -2 : 0 }}
-          transition={springGentle}
-        >
-          <Icon size={20} className={cn("h-5 w-5", iconColor)} />
-        </motion.div>
-
-        {/* Content */}
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm leading-relaxed flex-1">
-          {description}
-        </p>
-
-        {/* Learn more arrow */}
-        <motion.div
-          className="flex items-center gap-1.5 mt-4 text-xs font-medium text-zinc-400 dark:text-zinc-500 transition-colors"
-          animate={{ color: isHovered ? "#6366f1" : undefined }}
-        >
-          <span>{learnMoreLabel}</span>
-          <motion.div animate={{ x: isHovered ? 4 : 0 }} transition={springGentle}>
-            <ArrowRight className="h-3 w-3" />
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Subtle decorative gradient */}
-      <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-black/[0.02] dark:from-white/[0.02] to-transparent rounded-full pointer-events-none" />
-    </motion.div>
-  );
-}
-
-// ─── Infinite carousel metrics ──────────────────────────────────
-function MetricsCarousel() {
-  const t = useTranslations("homePage");
-  const items = [
-    { value: "12.4K", labelKey: "cOrders" },
-    { value: "99.9%", labelKey: "cUptime" },
-    { value: "2,847", labelKey: "cUsers" },
-    { value: "15s", labelKey: "cRefresh" },
-    { value: "47.2%", labelKey: "cGrowth" },
-    { value: "8,431", labelKey: "cCustomers" },
-  ];
-
-  return (
-    <div className="relative overflow-hidden py-8 border-t border-b border-border">
-      <motion.div
-        className="flex gap-16 items-center"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-      >
-        {[...items, ...items].map((item, i) => (
-          <div key={i} className="flex items-center gap-4 shrink-0">
-            <div className="text-right">
-              <div className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</div>
-              <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
-                {t(item.labelKey)}
-              </div>
-            </div>
-            <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-800 last:hidden" />
-          </div>
-        ))}
-      </motion.div>
+      {children}
     </div>
   );
 }
 
-// ─── Bento Grid: Live Status Card ───────────────────────────────
-function LiveStatusCard() {
-  const t = useTranslations("homePage");
-  const statuses = [
-    { name: "Stripe", statusKey: "statusLive", color: "text-emerald-500" },
-    { name: "Shopify", statusKey: "statusLive", color: "text-emerald-500" },
-    { name: "Slack", statusKey: "statusLive", color: "text-emerald-500" },
-    { name: "SendGrid", statusKey: "statusActive", color: "text-emerald-500" },
-  ];
-  const [currentIdx, setCurrentIdx] = useState(0);
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIdx((prev) => (prev + 1) % statuses.length);
-    }, 2500);
-    return () => clearInterval(timer);
-  }, []);
+export default function MarketingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(params);
+
+  const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
   return (
-    <div className="double-bezel h-full">
-      <div className="double-bezel-inner flex flex-col">
-        <div className="flex items-center gap-2 pb-3 border-b border-border mb-4">
-          <div className="flex gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-rose-400/70" />
-            <div className="w-2 h-2 rounded-full bg-amber-400/70" />
-            <div className="w-2 h-2 rounded-full bg-emerald-400/70" />
-          </div>
-          <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-600 ml-2">
-            system-status
-          </span>
+    <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden">
+      {/* ───────────────────── HERO ───────────────────── */}
+      <section className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl" />
         </div>
-        <div className="flex-1 space-y-3">
-          {statuses.map((s) => (
-            <div key={s.name} className="flex items-center justify-between">
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">{s.name}</span>
-              <span className={cn("text-xs font-medium flex items-center gap-1.5", s.color)}>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                {t(s.statusKey)}
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="relative z-10"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
+            <Sparkles className="h-3.5 w-3.5" />
+            Business Management Platform
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
+            Your Business,<br />
+            <span className="text-primary">Fully Unified</span>
+          </h1>
+
+          <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            One platform to manage orders, customers, products, payments, and analytics — with real-time data, multi-channel integration, and enterprise-grade security built in.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+            <Link
+              href={`/${locale}/register`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg"
+            >
+              Get Started Free
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href={`/${locale}/login`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border bg-background/60 backdrop-blur text-sm font-semibold text-foreground hover:bg-background transition"
+            >
+              Live Demo
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex flex-wrap justify-center gap-4 mt-8 text-xs text-muted-foreground">
+            {["No credit card required", "Deploy in minutes", "Multi-tenant ready", "SOC 2 compliant"].map((b) => (
+              <span key={b} className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-primary" />
+                {b}
               </span>
-            </div>
-          ))}
-        </div>
-        {/* Rotating notification badge */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIdx}
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.9 }}
-            transition={springSnap}
-            className="mt-3 pt-3 border-t border-border"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <Zap className="h-3 w-3 text-indigo-500" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-zinc-700 dark:text-zinc-200">
-                  {statuses[currentIdx].name} {t("connected")}
-                </p>
-                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">{t("syncActive")}</p>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-// ─── Bento Grid: Growth Stats Card ──────────────────────────────
-function GrowthStatsCard() {
-  const t = useTranslations("homePage");
-  const metrics = [
-    {
-      labelKey: "gRevenue",
-      end: 89200,
-      change: "+23.5%",
-      up: true,
-      format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
-    },
-    {
-      labelKey: "gOrders",
-      end: 1847,
-      change: "+14.2%",
-      up: true,
-      format: (v: number) => v.toLocaleString(),
-    },
-    {
-      labelKey: "gConversion",
-      end: 32,
-      change: "+0.8%",
-      up: true,
-      format: (v: number) => `${(v / 10).toFixed(1)}%`,
-    },
-    {
-      labelKey: "gAvgOrder",
-      end: 4827,
-      change: "-2.1%",
-      up: false,
-      format: (v: number) => `$${(v / 100).toFixed(2)}`,
-    },
-  ];
-
-  return (
-    <div className="double-bezel h-full">
-      <div className="double-bezel-inner flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-4 w-4 text-emerald-500" />
-          <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-            {t("growthTitle")}
-          </h3>
-        </div>
-        <div className="flex-1 space-y-3">
-          {metrics.map((m) => (
-            <div key={m.labelKey} className="flex items-center justify-between py-1.5">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">{t(m.labelKey)}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-zinc-800 dark:text-white font-mono">
-                  <AnimatedCounter end={m.end} duration={1800} formatter={m.format} />
-                </span>
-                <span
-                  className={cn(
-                    "text-[10px] font-semibold",
-                    m.up ? "text-emerald-500" : "text-rose-500",
-                  )}
-                >
-                  {m.change}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Bento Grid: Intelligent List ───────────────────────────────
-function IntelligentListCard() {
-  const t = useTranslations("homePage");
-  const items = [
-    { id: 1, textKey: "q1", priority: 3 },
-    { id: 2, textKey: "q2", priority: 1 },
-    { id: 3, textKey: "q3", priority: 2 },
-    { id: 4, textKey: "q4", priority: 4 },
-    { id: 5, textKey: "q5", priority: 5 },
-  ];
-  const [sorted, setSorted] = useState(items);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSorted((prev) => {
-        const shuffled = [...prev];
-        const i = Math.floor(Math.random() * shuffled.length);
-        const j = Math.floor(Math.random() * shuffled.length);
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        return shuffled;
-      });
-    }, 3000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="double-bezel h-full">
-      <div className="double-bezel-inner flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <RefreshCwIcon size={16} className="h-4 w-4 text-indigo-500" />
-          <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-            {t("queueTitle")}
-          </h3>
-        </div>
-        <div className="flex-1 space-y-2">
-          <AnimatePresence mode="popLayout">
-            {sorted.map((item) => (
-              <motion.div
-                key={item.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={springGentle}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800/40"
-              >
-                <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-400">
-                    {item.priority}
-                  </span>
-                </div>
-                <span className="text-xs text-zinc-600 dark:text-zinc-300">{t(item.textKey)}</span>
-              </motion.div>
             ))}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
-}
+          </div>
+        </motion.div>
+      </section>
 
-// ─── Feature data ───────────────────────────────────────────────
-const features = [
-  {
-    titleKey: "f1Title",
-    descKey: "f1Desc",
-    icon: BarChart3,
-    className: "md:col-span-2 md:row-span-2",
-    iconColor: "text-indigo-500 dark:text-indigo-400",
-    borderColor: "border-indigo-200 dark:border-indigo-500/20",
-    bgGradient:
-      "from-indigo-50/80 via-white to-purple-50/50 dark:from-indigo-500/10 dark:to-purple-500/5",
-    glowColor: "rgba(99,102,241,0.15)",
-    tagKey: "f1Tag",
-  },
-  {
-    titleKey: "f2Title",
-    descKey: "f2Desc",
-    icon: ShoppingCart,
-    className: "",
-    iconColor: "text-emerald-500 dark:text-emerald-400",
-    borderColor: "border-emerald-200 dark:border-emerald-500/20",
-    bgGradient: "from-emerald-50/60 to-white dark:from-emerald-500/5 dark:to-transparent",
-    glowColor: "rgba(16,185,129,0.15)",
-    tagKey: "f2Tag",
-  },
-  {
-    titleKey: "f3Title",
-    descKey: "f3Desc",
-    icon: Users,
-    className: "",
-    iconColor: "text-purple-500 dark:text-purple-400",
-    borderColor: "border-purple-200 dark:border-purple-500/20",
-    bgGradient: "from-purple-50/60 to-white dark:from-purple-500/5 dark:to-transparent",
-    glowColor: "rgba(168,85,247,0.15)",
-    tagKey: "f3Tag",
-  },
-  {
-    titleKey: "f4Title",
-    descKey: "f4Desc",
-    icon: Shield,
-    className: "md:col-span-2",
-    iconColor: "text-blue-500 dark:text-blue-400",
-    borderColor: "border-blue-200 dark:border-blue-500/20",
-    bgGradient: "from-blue-50/60 to-white dark:from-blue-500/5 dark:to-transparent",
-    glowColor: "rgba(59,130,246,0.15)",
-    tagKey: "f4Tag",
-  },
-];
+      {/* ──────── DASHBOARD PREVIEW (Stats strip) ──────── */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-8 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2, ease: easeSmooth }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          {[
+            { label: "Total Revenue", value: DEMO_STATS.totalRevenue, prefix: "$", growth: DEMO_STATS.revenueGrowth, icon: TrendingUp, color: "text-emerald-500" },
+            { label: "Total Orders", value: DEMO_STATS.totalOrders, growth: DEMO_STATS.ordersGrowth, icon: ShoppingCart, color: "text-blue-500" },
+            { label: "Customers", value: DEMO_STATS.totalCustomers, growth: DEMO_STATS.customersGrowth, icon: Users, color: "text-violet-500" },
+            { label: "Products", value: DEMO_STATS.totalProducts, growth: DEMO_STATS.productsGrowth, icon: Package, color: "text-amber-500" },
+          ].map(({ label, value, prefix = "", growth, icon: Icon, color }) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-border bg-background p-4 flex flex-col gap-2 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">{label}</span>
+                <Icon className={cn("h-4 w-4", color)} />
+              </div>
+              <div className="text-2xl font-bold text-foreground">
+                <AnimatedStat value={value} prefix={prefix} />
+              </div>
+              <div className={cn("text-xs font-semibold flex items-center gap-1", growth > 0 ? "text-emerald-600" : "text-red-500")}>
+                <TrendingUp className="h-3 w-3" />
+                +{growth}% vs last month
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </section>
 
-const testimonials = [
-  {
-    quoteKey: "testi1Quote",
-    name: "Sarah Chen",
-    roleKey: "testi1Role",
-  },
-  {
-    quoteKey: "testi2Quote",
-    name: "Marcus Rivera",
-    roleKey: "testi2Role",
-  },
-];
+      {/* ──────── BENTO GRID ──────── */}
+      <section id="features" className="px-4 sm:px-6 lg:px-12 py-12 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="text-center mb-12"
+        >
+          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">Platform Features</p>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
+            Everything You Need<br />to Run Your Business
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            From order management to enterprise security, every tool is built-in and ready to use.
+          </p>
+        </motion.div>
 
-// ─── Stagger variants ───────────────────────────────────────────
-const stagger = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.15 },
-  },
-};
+        {/* Bento grid — 12-column layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-auto">
 
-const fadeUpItem = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easeSmooth as any },
-  },
-};
-
-// ─── Trusted by stats row ───────────────────────────────────────
-const trustStats = [
-  { icon: CheckCircle2, value: "2,000+", labelKey: "trustBusinesses" },
-  { icon: Globe, value: "47", labelKey: "trustCountries" },
-  { icon: ClockIcon, value: "99.9%", labelKey: "trustUptime" },
-];
-
-// ─── Main component ─────────────────────────────────────────────
-export default function MarketingLandingPage() {
-  const params = useParams();
-  const locale = (params?.locale as string) || "en";
-  const { theme } = useTheme();
-  const { trackCTA } = useAnalytics();
-  const t = useTranslations("homePage");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  const ctaHref = `/${locale}/dashboard`;
-
-  return (
-    <div className="pt-20 lg:pt-24">
-      {/* ════════════════════════
-          PREMIUM HERO with Particles + AnimatedRays + FlipFadeText
-          ════════════════════════ */}
-      <section className="relative overflow-hidden pb-16 lg:pb-24">
-        {/* Particles background (21st.dev style) */}
-        <Particles
-          className="absolute inset-0 h-full w-full"
-          quantity={80}
-          size={0.4}
-          staticity={40}
-          ease={80}
-          color={theme === "dark" ? "#6b7280" : "#6366f1"}
-          refresh={false}
-        />
-
-        {/* AnimatedRays Background (Vengeance-style) */}
-        <div className="absolute inset-0 h-[120%] opacity-30 dark:opacity-50">
-          <AnimatedRays className="w-full h-full" />
-        </div>
-
-        {/* AnimatedGridPattern overlay */}
-        <AnimatedGridPattern
-          className="absolute inset-0 h-full w-full fill-gray-400/[0.03] stroke-gray-400/[0.04] dark:fill-white/[0.03] dark:stroke-white/[0.04]"
-          numSquares={40}
-          maxOpacity={0.08}
-          duration={3}
-          repeatDelay={1}
-        />
-
-        {/* Ambient background */}
-        <div className="absolute inset-0 mesh-gradient-dark mesh-gradient-light pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* ── Left Content ── */}
-            <motion.div initial={false} animate="visible" variants={stagger} className="max-w-2xl">
-              <motion.div variants={fadeUpItem} className="mb-8">
-                <div className="badge-premium inline-flex items-center gap-2">
-                  <Sparkles className="h-3 w-3" />
-                  <span>{t("badge")}</span>
+          {/* ── Revenue Chart (large, 7 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, ease: easeSmooth }}
+            className="lg:col-span-7"
+          >
+            <BentoCard className="h-full min-h-[280px]">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-0.5">Revenue Overview</p>
+                  <p className="text-2xl font-bold text-foreground">$284.7k</p>
                 </div>
-              </motion.div>
-
-              <motion.h1
-                variants={fadeUpItem}
-                className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.05] mb-6 text-zinc-900 dark:text-white"
-              >
-                {t("heroPrefix")}&nbsp;
-                {/* FlipFadeText for dynamic word cycling */}
-                <span className="inline-flex">
-                  <FlipFadeText
-                    words={[t("word1"), t("word2"), t("word3"), t("word4")]}
-                    interval={2800}
-                    textClassName="!text-4xl sm:!text-5xl lg:!text-6xl xl:!text-7xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight !leading-[1.05]"
-                    className="!min-h-0 inline-flex"
-                    staggerDelay={0.06}
-                    letterDuration={0.4}
-                  />
+                <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" /> +12.5%
                 </span>
-              </motion.h1>
+              </div>
+              <MiniBarChart data={DEMO_MONTHLY} color="hsl(var(--primary))" />
+              <div className="flex justify-between mt-2">
+                {MONTHS.map((m, i) => (
+                  <span key={i} className="text-[9px] text-muted-foreground">{m}</span>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary inline-block" /> Monthly Revenue</span>
+                <span className="flex items-center gap-1.5"><RefreshCw className="h-3 w-3" /> Live updates every 15s</span>
+              </div>
+            </BentoCard>
+          </motion.div>
 
-              <motion.p
-                variants={fadeUpItem}
-                className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-lg leading-relaxed"
-              >
-                {t("heroSubtitle")}
-              </motion.p>
+          {/* ── Sales by Channel (5 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.05, ease: easeSmooth }}
+            className="lg:col-span-5"
+          >
+            <BentoCard className="h-full min-h-[280px]">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Sales by Channel</p>
+              <p className="text-lg font-bold text-foreground mb-4">Multi-Channel Commerce</p>
+              <div className="flex items-center gap-4">
+                <DonutChart data={DEMO_CHANNELS} />
+                <div className="space-y-2 flex-1">
+                  {DEMO_CHANNELS.map((c) => (
+                    <div key={c.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
+                        <span className="text-xs text-foreground font-medium">{c.name}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{c.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </BentoCard>
+          </motion.div>
 
-              <motion.div
-                variants={fadeUpItem}
-                className="flex flex-col sm:flex-row items-start gap-3"
-              >
-                <MagneticButton
-                  href={ctaHref}
-                  onClick={() => trackCTA("enter_dashboard", { href: ctaHref })}
-                  className="shadow-xl shadow-indigo-500/20"
-                >
-                  {t("ctaEnter")}
-                  <ArrowRight className="h-4 w-4 inline-block align-middle ml-1.5" />
-                </MagneticButton>
-
-                <motion.div whileTap={buttonTap} whileHover={{ scale: 1.02 }}>
-                  <RadialGlowButton asChild className="opacity-80 hover:opacity-100">
-                    <Link
-                      href={`/${locale}/features`}
-                      onClick={() =>
-                        trackCTA("view_documentation", { href: `/${locale}/features` })
-                      }
-                    >
-                      {t("ctaDocs")}
-                    </Link>
-                  </RadialGlowButton>
-                </motion.div>
-              </motion.div>
-
-              {/* Trust stats row */}
-              <motion.div variants={fadeUpItem} className="mt-10 flex items-center gap-6">
-                {trustStats.map((stat) => (
-                  <div key={stat.labelKey} className="flex items-center gap-2">
-                    <stat.icon size={16} className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
-                    <div>
-                      <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                        {stat.value}
+          {/* ── Recent Orders (7 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.1, ease: easeSmooth }}
+            className="lg:col-span-7"
+          >
+            <BentoCard className="h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-0.5">Orders</p>
+                  <p className="text-lg font-bold text-foreground">Recent Orders</p>
+                </div>
+                <Link href={`/${locale}/login`} className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
+                  View all <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {DEMO_ORDERS.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {order.customer.split(" ").map((n) => n[0]).join("")}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{order.customer}</p>
+                        <p className="text-[10px] text-muted-foreground">{order.id} · {order.channel}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", STATUS_COLOR[order.status])}>
+                        {order.status}
                       </span>
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-1">
-                        {t(stat.labelKey)}
-                      </span>
+                      <span className="text-xs font-bold text-foreground">${order.amount}</span>
                     </div>
                   </div>
                 ))}
-              </motion.div>
-            </motion.div>
+              </div>
+            </BentoCard>
+          </motion.div>
 
-            {/* ── Right Visual ── */}
-            <motion.div
-              initial={false}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ...springGentle }}
-              className="relative"
-            >
-              <div className="double-bezel">
-                <div className="double-bezel-inner !p-0 overflow-hidden">
-                  {/* Fake OS window chrome */}
-                  <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border">
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-600" />
-                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-2 font-mono">
-                      dashboard — Main Overview
-                    </span>
-                  </div>
-
-                  {/* Mini dashboard content */}
-                  <div className="p-5 space-y-5">
-                    {/* Chart bars */}
-                    <div className="flex items-end gap-2 h-28">
-                      {[35, 65, 40, 80, 55, 75, 90, 60, 85, 50, 70, 45].map((h, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-full bg-gradient-to-t from-indigo-500/60 to-indigo-400/30 dark:from-indigo-500/60 dark:to-indigo-400/30 rounded-t-sm origin-bottom"
-                          initial={false}
-                          animate={{ scaleY: h / 100 }}
-                          transition={{
-                            duration: 1,
-                            delay: 0.5 + i * 0.08,
-                            ...springGentle,
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Metric cards */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        {
-                          labelKey: "mOrders",
-                          end: 12400,
-                          change: "+14%",
-                          format: (v: number) => `${(v / 1000).toFixed(1)}K`,
-                        },
-                        {
-                          labelKey: "mUsers",
-                          end: 2847,
-                          change: "+8.2%",
-                          format: (v: number) => v.toLocaleString(),
-                        },
-                        {
-                          labelKey: "mRevenue",
-                          end: 89200,
-                          change: "+23.5%",
-                          format: (v: number) => `$${(v / 1000).toFixed(1)}K`,
-                        },
-                        {
-                          labelKey: "mResponse",
-                          end: 120,
-                          change: "-40%",
-                          format: (v: number) => `${(v / 100).toFixed(1)}s`,
-                        },
-                      ].map((metric, i) => (
-                        <motion.div
-                          key={metric.labelKey}
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            delay: 0.8 + i * 0.1,
-                            duration: 0.5,
-                            ease: easeSmooth as any,
-                          }}
-                          className="stat-card-premium !p-3.5"
-                        >
-                          <div className="text-[10px] text-zinc-500 dark:text-zinc-500 font-medium uppercase tracking-wider mb-1">
-                            {t(metric.labelKey)}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-zinc-800 dark:text-white tabular-nums">
-                              <AnimatedCounter
-                                end={metric.end}
-                                duration={2000}
-                                formatter={metric.format}
-                              />
-                            </span>
-                            <span
-                              className={cn(
-                                "text-[10px] font-semibold",
-                                metric.change.startsWith("+")
-                                  ? "text-emerald-500 dark:text-emerald-400"
-                                  : "text-rose-500 dark:text-rose-400",
-                              )}
-                            >
-                              {metric.change}
-                            </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
+          {/* ── Top Products (5 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.15, ease: easeSmooth }}
+            className="lg:col-span-5"
+          >
+            <BentoCard className="h-full">
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Catalog</p>
+                  <p className="text-lg font-bold text-foreground">Top Products</p>
                 </div>
               </div>
+              <div className="space-y-3">
+                {DEMO_PRODUCTS.map((p, i) => (
+                  <div key={p.name} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-muted-foreground w-4">#{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${(p.orders / 500) * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{p.orders} orders</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-foreground">${p.price}</span>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── Payment Systems (4 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.2, ease: easeSmooth }}
+            className="lg:col-span-4"
+          >
+            <BentoCard className="h-full gradient" gradient>
+              <CreditCard className="h-8 w-8 text-primary mb-3" />
+              <p className="text-lg font-bold text-foreground mb-1">Dual Payment Gateway</p>
+              <p className="text-sm text-muted-foreground mb-4">Stripe + Midtrans for global and Indonesian markets with automatic currency conversion.</p>
+              <div className="space-y-2">
+                {[
+                  { name: "Stripe", desc: "Cards, Apple Pay, Google Pay", badge: "Global", color: "#635BFF" },
+                  { name: "Midtrans", desc: "DANA, GoPay, QRIS, Bank Transfer", badge: "Indonesia", color: "#0084FF" },
+                ].map((gw) => (
+                  <div key={gw.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-background border border-border">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: gw.color }}>
+                      {gw.name[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">{gw.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{gw.desc}</p>
+                    </div>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{gw.badge}</span>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── 2FA Security (4 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.25, ease: easeSmooth }}
+            className="lg:col-span-4"
+          >
+            <BentoCard className="h-full">
+              <Shield className="h-8 w-8 text-emerald-500 mb-3" />
+              <p className="text-lg font-bold text-foreground mb-1">Enterprise Security</p>
+              <p className="text-sm text-muted-foreground mb-4">TOTP 2FA, WebAuthn passkeys, SAML SSO, session management, and audit logs.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: Lock, label: "2FA / TOTP", sub: "Google Authenticator" },
+                  { icon: Key, label: "WebAuthn", sub: "Passkeys & biometrics" },
+                  { icon: BadgeCheck, label: "SAML SSO", sub: "Enterprise IdP" },
+                  { icon: Activity, label: "Audit Log", sub: "Full event trail" },
+                ].map(({ icon: Icon, label, sub }) => (
+                  <div key={label} className="flex items-center gap-2 p-2 rounded-xl bg-muted/50">
+                    <Icon className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-[11px] font-semibold text-foreground">{label}</p>
+                      <p className="text-[9px] text-muted-foreground">{sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── AI Assistant (4 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.3, ease: easeSmooth }}
+            className="lg:col-span-4"
+          >
+            <BentoCard className="h-full bg-foreground text-background dark:bg-zinc-900 dark:text-zinc-100">
+              <Bot className="h-8 w-8 mb-3 opacity-80" />
+              <p className="text-lg font-bold mb-1">AI Business Assistant</p>
+              <p className="text-sm opacity-70 mb-4">Ask anything about your business in plain language. Powered by GPT-4.</p>
+              <div className="space-y-2">
+                {[
+                  "What was our best-selling product last month?",
+                  "Show pending orders from Instagram",
+                  "Generate a revenue report for Q3",
+                ].map((q) => (
+                  <div key={q} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 dark:bg-white/5">
+                    <span className="text-[10px] opacity-80">{q}</span>
+                    <ArrowRight className="h-3 w-3 ml-auto flex-shrink-0 opacity-50" />
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── Integrations (8 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.35, ease: easeSmooth }}
+            className="lg:col-span-8"
+          >
+            <BentoCard className="h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-0.5">Ecosystem</p>
+                  <p className="text-lg font-bold text-foreground">Platform Integrations</p>
+                </div>
+                <Layers className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {INTEGRATIONS.map((intg) => (
+                  <div
+                    key={intg.name}
+                    className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/50 hover:bg-muted transition group cursor-default"
+                  >
+                    <span className="text-xl mb-1.5">{intg.icon}</span>
+                    <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition">{intg.name}</p>
+                    <p className="text-[9px] text-muted-foreground">{intg.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── API / Webhooks (4 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.4, ease: easeSmooth }}
+            className="lg:col-span-4"
+          >
+            <BentoCard className="h-full">
+              <Webhook className="h-8 w-8 text-violet-500 mb-3" />
+              <p className="text-lg font-bold text-foreground mb-1">REST API & Webhooks</p>
+              <p className="text-sm text-muted-foreground mb-4">Full public API v1 with versioned endpoints, API key management, and webhook delivery logs.</p>
+              <div className="font-mono text-xs bg-muted rounded-xl p-3 space-y-1 text-muted-foreground">
+                <p><span className="text-blue-500">GET</span>  /api/v1/orders</p>
+                <p><span className="text-emerald-500">POST</span> /api/v1/products</p>
+                <p><span className="text-amber-500">PUT</span>  /api/v1/customers/:id</p>
+                <p><span className="text-violet-500">WH</span>   order.completed</p>
+              </div>
+            </BentoCard>
+          </motion.div>
+
+          {/* ── Real-time (full width) */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: 0.45, ease: easeSmooth }}
+            className="lg:col-span-12"
+          >
+            <BentoCard className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-0.5">Real-Time Infrastructure</p>
+                  <p className="text-lg font-bold text-foreground">Live Dashboard Updates</p>
+                  <p className="text-sm text-muted-foreground mt-1">Server-Sent Events push order, inventory, and payment updates to every dashboard tab — no refresh needed.</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 flex-shrink-0">
+                {["SSE streaming", "15s auto-poll", "Multi-tab sync", "Offline detection"].map((tag) => (
+                  <span key={tag} className="px-3 py-1 rounded-full border border-border bg-muted text-xs font-medium text-foreground">{tag}</span>
+                ))}
+              </div>
+            </BentoCard>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ──────── FEATURES LIST ──────── */}
+      <section id="methodology" className="px-4 sm:px-6 lg:px-12 py-20 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: easeSmooth }}
+          >
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">Why Teams Choose Us</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-6 leading-tight">
+              Built for Modern<br />Commerce Teams
+            </h2>
+            <div className="space-y-4">
+              {[
+                { icon: Globe, title: "Multi-Channel Order Management", desc: "Sync orders from Shopify, Tokopedia, TikTok Shop, Instagram, and Facebook in one unified inbox." },
+                { icon: BarChart3, title: "Advanced Analytics & Reports", desc: "Revenue cohort analysis, geographic breakdowns, conversion funnels, and retention heatmaps." },
+                { icon: Users, title: "Role-Based Access Control", desc: "Granular RBAC with custom roles, team management, and per-feature permission control." },
+                { icon: Bell, title: "Smart Notifications", desc: "Configurable alerts for low stock, order status changes, payment failures, and revenue milestones." },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="flex gap-4">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{title}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: easeSmooth }}
+            className="grid grid-cols-2 gap-4"
+          >
+            {[
+              { label: "Orders processed", value: "1.8M+", icon: ShoppingCart, color: "text-blue-500" },
+              { label: "Revenue tracked", value: "$48M+", icon: TrendingUp, color: "text-emerald-500" },
+              { label: "Avg. response time", value: "<200ms", icon: Zap, color: "text-amber-500" },
+              { label: "Uptime SLA", value: "99.9%", icon: Activity, color: "text-violet-500" },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="p-5 rounded-2xl border border-border bg-background text-center">
+                <Icon className={cn("h-6 w-6 mx-auto mb-2", color)} />
+                <p className="text-2xl font-bold text-foreground">{value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ──────── PRICING ──────── */}
+      <section id="pricing" className="px-4 sm:px-6 lg:px-12 py-20 bg-background">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6, ease: easeSmooth }}
+            className="text-center mb-12"
+          >
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">Pricing</p>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-muted-foreground text-lg">Start free, scale when you need to.</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Free */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, ease: easeSmooth }}
+              className="rounded-2xl border border-border bg-background p-8 flex flex-col"
+            >
+              <h3 className="text-xl font-bold text-foreground mb-1">Starter</h3>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-4xl font-bold text-foreground">$0</span>
+                <span className="text-muted-foreground font-medium">/month</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6 pb-6 border-b border-border">Perfect for small businesses getting started.</p>
+              <ul className="space-y-3 mb-8 flex-1">
+                {["Up to 100 orders/month", "2 sales channels", "Basic analytics", "Email support", "API access (read-only)"].map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-primary flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`/${locale}/register`}
+                className="w-full py-3 rounded-full border border-border bg-background text-foreground text-sm font-semibold text-center hover:bg-muted transition"
+              >
+                Get Started Free
+              </Link>
             </motion.div>
+
+            {/* Pro */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.05, ease: easeSmooth }}
+              className="rounded-2xl bg-foreground text-background p-8 flex flex-col relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/30 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold mb-3">
+                  <Sparkles className="h-3 w-3" /> Most Popular
+                </div>
+                <h3 className="text-xl font-bold mb-1">Pro</h3>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span className="text-4xl font-bold">$49</span>
+                  <span className="opacity-60 font-medium">/month</span>
+                </div>
+                <p className="text-sm opacity-70 mb-6 pb-6 border-b border-white/20">For growing teams who need full power.</p>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {["Unlimited orders", "All sales channels", "Advanced analytics & reports", "2FA + SSO + WebAuthn", "Stripe & Midtrans payments", "AI assistant", "API & webhooks (full access)", "Priority support"].map((f) => (
+                    <li key={f} className="flex items-center gap-3 text-sm">
+                      <Check className="h-4 w-4 text-primary flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={`/${locale}/register`}
+                  className="w-full py-3 rounded-full bg-white text-gray-900 text-sm font-semibold text-center hover:bg-gray-100 transition block"
+                >
+                  Start 14-Day Free Trial
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="mt-6 p-4 rounded-2xl border border-border bg-muted/50 flex items-center justify-between">
+            <p className="text-sm text-foreground font-medium">Need enterprise or custom volumes?</p>
+            <Link href={`/${locale}/contact`} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              Contact Sales <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ════════════════════════
-          PARTNER LOGOS (LogoSlider)
-          ════════════════════════ */}
-      <AnimateSection>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <AnimateUp className="text-center mb-8">
-            <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              {t("partnersLabel")}
-            </p>
-          </AnimateUp>
-          <LogoSlider
-            logos={partnerLogos}
-            speed={50}
-            direction="left"
-            showBlur={true}
-            blurLayers={6}
-            blurIntensity={0.8}
-            pauseOnHover
-          />
-        </div>
-      </AnimateSection>
+      {/* ──────── TESTIMONIALS ──────── */}
+      <section className="px-4 sm:px-6 lg:px-12 py-20 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="text-center mb-12"
+        >
+          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">Customer Stories</p>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Trusted by Business Teams</h2>
+        </motion.div>
 
-      {/* ════════════════════════
-          PERPETUAL METRICS CAROUSEL
-          ════════════════════════ */}
-      <MetricsCarousel />
-
-      {/* ════════════════════════
-          BENTO GRID FEATURES
-          ════════════════════════ */}
-      <AnimateSection className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimateUp className="max-w-2xl mb-16">
-            <div className="badge-premium inline-flex items-center gap-2 mb-4">
-              <ActivityIcon size={12} className="h-3 w-3" />
-              <span>{t("featuresBadge")}</span>
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4 text-zinc-900 dark:text-white">
-              {t("featuresTitle")}
-            </h2>
-            <p className="text-zinc-500 dark:text-zinc-400 max-w-lg">{t("featuresSubtitle")}</p>
-          </AnimateUp>
-
-          <div className="bento-grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 lg:gap-5 auto-rows-[280px]">
-            {features.map((feature, i) => (
-              <FeatureCard
-                key={feature.titleKey}
-                title={t(feature.titleKey)}
-                description={t(feature.descKey)}
-                icon={feature.icon}
-                className={feature.className}
-                iconColor={feature.iconColor}
-                borderColor={feature.borderColor}
-                bgGradient={feature.bgGradient}
-                glowColor={feature.glowColor}
-                tag={t(feature.tagKey)}
-                index={i}
-                learnMoreLabel={t("learnMore")}
-              />
-            ))}
-          </div>
-        </div>
-      </AnimateSection>
-
-      {/* ════════════════════════
-          BENTO 2.0: LIVE SYSTEM STATUS
-          ════════════════════════ */}
-      <AnimateSection className="py-16 bg-zinc-100 dark:bg-zinc-900/20 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimateUp className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight mb-3 text-zinc-900 dark:text-white">
-              {t("liveTitle")}
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("liveSubtitle")}</p>
-          </AnimateUp>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 auto-rows-[280px]">
-            <div className="md:col-span-2">
-              <LiveStatusCard />
-            </div>
-            <div>
-              <GrowthStatsCard />
-            </div>
-            <div className="md:col-span-3">
-              <IntelligentListCard />
-            </div>
-          </div>
-        </div>
-      </AnimateSection>
-
-      {/* ════════════════════════
-          TESTIMONIALS
-          ════════════════════════ */}
-      <AnimateSection className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimateUp className="text-center max-w-2xl mx-auto mb-12">
-            <div className="badge-premium inline-flex items-center gap-2 mb-4 !bg-amber-500/10 !text-amber-600 !border-amber-200 dark:!border-amber-500/20 dark:!text-amber-400">
-              <Star className="h-3 w-3" />
-              <span>{t("testiBadge")}</span>
-            </div>
-            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight mb-3 text-zinc-900 dark:text-white">
-              {t("testiTitle")}
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("testiSubtitle")}</p>
-          </AnimateUp>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            {testimonials.map((t2, i) => (
-              <motion.div
-                key={t2.name}
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: i * 0.15,
-                  duration: 0.6,
-                  ease: easeSmooth as any,
-                }}
-                className="vengeance-card p-0.5"
-              >
-                <div className="rounded-[1.15rem] bg-white dark:bg-zinc-900 p-6">
-                  <svg
-                    className="h-6 w-6 text-zinc-300 dark:text-zinc-600 mb-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11H10v10H0z" />
-                  </svg>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6">
-                    &ldquo;{t(t2.quoteKey)}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                      {t2.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-zinc-900 dark:text-white">
-                        {t2.name}
-                      </div>
-                      <div className="text-xs text-zinc-400 dark:text-zinc-500">
-                        {t(t2.roleKey)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </AnimateSection>
-
-      {/* ════════════════════════
-          PREMIUM CTA SECTION
-          ════════════════════════ */}
-      <AnimateSection className="py-24 lg:py-32 border-t border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div
-            className="gradient-border-card !rounded-[2rem] p-[1px]"
-            whileHover={{ scale: 1.005 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="rounded-[calc(2rem-1px)] bg-white dark:bg-zinc-900 !py-16 px-8 relative overflow-hidden">
-              {/* Ambient glow */}
-              <div className="absolute inset-0 ambient-glow-indigo pointer-events-none" />
-              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/8 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative">
-                <AnimateUp>
-                  <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4">
-                    {t("ctaTitle")}
-                  </h2>
-                  <p className="text-base lg:text-lg text-zinc-500 dark:text-zinc-400 mb-10 max-w-xl mx-auto leading-relaxed">
-                    {t("ctaDesc")}
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <MagneticButton
-                      href={ctaHref}
-                      onClick={() => trackCTA("access_workspace", { href: ctaHref })}
-                      className="shadow-xl shadow-indigo-500/25"
-                    >
-                      {t("ctaAccess")}
-                      <ArrowRight className="h-4 w-4 inline-block align-middle ml-1.5" />
-                    </MagneticButton>
-                    <Link href={`/${locale}/contact`}>
-                      <Button variant="outline" className="h-12 px-8 text-sm rounded-xl">
-                        {t("ctaSales")}
-                      </Button>
-                    </Link>
-                  </div>
-                </AnimateUp>
+        <div className="grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: i * 0.08, ease: easeSmooth }}
+              className="rounded-2xl border border-border bg-background p-6 flex flex-col gap-4"
+            >
+              <div className="flex gap-0.5">
+                {Array.from({ length: t.stars }).map((_, j) => (
+                  <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
               </div>
-            </div>
-          </motion.div>
+              <p className="text-sm text-muted-foreground leading-relaxed flex-1">&ldquo;{t.text}&rdquo;</p>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {t.avatar}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </AnimateSection>
+      </section>
+
+      {/* ──────── FOOTER CTA ──────── */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-12 max-w-4xl mx-auto text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="rounded-3xl bg-foreground text-background p-12 relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-primary/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+              Start Running Your Business<br />Smarter Today
+            </h2>
+            <p className="opacity-70 mb-8 text-lg">Join thousands of businesses managing their operations on one unified platform.</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link
+                href={`/${locale}/register`}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-gray-900 font-semibold hover:bg-gray-100 transition shadow-lg"
+              >
+                Get Started Free <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href={`/${locale}/login`}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/30 text-background font-semibold hover:bg-white/10 transition"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </section>
     </div>
   );
 }

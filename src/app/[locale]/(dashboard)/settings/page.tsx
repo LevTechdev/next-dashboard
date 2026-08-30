@@ -503,7 +503,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-500">{tsettings("accentColorDesc")}</p>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {(
                 [
                   {
@@ -519,13 +519,20 @@ export default function SettingsPage() {
                   { key: "indigo", label: tsettings("accentIndigo"), swatch: "bg-indigo-500" },
                   { key: "rose", label: tsettings("accentRose"), swatch: "bg-rose-500" },
                   { key: "amber", label: tsettings("accentAmber"), swatch: "bg-amber-500" },
+                  { key: "custom", label: "Custom", swatch: "bg-gray-400" },
                 ] as const
               ).map(({ key, label, swatch }) => {
                 const isSelected = appearance.accent === key;
                 return (
                   <button
                     key={key}
-                    onClick={() => updateAppearance({ accent: key })}
+                    onClick={() => {
+                      if (key === "custom" && !appearance.customColor) {
+                        updateAppearance({ accent: key, customColor: "#3b82f6" });
+                      } else {
+                        updateAppearance({ accent: key });
+                      }
+                    }}
                     className={cn(
                       "relative p-3 rounded-xl border-2 transition-all duration-200 text-center group",
                       isSelected
@@ -534,14 +541,24 @@ export default function SettingsPage() {
                       "active:scale-[0.97] hover:scale-[1.02]",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "w-6 h-6 rounded-full mx-auto mb-1.5 block shadow-inner",
-                        swatch,
-                      )}
-                    />
+                    {key === "custom" && isSelected ? (
+                      <input
+                        type="color"
+                        value={appearance.customColor || "#3b82f6"}
+                        onChange={(e) => updateAppearance({ accent: "custom", customColor: e.target.value })}
+                        className="w-6 h-6 p-0 border-0 rounded mx-auto mb-1.5 block cursor-pointer"
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          "w-6 h-6 rounded-full mx-auto mb-1.5 block shadow-inner",
+                          key === "custom" && appearance.customColor ? "" : swatch,
+                        )}
+                        style={key === "custom" && appearance.customColor ? { backgroundColor: appearance.customColor } : undefined}
+                      />
+                    )}
                     <span className="text-[11px] font-medium block truncate">{label}</span>
-                    {isSelected && (
+                    {isSelected && key !== "custom" && (
                       <span className="absolute top-1.5 right-1.5">
                         <CheckIcon
                           size={14}
