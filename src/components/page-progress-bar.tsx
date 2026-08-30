@@ -15,9 +15,7 @@ interface PageProgressBarProps {
  * Detects route changes automatically via usePathname. The bar sweeps a
  * gradient from left to right while navigating and fades out on completion.
  */
-export default function PageProgressBar({
-  duration = 600,
-}: PageProgressBarProps) {
+export default function PageProgressBar({ duration = 600 }: PageProgressBarProps) {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [completing, setCompleting] = useState(false);

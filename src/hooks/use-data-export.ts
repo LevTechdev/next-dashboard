@@ -69,9 +69,7 @@ function escapeCsv(value: unknown): string {
 function generateCsv<T>(columns: ExportColumn<T>[], rows: T[]): string {
   const header = columns.map((col) => escapeCsv(col.header)).join(",");
   const data = rows.map((row) =>
-    columns
-      .map((col) => escapeCsv(getCellValue(row, col.key)))
-      .join(",")
+    columns.map((col) => escapeCsv(getCellValue(row, col.key))).join(","),
   );
   return [header, ...data].join("\r\n");
 }
@@ -121,7 +119,7 @@ export function useDataExport<T = any>({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, columns, filename, transform]
+    [data, columns, filename, transform],
   );
 
   const exportAsCSV = useCallback(() => {
@@ -171,7 +169,9 @@ export function useDataExport<T = any>({
       XLSX.utils.book_append_sheet(wb, ws, "Data");
 
       const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       triggerDownload(blob, `${filename}.xlsx`);
 
       if (showToasts) {

@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# storybook
+/storybook-static/
+
 # production
 /build
 
@@ -46,3 +49,29 @@ next-env.d.ts
 # Windows reserved names & embedded repos
 /nul
 /my-app/
+
+# local verification / debug scripts and artifacts (never commit)
+/verify-page.mjs
+/verify-*.mjs
+/verify-*.png
+/verify-*.txt
+/debug-*.mjs
+/scripts/verify-*.mjs
+/.ui-verify/
+/.ui-verify*/
+
+# accidentally-committed local junk (never re-commit)
+/logfile
+/server.log
+/screenshot.png
+/replace_api.js
+/replace_hooks.js
+/test-results.json
+
+# local verification / audit screenshots (never commit)
+/test-results/icon-check*/
+/test-results/visual-qa-*/
+scripts/dev-idp/
+.next-prod/
+.freebuff/
+.freebuff/

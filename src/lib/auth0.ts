@@ -7,4 +7,3 @@ export const auth0 = {
   withApiAuthRequired: () => () => undefined,
   getAccessToken: async (): Promise<string | null> => null,
 };
-

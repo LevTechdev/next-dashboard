@@ -14,9 +14,7 @@ describe("RealtimeIndicator", () => {
   // ── Live state (default) ──────────────────────────────────────────────
 
   it("renders 'Live' when lastUpdated is null", () => {
-    render(
-      <RealtimeIndicator lastUpdated={null} />
-    );
+    render(<RealtimeIndicator lastUpdated={null} />);
 
     expect(screen.getByText("Live")).toBeInTheDocument();
   });
@@ -68,9 +66,7 @@ describe("RealtimeIndicator", () => {
   // ── Refreshing state ──────────────────────────────────────────────
 
   it("shows 'Updating...' when isRefreshing is true", () => {
-    render(
-      <RealtimeIndicator lastUpdated={new Date()} isRefreshing={true} />
-    );
+    render(<RealtimeIndicator lastUpdated={new Date()} isRefreshing={true} />);
 
     expect(screen.getByText("Updating...")).toBeInTheDocument();
   });
@@ -78,22 +74,14 @@ describe("RealtimeIndicator", () => {
   // ── Error state ───────────────────────────────────────────────────────
 
   it("shows 'Disconnected' when error is present", () => {
-    render(
-      <RealtimeIndicator
-        lastUpdated={new Date()}
-        error={new Error("Connection lost")}
-      />
-    );
+    render(<RealtimeIndicator lastUpdated={new Date()} error={new Error("Connection lost")} />);
 
     expect(screen.getByText("Disconnected")).toBeInTheDocument();
   });
 
   it("renders with error styling when error is present", () => {
     const { container } = render(
-      <RealtimeIndicator
-        lastUpdated={new Date()}
-        error={new Error("Network error")}
-      />
+      <RealtimeIndicator lastUpdated={new Date()} error={new Error("Network error")} />,
     );
 
     // The container should have text-red classes
@@ -102,9 +90,7 @@ describe("RealtimeIndicator", () => {
   });
 
   it("renders with success styling when no error", () => {
-    const { container } = render(
-      <RealtimeIndicator lastUpdated={new Date()} />
-    );
+    const { container } = render(<RealtimeIndicator lastUpdated={new Date()} />);
 
     const root = container.firstChild as HTMLElement;
     expect(root.className).toContain("text-emerald");
@@ -114,11 +100,7 @@ describe("RealtimeIndicator", () => {
 
   it("prioritizes error over refreshing when both are set", () => {
     render(
-      <RealtimeIndicator
-        lastUpdated={new Date()}
-        isRefreshing={true}
-        error={new Error("Fail")}
-      />
+      <RealtimeIndicator lastUpdated={new Date()} isRefreshing={true} error={new Error("Fail")} />,
     );
 
     // Error should take priority: shows "Disconnected" not "Updating..."
@@ -130,10 +112,7 @@ describe("RealtimeIndicator", () => {
 
   it("applies custom className", () => {
     const { container } = render(
-      <RealtimeIndicator
-        lastUpdated={new Date()}
-        className="custom-indicator"
-      />
+      <RealtimeIndicator lastUpdated={new Date()} className="custom-indicator" />,
     );
 
     const root = container.firstChild as HTMLElement;
@@ -143,9 +122,7 @@ describe("RealtimeIndicator", () => {
   // ── Cleanup timer on unmount ──────────────────────────────────────────
 
   it("cleans up the interval timer on unmount", () => {
-    const { unmount } = render(
-      <RealtimeIndicator lastUpdated={new Date()} />
-    );
+    const { unmount } = render(<RealtimeIndicator lastUpdated={new Date()} />);
 
     unmount();
 
@@ -160,9 +137,7 @@ describe("RealtimeIndicator", () => {
   // ── Clears timeAgo when lastUpdated becomes null ──────────────────────
 
   it("clears timeAgo text when lastUpdated becomes null", () => {
-    const { rerender } = render(
-      <RealtimeIndicator lastUpdated={new Date()} />
-    );
+    const { rerender } = render(<RealtimeIndicator lastUpdated={new Date()} />);
 
     expect(screen.getByText(/Updated/)).toBeInTheDocument();
 

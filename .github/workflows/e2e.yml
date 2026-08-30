@@ -1,0 +1,28 @@
+name: E2E
+
+# Dedicated workflow for the Playwright suite: seeds the DB and runs
+# npm run test:e2e on every push and pull request (all branches), so E2E
+# regressions are caught in CI regardless of the target branch.
+# (The Playwright config runs the dev server itself via webServer.)
+# The job body lives ONCE in .github/workflows/e2e-reusable.yml — this file
+# and ci.yml's main-push-only "release gate" job both call it.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      database-url: "postgresql://postgres:postgres@localhost:5432/testdb"
+      jwt-secret: "ci-e2e-secret"
+      nextauth-secret: "ci-e2e-secret"
+      nextauth-url: "http://localhost:3010"
+      google-client-id: "ci-placeholder"
+      google-client-secret: "ci-placeholder"

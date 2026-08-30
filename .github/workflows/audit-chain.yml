@@ -1,0 +1,66 @@
+name: Audit chain
+
+# Fast, browser-free guard for the SecurityEvent tamper-evident hash chain,
+# independent of the (slow) Playwright suite. Runs on every push and PR (all
+# branches), like e2e.yml — but only needs Postgres + npm, so it finishes in
+# ~1 minute instead of ~6.
+#
+# The critical assertion is the LAST check: scripts/seed-chain-events.ts stamps
+# real chained SecurityEvents referencing a throwaway user, then `db:seed` runs
+# AGAIN — wiping that user (userId -> NULL, which invalidates every stored
+# hash) and forcing the seed's re-chain step to restore integrity. If the seed
+# ever stops re-chaining (or the canonical hashing drifts), check:audit-chain
+# fails here in seconds instead of silently accumulating corruption.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: audit-chain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit-chain:
+    name: Seed + chain integrity
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Create database schema
+        run: npx prisma db push
+      - name: Seed database
+        run: npm run db:seed
+      - name: Verify seeded data yields non-zero dashboard stats
+        # Cheap extra guard on the same fresh DB (mirrors the E2E workflow).
+        run: npm run check:seed
+      - name: Baseline chain check (fresh seed has no events — trivially clean)
+        run: npm run check:audit-chain
+      - name: Stamp real chained events referencing a throwaway user
+        run: npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/seed-chain-events.ts
+      - name: Re-seed (wipes the user; seed must re-chain the affected rows)
+        run: npm run db:seed
+      - name: Chain check after re-seed — guards the seed's re-chain step
+        # If the seed's re-chain is removed or the canonical hashing drifts,
+        # the NULLed userIds invalidate every stored hash and this fails.
+        run: npm run check:audit-chain

@@ -86,16 +86,11 @@ interface AnimateSectionProps extends HTMLMotionProps<"section"> {
 /**
  * A section wrapper that animates its children when scrolled into view.
  */
-export function AnimateSection({
-  children,
-  className,
-  ...props
-}: AnimateSectionProps) {
+export function AnimateSection({ children, className, ...props }: AnimateSectionProps) {
   return (
     <motion.section
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-80px" }}
+      initial={false}
+      animate="visible"
       variants={fadeIn}
       className={className}
       {...props}
@@ -116,18 +111,12 @@ interface AnimateDivProps {
  * A simple div wrapper that fades up when scrolled into view.
  * @param delay - Optional stagger delay (multiplied by 0.1s)
  */
-export function AnimateUp({
-  children,
-  className,
-  as = "div",
-  delay = 0,
-}: AnimateDivProps) {
+export function AnimateUp({ children, className, as = "div", delay = 0 }: AnimateDivProps) {
   const Component = as === "li" ? motion.li : motion.div;
   return (
     <Component
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-40px" }}
+      initial={false}
+      animate="visible"
       variants={{
         hidden: { opacity: 0, y: 30 },
         visible: {
@@ -150,33 +139,25 @@ export function AnimateUp({
 /**
  * A staggered grid container — children animate in sequentially.
  */
-export const StaggerGrid = forwardRef<
-  HTMLDivElement,
-  { children: ReactNode; className?: string }
->(({ children, className }, ref) => (
-  <motion.div
-    ref={ref}
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true, margin: "-40px" }}
-    variants={staggerContainer}
-    className={className}
-  >
-    {children}
-  </motion.div>
-));
+export const StaggerGrid = forwardRef<HTMLDivElement, { children: ReactNode; className?: string }>(
+  ({ children, className }, ref) => (
+    <motion.div
+      ref={ref}
+      initial={false}
+      animate="visible"
+      variants={staggerContainer}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  ),
+);
 StaggerGrid.displayName = "StaggerGrid";
 
 /**
  * A child of StaggerGrid — animates with fade-in-up on staggered delay.
  */
-export function StaggerItem({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
       variants={{
@@ -197,13 +178,7 @@ export function StaggerItem({
 /**
  * A hover-lift card wrapper — adds subtle lift + shadow on hover.
  */
-export function HoverCard({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function HoverCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
       initial="rest"

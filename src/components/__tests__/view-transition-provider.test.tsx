@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import {
-  ViewTransitionProvider,
-  useViewTransition,
-} from "../view-transition-provider";
+import { ViewTransitionProvider, useViewTransition } from "../view-transition-provider";
 
 // ── Mock next/navigation ─────────────────────────────────────────────────
 // We override the global setup mock so we can spy on router.push/replace
@@ -35,16 +32,10 @@ function TestConsumer() {
       <button data-testid="btn-replace" onClick={() => replace("/target")}>
         Replace
       </button>
-      <button
-        data-testid="btn-push-same"
-        onClick={() => push("/current-page")}
-      >
+      <button data-testid="btn-push-same" onClick={() => push("/current-page")}>
         Push Same
       </button>
-      <button
-        data-testid="btn-replace-same"
-        onClick={() => replace("/current-page")}
-      >
+      <button data-testid="btn-replace-same" onClick={() => replace("/current-page")}>
         Replace Same
       </button>
 
@@ -71,7 +62,7 @@ function renderProvider() {
   return render(
     <ViewTransitionProvider>
       <TestConsumer />
-    </ViewTransitionProvider>
+    </ViewTransitionProvider>,
   );
 }
 
@@ -137,9 +128,7 @@ describe("ViewTransitionProvider", () => {
       expect(mockPush).toHaveBeenCalledWith("/target");
       expect(mockPush).toHaveBeenCalledTimes(1);
       // No native View Transition was attempted
-      expect(
-        "startViewTransition" in document
-      ).toBeFalsy();
+      expect("startViewTransition" in document).toBeFalsy();
     });
 
     it("calls router.replace directly when replace() is invoked", async () => {
@@ -163,7 +152,7 @@ describe("ViewTransitionProvider", () => {
         ([type, _handler, options]) =>
           type === "click" &&
           typeof options === "object" &&
-          (options as AddEventListenerOptions).capture === true
+          (options as AddEventListenerOptions).capture === true,
       );
 
       expect(clickHandlerCalls).toHaveLength(0);
@@ -345,7 +334,7 @@ describe("ViewTransitionProvider", () => {
         ([type, _handler, options]) =>
           type === "click" &&
           typeof options === "object" &&
-          (options as AddEventListenerOptions).capture === true
+          (options as AddEventListenerOptions).capture === true,
       );
 
       expect(cleanupCalls).toHaveLength(1);

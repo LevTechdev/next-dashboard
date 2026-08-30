@@ -1,0 +1,260 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 test:e2e
+> playwright test
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 db:seed
+> npx tsx prisma/seed.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+🌱 Seeding database...
+🔗 SecurityEvent chain re-chained (46 rows)
+✅ Users created (default tenant:  default )
+✅ Plans created (Free/Pro/Enterprise)
+✅ Admin seeded on Free plan
+✅ Sales channels created
+✅ Categories created
+✅ Products created
+✅ Customers created
+✅ Orders created (387 across 12 months)
+✅ Discounts created
+✅ Campaigns created
+✅ Inventory records created
+✅ Activity logs created
+
+🎉 Database seeded successfully!
+📧 Admin login: admin@dashboard.com / admin123
+📧 Staff login: sarah@dashboard.com / staff123
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> next-dashboard@0.1.0 repair:audit-chain
+> npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/repair-audit-chain.ts
+
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+rows: 5698 | broken before: 0 | updated: 0 | broken after: 0 | verified: 5698
+Chain repaired — /api/security/audit/verify should now report ok: true
+
+Running 82 tests using 2 workers
+
+  ✓   1 [chromium] › e2e\activity-feed-mobile.spec.ts:38:7 › Activity feed filter pills on mobile › tab focus scrolls the last filter pill into view (15.6s)
+  ✓   3 [chromium] › e2e\activity-feed-mobile.spec.ts:107:7 › Activity feed filter pills on mobile › pill row hides its scrollbar via the real scrollbar-none utility and still scrolls (7.3s)
+  ✓   4 [chromium] › e2e\activity-feed-mobile.spec.ts:115:7 › Activity feed filter pills on mobile › pill row keeps its scrollbar hidden under the dark theme (9.7s)
+  ✓   2 [chromium] › e2e\2fa-modal-mobile.spec.ts:41:7 › 2FA modal at a 375px viewport › card stays in viewport at 320px with a lime focus ring on the OTP input (43.6s)
+  ✓   6 [chromium] › e2e\ai-copilot-rate-limit.spec.ts:16:5 › rate-limit banner ticks down, expands the why-note, and auto-retries (17.0s)
+  ✓   7 [chromium] › e2e\dashboard-seeded-data.spec.ts:23:7 › Dashboard seeded data › API returns non-zero tenant-scoped stats for the seed admin (303ms)
+  ✓   8 [chromium] › e2e\dashboard-seeded-data.spec.ts:47:7 › Dashboard seeded data › dashboard stat cards render non-zero seeded values (8.0s)
+  ✓   9 [chromium] › e2e\dashboard-tabs-mobile.spec.ts:76:7 › Dashboard tab bars at a 375px viewport › every tabbed page keeps its tab bar inside the viewport (15.9s)
+  ✓  10 [chromium] › e2e\dashboard-tabs-mobile.spec.ts:118:7 › Dashboard tab bars at a 375px viewport › tab bar's page surfaces recolor their thin scrollbar thumb in both directions (7.3s)
+  ✓  11 [chromium] › e2e\dashboard-tabs-mobile.spec.ts:138:7 › Dashboard tab bars at a 375px viewport › every tab on every page is reachable and activates (32.8s)
+  ✓  12 [chromium] › e2e\faq-accordion.spec.ts:41:7 › FAQ accordion collapse (keepMounted) › keeps the answer mounted through the collapse tween and clipped-but-attached after (3.7s)
+  ✘  13 [chromium] › e2e\forgot-password.spec.ts:87:7 › Forgot Password › full flow: request link → reset password → old password fails → new password logs in (45.6s)
+  ✓  14 [chromium] › e2e\forgot-password.spec.ts:134:7 › Forgot Password › rejects a bogus token when submitting the reset form (2.0s)
+  ✓  15 [chromium] › e2e\forgot-password.spec.ts:148:7 › Forgot Password › shows an error on /reset-password without a token (858ms)
+  ✓  16 [chromium] › e2e\forgot-password.spec.ts:156:7 › Forgot Password › returns the generic sent view for an unknown email without exposing a reset link (1.6s)
+  ✓  17 [chromium] › e2e\homepage-mobile-menu.spec.ts:32:7 › Homepage mobile menu › overlay fills the viewport with the sign-in section pinned to the bottom (3.3s)
+  ✓  18 [chromium] › e2e\homepage-mobile-menu.spec.ts:77:7 › Homepage mobile menu › sign-in section is reachable by scrolling the overlay on a very short viewport (3.1s)
+  ✓  19 [chromium] › e2e\homepage-mobile-menu.spec.ts:122:7 › Homepage mobile menu › language switcher stays reachable by scrolling the overlay at a very short viewport (3.0s)
+  ✓  20 [chromium] › e2e\integrations-playground-mobile.spec.ts:32:7 › Integrations Playground tab on mobile › Playground content renders within the 375px viewport (6.2s)
+  ✓  21 [chromium] › e2e\integrations-playground-mobile.spec.ts:82:7 › Integrations Playground tab on mobile › a whoami request with a real key renders the JSON response in viewport (7.6s)
+  ✓  22 [chromium] › e2e\integrations-playground-mobile.spec.ts:131:7 › Integrations Playground tab on mobile › Delivery Log content renders within the 375px viewport (6.9s)
+  ✓  23 [chromium] › e2e\integrations-playground-mobile.spec.ts:204:7 › Integrations Playground at a 1280px desktop viewport › the 5-column grid lays the builder and quick-start out side by side (17.6s)
+  ✓  24 [chromium] › e2e\integrations-tabs-mobile.spec.ts:27:7 › Integrations tab bar on mobile › keeps the tab bar inside the viewport, scrollable internally (10.5s)
+  ✓  25 [chromium] › e2e\integrations-tabs-mobile.spec.ts:46:7 › Integrations tab bar on mobile › every tab is clickable and activates its panel (6.5s)
+  ✓  26 [chromium] › e2e\integrations-tabs-mobile.spec.ts:62:7 › Integrations tab bar on mobile › arrow-key focus auto-scrolls the focused tab into view (5.7s)
+  ✓  27 [chromium] › e2e\integrations-tabs-mobile.spec.ts:89:7 › Integrations tab bar on mobile › Home/End/PageUp/PageDown roving focus scrolls the pill to the first/last tab (6.2s)
+  ✓  28 [chromium] › e2e\integrations.spec.ts:19:7 › Integrations developer portal › redirects unauthenticated visitors to the login page (936ms)
+  ✓  29 [chromium] › e2e\integrations.spec.ts:29:9 › Integrations developer portal › authenticated › creates an API key, reveals it once, and lists it (7.2s)
+  ✓  30 [chromium] › e2e\integrations.spec.ts:49:9 › Integrations developer portal › authenticated › revokes, reactivates, and deletes an API key with confirmation (9.7s)
+  ✓  31 [chromium] › e2e\integrations.spec.ts:77:9 › Integrations developer portal › authenticated › hits /api/v1/whoami from the playground with a freshly created key (16.0s)
+  ✓  32 [chromium] › e2e\integrations.spec.ts:100:9 › Integrations developer portal › authenticated › creates, pauses, edits, and deletes a webhook endpoint (14.4s)
+  ✓  33 [chromium] › e2e\login.spec.ts:16:7 › Login › logs in with valid seed credentials and lands on the dashboard (3.6s)
+  ✓  34 [chromium] › e2e\login.spec.ts:23:7 › Login › shows an error and stays on /login for invalid credentials (2.7s)
+  ✓  35 [chromium] › e2e\logout.spec.ts:20:7 › Logout › logs out from the header menu and returns to /login (8.2s)
+  ✓  36 [chromium] › e2e\logout.spec.ts:27:7 › Protected route › returns 401 from /api/auth/me without a session cookie (102ms)
+  ✓  37 [chromium] › e2e\mobile-dock-popover.spec.ts:18:7 › Mobile dock language popover › stays in view and all languages reachable by scrolling at a very short viewport (4.7s)
+  ✓  38 [chromium] › e2e\notification-filters-mobile.spec.ts:39:7 › Notification panel filter pills on mobile › tab focus scrolls the last filter pill into view (6.0s)
+  ✓  39 [chromium] › e2e\notification-filters-mobile.spec.ts:90:7 › Notification panel filter pills on mobile › close button is keyboard-reachable and Enter closes the popover (5.6s)
+  ✓  40 [chromium] › e2e\notification-filters-mobile.spec.ts:141:7 › Notification panel filter pills on mobile › pill row hides its scrollbar via the real scrollbar-none utility and still scrolls (6.6s)
+  ✓  41 [chromium] › e2e\notification-filters-mobile.spec.ts:160:7 › Notification panel filter pills on mobile › pill row keeps its scrollbar hidden under the dark theme (8.4s)
+  ✓  42 [chromium] › e2e\order-fulfillment.spec.ts:15:5 › order detail walks the fulfillment state machine end-to-end (11.6s)
+  ✓  43 [chromium] › e2e\profile-email-verification.spec.ts:31:7 › Profile email verification › sends a verification link from the profile, confirms it, and shows the verified status (25.7s)
+  ✓  44 [chromium] › e2e\profile-email-verification.spec.ts:73:7 › Profile email verification › rejects an invalid or expired verification token (16.9s)
+  ✓  45 [chromium] › e2e\profile-email-verification.spec.ts:95:7 › Profile email verification › shows the success toast and refreshes the verified status on direct ?verified=true navigation (44.3s)
+  ✘   5 [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active (7.0m)
+  ✓  46 [chromium] › e2e\profile-email-verification.spec.ts:136:7 › Profile email verification › does not fake verification from the query param alone (28.8s)
+  ✓  47 [chromium] › e2e\register.spec.ts:33:7 › Register › creates an account, verifies the email OTP, and lands on the dashboard (37.0s)
+  ✓  48 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:33:7 › vertical scrollbars are thin (4px) on mobile › activity feed list shows a 4px thin vertical scrollbar (15.0s)
+  ✓  49 [chromium] › e2e\register.spec.ts:45:7 › Register › shows an attempts-left error for an incorrect verification code (7.9s)
+  ✓  51 [chromium] › e2e\register.spec.ts:58:7 › Register › rejects a password shorter than 6 characters and stays on /register (2.7s)
+  ✓  52 [chromium] › e2e\register.spec.ts:69:7 › Register › rejects a duplicate email and stays on /register (2.9s)
+  ✓  53 [chromium] › e2e\security-center.spec.ts:17:7 › Security Center › redirects unauthenticated visitors to the login page (1.1s)
+  ✓  54 [chromium] › e2e\security-center.spec.ts:27:9 › Security Center › authenticated › renders the score banner, stat tiles, and section cards (7.7s)
+  ✓  50 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:53:7 › vertical scrollbars are thin (4px) on mobile › activity feed list stays thin with the dark-theme thumb color (24.6s)
+  ✓  55 [chromium] › e2e\security-center.spec.ts:58:9 › Security Center › authenticated › marks the current browser session as this device (5.8s)
+  ✓  56 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:77:7 › vertical scrollbars are thin (4px) on mobile › AI copilot message thread shows a 4px thin vertical scrollbar (7.2s)
+  ✓  57 [chromium] › e2e\security-center.spec.ts:65:9 › Security Center › authenticated › generates backup recovery codes (6.7s)
+  ✓  59 [chromium] › e2e\security-center.spec.ts:76:9 › Security Center › authenticated › shows the two-factor card in its unset state (6.2s)
+  ✓  58 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:95:7 › vertical scrollbars are thin (4px) on mobile › AI copilot message thread stays thin with the dark-theme thumb color (8.7s)
+  ✓  61 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:124:7 › vertical scrollbars are thin (4px) on mobile › AI copilot composer textarea reports scrollbar-width: thin at a small viewport (5.0s)
+  ✓  60 [chromium] › e2e\security-center.spec.ts:87:9 › Security Center › authenticated › regenerating codes asks for confirmation when codes exist (7.5s)
+  ✓  62 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:152:7 › vertical scrollbars are thin (4px) on mobile › AI copilot composer textarea stays thin with the dark-theme thumb color (7.8s)
+  ✓  63 [chromium] › e2e\security-center.spec.ts:103:9 › Security Center › authenticated › shows the email-verification card in its verified state (8.1s)
+  ✓  64 [chromium] › e2e\scrollbar-thin-mobile.spec.ts:187:7 › vertical scrollbars are thin (4px) on mobile › Select dropdown keeps its thin scrollbar with the dark-theme thumb color (26.8s)
+  ✘  65 [chromium] › e2e\security-center.spec.ts:118:9 › Security Center › email verification flow (fresh user) › registers, sends a verification link, and confirms it (24.3s)
+  -  67 [chromium] › e2e\security-center.spec.ts:151:9 › Security Center › email verification flow (fresh user) › rejects an invalid or expired verification token
+  -  68 [chromium] › e2e\security-center.spec.ts:164:9 › Security Center › email verification flow (fresh user) › verifies the email with the 6-digit OTP from the Security Center
+  ✓  66 [chromium] › e2e\security-chain-tamper.spec.ts:96:5 › reports a clean chain when untouched (baseline) (5.5s)
+  ✓  70 [chromium] › e2e\security-chain-tamper.spec.ts:114:5 › catches a content modification and reports the exact break (992ms)
+  ✓  69 [chromium] › e2e\sso.spec.ts:16:7 › SSO / Enterprise settings › redirects unauthenticated visitors to the login page (2.1s)
+  ✓  71 [chromium] › e2e\security-chain-tamper.spec.ts:147:5 › catches a deletion and reports the exact break at the successor (662ms)
+npm warn Unknown env config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn allow-scripts .npmrc allow-scripts setting is being ignored because --allow-scripts was passed on the command line
+  ✓  72 [chromium] › e2e\sso.spec.ts:26:9 › SSO / Enterprise settings › authenticated › creates an SSO connection from the empty state (6.7s)
+  ✓  73 [chromium] › e2e\tenant-isolation.spec.ts:61:7 › Audit tenant isolation › the default workspace sees its own audit rows but never the other workspace's (4.6s)
+  ✓  75 [chromium] › e2e\tenant-isolation.spec.ts:81:7 › Audit tenant isolation › the non-default workspace is strictly isolated from the default workspace's rows (688ms)
+  ✓  74 [chromium] › e2e\sso.spec.ts:53:9 › SSO / Enterprise settings › authenticated › disables and re-enables SSO (6.9s)
+  ✓  77 [chromium] › e2e\sso.spec.ts:63:9 › SSO / Enterprise settings › authenticated › removes the connection after confirmation (9.3s)
+  ✓  78 [chromium] › e2e\two-factor-auth.spec.ts:59:7 › Two-Factor Authentication › registers a user and enables 2FA from the Security Center (10.4s)
+  ✓  79 [chromium] › e2e\two-factor-auth.spec.ts:99:7 › Two-Factor Authentication › requires a TOTP code at sign-in and rejects an invalid code (4.4s)
+  ✘  76 [chromium] › e2e\tenant-isolation.spec.ts:103:7 › Audit tenant isolation › the audit-log page renders only the caller workspace's rows (27.3s)
+  ✓  80 [chromium] › e2e\two-factor-auth.spec.ts:121:7 › Two-Factor Authentication › disables 2FA from the Security Center with password confirmation (29.0s)
+  ✓  81 [chromium] › e2e\ai-copilot-mobile.spec.ts:16:5 › mobile: copilot button sits above the dock and the dock stays visible when the panel opens (30.0s)
+  ✓  82 [chromium] › e2e\two-factor-auth.spec.ts:140:7 › Two-Factor Authentication › signs in without a TOTP prompt after 2FA is disabled (4.0s)
+
+
+  1) [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active 
+
+    Test timeout of 420000ms exceeded.
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+      86 |           .catch(() => null);
+      87 |         const retryAfter = Number(retryText?.match(/about (\d+) seconds/i)?.[1] ?? 40);
+    > 88 |         await page.waitForTimeout((Math.max(retryAfter, 80) + 5) * 1000);
+         |                    ^
+      89 |       } else {
+      90 |         // Generic provider failure (e.g. a residual "high demand" 503 the
+      91 |         // route's own retry couldn't ride out): back off briefly and resend.
+        at D:\Project\next-dashboard\e2e\ai-copilot-mock.spec.ts:88:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\ai-copilot-mock-copilot-re-b9bfd-dge-when-the-mock-is-active-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\ai-copilot-mock-copilot-re-b9bfd-dge-when-the-mock-is-active-chromium\error-context.md
+
+  2) [chromium] › e2e\forgot-password.spec.ts:87:7 › Forgot Password › full flow: request link → reset password → old password fails → new password logs in 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Sign In', exact: true })
+        - locator resolved to <button type="submit" class="group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden [border-radius:var(--radius)] border border-white/10 px-6 py-3 whitespace-nowrap text-white [background:var(--bg)] transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px w-full h-11 text-sm font-medium">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying click action
+        - waiting 20ms
+
+
+      124 |     await page.locator('input[type="email"]').fill(email);
+      125 |     await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
+    > 126 |     await page.getByRole("button", { name: "Sign In", exact: true }).click();
+          |                                                                      ^
+      127 |     await expect(page.getByText(/invalid|failed|incorrect/i).first()).toBeVisible();
+      128 |     await expect(page).toHaveURL(/\/en\/login/);
+      129 |
+        at D:\Project\next-dashboard\e2e\forgot-password.spec.ts:126:70
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\forgot-password-Forgot-Pas-92b73-ails-→-new-password-logs-in-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\forgot-password-Forgot-Pas-92b73-ails-→-new-password-logs-in-chromium\error-context.md
+
+  3) [chromium] › e2e\security-center.spec.ts:118:9 › Security Center › email verification flow (fresh user) › registers, sends a verification link, and confirms it 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Verify your email')
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for getByText('Verify your email')
+
+
+       at helpers.ts:616
+
+      614 |
+      615 |   // Skip the inline email-OTP step so the account stays unverified.
+    > 616 |   await expect(page.getByText("Verify your email")).toBeVisible();
+          |                                                     ^
+      617 |   await page.getByText(/Skip for now/i).click();
+      618 |
+      619 |   await expect(page).toHaveURL(/\/en\/dashboard/);
+        at registerFreshUser (D:\Project\next-dashboard\e2e\helpers.ts:616:53)
+        at D:\Project\next-dashboard\e2e\security-center.spec.ts:119:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\security-center-Security-C-c5bbf-cation-link-and-confirms-it-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\security-center-Security-C-c5bbf-cation-link-and-confirms-it-chromium\error-context.md
+
+  4) [chromium] › e2e\tenant-isolation.spec.ts:103:7 › Audit tenant isolation › the audit-log page renders only the caller workspace's rows 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Tenant B marker', { exact: true })
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for getByText('Tenant B marker', { exact: true })
+
+
+      104 |     await loginAs(page, fixture.email, fixture.password);
+      105 |     await page.goto("/en/audit-log");
+    > 106 |     await expect(page.getByText("Tenant B marker", { exact: true })).toBeVisible();
+          |                                                                      ^
+      107 |     await expect(page.getByText("Tenant A marker", { exact: true })).not.toBeVisible();
+      108 |   });
+      109 | });
+        at D:\Project\next-dashboard\e2e\tenant-isolation.spec.ts:106:70
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\tenant-isolation-Audit-ten-da903-the-caller-workspace-s-rows-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\tenant-isolation-Audit-ten-da903-the-caller-workspace-s-rows-chromium\error-context.md
+
+  Slow test file: [chromium] › e2e\ai-copilot-mock.spec.ts (7.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  4 failed
+    [chromium] › e2e\ai-copilot-mock.spec.ts:17:5 › copilot replies and flags the dev-mode badge when the mock is active 
+    [chromium] › e2e\forgot-password.spec.ts:87:7 › Forgot Password › full flow: request link → reset password → old password fails → new password logs in 
+    [chromium] › e2e\security-center.spec.ts:118:9 › Security Center › email verification flow (fresh user) › registers, sends a verification link, and confirms it 
+    [chromium] › e2e\tenant-isolation.spec.ts:103:7 › Audit tenant isolation › the audit-log page renders only the caller workspace's rows 
+  2 did not run
+  76 passed (11.3m)

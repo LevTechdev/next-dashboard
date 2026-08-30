@@ -68,14 +68,11 @@ export default function LightPillar({
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     cameraRef.current = camera;
 
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
     const isLowEndDevice =
-      isMobile ||
-      (navigator.hardwareConcurrency &&
-        navigator.hardwareConcurrency <= 4);
+      isMobile || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 
     let effectiveQuality = quality;
     if (isLowEndDevice && quality === "high") effectiveQuality = "medium";
@@ -105,16 +102,14 @@ export default function LightPillar({
       },
     };
 
-    const settings =
-      qualitySettings[effectiveQuality] || qualitySettings.medium;
+    const settings = qualitySettings[effectiveQuality] || qualitySettings.medium;
 
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
         antialias: false,
         alpha: true,
-        powerPreference:
-          effectiveQuality === "high" ? "high-performance" : "low-power",
+        powerPreference: effectiveQuality === "high" ? "high-performance" : "low-power",
         precision: settings.precision,
         stencil: false,
         depth: false,
@@ -286,12 +281,7 @@ export default function LightPillar({
     const frameTime = 1000 / targetFPS;
 
     const animate = (currentTime: number) => {
-      if (
-        !materialRef.current ||
-        !rendererRef.current ||
-        !sceneRef.current ||
-        !cameraRef.current
-      )
+      if (!materialRef.current || !rendererRef.current || !sceneRef.current || !cameraRef.current)
         return;
 
       const deltaTime = currentTime - lastTime;
@@ -316,19 +306,11 @@ export default function LightPillar({
         clearTimeout(resizeTimeout);
       }
       resizeTimeout = window.setTimeout(() => {
-        if (
-          !rendererRef.current ||
-          !materialRef.current ||
-          !containerRef.current
-        )
-          return;
+        if (!rendererRef.current || !materialRef.current || !containerRef.current) return;
         const newWidth = containerRef.current.clientWidth;
         const newHeight = containerRef.current.clientHeight;
         rendererRef.current.setSize(newWidth, newHeight);
-        materialRef.current.uniforms.uResolution.value.set(
-          newWidth,
-          newHeight
-        );
+        materialRef.current.uniforms.uResolution.value.set(newWidth, newHeight);
       }, 150);
     };
 
@@ -389,8 +371,15 @@ export default function LightPillar({
     materialRef.current.uniforms.uPillarRotCos.value = Math.cos(pillarRotRad);
     materialRef.current.uniforms.uPillarRotSin.value = Math.sin(pillarRotRad);
   }, [
-    topColor, bottomColor, intensity, interactive, glowAmount,
-    pillarWidth, pillarHeight, noiseIntensity, pillarRotation,
+    topColor,
+    bottomColor,
+    intensity,
+    interactive,
+    glowAmount,
+    pillarWidth,
+    pillarHeight,
+    noiseIntensity,
+    pillarRotation,
   ]);
 
   if (!webGLSupported) {

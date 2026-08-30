@@ -18,22 +18,21 @@ interface PageTransitionProps {
  * The actual page animation (crossfade + slide) is handled by CSS
  * pseudo-elements in globals.css (::view-transition-old/new).
  */
-export default function PageTransition({
-  children,
-  className,
-}: PageTransitionProps) {
+export default function PageTransition({ children, className }: PageTransitionProps) {
   const pathname = usePathname();
   const { isSupported } = useViewTransition();
   const [mounted, setMounted] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const prevPathname = useRef(pathname);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasNavigated = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
   // Detect route changes and toggle loading overlay with smooth fade
   useEffect(() => {
     if (prevPathname.current !== pathname) {
+      hasNavigated.current = true;
       prevPathname.current = pathname;
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       setShowOverlay(true);
@@ -48,7 +47,11 @@ export default function PageTransition({
     return <div className={className}>{children}</div>;
   }
 
-  const wrapperClass = ["view-transition-page", !isSupported && "vt-fallback-fade", className]
+  const wrapperClass = [
+    "view-transition-page",
+    !isSupported && hasNavigated.current && "vt-fallback-fade",
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
 
