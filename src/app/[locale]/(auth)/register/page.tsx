@@ -38,7 +38,6 @@ export default function RegisterPage() {
   const { cooldownLeft, startCooldown } = useResendCooldown();
   const { register } = useAuth();
   const router = useRouter();
-  const _cardRef = useRef<HTMLDivElement>(null);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -94,15 +94,13 @@ const {
         findFirst: vi.fn().mockResolvedValue({ id: "tenant-1", slug: "default" }),
       }),
       user: deepModel({
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({
-            id: "user-1",
-            email: "a@test.com",
-            role: "ADMIN",
-            tenantId: "tenant-1",
-            isActive: true,
-          }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: "user-1",
+          email: "a@test.com",
+          role: "ADMIN",
+          tenantId: "tenant-1",
+          isActive: true,
+        }),
         findMany: vi.fn().mockResolvedValue([]),
       }),
       session: deepModel({ create: vi.fn().mockResolvedValue({ id: "sess-1" }) }),

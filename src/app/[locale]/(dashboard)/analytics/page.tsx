@@ -107,7 +107,7 @@ function generateRetentionData() {
 }
 
 // Generate mock geographic data
-function generateGeoData(orders: any[]) {
+function generateGeoData() {
   const regions: Record<string, number> = {};
   const countries: Record<string, number> = {};
   const regionNames = [
@@ -149,12 +149,11 @@ export default function AnalyticsPage() {
     "/api/dashboard",
     { interval: 20000 },
   );
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data: orders } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
+  const { data: ordersData } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
 
-  const funnelData = useMemo(() => generateFunnelData(orders || []), [orders]);
+  const funnelData = useMemo(() => generateFunnelData(ordersData || []), [ordersData]);
   const retentionData = useMemo(() => generateRetentionData(), []);
-  const geoData = useMemo(() => generateGeoData(orders || []), [orders]);
+  const geoData = useMemo(() => generateGeoData(), []);
 
   if (loading) {
     return (
@@ -469,7 +468,7 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topRegions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.regions.map(([region, count], i) => {
+                {geoData.regions.map(([region, count]) => {
                   const maxVal = geoData.regions[0][1];
                   const width = Math.max(10, (count / maxVal) * 100);
                   return (
@@ -497,7 +496,7 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topCountries")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.countries.map(([country, count], i) => {
+                {geoData.countries.map(([country, count]) => {
                   const maxVal = geoData.countries[0][1];
                   const width = Math.max(10, (count / maxVal) * 100);
                   const flags: Record<string, string> = {

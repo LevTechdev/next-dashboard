@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
             controller.enqueue(encoder.encode(message));
           }
           prevSnapshot = currentSnapshot;
-        } catch (_err) {
+        } catch {
           const message = `data: ${JSON.stringify({ error: "Failed to fetch data", timestamp: new Date().toISOString() })}\n\n`;
           controller.enqueue(encoder.encode(message));
         }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (_err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Invalid request" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },

@@ -18,7 +18,6 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 

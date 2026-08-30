@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
@@ -25,8 +25,6 @@ import { useTranslations } from "next-intl";
 
 function LoginForm() {
   const t = useTranslations("auth");
-  const params = useParams();
-  const _locale = params.locale;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

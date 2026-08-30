@@ -18,7 +18,6 @@ import { Monitor, Palette, SwatchBook, CheckCircle2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Token Color Dot ──────────────────────────────────────────────────
@@ -310,7 +309,7 @@ function ComponentDemos() {
 
 // ─── Theme Comparison Cards ─────────────────────────────────────────
 
-function ThemeComparison({ mounted }: { mounted: boolean }) {
+function ThemeComparison() {
   return (
     <div className="space-y-4">
       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
@@ -457,7 +456,7 @@ export function ThemeShowcase({ className }: { className?: string }) {
         </TabsList>
 
         <TabsContent value="preview" className="mt-6 space-y-6">
-          <ThemeComparison mounted={mounted} />
+          <ThemeComparison />
           <div className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10 border border-indigo-200/50 dark:border-indigo-500/20">
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <span className="relative flex h-2 w-2">

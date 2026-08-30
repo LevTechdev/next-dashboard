@@ -351,7 +351,6 @@ import * as verifyEmailSendRoutes from "../auth/verify-email/send/route";
 import * as verifyEmailConfirmRoutes from "../auth/verify-email/confirm/route";
 import * as googleRoutes from "../auth/google/route";
 import * as samlLoginRoutes from "../auth/saml/login/route";
-import * as samlConnectionsRoutes from "../auth/saml/connections/route";
 import * as samlAcsRoutes from "../auth/saml/acs/route";
 
 // ═══════════════════════════════════════════════════════════════════════════

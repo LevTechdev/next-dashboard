@@ -217,19 +217,6 @@ export default function SettingsPage() {
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
 
-  const WEBHOOK_EVENTS_unused = [
-    "order.created",
-    "order.updated",
-    "order.cancelled",
-    "order.refunded",
-    "customer.created",
-    "customer.updated",
-    "product.created",
-    "product.updated",
-    "product.low_stock",
-    "payment.completed",
-    "payment.failed",
-  ];
   const EVENT_GROUPS = [
     {
       label: "Orders",

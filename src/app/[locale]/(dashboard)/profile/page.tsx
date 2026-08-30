@@ -29,7 +29,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordStrength } from "@/components/ui/password-strength";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -64,10 +63,9 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const tprofile = useTranslations("profile");
-  const tsettings_unused = useTranslations("settings");
   const tcommon = useTranslations("common");
   const locale = useLocale();
-  const { user, isAuthenticated, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);

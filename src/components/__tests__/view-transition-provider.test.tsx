@@ -153,7 +153,7 @@ describe("ViewTransitionProvider", () => {
       // should be registered. Note: other code may attach other listeners,
       // but none with "click" and { capture: true }.
       const clickHandlerCalls = addSpy.mock.calls.filter(
-        ([type, _handler, options]) =>
+        ([type, , options]) =>
           type === "click" &&
           typeof options === "object" &&
           (options as AddEventListenerOptions).capture === true,
@@ -335,7 +335,7 @@ describe("ViewTransitionProvider", () => {
 
       // The cleanup should remove the click handler
       const cleanupCalls = removeSpy.mock.calls.filter(
-        ([type, _handler, options]) =>
+        ([type, , options]) =>
           type === "click" &&
           typeof options === "object" &&
           (options as AddEventListenerOptions).capture === true,
