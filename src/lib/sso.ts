@@ -44,14 +44,17 @@ export function validateSsoForm(input: SsoFormInput, isEdit: boolean): SsoValida
   if (!input.name.trim()) return "nameRequired";
   if (!input.entryPoint.trim()) return "entryPointRequired";
   if (!isValidHttpUrl(input.entryPoint.trim())) return "invalidUrl";
-  if (input.emailDomain.trim() && !isValidEmailDomain(input.emailDomain)) return "invalidEmailDomain";
+  if (input.emailDomain.trim() && !isValidEmailDomain(input.emailDomain))
+    return "invalidEmailDomain";
   if (!isEdit && !input.idpCert.trim()) return "certRequiredOnSetup";
   return null;
 }
 
 /** Absolute metadata URL the IdP imports; empty when there is no tenant slug. */
 export function buildMetadataUrl(origin: string, tenantSlug: string | null | undefined): string {
-  return tenantSlug ? `${origin}/api/auth/saml/metadata?tenant=${encodeURIComponent(tenantSlug)}` : "";
+  return tenantSlug
+    ? `${origin}/api/auth/saml/metadata?tenant=${encodeURIComponent(tenantSlug)}`
+    : "";
 }
 
 /** Absolute Assertion Consumer Service URL the IdP posts SAMLResponses to. */

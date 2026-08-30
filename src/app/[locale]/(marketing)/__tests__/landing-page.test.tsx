@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import LandingPage from "../page";
 
-const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+const params = {
+  status: "fulfilled",
+  value: { locale: "en" },
+  then: () => {},
+} as unknown as Promise<{ locale: string }>;
 
 beforeEach(() => {
   render(<LandingPage params={params} />);
@@ -16,7 +20,9 @@ describe("Marketing Landing Page", () => {
   });
 
   it("renders the hero description", () => {
-    expect(screen.getByText(/One platform to manage orders, customers, products, payments/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/One platform to manage orders, customers, products, payments/),
+    ).toBeInTheDocument();
   });
 
   it("renders CTA buttons with accessible links", () => {

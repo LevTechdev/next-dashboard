@@ -22,14 +22,14 @@ const stripeStatus = (status: string): string => {
   }
 };
 
-const customerIdOf = (customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null => {
+const customerIdOf = (
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null,
+): string | null => {
   if (!customer) return null;
   return typeof customer === "string" ? customer : customer.id;
 };
 
-const subscriptionIdOf = (
-  sub: string | Stripe.Subscription | null,
-): string | null => {
+const subscriptionIdOf = (sub: string | Stripe.Subscription | null): string | null => {
   if (!sub) return null;
   return typeof sub === "string" ? sub : sub.id;
 };

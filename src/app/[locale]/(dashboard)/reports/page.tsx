@@ -113,9 +113,7 @@ export default function ReportsPage() {
       grouped[channel] = (grouped[channel] || 0) + (o.grandTotal || 0);
     });
 
-    const colors = [
-      "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899",
-    ];
+    const colors = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
     return Object.entries(grouped)
       .sort(([, a], [, b]) => b - a)
       .map(([name, value], i) => ({
@@ -180,7 +178,12 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        defaultValue="overview"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="overview">{treports("overview")}</TabsTrigger>
           <TabsTrigger value="revenue">{treports("revenueBreakdown")}</TabsTrigger>
@@ -230,9 +233,7 @@ export default function ReportsPage() {
             ].map((stat, i) => {
               const hasFilter = dateRange.from || dateRange.to;
               const vsValue = stat.vs || 0;
-              const diff = hasFilter && vsValue > 0
-                ? ((stat.end - vsValue) / vsValue) * 100
-                : 0;
+              const diff = hasFilter && vsValue > 0 ? ((stat.end - vsValue) / vsValue) * 100 : 0;
 
               return (
                 <motion.div
@@ -244,14 +245,32 @@ export default function ReportsPage() {
                   <Card className="group hover:shadow-md transition-all duration-300">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
-                        <div className={cn("p-2.5 rounded-lg transition-transform group-hover:scale-110 duration-300", stat.bg)}>
+                        <div
+                          className={cn(
+                            "p-2.5 rounded-lg transition-transform group-hover:scale-110 duration-300",
+                            stat.bg,
+                          )}
+                        >
                           <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
                         </div>
                         {hasFilter && (
-                          <div className={cn("flex items-center gap-0.5 text-xs font-medium",
-                            diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-400"
-                          )}>
-                            {diff > 0 ? <ArrowUpRight className="h-3 w-3" /> : diff < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                          <div
+                            className={cn(
+                              "flex items-center gap-0.5 text-xs font-medium",
+                              diff > 0
+                                ? "text-emerald-600"
+                                : diff < 0
+                                  ? "text-red-600"
+                                  : "text-gray-400",
+                            )}
+                          >
+                            {diff > 0 ? (
+                              <ArrowUpRight className="h-3 w-3" />
+                            ) : diff < 0 ? (
+                              <ArrowDownRight className="h-3 w-3" />
+                            ) : (
+                              <Minus className="h-3 w-3" />
+                            )}
                             <span>{Math.abs(diff).toFixed(0)}%</span>
                           </div>
                         )}
@@ -287,24 +306,30 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(stats.statusCounts).sort(([, a], [, b]) => b - a).map(([status, count]) => {
-                    const total = stats.totalOrders;
-                    const pct = total > 0 ? (count / total) * 100 : 0;
-                    return (
-                      <div key={status} className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className={cn("font-medium", getStatusColor(status))}>{status}</span>
-                          <span className="text-gray-500">{count} ({pct.toFixed(0)}%)</span>
+                  {Object.entries(stats.statusCounts)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([status, count]) => {
+                      const total = stats.totalOrders;
+                      const pct = total > 0 ? (count / total) * 100 : 0;
+                      return (
+                        <div key={status} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={cn("font-medium", getStatusColor(status))}>
+                              {status}
+                            </span>
+                            <span className="text-gray-500">
+                              {count} ({pct.toFixed(0)}%)
+                            </span>
+                          </div>
+                          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-indigo-500 transition-all duration-500"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </CardContent>
             </Card>
@@ -319,7 +344,10 @@ export default function ReportsPage() {
               <CardContent>
                 <div className="space-y-2">
                   {topCustomers.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between py-2 border-b last:border-0"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-gray-400 w-6 text-right">{i + 1}</span>
                         <div>
@@ -327,7 +355,9 @@ export default function ReportsPage() {
                           <p className="text-xs text-gray-500">{c.orders} orders</p>
                         </div>
                       </div>
-                      <span className="text-sm font-medium tabular-nums">{formatCurrency(c.totalSpent)}</span>
+                      <span className="text-sm font-medium tabular-nums">
+                        {formatCurrency(c.totalSpent)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -357,7 +387,11 @@ export default function ReportsPage() {
                 <DollarSignIcon size={20} className="h-5 w-5 text-emerald-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={stats.totalRevenue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={stats.totalRevenue}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -375,7 +409,11 @@ export default function ReportsPage() {
                 <DollarSignIcon size={20} className="h-5 w-5 text-purple-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  <AnimatedCounter end={stats.avgOrderValue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                  <AnimatedCounter
+                    end={stats.avgOrderValue}
+                    duration={1600}
+                    formatter={(v) => formatCurrency(v)}
+                  />
                 </p>
               </CardContent>
             </Card>
@@ -419,7 +457,11 @@ export default function ReportsPage() {
                   <DollarSignIcon size={20} className="h-5 w-5 text-emerald-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
                   <p className="text-2xl font-bold tabular-nums">
-                    <AnimatedCounter end={stats.totalRevenue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                    <AnimatedCounter
+                      end={stats.totalRevenue}
+                      duration={1600}
+                      formatter={(v) => formatCurrency(v)}
+                    />
                   </p>
                 </CardContent>
               </Card>
@@ -437,7 +479,11 @@ export default function ReportsPage() {
                   <DollarSignIcon size={20} className="h-5 w-5 text-purple-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
                   <p className="text-2xl font-bold tabular-nums">
-                    <AnimatedCounter end={stats.avgOrderValue} duration={1600} formatter={(v) => formatCurrency(v)} />
+                    <AnimatedCounter
+                      end={stats.avgOrderValue}
+                      duration={1600}
+                      formatter={(v) => formatCurrency(v)}
+                    />
                   </p>
                 </CardContent>
               </Card>
@@ -463,7 +509,9 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{data?.salesByChannel ? treports("revenueByChannel") : treports("totalRevenue")}</CardTitle>
+              <CardTitle className="text-base">
+                {data?.salesByChannel ? treports("revenueByChannel") : treports("totalRevenue")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <SalesChannelChart data={data?.salesByChannel || revenueByChannel} height={300} />
@@ -521,7 +569,11 @@ export default function ReportsPage() {
                 { key: "segment", header: "Segment" },
                 { key: (c: any) => c.totalSpent || 0, header: "Total Spent" },
                 { key: (c: any) => c._count?.orders || c.totalOrders || 0, header: "Orders" },
-                { key: (c: any) => c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : "N/A", header: "Last Order" },
+                {
+                  key: (c: any) =>
+                    c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : "N/A",
+                  header: "Last Order",
+                },
               ]}
               data={filteredCustomers}
               filename={`customers-report-${now}`}
@@ -555,7 +607,9 @@ export default function ReportsPage() {
                           <td className="py-2 text-gray-400">{i + 1}</td>
                           <td className="py-2 font-medium">{c.name}</td>
                           <td className="py-2">{c.orders}</td>
-                          <td className="py-2 text-right tabular-nums">{formatCurrency(c.totalSpent)}</td>
+                          <td className="py-2 text-right tabular-nums">
+                            {formatCurrency(c.totalSpent)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -584,7 +638,10 @@ export default function ReportsPage() {
                   <TrendingUpIcon size={20} className="h-5 w-5 text-cyan-500 mb-2" />
                   <p className="text-sm text-gray-500">Top Product Orders</p>
                   <p className="text-2xl font-bold tabular-nums">
-                    <AnimatedCounter end={data?.topProducts?.[0]?.orderCount || 0} duration={1400} />
+                    <AnimatedCounter
+                      end={data?.topProducts?.[0]?.orderCount || 0}
+                      duration={1400}
+                    />
                   </p>
                 </CardContent>
               </Card>
@@ -612,7 +669,7 @@ export default function ReportsPage() {
                 { key: "stock", header: "Stock" },
                 { key: "sku", header: "SKU" },
                 { key: (p: any) => p.category?.name || "N/A", header: "Category" },
-                { key: (p: any) => p.isActive ? "Active" : "Inactive", header: "Status" },
+                { key: (p: any) => (p.isActive ? "Active" : "Inactive"), header: "Status" },
               ]}
               data={data?.topProducts || []}
               filename={`products-report-${now}`}

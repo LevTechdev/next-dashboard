@@ -152,7 +152,9 @@ export default function SettingsPage() {
         return;
       }
       await fetchApiKeys();
-      toast.success(newStatus === "REVOKED" ? tsettings("apiKeyRevoked") : tsettings("apiKeyCopied"));
+      toast.success(
+        newStatus === "REVOKED" ? tsettings("apiKeyRevoked") : tsettings("apiKeyCopied"),
+      );
     } catch {
       toast.error(tcommon("error"));
     }
@@ -206,18 +208,33 @@ export default function SettingsPage() {
   const [webhooksLoading, setWebhooksLoading] = useState(true);
   const [showCreateWebhook, setShowCreateWebhook] = useState(false);
   const [editWebhook, setEditWebhook] = useState<WebhookEndpoint | null>(null);
-  const [webhookForm, setWebhookForm] = useState({ name: "", url: "", description: "", events: [] as string[] });
+  const [webhookForm, setWebhookForm] = useState({
+    name: "",
+    url: "",
+    description: "",
+    events: [] as string[],
+  });
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
 
   const WEBHOOK_EVENTS = [
-    "order.created", "order.updated", "order.cancelled", "order.refunded",
-    "customer.created", "customer.updated",
-    "product.created", "product.updated", "product.low_stock",
-    "payment.completed", "payment.failed",
+    "order.created",
+    "order.updated",
+    "order.cancelled",
+    "order.refunded",
+    "customer.created",
+    "customer.updated",
+    "product.created",
+    "product.updated",
+    "product.low_stock",
+    "payment.completed",
+    "payment.failed",
   ];
   const EVENT_GROUPS = [
-    { label: "Orders", events: ["order.created", "order.updated", "order.cancelled", "order.refunded"] },
+    {
+      label: "Orders",
+      events: ["order.created", "order.updated", "order.cancelled", "order.refunded"],
+    },
     { label: "Customers", events: ["customer.created", "customer.updated"] },
     { label: "Products", events: ["product.created", "product.updated", "product.low_stock"] },
     { label: "Payments", events: ["payment.completed", "payment.failed"] },
@@ -227,14 +244,16 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/webhooks");
       if (res.ok) setWebhooks(await res.json());
-    } catch { /* ignore */ }
-    finally { setWebhooksLoading(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setWebhooksLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchApiKeys();
     fetchWebhooks();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   const openCreateWebhook = () => {
@@ -244,7 +263,12 @@ export default function SettingsPage() {
   };
   const openEditWebhook = (wh: WebhookEndpoint) => {
     setEditWebhook(wh);
-    setWebhookForm({ name: wh.name, url: wh.url, description: wh.description || "", events: [...wh.subscribedEvents] });
+    setWebhookForm({
+      name: wh.name,
+      url: wh.url,
+      description: wh.description || "",
+      events: [...wh.subscribedEvents],
+    });
     setShowCreateWebhook(true);
   };
 
@@ -260,9 +284,7 @@ export default function SettingsPage() {
     setSavingWebhook(true);
     try {
       const method = editWebhook ? "PUT" : "POST";
-      const body = editWebhook
-        ? { id: editWebhook.id, ...webhookForm }
-        : webhookForm;
+      const body = editWebhook ? { id: editWebhook.id, ...webhookForm } : webhookForm;
       const res = await fetch("/api/webhooks", {
         method,
         headers: { "Content-Type": "application/json" },
@@ -291,9 +313,14 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: wh.id, status: newStatus }),
       });
-      if (!res.ok) { toast.error(tcommon("error")); return; }
+      if (!res.ok) {
+        toast.error(tcommon("error"));
+        return;
+      }
       await fetchWebhooks();
-      toast.success(newStatus === "ACTIVE" ? tsettings("webhookActivated") : tsettings("webhookPaused"));
+      toast.success(
+        newStatus === "ACTIVE" ? tsettings("webhookActivated") : tsettings("webhookPaused"),
+      );
     } catch {
       toast.error(tcommon("error"));
     }
@@ -313,7 +340,10 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      if (!res.ok) { toast.error(tcommon("error")); return; }
+      if (!res.ok) {
+        toast.error(tcommon("error"));
+        return;
+      }
       await fetchWebhooks();
       toast.success(tsettings("webhookDeleted"));
     } catch {
@@ -331,7 +361,12 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.status === "DELIVERED") {
-        toast.success(tsettings("webhookTestSuccess", { statusCode: data.statusCode, durationMs: data.durationMs }));
+        toast.success(
+          tsettings("webhookTestSuccess", {
+            statusCode: data.statusCode,
+            durationMs: data.durationMs,
+          }),
+        );
       } else {
         toast.error(tsettings("webhookTestFailed", { code: data.statusCode || "N/A" }));
       }
@@ -545,7 +580,9 @@ export default function SettingsPage() {
                       <input
                         type="color"
                         value={appearance.customColor || "#3b82f6"}
-                        onChange={(e) => updateAppearance({ accent: "custom", customColor: e.target.value })}
+                        onChange={(e) =>
+                          updateAppearance({ accent: "custom", customColor: e.target.value })
+                        }
                         className="w-6 h-6 p-0 border-0 rounded mx-auto mb-1.5 block cursor-pointer"
                       />
                     ) : (
@@ -554,7 +591,11 @@ export default function SettingsPage() {
                           "w-6 h-6 rounded-full mx-auto mb-1.5 block shadow-inner",
                           key === "custom" && appearance.customColor ? "" : swatch,
                         )}
-                        style={key === "custom" && appearance.customColor ? { backgroundColor: appearance.customColor } : undefined}
+                        style={
+                          key === "custom" && appearance.customColor
+                            ? { backgroundColor: appearance.customColor }
+                            : undefined
+                        }
                       />
                     )}
                     <span className="text-[11px] font-medium block truncate">{label}</span>
@@ -848,7 +889,12 @@ export default function SettingsPage() {
                   <p className="text-xs text-gray-500 mt-0.5">{tsettings("apiKeysDesc")}</p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowCreateKey(true)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setShowCreateKey(true)}
+              >
                 <Plus className="h-3.5 w-3.5" /> {tsettings("apiKeyCreate")}
               </Button>
             </div>
@@ -864,7 +910,10 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500 text-center py-4">{tsettings("apiKeyEmpty")}</p>
             ) : (
               apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                >
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
                       <Key className="h-4 w-4 text-indigo-600" />
@@ -873,7 +922,9 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">{key.name}</p>
                         <Badge variant={key.status === "ACTIVE" ? "success" : "danger"}>
-                          {key.status === "ACTIVE" ? tsettings("webhookActive") : tsettings("webhookInactive")}
+                          {key.status === "ACTIVE"
+                            ? tsettings("webhookActive")
+                            : tsettings("webhookInactive")}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
@@ -903,7 +954,12 @@ export default function SettingsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={cn("h-7 w-7", key.status === "ACTIVE" ? "text-orange-500 hover:text-orange-600" : "text-emerald-500 hover:text-emerald-600")}
+                      className={cn(
+                        "h-7 w-7",
+                        key.status === "ACTIVE"
+                          ? "text-orange-500 hover:text-orange-600"
+                          : "text-emerald-500 hover:text-emerald-600",
+                      )}
                       onClick={() => handleRevokeApiKey(key.id)}
                       title={key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"}
                     >
@@ -952,37 +1008,74 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500 text-center py-4">{tsettings("webhookEmpty")}</p>
             ) : (
               webhooks.map((wh) => (
-                <div key={wh.id} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-2">
+                <div
+                  key={wh.id}
+                  className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-2"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn("w-2 h-2 rounded-full shrink-0", wh.status === "ACTIVE" ? "bg-emerald-500" : "bg-gray-300")} />
+                      <div
+                        className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          wh.status === "ACTIVE" ? "bg-emerald-500" : "bg-gray-300",
+                        )}
+                      />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium">{wh.name}</p>
                           <Badge variant={wh.status === "ACTIVE" ? "success" : "outline"}>
-                            {wh.status === "ACTIVE" ? tsettings("webhookActive") : tsettings("webhookInactive")}
+                            {wh.status === "ACTIVE"
+                              ? tsettings("webhookActive")
+                              : tsettings("webhookInactive")}
                           </Badge>
                         </div>
                         <p className="text-xs text-gray-500 font-mono truncate">{wh.url}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 w-7 text-blue-500 hover:text-blue-600"
-                        onClick={() => handleTestWebhook(wh.id)} disabled={testingWebhook === wh.id}
-                        title={tsettings("webhookTest")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 text-blue-500 hover:text-blue-600"
+                        onClick={() => handleTestWebhook(wh.id)}
+                        disabled={testingWebhook === wh.id}
+                        title={tsettings("webhookTest")}
+                      >
                         <FlaskConical className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 text-gray-400 hover:text-gray-600"
                         onClick={() => handleToggleWebhook(wh)}
-                        title={wh.status === "ACTIVE" ? tsettings("webhookPaused") : tsettings("webhookActivated")}>
-                        {wh.status === "ACTIVE" ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
+                        title={
+                          wh.status === "ACTIVE"
+                            ? tsettings("webhookPaused")
+                            : tsettings("webhookActivated")
+                        }
+                      >
+                        {wh.status === "ACTIVE" ? (
+                          <PowerOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Power className="h-3.5 w-3.5" />
+                        )}
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                        onClick={() => openEditWebhook(wh)} title="Edit">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                        onClick={() => openEditWebhook(wh)}
+                        title="Edit"
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 text-red-400 hover:text-red-600"
-                        onClick={() => handleDeleteWebhook(wh.id)} title="Delete">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 text-red-400 hover:text-red-600"
+                        onClick={() => handleDeleteWebhook(wh.id)}
+                        title="Delete"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -990,9 +1083,15 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3 text-[11px] text-gray-400 pl-5">
                     <span>{wh.subscribedEvents.length} events</span>
                     <span>•</span>
-                    <span>{wh._count.deliveries} {tsettings("webhookDeliveries")?.toLowerCase()}</span>
+                    <span>
+                      {wh._count.deliveries} {tsettings("webhookDeliveries")?.toLowerCase()}
+                    </span>
                     <span>•</span>
-                    <span>{wh.lastTriggeredAt ? tsettings("webhookLastTriggered") : tsettings("webhookNeverTriggered")}</span>
+                    <span>
+                      {wh.lastTriggeredAt
+                        ? tsettings("webhookLastTriggered")
+                        : tsettings("webhookNeverTriggered")}
+                    </span>
                   </div>
                 </div>
               ))
@@ -1007,7 +1106,9 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <div>
-              <CardTitle className="text-red-600 dark:text-red-400">{tsettings("dangerZone")}</CardTitle>
+              <CardTitle className="text-red-600 dark:text-red-400">
+                {tsettings("dangerZone")}
+              </CardTitle>
               <p className="text-xs text-gray-500 mt-0.5">{tsettings("dangerZoneDesc")}</p>
             </div>
           </div>
@@ -1021,7 +1122,11 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("exportDataDesc")}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => toast.success(tsettings("dataExported"))}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.success(tsettings("dataExported"))}
+            >
               <Download className="h-3.5 w-3.5 mr-1.5" /> {tsettings("exportData")}
             </Button>
           </div>
@@ -1029,7 +1134,9 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <Trash2 className="h-5 w-5 text-red-500" />
               <div>
-                <p className="text-sm font-medium text-red-700 dark:text-red-400">{tsettings("deleteAccount")}</p>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                  {tsettings("deleteAccount")}
+                </p>
                 <p className="text-xs text-gray-500">{tsettings("deleteAccountDesc")}</p>
               </div>
             </div>
@@ -1048,8 +1155,12 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Check className="h-5 w-5 text-emerald-500" />
                 <div>
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">API Key Created</p>
-                  <p className="text-xs text-gray-500 mt-1">Copy this key now. It won&apos;t be shown again.</p>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    API Key Created
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Copy this key now. It won&apos;t be shown again.
+                  </p>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setCreatedKeyValue(null)}>
@@ -1097,7 +1208,11 @@ export default function SettingsPage() {
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleCreateApiKey} disabled={creatingKey || !newKeyName.trim()} className="w-full">
+            <Button
+              onClick={handleCreateApiKey}
+              disabled={creatingKey || !newKeyName.trim()}
+              className="w-full"
+            >
               {creatingKey ? "Creating..." : tsettings("apiKeyCreate")}
             </Button>
           </div>
@@ -1108,7 +1223,9 @@ export default function SettingsPage() {
       <Dialog open={showCreateWebhook} onOpenChange={setShowCreateWebhook}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editWebhook ? tsettings("webhookEdit") : tsettings("webhookAdd")}</DialogTitle>
+            <DialogTitle>
+              {editWebhook ? tsettings("webhookEdit") : tsettings("webhookAdd")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
@@ -1128,7 +1245,9 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">{tsettings("webhookDescLabel")}</label>
+              <label className="text-sm font-medium mb-1.5 block">
+                {tsettings("webhookDescLabel")}
+              </label>
               <Input
                 placeholder={tsettings("webhookDescPlaceholder")}
                 value={webhookForm.description}
@@ -1136,11 +1255,15 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">{tsettings("webhookSubscribeEvents")}</label>
+              <label className="text-sm font-medium mb-2 block">
+                {tsettings("webhookSubscribeEvents")}
+              </label>
               <div className="space-y-3">
                 {EVENT_GROUPS.map((group) => (
                   <div key={group.label}>
-                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">{group.label}</p>
+                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">
+                      {group.label}
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {group.events.map((ev) => {
                         const selected = webhookForm.events.includes(ev);
@@ -1181,7 +1304,11 @@ export default function SettingsPage() {
               {tcommon("cancel")}
             </Button>
             <Button onClick={handleSaveWebhook} disabled={savingWebhook}>
-              {savingWebhook ? "..." : editWebhook ? tsettings("webhookUpdate") : tsettings("webhookAdd")}
+              {savingWebhook
+                ? "..."
+                : editWebhook
+                  ? tsettings("webhookUpdate")
+                  : tsettings("webhookAdd")}
             </Button>
           </DialogFooter>
         </DialogContent>

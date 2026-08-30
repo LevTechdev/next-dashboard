@@ -42,30 +42,105 @@ import { DataExportButton } from "@/components/data-export-button";
 
 // Mock invitation data
 const MOCK_INVITATIONS = [
-  { id: "inv-1", email: "alex@example.com", role: "STAFF", sentAt: "2026-08-15", expiresAt: "2026-08-22", status: "pending" },
-  { id: "inv-2", email: "sam@example.com", role: "MANAGER", sentAt: "2026-08-10", expiresAt: "2026-08-17", status: "accepted" },
-  { id: "inv-3", email: "old@example.com", role: "STAFF", sentAt: "2026-07-01", expiresAt: "2026-07-08", status: "expired" },
+  {
+    id: "inv-1",
+    email: "alex@example.com",
+    role: "STAFF",
+    sentAt: "2026-08-15",
+    expiresAt: "2026-08-22",
+    status: "pending",
+  },
+  {
+    id: "inv-2",
+    email: "sam@example.com",
+    role: "MANAGER",
+    sentAt: "2026-08-10",
+    expiresAt: "2026-08-17",
+    status: "accepted",
+  },
+  {
+    id: "inv-3",
+    email: "old@example.com",
+    role: "STAFF",
+    sentAt: "2026-07-01",
+    expiresAt: "2026-07-08",
+    status: "expired",
+  },
 ];
 
 // Mock activity data
 const MOCK_ACTIVITY = [
-  { id: "a-1", user: "Admin", action: "Updated team member role", target: "sarah@dashboard.com", timestamp: "2 hours ago" },
-  { id: "a-2", user: "Admin", action: "Created new API key", target: "Production Key", timestamp: "5 hours ago" },
-  { id: "a-3", user: "Sarah", action: "Logged in", target: "Chrome / macOS", timestamp: "1 day ago" },
-  { id: "a-4", user: "Admin", action: "Invited new member", target: "alex@example.com", timestamp: "2 days ago" },
-  { id: "a-5", user: "Admin", action: "Changed password", target: "Account settings", timestamp: "3 days ago" },
+  {
+    id: "a-1",
+    user: "Admin",
+    action: "Updated team member role",
+    target: "sarah@dashboard.com",
+    timestamp: "2 hours ago",
+  },
+  {
+    id: "a-2",
+    user: "Admin",
+    action: "Created new API key",
+    target: "Production Key",
+    timestamp: "5 hours ago",
+  },
+  {
+    id: "a-3",
+    user: "Sarah",
+    action: "Logged in",
+    target: "Chrome / macOS",
+    timestamp: "1 day ago",
+  },
+  {
+    id: "a-4",
+    user: "Admin",
+    action: "Invited new member",
+    target: "alex@example.com",
+    timestamp: "2 days ago",
+  },
+  {
+    id: "a-5",
+    user: "Admin",
+    action: "Changed password",
+    target: "Account settings",
+    timestamp: "3 days ago",
+  },
 ];
 
 // Permission matrix data
 const PERMISSIONS_MATRIX = [
-  { resource: "Dashboard", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true } },
-  { resource: "Orders", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true } },
-  { resource: "Products", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true } },
-  { resource: "Customers", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true } },
-  { resource: "Team", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false } },
-  { resource: "Settings", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false } },
-  { resource: "Billing", roles: { SUPER_ADMIN: true, ADMIN: false, MANAGER: false, STAFF: false, AUDITOR: false } },
-  { resource: "Audit Log", roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: true } },
+  {
+    resource: "Dashboard",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
+  },
+  {
+    resource: "Orders",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
+  },
+  {
+    resource: "Products",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
+  },
+  {
+    resource: "Customers",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
+  },
+  {
+    resource: "Team",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
+  },
+  {
+    resource: "Settings",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
+  },
+  {
+    resource: "Billing",
+    roles: { SUPER_ADMIN: true, ADMIN: false, MANAGER: false, STAFF: false, AUDITOR: false },
+  },
+  {
+    resource: "Audit Log",
+    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: true },
+  },
 ];
 
 export default function TeamPage() {
@@ -176,7 +251,12 @@ export default function TeamPage() {
           />
           {can(role, "create", "team") && (
             <>
-              <Button variant="outline" size="sm" onClick={() => setInviteDialogOpen(true)} className="gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInviteDialogOpen(true)}
+                className="gap-1.5"
+              >
                 <Mail size={14} className="h-3.5 w-3.5" />
                 {tteam("inviteMember")}
               </Button>
@@ -194,7 +274,9 @@ export default function TeamPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      {editMember ? `${tcommon("edit")} ${tteam("memberList")}` : tteam("addMember")}
+                      {editMember
+                        ? `${tcommon("edit")} ${tteam("memberList")}`
+                        : tteam("addMember")}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
@@ -258,7 +340,10 @@ export default function TeamPage() {
               value={inviteForm.email}
               onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
             />
-            <Select value={inviteForm.role} onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}>
+            <Select
+              value={inviteForm.role}
+              onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={tteam("inviteRole")} />
               </SelectTrigger>
@@ -484,7 +569,10 @@ export default function TeamPage() {
             <CardContent>
               <div className="space-y-4">
                 {MOCK_ACTIVITY.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold shrink-0">
                       {getInitials(item.user)}
                     </div>

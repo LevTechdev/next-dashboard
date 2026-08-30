@@ -4,71 +4,82 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Hoisted mocks
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { mockStripe, mockGetStripe, mockStripeConfigured, mockPrisma, mockRequirePermission, mockRequireAuth, mockGetTenantId } =
-  vi.hoisted(() => {
-    const stripe = {
-      customers: { create: vi.fn() },
-      checkout: { sessions: { create: vi.fn() } },
-      billingPortal: { sessions: { create: vi.fn() } },
-      subscriptions: { update: vi.fn() },
-      webhooks: { constructEvent: vi.fn() },
-    };
+const {
+  mockStripe,
+  mockGetStripe,
+  mockStripeConfigured,
+  mockPrisma,
+  mockRequirePermission,
+  mockRequireAuth,
+  mockGetTenantId,
+} = vi.hoisted(() => {
+  const stripe = {
+    customers: { create: vi.fn() },
+    checkout: { sessions: { create: vi.fn() } },
+    billingPortal: { sessions: { create: vi.fn() } },
+    subscriptions: { update: vi.fn() },
+    webhooks: { constructEvent: vi.fn() },
+  };
 
-    const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
-      new Proxy<T>({} as T, {
-        get(_, prop) {
-          const key = String(prop);
-          return (overrides as any)[key] ?? vi.fn().mockImplementation(() => Promise.resolve(null));
-        },
-      });
+  const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
+    new Proxy<T>({} as T, {
+      get(_, prop) {
+        const key = String(prop);
+        return (overrides as any)[key] ?? vi.fn().mockImplementation(() => Promise.resolve(null));
+      },
+    });
 
-    const prisma = {
-      plan: model({
-        findUnique: vi.fn().mockResolvedValue({
-          id: "plan-pro",
-          name: "Pro",
-          price: 29,
-          stripePriceId: "price_pro",
-        }),
+  const prisma = {
+    plan: model({
+      findUnique: vi.fn().mockResolvedValue({
+        id: "plan-pro",
+        name: "Pro",
+        price: 29,
+        stripePriceId: "price_pro",
       }),
-      subscription: model({
-        findUnique: vi.fn().mockResolvedValue(null),
-        findFirst: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn().mockImplementation(({ create }) =>
+    }),
+    subscription: model({
+      findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
+      upsert: vi
+        .fn()
+        .mockImplementation(({ create }) =>
           Promise.resolve({ id: "sub-new", ...(create as Record<string, unknown>) }),
         ),
-        update: vi.fn().mockImplementation(({ data }) =>
+      update: vi
+        .fn()
+        .mockImplementation(({ data }) =>
           Promise.resolve({ id: "sub-1", ...(data as Record<string, unknown>) }),
         ),
-      }),
-      invoice: model({
-        create: vi.fn().mockResolvedValue({ id: "inv-new" }),
-      }),
-      auditLog: model({
-        create: vi.fn().mockResolvedValue({ id: "audit-new" }),
-      }),
-    };
+    }),
+    invoice: model({
+      create: vi.fn().mockResolvedValue({ id: "inv-new" }),
+    }),
+    auditLog: model({
+      create: vi.fn().mockResolvedValue({ id: "audit-new" }),
+    }),
+  };
 
-    return {
-      mockStripe: stripe,
-      mockGetStripe: vi.fn(() => stripe),
-      mockStripeConfigured: vi.fn(() => true),
-      mockPrisma: prisma,
-      mockRequirePermission: vi.fn().mockResolvedValue({ response: null, role: "ADMIN" }),
-      mockRequireAuth: vi.fn().mockResolvedValue({
-        session: {
-          user: {
-            id: "u-1",
-            name: "Admin",
-            email: "nextdashboards@gmail.com",
-            role: "ADMIN",
-          },
+  return {
+    mockStripe: stripe,
+    mockGetStripe: vi.fn(() => stripe),
+    mockStripeConfigured: vi.fn(() => true),
+    mockPrisma: prisma,
+    mockRequirePermission: vi.fn().mockResolvedValue({ response: null, role: "ADMIN" }),
+    mockRequireAuth: vi.fn().mockResolvedValue({
+      session: {
+        user: {
+          id: "u-1",
+          name: "Admin",
+          email: "nextdashboards@gmail.com",
+          role: "ADMIN",
         },
-        response: null,
-      }),
-      mockGetTenantId: vi.fn(() => "tenant-1"),
-    };
-  });
+      },
+      response: null,
+    }),
+    mockGetTenantId: vi.fn(() => "tenant-1"),
+  };
+});
 
 vi.mock("@/lib/api-guard", () => ({
   requirePermission: mockRequirePermission,
@@ -142,7 +153,9 @@ beforeEach(() => {
 
 describe("Billing Checkout", () => {
   it("returns 403 when requirePermission denies", async () => {
-    mockRequirePermission.mockResolvedValueOnce({ response: new Response("denied", { status: 403 }) });
+    mockRequirePermission.mockResolvedValueOnce({
+      response: new Response("denied", { status: 403 }),
+    });
     const res = await checkoutRoutes.POST(jsonRequest({ planId: "plan-pro" }));
     expect(res.status).toBe(403);
   });
@@ -184,7 +197,9 @@ describe("Billing Checkout", () => {
 
   it("creates a Stripe customer and checkout session, returns url", async () => {
     mockStripe.customers.create.mockResolvedValueOnce({ id: "cus_123" });
-    mockStripe.checkout.sessions.create.mockResolvedValueOnce({ url: "https://checkout.stripe.com/c/pay_x" });
+    mockStripe.checkout.sessions.create.mockResolvedValueOnce({
+      url: "https://checkout.stripe.com/c/pay_x",
+    });
 
     const res = await checkoutRoutes.POST(jsonRequest({ planId: "plan-pro", locale: "id" }));
     expect(res.status).toBe(200);
@@ -211,7 +226,9 @@ describe("Billing Checkout", () => {
 
   it("reuses an existing Stripe customer without creating a new one", async () => {
     mockPrisma.subscription.findUnique.mockResolvedValueOnce({ stripeCustomerId: "cus_existing" });
-    mockStripe.checkout.sessions.create.mockResolvedValueOnce({ url: "https://checkout.stripe.com/c/pay_y" });
+    mockStripe.checkout.sessions.create.mockResolvedValueOnce({
+      url: "https://checkout.stripe.com/c/pay_y",
+    });
 
     const res = await checkoutRoutes.POST(jsonRequest({ planId: "plan-pro" }));
     expect(res.status).toBe(200);
@@ -232,7 +249,9 @@ describe("Billing Checkout", () => {
 
 describe("Billing Portal", () => {
   it("returns 403 when requirePermission denies", async () => {
-    mockRequirePermission.mockResolvedValueOnce({ response: new Response("denied", { status: 403 }) });
+    mockRequirePermission.mockResolvedValueOnce({
+      response: new Response("denied", { status: 403 }),
+    });
     const res = await portalRoutes.POST(jsonRequest({}));
     expect(res.status).toBe(403);
   });

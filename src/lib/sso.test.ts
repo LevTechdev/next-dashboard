@@ -59,9 +59,7 @@ describe("validateSsoForm", () => {
 
   it("requires and validates the entry point URL", () => {
     expect(validateSsoForm({ ...valid, entryPoint: "" }, false)).toBe("entryPointRequired");
-    expect(validateSsoForm({ ...valid, entryPoint: "acme.okta.com" }, false)).toBe(
-      "invalidUrl",
-    );
+    expect(validateSsoForm({ ...valid, entryPoint: "acme.okta.com" }, false)).toBe("invalidUrl");
   });
 
   it("validates the optional email domain", () => {

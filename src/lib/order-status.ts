@@ -59,7 +59,8 @@ export function nextOrderStatuses(status: OrderStatus): readonly OrderStatus[] {
 
 /** The statuses that produce fulfillment-tracking events, in flow order. */
 export function trackingStatusesFrom(orderStatus: OrderStatus): OrderStatus[] {
-  if (orderStatus === "REFUNDED") return ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "REFUNDED"];
+  if (orderStatus === "REFUNDED")
+    return ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "REFUNDED"];
   const idx = (ORDER_STATUS_FLOW as readonly OrderStatus[]).indexOf(orderStatus);
   return idx === -1 ? [] : ORDER_STATUS_FLOW.slice(0, idx + 1);
 }

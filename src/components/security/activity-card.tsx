@@ -3,12 +3,7 @@
 import { type ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import { LogIn, LogOut, KeyRound, ShieldAlert, Monitor, MailCheck } from "lucide-react";
-import {
-  ShieldCheckIcon,
-  ClockIcon,
-  FingerprintIcon,
-  RefreshCwIcon,
-} from "lucide-animated";
+import { ShieldCheckIcon, ClockIcon, FingerprintIcon, RefreshCwIcon } from "lucide-animated";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { timeAgo, withinDays, type SecurityData } from "@/components/security/use-security-data";

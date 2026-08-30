@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  isMfaVerificationEventType,
-  MFA_VERIFIED_RECENT_DAYS,
-} from "@/lib/security-score";
+import { isMfaVerificationEventType, MFA_VERIFIED_RECENT_DAYS } from "@/lib/security-score";
 
 export interface SessionRow {
   id: string;
@@ -60,7 +57,7 @@ export function withinDays(date: string, days: number): boolean {
   return Date.now() - new Date(date).getTime() < days * 24 * 60 * 60 * 1000;
 }
 
-const json = <T,>(res: Response, fallback: T): Promise<T> =>
+const json = <T>(res: Response, fallback: T): Promise<T> =>
   res.ok ? (res.json() as Promise<T>) : Promise.resolve(fallback);
 
 /**
@@ -86,7 +83,9 @@ export function useSecurityData(): SecurityData {
         .then((r) => json<{ remaining: number }>(r, { remaining: 0 }))
         .then((d) => d.remaining ?? 0),
       fetch("/api/auth/webauthn/credentials").then((r) => json<PasskeyRow[]>(r, [])),
-      fetch("/api/profile").then((r) => json<{ totpEnabled?: boolean; emailVerified?: string | null }>(r, {})),
+      fetch("/api/profile").then((r) =>
+        json<{ totpEnabled?: boolean; emailVerified?: string | null }>(r, {}),
+      ),
     ]);
     if (s.status === "fulfilled" && Array.isArray(s.value)) setSessions(s.value);
     if (e.status === "fulfilled" && Array.isArray(e.value)) {
@@ -96,7 +95,8 @@ export function useSecurityData(): SecurityData {
       setMfaVerifiedRecently(
         e.value.some(
           (ev) =>
-            isMfaVerificationEventType(ev.type) && withinDays(ev.createdAt, MFA_VERIFIED_RECENT_DAYS),
+            isMfaVerificationEventType(ev.type) &&
+            withinDays(ev.createdAt, MFA_VERIFIED_RECENT_DAYS),
         ),
       );
     }

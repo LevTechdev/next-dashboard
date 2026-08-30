@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import FeaturesPage from "../features/page";
 
-const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+const params = {
+  status: "fulfilled",
+  value: { locale: "en" },
+  then: () => {},
+} as unknown as Promise<{ locale: string }>;
 
 beforeEach(() => {
   render(<FeaturesPage params={params} />);
@@ -33,7 +37,9 @@ describe("Features Page", () => {
   it("renders feature card descriptions", () => {
     expect(screen.getByText(/bird's-eye view of your entire business/)).toBeInTheDocument();
     expect(screen.getByText(/Process orders faster with automated workflows/)).toBeInTheDocument();
-    expect(screen.getByText(/Make data-driven decisions with detailed reports/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Make data-driven decisions with detailed reports/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Never run out of stock/)).toBeInTheDocument();
     expect(screen.getByText(/bank-grade encryption/)).toBeInTheDocument();
     expect(screen.getByText(/Sell anywhere in the world/)).toBeInTheDocument();

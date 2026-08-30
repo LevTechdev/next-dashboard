@@ -51,18 +51,13 @@ describe("Forgot Password Page", () => {
     // Sent state: the heading + success box both use the same translated text.
     // Synchronous query: findBy* polls via timers, which are faked here.
     expect(screen.getAllByText(/reset link sent/i).length).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getByText(/reset-password\?token=abc/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/reset-password\?token=abc/i)).toBeInTheDocument();
     // The initial submit shows the sent view instead of a toast; only resends
     // surface a toast. Nothing was toasted here.
     expect(toast.success).not.toHaveBeenCalled();
 
     // Request was sent with the email + current locale.
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/auth/forgot-password",
-      expect.any(Object),
-    );
+    expect(global.fetch).toHaveBeenCalledWith("/api/auth/forgot-password", expect.any(Object));
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({
       email: "user@example.com",

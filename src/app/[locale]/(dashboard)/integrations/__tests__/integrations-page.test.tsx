@@ -93,7 +93,10 @@ describe("Integrations Page", () => {
         } as Response);
       }
       if (url.includes("/api/webhooks")) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockEndpoints) } as Response);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockEndpoints),
+        } as Response);
       }
       if (url.includes("/api/v1/whoami")) {
         return Promise.resolve({

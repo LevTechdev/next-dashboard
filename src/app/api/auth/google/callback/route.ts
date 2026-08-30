@@ -40,16 +40,9 @@ async function verifyIdToken(idToken: string): Promise<Record<string, unknown> |
 
     const parts = idToken.split(".");
     const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-    const signature = new Uint8Array(
-      Buffer.from(parts[2], "base64url"),
-    );
+    const signature = new Uint8Array(Buffer.from(parts[2], "base64url"));
 
-    const valid = await crypto.subtle.verify(
-      "RSASSA-PKCS1-v1_5",
-      publicKey,
-      signature,
-      data,
-    );
+    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, signature, data);
 
     if (!valid) return null;
 

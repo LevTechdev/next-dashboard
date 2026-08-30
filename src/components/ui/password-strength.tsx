@@ -20,9 +20,12 @@ function getStrength(password: string): {
   if (/[^A-Za-z0-9]/.test(password)) score++;
 
   if (score <= 1) return { score, label: "Weak", color: "text-red-500", bgColor: "bg-red-500" };
-  if (score <= 2) return { score, label: "Fair", color: "text-orange-500", bgColor: "bg-orange-500" };
-  if (score <= 3) return { score, label: "Good", color: "text-yellow-500", bgColor: "bg-yellow-500" };
-  if (score <= 4) return { score, label: "Strong", color: "text-green-500", bgColor: "bg-green-500" };
+  if (score <= 2)
+    return { score, label: "Fair", color: "text-orange-500", bgColor: "bg-orange-500" };
+  if (score <= 3)
+    return { score, label: "Good", color: "text-yellow-500", bgColor: "bg-yellow-500" };
+  if (score <= 4)
+    return { score, label: "Strong", color: "text-green-500", bgColor: "bg-green-500" };
   return { score, label: "Very Strong", color: "text-emerald-500", bgColor: "bg-emerald-500" };
 }
 
@@ -38,7 +41,7 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
             key={i}
             className={cn(
               "h-1 flex-1 rounded-full transition-colors",
-              i < score ? bgColor : "bg-muted"
+              i < score ? bgColor : "bg-muted",
             )}
           />
         ))}

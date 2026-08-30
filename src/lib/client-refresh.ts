@@ -67,7 +67,7 @@ export function installAuthFetch(): void {
       "GET"
     ).toUpperCase();
 
-        let res: Response;
+    let res: Response;
     try {
       res = await nativeFetch(input as RequestInfo, init);
     } catch (err) {
@@ -78,7 +78,7 @@ export function installAuthFetch(): void {
       return new Response(JSON.stringify({ error: "Network Error" }), {
         status: 503,
         statusText: "Service Unavailable",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
     }
 

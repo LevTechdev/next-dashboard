@@ -18,10 +18,7 @@ export async function POST(req: Request) {
   if (response) return response;
 
   if (!stripeConfigured()) {
-    return NextResponse.json(
-      { error: "Stripe is not configured on this server" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "Stripe is not configured on this server" }, { status: 503 });
   }
 
   const subscription = await prisma.subscription.findUnique({

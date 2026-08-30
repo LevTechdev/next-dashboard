@@ -32,7 +32,13 @@ const mockData = {
 };
 
 const mockOrders = [
-  { id: "1", grandTotal: 29.99, status: "COMPLETED", createdAt: "2026-08-01", customer: { name: "Test" } },
+  {
+    id: "1",
+    grandTotal: 29.99,
+    status: "COMPLETED",
+    createdAt: "2026-08-01",
+    customer: { name: "Test" },
+  },
 ];
 
 const mockCustomers = [

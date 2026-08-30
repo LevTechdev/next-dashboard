@@ -813,8 +813,7 @@ export default function ProfilePage() {
                     >
                       {sendingVerification ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
-                          {tprofile("sending")}
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tprofile("sending")}
                         </>
                       ) : cooldownLeft > 0 ? (
                         <>
@@ -824,9 +823,7 @@ export default function ProfilePage() {
                       ) : (
                         <>
                           <Mail className="h-4 w-4 mr-2" />{" "}
-                          {verificationUrl
-                            ? tprofile("resendEmail")
-                            : tprofile("sendVerification")}
+                          {verificationUrl ? tprofile("resendEmail") : tprofile("sendVerification")}
                         </>
                       )}
                     </Button>

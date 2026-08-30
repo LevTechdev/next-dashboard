@@ -81,9 +81,7 @@ export default function EmailVerificationBanner() {
     >
       <MailWarning className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">
-          Your email is not verified
-        </p>
+        <p className="text-sm font-medium">Your email is not verified</p>
         <p className="text-xs text-amber-700 dark:text-amber-300/70 mt-0.5">
           Verify your email to secure your account and enable all features.
         </p>
@@ -98,11 +96,7 @@ export default function EmailVerificationBanner() {
             "disabled:opacity-50 disabled:cursor-not-allowed",
           )}
         >
-          {sending ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Send className="h-3 w-3" />
-          )}
+          {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
           Send code
         </button>
         <Link

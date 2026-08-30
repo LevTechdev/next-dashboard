@@ -98,23 +98,41 @@ const INTEGRATIONS = [
 ];
 
 const categories = [
-  { name: "E-commerce & POS", description: "Connect your storefront and manage orders across channels.", count: "12 integrations" },
-  { name: "Payments & Billing", description: "Process payments, manage subscriptions, and handle invoicing.", count: "8 integrations" },
-  { name: "Communication", description: "Send emails, notifications, and team alerts.", count: "6 integrations" },
-  { name: "Data & Infrastructure", description: "Connect databases, cloud services, and analytics.", count: "14 integrations" },
-  { name: "Marketing & Analytics", description: "Track performance and automate marketing workflows.", count: "10 integrations" },
-  { name: "Automation & Workflows", description: "Connect 3,000+ apps and automate repetitive tasks.", count: "20+ integrations" },
+  {
+    name: "E-commerce & POS",
+    description: "Connect your storefront and manage orders across channels.",
+    count: "12 integrations",
+  },
+  {
+    name: "Payments & Billing",
+    description: "Process payments, manage subscriptions, and handle invoicing.",
+    count: "8 integrations",
+  },
+  {
+    name: "Communication",
+    description: "Send emails, notifications, and team alerts.",
+    count: "6 integrations",
+  },
+  {
+    name: "Data & Infrastructure",
+    description: "Connect databases, cloud services, and analytics.",
+    count: "14 integrations",
+  },
+  {
+    name: "Marketing & Analytics",
+    description: "Track performance and automate marketing workflows.",
+    count: "10 integrations",
+  },
+  {
+    name: "Automation & Workflows",
+    description: "Connect 3,000+ apps and automate repetitive tasks.",
+    count: "20+ integrations",
+  },
 ];
 
 export { INTEGRATIONS as integrations, categories };
 
-function BentoCard({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+function BentoCard({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
       className={cn(
@@ -154,7 +172,8 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Sync data, automate workflows, and bring all your business tools together in one unified platform.
+            Sync data, automate workflows, and bring all your business tools together in one unified
+            platform.
           </p>
         </motion.div>
       </section>
@@ -173,7 +192,12 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
               <BentoCard className="h-full flex flex-col">
                 <div className="flex flex-col flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", integration.color)}>
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center",
+                        integration.color,
+                      )}
+                    >
                       <integration.icon className="h-6 w-6" />
                     </div>
                     {integration.popular && (
@@ -182,12 +206,12 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
                       </span>
                     )}
                   </div>
-                  
+
                   <h3 className="text-lg font-bold text-foreground mb-2">{integration.name}</h3>
                   <p className="text-sm text-muted-foreground mb-6 flex-1">
                     {integration.description}
                   </p>
-                  
+
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {integration.category}
@@ -209,18 +233,21 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <Layers className="h-10 w-10 mx-auto mb-6 opacity-80" />
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Don&apos;t see your tool?</h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              We&apos;re constantly adding new integrations. You can also use our API and Webhooks to build custom connections.
+              We&apos;re constantly adding new integrations. You can also use our API and Webhooks
+              to build custom connections.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link

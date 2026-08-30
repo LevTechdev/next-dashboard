@@ -60,11 +60,7 @@ export async function GET(req: Request) {
   // Failed login events
   const failedLogins = await prisma.activityLog.count({
     where: {
-      AND: [
-        tenantScope,
-        { createdAt: { gte: since } },
-        { action: { contains: "LOGIN_FAILED" } },
-      ],
+      AND: [tenantScope, { createdAt: { gte: since } }, { action: { contains: "LOGIN_FAILED" } }],
     },
   });
 
@@ -79,10 +75,7 @@ export async function GET(req: Request) {
 
     const count = await prisma.activityLog.count({
       where: {
-        AND: [
-          tenantScope,
-          { createdAt: { gte: dayStart, lte: dayEnd } },
-        ],
+        AND: [tenantScope, { createdAt: { gte: dayStart, lte: dayEnd } }],
       },
     });
 
@@ -109,7 +102,10 @@ export async function GET(req: Request) {
       loginActivity: {
         total: loginCount,
         failed: failedLogins,
-        successRate: loginCount > 0 ? ((loginCount - failedLogins) / loginCount * 100).toFixed(1) + "%" : "N/A",
+        successRate:
+          loginCount > 0
+            ? (((loginCount - failedLogins) / loginCount) * 100).toFixed(1) + "%"
+            : "N/A",
       },
       actionBreakdown: actionGroups.map((g) => ({
         action: g.action,

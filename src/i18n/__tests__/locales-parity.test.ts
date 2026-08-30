@@ -42,10 +42,9 @@ describe("locale parity", () => {
         missing,
         `${locale} is missing keys that exist in en: ${missing.slice(0, 10).join(", ")}`,
       ).toEqual([]);
-      expect(
-        extra,
-        `${locale} has extra keys not in en: ${extra.slice(0, 10).join(", ")}`,
-      ).toEqual([]);
+      expect(extra, `${locale} has extra keys not in en: ${extra.slice(0, 10).join(", ")}`).toEqual(
+        [],
+      );
     }
   });
 

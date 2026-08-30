@@ -42,9 +42,7 @@ export async function POST(req: Request) {
     const locale = typeof body.locale === "string" && body.locale ? body.locale : "en";
     // Which surface requested the send — forwarded into the confirm link so the
     // post-confirm redirect lands back here.
-    const from = sanitizeVerifyEmailRedirect(
-      typeof body.from === "string" ? body.from : null,
-    );
+    const from = sanitizeVerifyEmailRedirect(typeof body.from === "string" ? body.from : null);
 
     // 1. Link token (click-through flow / confirm route).
     const token = crypto.randomBytes(32).toString("hex");
@@ -62,7 +60,9 @@ export async function POST(req: Request) {
       // Fallback: generate a random 6-digit OTP for dev mode
       code = String(Math.floor(100000 + Math.random() * 900000));
     }
-    console.log(`[verify-email] OTP issued for ${user.email}, sent=${sent}, devFallback=${isDevFallbackAllowed()}`);
+    console.log(
+      `[verify-email] OTP issued for ${user.email}, sent=${sent}, devFallback=${isDevFallbackAllowed()}`,
+    );
 
     await prisma.user.update({
       where: { id: user.id },
@@ -73,8 +73,7 @@ export async function POST(req: Request) {
     });
 
     const origin = req.headers.get("origin") || `http://localhost:${process.env.PORT || 3010}`;
-    const verificationUrl =
-      `${origin}/api/auth/verify-email/confirm?token=${token}&locale=${locale}&from=${from}`;
+    const verificationUrl = `${origin}/api/auth/verify-email/confirm?token=${token}&locale=${locale}&from=${from}`;
 
     if (!sent) {
       // No mailer configured — log both so they can be used in development.

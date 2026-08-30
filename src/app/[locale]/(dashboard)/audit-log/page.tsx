@@ -51,18 +51,17 @@ export default function AuditLogPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { globalRefreshTrigger } = useRealtime();
 
-
   const fetchLogs = useCallback(
     async (page = 1) => {
       setLoading(true);
       try {
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.set("q", debouncedSearch);
-      if (actionFilter) params.set("action", actionFilter);
-      if (dateFrom) params.set("from", dateFrom);
-      if (dateTo) params.set("to", dateTo);
-      params.set("page", String(page));
-      params.set("limit", "25");
+        const params = new URLSearchParams();
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        if (actionFilter) params.set("action", actionFilter);
+        if (dateFrom) params.set("from", dateFrom);
+        if (dateTo) params.set("to", dateTo);
+        params.set("page", String(page));
+        params.set("limit", "25");
 
         const res = await fetch(`/api/audit-log?${params}`);
         if (!res.ok) throw new Error("Failed to fetch");
@@ -90,7 +89,6 @@ export default function AuditLogPage() {
       await fetchLogs(1);
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchLogs, globalRefreshTrigger]);
 
   const handleComplianceReport = async () => {
@@ -115,7 +113,10 @@ export default function AuditLogPage() {
         ...report.actionBreakdown.map((a: any) => `  ${a.action}: ${a.count}`),
         ``,
         `Top Actors:`,
-        ...report.topActors.map((a: any) => `  ${a.user?.name || "System"} (${a.user?.role || "SYSTEM"}): ${a.activityCount} events`),
+        ...report.topActors.map(
+          (a: any) =>
+            `  ${a.user?.name || "System"} (${a.user?.role || "SYSTEM"}): ${a.activityCount} events`,
+        ),
         ``,
         `Daily Activity:`,
         ...report.dailyActivity.map((d: any) => `  ${d.date}: ${d.count} events`),
@@ -245,14 +246,32 @@ export default function AuditLogPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">From</label>
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-[160px]"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">To</label>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-[160px]"
+                />
               </div>
               {(actionFilter || dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" onClick={() => { setActionFilter(""); setDateFrom(""); setDateTo(""); }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setActionFilter("");
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                >
                   Clear filters
                 </Button>
               )}

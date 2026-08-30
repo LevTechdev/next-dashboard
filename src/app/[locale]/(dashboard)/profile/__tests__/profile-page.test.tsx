@@ -166,9 +166,7 @@ describe("Profile Page", () => {
     fireEvent.click(sendBtn);
     await act(async () => {});
 
-    expect(
-      screen.getByRole("button", { name: /Send Verification Email/i }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Send Verification Email/i })).toBeEnabled();
     expect(localStorage.getItem("email-verify-cooldown-until")).toBeNull();
   });
 
@@ -190,9 +188,7 @@ describe("Profile Page", () => {
     await act(async () => {
       vi.advanceTimersByTime(61000);
     });
-    expect(
-      screen.getByRole("button", { name: /Send Verification Email/i }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Send Verification Email/i })).toBeEnabled();
     expect(localStorage.getItem("email-verify-cooldown-until")).toBeNull();
   });
 
@@ -203,9 +199,7 @@ describe("Profile Page", () => {
     render(<ProfilePage />);
     await act(async () => {});
 
-    expect(toast.error).toHaveBeenCalledWith(
-      "This verification link is invalid or has expired.",
-    );
+    expect(toast.error).toHaveBeenCalledWith("This verification link is invalid or has expired.");
   });
 
   it("shows the email with an unverified badge in the profile header", async () => {

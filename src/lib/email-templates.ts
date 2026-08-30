@@ -43,24 +43,19 @@ const templates: Record<EmailLocale, EmailTemplateStrings> = {
     resetCta: "Reset password",
     resetIgnore:
       "If you didn't request this, you can safely ignore this email — your password won't change.",
-    resetFooter:
-      "You received this email because you have an account on Dashboard.",
+    resetFooter: "You received this email because you have an account on Dashboard.",
     welcomeHeading: "Welcome to Dashboard!",
-    welcomeBody:
-      "Your account has been created successfully. Click below to get started.",
+    welcomeBody: "Your account has been created successfully. Click below to get started.",
     welcomeCta: "Go to Dashboard",
-    welcomeFooter:
-      "You received this email because you created an account on Dashboard.",
+    welcomeFooter: "You received this email because you created an account on Dashboard.",
   },
   id: {
     brandName: "Dashboard",
     otpHeading: "Verifikasi email Anda",
     otpBody: "Gunakan kode di bawah ini untuk memverifikasi alamat email Anda.",
     otpExpiry: "Kode berlaku selama 10 menit.",
-    otpIgnore:
-      "Jika Anda tidak meminta kode ini, Anda dapat mengabaikan email ini.",
-    otpFooter:
-      "Anda menerima email ini karena memiliki akun di Dashboard.",
+    otpIgnore: "Jika Anda tidak meminta kode ini, Anda dapat mengabaikan email ini.",
+    otpFooter: "Anda menerima email ini karena memiliki akun di Dashboard.",
     resetHeading: "Atur ulang kata sandi",
     resetBody:
       "Kami menerima permintaan untuk mengatur ulang kata sandi Anda. Klik tombol di bawah untuk memilih yang baru.",
@@ -68,14 +63,11 @@ const templates: Record<EmailLocale, EmailTemplateStrings> = {
     resetCta: "Atur ulang kata sandi",
     resetIgnore:
       "Jika Anda tidak meminta ini, Anda dapat mengabaikan email ini — kata sandi Anda tidak akan berubah.",
-    resetFooter:
-      "Anda menerima email ini karena memiliki akun di Dashboard.",
+    resetFooter: "Anda menerima email ini karena memiliki akun di Dashboard.",
     welcomeHeading: "Selamat datang di Dashboard!",
-    welcomeBody:
-      "Akun Anda berhasil dibuat. Klik di bawah untuk memulai.",
+    welcomeBody: "Akun Anda berhasil dibuat. Klik di bawah untuk memulai.",
     welcomeCta: "Buka Dashboard",
-    welcomeFooter:
-      "Anda menerima email ini karena membuat akun di Dashboard.",
+    welcomeFooter: "Anda menerima email ini karena membuat akun di Dashboard.",
   },
   ja: {
     brandName: "Dashboard",
@@ -93,8 +85,7 @@ const templates: Record<EmailLocale, EmailTemplateStrings> = {
       "リクエストしなかった場合は、このメールを無視してください。パスワードは変更されません。",
     resetFooter: "このメールはDashboardにアカウントをお持ちのため送信されました。",
     welcomeHeading: "Dashboardへようこそ！",
-    welcomeBody:
-      "アカウントが正常に作成されました。以下をクリックして開始してください。",
+    welcomeBody: "アカウントが正常に作成されました。以下をクリックして開始してください。",
     welcomeCta: "Dashboardを開く",
     welcomeFooter: "このメールはDashboardにアカウントを作成したため送信されました。",
   },
@@ -106,12 +97,10 @@ const templates: Record<EmailLocale, EmailTemplateStrings> = {
     otpIgnore: "如果您没有请求此验证码，请忽略此邮件。",
     otpFooter: "您收到此邮件是因为您在Dashboard上有账户。",
     resetHeading: "重置密码",
-    resetBody:
-      "我们收到了重置密码的请求。点击下方按钮设置新密码。",
+    resetBody: "我们收到了重置密码的请求。点击下方按钮设置新密码。",
     resetExpiry: "此链接有效期为1小时。",
     resetCta: "重置密码",
-    resetIgnore:
-      "如果您没有请求此操作，请忽略此邮件 — 您的密码不会更改。",
+    resetIgnore: "如果您没有请求此操作，请忽略此邮件 — 您的密码不会更改。",
     resetFooter: "您收到此邮件是因为您在Dashboard上有账户。",
     welcomeHeading: "欢迎使用Dashboard！",
     welcomeBody: "您的账户已成功创建。点击下方开始使用。",

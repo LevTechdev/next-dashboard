@@ -27,7 +27,7 @@ describe("debug-dump", () => {
     console.log("BODY_LEN:", document.body.innerHTML.length);
     const dialogs = document.querySelectorAll('[role="dialog"]');
     console.log("DIALOG_COUNT:", dialogs.length);
-    console.log("HAS_OVERLAY:", !!document.querySelector('[data-radix-dialog-overlay]'));
+    console.log("HAS_OVERLAY:", !!document.querySelector("[data-radix-dialog-overlay]"));
     console.log("HAS_TITLE:", document.body.innerHTML.includes("Configure SAML SSO"));
     console.log("SNIPPET:", document.body.innerHTML.slice(0, 700).replace(/\s+/g, " "));
     expect(true).toBe(true);

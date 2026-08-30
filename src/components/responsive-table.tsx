@@ -37,11 +37,7 @@ export function ResponsiveTable<T>({
   emptyMessage = "No data found",
 }: ResponsiveTableProps<T>) {
   if (data.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        {emptyMessage}
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground text-sm">{emptyMessage}</div>;
   }
 
   const mobileColumns = columns.filter((c) => !c.hideOnMobile);
@@ -70,9 +66,7 @@ export function ResponsiveTable<T>({
               >
                 {columns.map((col) => (
                   <TableCell key={col.key} className={col.className}>
-                    {col.render
-                      ? col.render(item)
-                      : String((item as any)[col.key] ?? "")}
+                    {col.render ? col.render(item) : String((item as any)[col.key] ?? "")}
                   </TableCell>
                 ))}
               </TableRow>
@@ -122,9 +116,7 @@ function ResponsiveCard<T>({
           <div key={col.key} className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">{col.label}</span>
             <span className="text-sm font-medium">
-              {col.render
-                ? col.render(item)
-                : String((item as any)[col.key] ?? "")}
+              {col.render ? col.render(item) : String((item as any)[col.key] ?? "")}
             </span>
           </div>
         ))}
@@ -139,9 +131,7 @@ function ResponsiveCard<T>({
                 <div key={col.key} className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{col.label}</span>
                   <span className="text-sm">
-                    {col.render
-                      ? col.render(item)
-                      : String((item as any)[col.key] ?? "")}
+                    {col.render ? col.render(item) : String((item as any)[col.key] ?? "")}
                   </span>
                 </div>
               ))}

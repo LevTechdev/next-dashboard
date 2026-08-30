@@ -73,12 +73,14 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Everything you need,<br />
+            Everything you need,
+            <br />
             <span className="text-primary">built right in.</span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            A comprehensive suite of tools designed to help you manage orders, analyze revenue, and scale your business effortlessly.
+            A comprehensive suite of tools designed to help you manage orders, analyze revenue, and
+            scale your business effortlessly.
           </p>
         </motion.div>
       </section>
@@ -86,9 +88,10 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
       {/* ──────── CORE FEATURES ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 py-12 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.1, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -96,12 +99,17 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <LayoutDashboard className="h-5 w-5 text-blue-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Unified Dashboard</h3>
-              <p className="text-sm text-muted-foreground">Get a bird&apos;s-eye view of your entire business. Monitor sales, track inventory, and manage customers from a single, intuitive interface.</p>
+              <p className="text-sm text-muted-foreground">
+                Get a bird&apos;s-eye view of your entire business. Monitor sales, track inventory,
+                and manage customers from a single, intuitive interface.
+              </p>
             </BentoCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.15, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -109,12 +117,17 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <ShoppingCart className="h-5 w-5 text-emerald-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Order Management</h3>
-              <p className="text-sm text-muted-foreground">Process orders faster with automated workflows. Track shipments, handle returns, and keep customers updated in real-time.</p>
+              <p className="text-sm text-muted-foreground">
+                Process orders faster with automated workflows. Track shipments, handle returns, and
+                keep customers updated in real-time.
+              </p>
             </BentoCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.2, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -122,12 +135,17 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <BarChart3 className="h-5 w-5 text-purple-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Advanced Analytics</h3>
-              <p className="text-sm text-muted-foreground">Make data-driven decisions with detailed reports. Analyze revenue trends, customer behavior, and product performance.</p>
+              <p className="text-sm text-muted-foreground">
+                Make data-driven decisions with detailed reports. Analyze revenue trends, customer
+                behavior, and product performance.
+              </p>
             </BentoCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.25, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -135,12 +153,17 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Package className="h-5 w-5 text-amber-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Inventory Control</h3>
-              <p className="text-sm text-muted-foreground">Never run out of stock. Set low-stock alerts, manage variants, and sync inventory across all your sales channels automatically.</p>
+              <p className="text-sm text-muted-foreground">
+                Never run out of stock. Set low-stock alerts, manage variants, and sync inventory
+                across all your sales channels automatically.
+              </p>
             </BentoCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.3, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -148,12 +171,17 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Shield className="h-5 w-5 text-rose-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Enterprise Security</h3>
-              <p className="text-sm text-muted-foreground">Keep your data safe with bank-grade encryption, Role-Based Access Control (RBAC), Two-Factor Authentication (2FA), and SSO.</p>
+              <p className="text-sm text-muted-foreground">
+                Keep your data safe with bank-grade encryption, Role-Based Access Control (RBAC),
+                Two-Factor Authentication (2FA), and SSO.
+              </p>
             </BentoCard>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5, delay: 0.35, ease: easeSmooth }}
           >
             <BentoCard className="h-full">
@@ -161,28 +189,51 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Globe className="h-5 w-5 text-cyan-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Global Commerce</h3>
-              <p className="text-sm text-muted-foreground">Sell anywhere in the world. Support for multiple currencies, local payment gateways, and international shipping integrations.</p>
+              <p className="text-sm text-muted-foreground">
+                Sell anywhere in the world. Support for multiple currencies, local payment gateways,
+                and international shipping integrations.
+              </p>
             </BentoCard>
           </motion.div>
-
         </div>
       </section>
 
       {/* ──────── PERFORMANCE HIGHLIGHTS ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 py-16 max-w-7xl mx-auto border-t border-border">
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">Built for Performance</h2>
-          <p className="text-muted-foreground text-sm max-w-2xl mx-auto">Lightning fast, incredibly reliable, and designed to scale with your business.</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
+            Built for Performance
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
+            Lightning fast, incredibly reliable, and designed to scale with your business.
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: Zap, title: "Sub-200ms API", desc: "Experience incredibly fast load times and instant data updates.", color: "text-amber-500" },
-            { icon: CheckCircle, title: "99.9% Uptime", desc: "Enterprise-grade reliability ensures your business never stops running.", color: "text-emerald-500" },
-            { icon: RefreshCw, title: "Real-time Sync", desc: "Data syncs instantly across all devices and connected integrations.", color: "text-indigo-500" }
+            {
+              icon: Zap,
+              title: "Sub-200ms API",
+              desc: "Experience incredibly fast load times and instant data updates.",
+              color: "text-amber-500",
+            },
+            {
+              icon: CheckCircle,
+              title: "99.9% Uptime",
+              desc: "Enterprise-grade reliability ensures your business never stops running.",
+              color: "text-emerald-500",
+            },
+            {
+              icon: RefreshCw,
+              title: "Real-time Sync",
+              desc: "Data syncs instantly across all devices and connected integrations.",
+              color: "text-indigo-500",
+            },
           ].map((item, i) => (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.1, ease: easeSmooth }}
               className="flex flex-col items-center text-center p-6 rounded-2xl border border-border bg-background"
             >
@@ -197,13 +248,15 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to upgrade your workflow?</h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">

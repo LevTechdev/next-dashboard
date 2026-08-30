@@ -344,7 +344,8 @@ export function createDashboardTools(tenantId: string | null) {
     },
 
     getSecurityOverview: {
-      description: "Get the current security status of the user's account (2FA, email verification).",
+      description:
+        "Get the current security status of the user's account (2FA, email verification).",
       inputSchema: z.object({
         userId: z.string().describe("The user's ID"),
       }),
@@ -373,7 +374,10 @@ export function createDashboardTools(tenantId: string | null) {
       description: "Get recent audit log entries for tracking user activity and security events.",
       inputSchema: z.object({
         limit: z.number().optional().default(10),
-        action: z.string().optional().describe("Filter by action type, e.g. LOGIN, LOGOUT, CREATE, UPDATE"),
+        action: z
+          .string()
+          .optional()
+          .describe("Filter by action type, e.g. LOGIN, LOGOUT, CREATE, UPDATE"),
       }),
       execute: async ({ limit, action }: { limit?: number; action?: string }) => {
         const where: any = { tenantId };
@@ -397,7 +401,8 @@ export function createDashboardTools(tenantId: string | null) {
     },
 
     getChartData: {
-      description: "Get formatted chart data for a specific metric over time. Use for generating visualization data.",
+      description:
+        "Get formatted chart data for a specific metric over time. Use for generating visualization data.",
       inputSchema: z.object({
         metric: z.enum(["revenue", "orders", "customers"]).describe("The metric to chart"),
         months: z.number().optional().default(6).describe("Number of months to include"),
@@ -405,7 +410,20 @@ export function createDashboardTools(tenantId: string | null) {
       execute: async ({ metric, months }: { metric: string; months?: number }) => {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - (months || 6));
-        const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
         if (metric === "revenue") {
           const orders = await prisma.order.findMany({
             where: { tenantId, createdAt: { gte: startDate } },
@@ -417,7 +435,13 @@ export function createDashboardTools(tenantId: string | null) {
             const m = monthNames[new Date(o.createdAt).getMonth()];
             map[m] = (map[m] || 0) + o.grandTotal;
           });
-          return { type: "bar", metric: "Revenue", data: monthNames.filter((m) => map[m] !== undefined).map((m) => ({ label: m, value: map[m] })) };
+          return {
+            type: "bar",
+            metric: "Revenue",
+            data: monthNames
+              .filter((m) => map[m] !== undefined)
+              .map((m) => ({ label: m, value: map[m] })),
+          };
         }
         if (metric === "orders") {
           const orders = await prisma.order.findMany({
@@ -430,7 +454,13 @@ export function createDashboardTools(tenantId: string | null) {
             const m = monthNames[new Date(o.createdAt).getMonth()];
             map[m] = (map[m] || 0) + 1;
           });
-          return { type: "line", metric: "Orders", data: monthNames.filter((m) => map[m] !== undefined).map((m) => ({ label: m, value: map[m] })) };
+          return {
+            type: "line",
+            metric: "Orders",
+            data: monthNames
+              .filter((m) => map[m] !== undefined)
+              .map((m) => ({ label: m, value: map[m] })),
+          };
         }
         return { type: "line", metric: "Customers", data: [] };
       },

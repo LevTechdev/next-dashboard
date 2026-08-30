@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  VERIFY_EMAIL_REDIRECT_PAGES,
-  sanitizeVerifyEmailRedirect,
-} from "./email-verification";
+import { VERIFY_EMAIL_REDIRECT_PAGES, sanitizeVerifyEmailRedirect } from "./email-verification";
 
 describe("sanitizeVerifyEmailRedirect", () => {
   it("accepts the whitelisted pages", () => {

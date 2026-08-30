@@ -7,7 +7,14 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { EyeIcon, EyeOffIcon, LoaderCircleIcon, SparklesIcon, XIcon, CheckIcon } from "lucide-animated";
+import {
+  EyeIcon,
+  EyeOffIcon,
+  LoaderCircleIcon,
+  SparklesIcon,
+  XIcon,
+  CheckIcon,
+} from "lucide-animated";
 import {
   Eye,
   EyeOff,
@@ -19,7 +26,9 @@ import {
   Sparkles,
   KeyRound,
   Timer,
-  MailCheck, ChevronLeft, ChevronRight,
+  MailCheck,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { Button } from "@/components/ui/button";
@@ -221,165 +230,227 @@ export default function RegisterPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as any } },
   };
 
-    return (
-      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#EE5D36] dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
-        
-        {/* Theme Toggle */}
-        {mounted && (
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-900/20 dark:bg-zinc-800/50 backdrop-blur-md border border-white/30 dark:border-zinc-700 text-white hover:bg-white dark:bg-zinc-900/30 dark:hover:bg-zinc-800 transition-all"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col md:flex-row w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-transparent dark:border-zinc-800"
+  return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#EE5D36] dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
+      {/* Theme Toggle */}
+      {mounted && (
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-900/20 dark:bg-zinc-800/50 backdrop-blur-md border border-white/30 dark:border-zinc-700 text-white hover:bg-white dark:bg-zinc-900/30 dark:hover:bg-zinc-800 transition-all"
         >
-          {/* LEFT SIDE: Form */}
-          <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
-            <SparklesIcon className="h-8 w-8 text-[#EE5D36] mb-8" />
-            
-            {otpRequired ? (
-              // --- OTP VERIFICATION VIEW ---
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Verify your email</h1>
-                  <p className="text-gray-500 dark:text-zinc-400 text-sm">We sent a 6-digit code to <span className="font-semibold text-gray-700 dark:text-zinc-300">{email}</span></p>
-                </div>
-                
-                {devOtp && (
-                  <div className="rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 p-2.5 text-center">
-                    <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1">Development OTP</p>
-                    <p className="font-mono text-lg font-bold text-gray-800 dark:text-zinc-200 tracking-widest">{devOtp}</p>
-                  </div>
-                )}
-                
-                <form onSubmit={verifyOtp} className="space-y-5">
-                  <div>
-                    <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">Confirmation code</Label>
-                    <Input 
-                      value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, "").slice(0,6)); setOtpError(null); }}
-                      placeholder="000000"
-                      disabled={verifying}
-                      className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
-                    />
-                    {otpError && <p className="text-sm text-red-500 mt-2 flex items-center gap-1"><XIcon className="h-4 w-4"/> {otpError}</p>}
-                  </div>
-                  <Button type="submit" disabled={verifying || otp.length !== 6} className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold shadow-none">
-                    {verifying ? <Loader2 className="animate-spin" /> : "Verify & Continue"}
-                  </Button>
-                </form>
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+      )}
 
-                <div className="text-center pt-2">
-                  <Button 
-                    variant="ghost" 
-                    onClick={resendOtp} 
-                    disabled={cooldownLeft > 0} 
-                    className="text-sm text-gray-500 dark:text-zinc-400 hover:text-[#EE5D36]"
-                  >
-                    {cooldownLeft > 0 ? `Resend code in ${cooldownLeft}s` : "Didn't receive a code? Resend"}
-                  </Button>
-                </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col md:flex-row w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden border border-transparent dark:border-zinc-800"
+      >
+        {/* LEFT SIDE: Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
+          <SparklesIcon className="h-8 w-8 text-[#EE5D36] mb-8" />
+
+          {otpRequired ? (
+            // --- OTP VERIFICATION VIEW ---
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  Verify your email
+                </h1>
+                <p className="text-gray-500 dark:text-zinc-400 text-sm">
+                  We sent a 6-digit code to{" "}
+                  <span className="font-semibold text-gray-700 dark:text-zinc-300">{email}</span>
+                </p>
               </div>
-            ) : (
-              // --- REGISTRATION FORM VIEW ---
-              <>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create Account</h1>
-                <p className="text-gray-500 dark:text-zinc-400 text-sm mb-8">Join the community and start building your future.</p>
-                
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div>
-                    <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">Full Name</Label>
-                    <Input 
-                      value={name} onChange={e => setName(e.target.value)}
-                      placeholder="John Doe"
-                      disabled={isLoading}
-                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white" 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">Email</Label>
-                    <Input 
-                      type="email"
-                      value={email} onChange={e => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      disabled={isLoading}
-                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white" 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">Password</Label>
-                    <div className="relative">
-                      <Input 
-                        type={showPassword ? 'text' : 'password'}
-                        value={password} onChange={e => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        disabled={isLoading}
-                        className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white pr-10" 
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-gray-600">
-                        {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {password && <PasswordStrength password={password} />}
-                  </div>
-                  <div>
-                    <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">Confirm Password</Label>
-                    <Input 
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+
+              {devOtp && (
+                <div className="rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 p-2.5 text-center">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1">
+                    Development OTP
+                  </p>
+                  <p className="font-mono text-lg font-bold text-gray-800 dark:text-zinc-200 tracking-widest">
+                    {devOtp}
+                  </p>
+                </div>
+              )}
+
+              <form onSubmit={verifyOtp} className="space-y-5">
+                <div>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    Confirmation code
+                  </Label>
+                  <Input
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      setOtpError(null);
+                    }}
+                    placeholder="000000"
+                    disabled={verifying}
+                    className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                  />
+                  {otpError && (
+                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                      <XIcon className="h-4 w-4" /> {otpError}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  disabled={verifying || otp.length !== 6}
+                  className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold shadow-none"
+                >
+                  {verifying ? <Loader2 className="animate-spin" /> : "Verify & Continue"}
+                </Button>
+              </form>
+
+              <div className="text-center pt-2">
+                <Button
+                  variant="ghost"
+                  onClick={resendOtp}
+                  disabled={cooldownLeft > 0}
+                  className="text-sm text-gray-500 dark:text-zinc-400 hover:text-[#EE5D36]"
+                >
+                  {cooldownLeft > 0
+                    ? `Resend code in ${cooldownLeft}s`
+                    : "Didn't receive a code? Resend"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // --- REGISTRATION FORM VIEW ---
+            <>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Create Account
+              </h1>
+              <p className="text-gray-500 dark:text-zinc-400 text-sm mb-8">
+                Join the community and start building your future.
+              </p>
+
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    Full Name
+                  </Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    disabled={isLoading}
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    Email
+                  </Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={isLoading}
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       disabled={isLoading}
-                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white" 
+                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white pr-10"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOffIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
-                  
-                  <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-4 shadow-none">
-                    {isLoading ? <Loader2 className="animate-spin" /> : "Sign Up"}
-                  </Button>
-                </form>
-
-                <p className="text-center text-sm text-gray-500 dark:text-zinc-400 mt-8">
-                  Already have an account? <Link href={`/${locale}/login`} className="text-[#EE5D36] font-semibold hover:underline">Log in</Link>
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* RIGHT SIDE: Gradient + Testimonial */}
-          <div className="hidden md:flex w-1/2 p-4">
-            <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-[#FCE1D4] via-[#F3E7C9] to-[#FCE1D4] p-8 flex flex-col justify-end relative overflow-hidden">
-              <div className="bg-white dark:bg-zinc-900/40 backdrop-blur-md border border-white/60 p-8 rounded-3xl shadow-sm">
-                <div className="flex gap-2 mb-6">
-                  <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">Community of designers</span>
-                  <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">Creative resources</span>
+                  {password && <PasswordStrength password={password} />}
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-8">
-                  &quot;I was able to reduce the time taken to present high-level designs by 35% using the platform.&quot;
-                </p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">Sara Bright</p>
-                    <p className="text-gray-600 text-xs mt-0.5 font-medium">Freelancer Designer</p>
+                <div>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-4 shadow-none"
+                >
+                  {isLoading ? <Loader2 className="animate-spin" /> : "Sign Up"}
+                </Button>
+              </form>
+
+              <p className="text-center text-sm text-gray-500 dark:text-zinc-400 mt-8">
+                Already have an account?{" "}
+                <Link
+                  href={`/${locale}/login`}
+                  className="text-[#EE5D36] font-semibold hover:underline"
+                >
+                  Log in
+                </Link>
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* RIGHT SIDE: Gradient + Testimonial */}
+        <div className="hidden md:flex w-1/2 p-4">
+          <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-[#FCE1D4] via-[#F3E7C9] to-[#FCE1D4] p-8 flex flex-col justify-end relative overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900/40 backdrop-blur-md border border-white/60 p-8 rounded-3xl shadow-sm">
+              <div className="flex gap-2 mb-6">
+                <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">
+                  Community of designers
+                </span>
+                <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">
+                  Creative resources
+                </span>
+              </div>
+              <p className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-8">
+                &quot;I was able to reduce the time taken to present high-level designs by 35% using
+                the platform.&quot;
+              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm">Sara Bright</p>
+                  <p className="text-gray-600 text-xs mt-0.5 font-medium">Freelancer Designer</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
+                    <ChevronLeft className="h-4 w-4" />
                   </div>
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
-                      <ChevronLeft className="h-4 w-4" />
-                    </div>
-                    <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
-                      <ChevronRight className="h-4 w-4" />
-                    </div>
+                  <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
+                    <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </motion.div>
-      </div>
-    );
-
+        </div>
+      </motion.div>
+    </div>
+  );
 }

@@ -47,7 +47,12 @@ export async function GET(req: Request) {
       data: { emailVerified: new Date(), verificationToken: null, verificationTokenExpires: null },
     });
 
-    await logSecurityEvent({ userId: user.id, type: "EMAIL_VERIFIED", req, tenantId: user.tenantId });
+    await logSecurityEvent({
+      userId: user.id,
+      type: "EMAIL_VERIFIED",
+      req,
+      tenantId: user.tenantId,
+    });
 
     const successUrl = `${origin}/${locale}/${from}?verified=true`;
     return NextResponse.redirect(successUrl, 302);

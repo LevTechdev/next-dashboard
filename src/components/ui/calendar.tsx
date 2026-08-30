@@ -52,9 +52,7 @@ export function Calendar({
   const [currentMonth, setCurrentMonth] = React.useState(selected || new Date());
   const [hoverDate, setHoverDate] = React.useState<Date | null>(null);
 
-  const months = Array.from({ length: numberOfMonths }, (_, i) =>
-    addMonths(currentMonth, i),
-  );
+  const months = Array.from({ length: numberOfMonths }, (_, i) => addMonths(currentMonth, i));
 
   function goToPrevMonth() {
     setCurrentMonth((m) => subMonths(m, 1));
@@ -186,19 +184,12 @@ export function Calendar({
                     !inMonth && "text-gray-300 dark:text-gray-600",
                     inMonth && "text-gray-700 dark:text-gray-300",
                     disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
-                    today &&
-                      !inRange &&
-                      "font-semibold text-indigo-600 dark:text-indigo-400",
+                    today && !inRange && "font-semibold text-indigo-600 dark:text-indigo-400",
                     // Range styling
-                    inRange &&
-                      "bg-indigo-50 dark:bg-indigo-900/30 rounded-none",
-                    rangeStart &&
-                      "bg-indigo-600 text-white hover:bg-indigo-700 rounded-l-md",
-                    rangeEnd &&
-                      "bg-indigo-600 text-white hover:bg-indigo-700 rounded-r-md",
-                    rangeStart &&
-                      rangeEnd &&
-                      "rounded-md",
+                    inRange && "bg-indigo-50 dark:bg-indigo-900/30 rounded-none",
+                    rangeStart && "bg-indigo-600 text-white hover:bg-indigo-700 rounded-l-md",
+                    rangeEnd && "bg-indigo-600 text-white hover:bg-indigo-700 rounded-r-md",
+                    rangeStart && rangeEnd && "rounded-md",
                     // Single selected (using parent's selected state via external CSS)
                   )}
                   onClick={() => handleDayClick(day)}

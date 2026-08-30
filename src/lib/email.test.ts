@@ -98,15 +98,17 @@ describe("sendEmail — Resend configured", () => {
     vi.doMock("resend", () => ({
       Resend: class {
         emails = {
-          send: vi.fn().mockResolvedValue({ data: null, error: { message: "rate_limit_exceeded" } }),
+          send: vi
+            .fn()
+            .mockResolvedValue({ data: null, error: { message: "rate_limit_exceeded" } }),
         };
       },
     }));
 
     const { sendEmail: send } = await import("./email");
-    await expect(
-      send({ to: "a@b.com", subject: "s", html: "h", text: "t" }),
-    ).rejects.toThrow(/rate_limit_exceeded/);
+    await expect(send({ to: "a@b.com", subject: "s", html: "h", text: "t" })).rejects.toThrow(
+      /rate_limit_exceeded/,
+    );
   });
 });
 
@@ -167,9 +169,9 @@ describe("sendEmail — SMTP configured (takes priority over Resend)", () => {
     }));
 
     const { sendEmail: send } = await import("./email");
-    await expect(
-      send({ to: "u@example.com", subject: "S", html: "h", text: "t" }),
-    ).rejects.toThrow(/ECONNREFUSED/);
+    await expect(send({ to: "u@example.com", subject: "S", html: "h", text: "t" })).rejects.toThrow(
+      /ECONNREFUSED/,
+    );
   });
 });
 
@@ -241,7 +243,11 @@ describe("password-reset sender", () => {
     }));
 
     const { sendPasswordResetEmail: sendR } = await import("./email");
-    await sendR({ to: "u@example.com", url: "https://app.example.com/reset?token=x", locale: "zh" });
+    await sendR({
+      to: "u@example.com",
+      url: "https://app.example.com/reset?token=x",
+      locale: "zh",
+    });
 
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({ subject: expect.stringContaining("重置密码") }),

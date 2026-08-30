@@ -46,10 +46,7 @@ export async function POST(req: Request) {
   // Plan gating: paid plans require Stripe Checkout (/api/billing/checkout).
   // Only the Free plan (price 0) can be switched directly.
   if (plan.price > 0) {
-    return NextResponse.json(
-      { error: "Paid plans require Stripe checkout" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Paid plans require Stripe checkout" }, { status: 400 });
   }
 
   // Resolve real admin user ID for DB relations
@@ -163,12 +160,12 @@ export async function PUT(req: Request) {
 
     await prisma.auditLog.create({
       data: {
-      action: "CANCEL_SUBSCRIPTION",
-      entity: "Subscription",
-      entityId: subscription.id,
-      details: `Scheduled cancellation of ${subscription.plan.name} plan at period end`,
-      tenantId: adminUser.tenantId,
-    },
+        action: "CANCEL_SUBSCRIPTION",
+        entity: "Subscription",
+        entityId: subscription.id,
+        details: `Scheduled cancellation of ${subscription.plan.name} plan at period end`,
+        tenantId: adminUser.tenantId,
+      },
     });
 
     return NextResponse.json(updated);

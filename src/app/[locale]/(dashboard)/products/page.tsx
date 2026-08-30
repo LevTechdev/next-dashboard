@@ -102,7 +102,9 @@ export default function ProductsPage() {
     });
   }, [products, dateRange]);
 
-  const filtered = dateFiltered.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = dateFiltered.filter((p: any) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   // Client-side pagination over the filtered list (export still covers all matches).
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

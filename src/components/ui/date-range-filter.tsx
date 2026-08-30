@@ -141,11 +141,7 @@ export function DateRangeFilter({
               type="button"
             >
               <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>
-                {value.from
-                  ? format(parseISO(value.from), "MMM d, yyyy")
-                  : "Start date"}
-              </span>
+              <span>{value.from ? format(parseISO(value.from), "MMM d, yyyy") : "Start date"}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-auto p-0">
@@ -186,11 +182,7 @@ export function DateRangeFilter({
               type="button"
             >
               <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>
-                {value.to
-                  ? format(parseISO(value.to), "MMM d, yyyy")
-                  : "End date"}
-              </span>
+              <span>{value.to ? format(parseISO(value.to), "MMM d, yyyy") : "End date"}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-auto p-0">
@@ -211,13 +203,7 @@ export function DateRangeFilter({
 
       {/* Clear button */}
       {hasFilter && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={clear}
-          type="button"
-        >
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clear} type="button">
           <XIcon className="h-3.5 w-3.5" />
         </Button>
       )}

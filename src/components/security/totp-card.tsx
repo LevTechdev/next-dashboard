@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Loader2, Shield, ShieldOff, Smartphone, Scan, KeyRound } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  Shield,
+  ShieldOff,
+  Smartphone,
+  Scan,
+  KeyRound,
+} from "lucide-react";
 import { ShieldCheckIcon, CheckCheckIcon, CopyIcon } from "lucide-animated";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -205,9 +213,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
             <DialogTitle className="flex items-center text-xl font-medium">
               Setup authenticator app
             </DialogTitle>
-            <DialogDescription className="hidden">
-              {t("setup2FADesc")}
-            </DialogDescription>
+            <DialogDescription className="hidden">{t("setup2FADesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="px-6 space-y-6 pb-4">
@@ -238,9 +244,9 @@ export function TotpCard({ data }: { data: SecurityData }) {
                         <span className="sr-only">{totpSecret}</span>
                       </code>
                     </div>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       className="w-fit h-8"
                       onClick={() => {
                         navigator.clipboard.writeText(totpSecret);
@@ -266,11 +272,16 @@ export function TotpCard({ data }: { data: SecurityData }) {
 
               <div className="relative flex justify-between gap-1 sm:gap-2 w-full max-w-sm">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className={cn(
-                    "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
-                    totpCode.length === i ? "border-primary ring-1 ring-primary" : "border-border/50",
-                    totpCode[i] ? "text-foreground" : "text-transparent"
-                  )}>
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
+                      totpCode.length === i
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-border/50",
+                      totpCode[i] ? "text-foreground" : "text-transparent",
+                    )}
+                  >
                     {totpCode[i] || ""}
                   </div>
                 ))}
@@ -293,9 +304,9 @@ export function TotpCard({ data }: { data: SecurityData }) {
             <Button variant="secondary" onClick={closeSetupDialog} disabled={verifying2FA}>
               Cancel
             </Button>
-            <Button 
+            <Button
               className="bg-[#F25C38] hover:bg-[#D94C2B] text-white border-0"
-              onClick={handleVerify2FA} 
+              onClick={handleVerify2FA}
               disabled={totpCode.length < 6 || verifying2FA}
             >
               {verifying2FA ? (

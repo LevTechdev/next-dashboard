@@ -97,7 +97,12 @@ export async function POST(req: Request) {
       },
     });
 
-    await logSecurityEvent({ userId: user.id, type: "EMAIL_VERIFIED", req, tenantId: user.tenantId });
+    await logSecurityEvent({
+      userId: user.id,
+      type: "EMAIL_VERIFIED",
+      req,
+      tenantId: user.tenantId,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

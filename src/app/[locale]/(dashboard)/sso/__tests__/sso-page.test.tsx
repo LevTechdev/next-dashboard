@@ -48,7 +48,10 @@ describe("SSO / Enterprise Settings Page", () => {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response);
       }
       if (url.includes("/api/auth/saml/connections")) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockConnection) } as Response);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockConnection),
+        } as Response);
       }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
     });
@@ -57,9 +60,7 @@ describe("SSO / Enterprise Settings Page", () => {
   it("renders the page heading and subtitle", async () => {
     render(<SsoPage />);
     expect(screen.getByText("SSO / Enterprise")).toBeInTheDocument();
-    expect(
-      screen.getByText("Manage SAML single sign-on for your workspace"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Manage SAML single sign-on for your workspace")).toBeInTheDocument();
   });
 
   it("shows the empty state when no connection is configured", async () => {
@@ -81,7 +82,9 @@ describe("SSO / Enterprise Settings Page", () => {
     expect(screen.getByText("Enabled")).toBeInTheDocument();
     expect(screen.getByText("Certificate configured")).toBeInTheDocument();
     expect(screen.getAllByText("acme.com").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("https://acme.okta.com/app/next-dashboard/sso/saml")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://acme.okta.com/app/next-dashboard/sso/saml"),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("next-dashboard").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -101,11 +104,7 @@ describe("SSO / Enterprise Settings Page", () => {
     });
     fireEvent.click(screen.getByRole("switch"));
     await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(
-          (call) => call[1]?.method === "PATCH",
-        ),
-      ).toBe(true);
+      expect(fetchMock.mock.calls.some((call) => call[1]?.method === "PATCH")).toBe(true);
     });
   });
 
@@ -116,11 +115,7 @@ describe("SSO / Enterprise Settings Page", () => {
     });
     fireEvent.click(screen.getAllByText("Remove connection")[0]);
     await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(
-          (call) => call[1]?.method === "DELETE",
-        ),
-      ).toBe(true);
+      expect(fetchMock.mock.calls.some((call) => call[1]?.method === "DELETE")).toBe(true);
     });
   });
 

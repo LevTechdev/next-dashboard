@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PricingPage from "../pricing/page";
 
-const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+const params = {
+  status: "fulfilled",
+  value: { locale: "en" },
+  then: () => {},
+} as unknown as Promise<{ locale: string }>;
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 

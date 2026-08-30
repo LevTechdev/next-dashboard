@@ -86,7 +86,12 @@ export async function POST(req: Request) {
       if (!passed && backupCode) {
         passed = await consumeBackupCode(user.id, backupCode);
         if (passed) {
-          await logSecurityEvent({ userId: user.id, type: "BACKUP_CODE_USED", req, tenantId: user.tenantId });
+          await logSecurityEvent({
+            userId: user.id,
+            type: "BACKUP_CODE_USED",
+            req,
+            tenantId: user.tenantId,
+          });
           await logSecurityEvent({
             userId: user.id,
             type: "MFA_VERIFIED",

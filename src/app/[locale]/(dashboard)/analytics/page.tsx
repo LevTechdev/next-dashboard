@@ -65,16 +65,38 @@ function generateFunnelData(orders: any[]) {
   const purchase = total;
   return [
     { stage: "Visitors", count: visitors, rate: 100, color: "bg-blue-500" },
-    { stage: "Add to Cart", count: addToCart, rate: Math.round((addToCart / visitors) * 100), color: "bg-indigo-500" },
-    { stage: "Checkout", count: checkout, rate: Math.round((checkout / visitors) * 100), color: "bg-purple-500" },
-    { stage: "Purchase", count: purchase, rate: Math.round((purchase / visitors) * 100), color: "bg-emerald-500" },
+    {
+      stage: "Add to Cart",
+      count: addToCart,
+      rate: Math.round((addToCart / visitors) * 100),
+      color: "bg-indigo-500",
+    },
+    {
+      stage: "Checkout",
+      count: checkout,
+      rate: Math.round((checkout / visitors) * 100),
+      color: "bg-purple-500",
+    },
+    {
+      stage: "Purchase",
+      count: purchase,
+      rate: Math.round((purchase / visitors) * 100),
+      color: "bg-emerald-500",
+    },
   ];
 }
 
 // Generate mock cohort retention data
 function generateRetentionData() {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-  const cohorts = ["Jan Cohort", "Feb Cohort", "Mar Cohort", "Apr Cohort", "May Cohort", "Jun Cohort"];
+  const cohorts = [
+    "Jan Cohort",
+    "Feb Cohort",
+    "Mar Cohort",
+    "Apr Cohort",
+    "May Cohort",
+    "Jun Cohort",
+  ];
   return cohorts.map((cohort, i) => {
     const retention: number[] = [];
     for (let m = 0; m <= 5 - i; m++) {
@@ -88,12 +110,32 @@ function generateRetentionData() {
 function generateGeoData(orders: any[]) {
   const regions: Record<string, number> = {};
   const countries: Record<string, number> = {};
-  const regionNames = ["North America", "Europe", "Asia Pacific", "Latin America", "Middle East", "Africa"];
-  const countryNames = ["United States", "United Kingdom", "Germany", "Japan", "Australia", "Canada", "France", "Brazil"];
-  
-  regionNames.forEach((r) => { regions[r] = Math.round(Math.random() * 200 + 50); });
-  countryNames.forEach((c) => { countries[c] = Math.round(Math.random() * 150 + 20); });
-  
+  const regionNames = [
+    "North America",
+    "Europe",
+    "Asia Pacific",
+    "Latin America",
+    "Middle East",
+    "Africa",
+  ];
+  const countryNames = [
+    "United States",
+    "United Kingdom",
+    "Germany",
+    "Japan",
+    "Australia",
+    "Canada",
+    "France",
+    "Brazil",
+  ];
+
+  regionNames.forEach((r) => {
+    regions[r] = Math.round(Math.random() * 200 + 50);
+  });
+  countryNames.forEach((c) => {
+    countries[c] = Math.round(Math.random() * 150 + 20);
+  });
+
   return {
     regions: Object.entries(regions).sort(([, a], [, b]) => b - a),
     countries: Object.entries(countries).sort(([, a], [, b]) => b - a),
@@ -152,8 +194,17 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex items-center gap-3">
           <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
-          <Button variant="ghost" size="sm" onClick={refresh} disabled={isRefreshing} className="gap-1">
-            <RefreshCwIcon size={14} className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            disabled={isRefreshing}
+            className="gap-1"
+          >
+            <RefreshCwIcon
+              size={14}
+              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            />
             <span className="hidden sm:inline">{tcommon("view")}</span>
           </Button>
         </div>
@@ -327,7 +378,8 @@ export default function AnalyticsPage() {
                       <div className="flex items-center gap-2 pl-4">
                         <ArrowDownRight className="h-3 w-3 text-gray-400" />
                         <span className="text-xs text-gray-500">
-                          {Math.round(((funnelData[i + 1].count - step.count) / step.count) * 100)}% {tdash("growth")}
+                          {Math.round(((funnelData[i + 1].count - step.count) / step.count) * 100)}%{" "}
+                          {tdash("growth")}
                         </span>
                       </div>
                     )}
@@ -350,9 +402,14 @@ export default function AnalyticsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500">Cohort</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500">
+                        Cohort
+                      </th>
                       {[0, 1, 2, 3, 4, 5].map((m) => (
-                        <th key={m} className="text-center py-3 px-2 text-xs font-medium text-gray-500">
+                        <th
+                          key={m}
+                          className="text-center py-3 px-2 text-xs font-medium text-gray-500"
+                        >
                           Month {m}
                         </th>
                       ))}
@@ -360,7 +417,10 @@ export default function AnalyticsPage() {
                   </thead>
                   <tbody>
                     {retentionData.map((row) => (
-                      <tr key={row.cohort} className="border-b border-gray-100 dark:border-gray-800">
+                      <tr
+                        key={row.cohort}
+                        className="border-b border-gray-100 dark:border-gray-800"
+                      >
                         <td className="py-3 px-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                           {row.cohort}
                         </td>
@@ -414,7 +474,9 @@ export default function AnalyticsPage() {
                   return (
                     <div key={region} className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{region}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {region}
+                        </span>
                         <span className="text-xs text-gray-500">{count} orders</span>
                       </div>
                       <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
@@ -438,8 +500,14 @@ export default function AnalyticsPage() {
                   const maxVal = geoData.countries[0][1];
                   const width = Math.max(10, (count / maxVal) * 100);
                   const flags: Record<string, string> = {
-                    "United States": "🇺🇸", "United Kingdom": "🇬🇧", Germany: "🇩🇪",
-                    Japan: "🇯🇵", Australia: "🇦🇺", Canada: "🇨🇦", France: "🇫🇷", Brazil: "🇧🇷",
+                    "United States": "🇺🇸",
+                    "United Kingdom": "🇬🇧",
+                    Germany: "🇩🇪",
+                    Japan: "🇯🇵",
+                    Australia: "🇦🇺",
+                    Canada: "🇨🇦",
+                    France: "🇫🇷",
+                    Brazil: "🇧🇷",
                   };
                   return (
                     <div key={country} className="space-y-1">
@@ -495,7 +563,11 @@ export default function AnalyticsPage() {
                       <div>
                         <p className="text-sm font-medium">
                           {p.name}
-                          <LinkedPlatformsBadge productId={p.id} count={p.linkedCount || 0} className="ml-1.5" />
+                          <LinkedPlatformsBadge
+                            productId={p.id}
+                            count={p.linkedCount || 0}
+                            className="ml-1.5"
+                          />
                         </p>
                         <p className="text-xs text-gray-500">{p.orderCount || 0} orders</p>
                       </div>

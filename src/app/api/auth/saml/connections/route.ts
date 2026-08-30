@@ -62,10 +62,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { name, entryPoint, idpCert, spIssuer, emailDomain, enabled } = body;
   if (!name || !entryPoint) {
-    return NextResponse.json(
-      { error: "name and entryPoint are required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "name and entryPoint are required" }, { status: 400 });
   }
 
   let cert = idpCert ? stripPem(idpCert) : "";
@@ -74,10 +71,7 @@ export async function POST(req: Request) {
     const existing = await prisma.ssoConnection.findUnique({ where: { tenantId } });
     cert = existing?.idpCert ?? "";
     if (!cert) {
-      return NextResponse.json(
-        { error: "idpCert is required on first setup" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "idpCert is required on first setup" }, { status: 400 });
     }
   }
 

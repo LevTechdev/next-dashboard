@@ -102,7 +102,9 @@ const {
       backupCode: deepModel({}),
       ssoConnection: deepModel({
         findUnique: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn().mockImplementation(({ create }: any) => Promise.resolve({ id: "conn-1", ...create })),
+        upsert: vi
+          .fn()
+          .mockImplementation(({ create }: any) => Promise.resolve({ id: "conn-1", ...create })),
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       }),
       auditLog: deepModel({}),
@@ -146,15 +148,13 @@ const {
     mockNewFamilyId: vi.fn().mockReturnValue("family-1"),
     mockCreateRefreshToken: vi.fn().mockResolvedValue("refresh-token-xxx"),
     mockGetFamilyForToken: vi.fn().mockResolvedValue("family-1"),
-    mockRotateRefreshToken: vi
-      .fn()
-      .mockResolvedValue({
-        status: "ok",
-        userId: "user-1",
-        familyId: "family-1",
-        sessionId: "sess-1",
-        token: "new-refresh-token",
-      }),
+    mockRotateRefreshToken: vi.fn().mockResolvedValue({
+      status: "ok",
+      userId: "user-1",
+      familyId: "family-1",
+      sessionId: "sess-1",
+      token: "new-refresh-token",
+    }),
     mockRotateSessionAccessToken: vi.fn().mockResolvedValue(undefined),
     mockRegenerateBackupCodes: vi
       .fn()
@@ -1314,9 +1314,7 @@ describe("Forgot Password", () => {
         isActive: true,
       });
 
-      const res = await forgotPasswordRoutes.POST(
-        post({ email: "a@test.com", locale: "ja" }),
-      );
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com", locale: "ja" }));
       expect(res.status).toBe(200);
       expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
         expect.objectContaining({ locale: "ja" }),
@@ -1330,9 +1328,7 @@ describe("Forgot Password", () => {
         isActive: true,
       });
 
-      const res = await forgotPasswordRoutes.POST(
-        post({ email: "a@test.com", locale: 123 }),
-      );
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com", locale: 123 }));
       expect(res.status).toBe(200);
       expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
         expect.objectContaining({ locale: "en" }),
@@ -1350,9 +1346,7 @@ describe("Forgot Password", () => {
 
       const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com" }));
       expect(res.status).toBe(200);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Reset link for a@test.com"),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Reset link for a@test.com"));
       consoleSpy.mockRestore();
     });
 
@@ -1484,7 +1478,9 @@ describe("Session by ID", () => {
       });
       const req = post() as any;
       req.params = Promise.resolve({ id: "sess-1" });
-      const res = await sessionByIdRoutes.DELETE(req, { params: Promise.resolve({ id: "sess-1" }) });
+      const res = await sessionByIdRoutes.DELETE(req, {
+        params: Promise.resolve({ id: "sess-1" }),
+      });
       expect(res.status).toBe(401);
     });
 
@@ -1672,9 +1668,7 @@ describe("Verify Email Send", () => {
         emailVerified: null,
       });
       mockIsDevFallbackAllowed.mockReturnValueOnce(true);
-      const res = await verifyEmailSendRoutes.POST(
-        post({ locale: "ja", from: "profile" }),
-      );
+      const res = await verifyEmailSendRoutes.POST(post({ locale: "ja", from: "profile" }));
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.verificationUrl).toContain("locale=ja");

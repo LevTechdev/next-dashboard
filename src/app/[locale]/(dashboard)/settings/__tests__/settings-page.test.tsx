@@ -56,17 +56,28 @@ vi.mock("sonner", () => ({
 }));
 
 // Mock fetch globally
-vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) })));
+vi.stubGlobal(
+  "fetch",
+  vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) })),
+);
 
 describe("Settings Page", () => {
   it("renders the page heading", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Settings")).toBeInTheDocument();
     expect(screen.getByText("Manage application settings")).toBeInTheDocument();
   });
 
   it("renders Appearance card", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Appearance")).toBeInTheDocument();
     expect(screen.getByText("Light")).toBeInTheDocument();
     expect(screen.getByText("Dark")).toBeInTheDocument();
@@ -74,14 +85,22 @@ describe("Settings Page", () => {
   });
 
   it("renders Language card", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Language")).toBeInTheDocument();
     expect(screen.getByText("English")).toBeInTheDocument();
     expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
   });
 
   it("renders Notifications card with toggle options", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Notifications")).toBeInTheDocument();
     expect(screen.getByText("Email Notifications")).toBeInTheDocument();
     expect(screen.getByText("Order Updates")).toBeInTheDocument();
@@ -89,19 +108,31 @@ describe("Settings Page", () => {
   });
 
   it("renders Budget Alert Threshold card", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Budget Alert Threshold")).toBeInTheDocument();
   });
 
   it("renders Security card", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Security")).toBeInTheDocument();
     expect(screen.getByText("Two-Factor Authentication")).toBeInTheDocument();
     expect(screen.getByText("Session Timeout")).toBeInTheDocument();
   });
 
   it("renders the Save Changes button", () => {
-    render(<ConfirmProvider><SettingsPage /></ConfirmProvider>);
+    render(
+      <ConfirmProvider>
+        <SettingsPage />
+      </ConfirmProvider>,
+    );
     expect(screen.getByText("Save Changes")).toBeInTheDocument();
   });
 });

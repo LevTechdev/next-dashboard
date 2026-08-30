@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import {
-  useResendCooldown,
-  RESEND_COOLDOWN_SECONDS,
-  COOLDOWN_KEY,
-} from "../use-resend-cooldown";
+import { useResendCooldown, RESEND_COOLDOWN_SECONDS, COOLDOWN_KEY } from "../use-resend-cooldown";
 
 describe("useResendCooldown", () => {
   beforeEach(() => {
@@ -40,9 +36,7 @@ describe("useResendCooldown", () => {
   });
 
   it("counts down once per second and clears the marker when it elapses", () => {
-    const { result } = renderHook(() =>
-      useResendCooldown({ durationSeconds: 3, storageKey: "k" }),
-    );
+    const { result } = renderHook(() => useResendCooldown({ durationSeconds: 3, storageKey: "k" }));
 
     act(() => result.current.startCooldown());
     expect(result.current.cooldownLeft).toBe(3);
@@ -74,9 +68,7 @@ describe("useResendCooldown", () => {
   it("drops an expired persisted marker without starting a cooldown", () => {
     localStorage.setItem("custom-cooldown", String(Date.now() - 5000));
 
-    const { result } = renderHook(() =>
-      useResendCooldown({ storageKey: "custom-cooldown" }),
-    );
+    const { result } = renderHook(() => useResendCooldown({ storageKey: "custom-cooldown" }));
 
     expect(result.current.cooldownLeft).toBe(0);
     expect(localStorage.getItem("custom-cooldown")).toBeNull();

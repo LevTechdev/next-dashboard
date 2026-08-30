@@ -3,13 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Check,
-  X,
-  ArrowRight,
-  Star,
-  Percent,
-} from "lucide-react";
+import { Check, X, ArrowRight, Star, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PLAN_META = [
@@ -26,7 +20,7 @@ const PLAN_META = [
       "Basic analytics",
       "Standard exports",
       "Email support",
-    ]
+    ],
   },
   {
     key: "professional",
@@ -44,7 +38,7 @@ const PLAN_META = [
       "Custom reports",
       "Role-Based Access Control",
       "API & Webhooks",
-    ]
+    ],
   },
   {
     key: "enterprise",
@@ -63,7 +57,7 @@ const PLAN_META = [
       "Role-Based Access Control",
       "API & Webhooks",
       "Custom data exports",
-    ]
+    ],
   },
 ];
 
@@ -105,7 +99,9 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
               onClick={() => setIsAnnual(false)}
               className={cn(
                 "px-5 py-2 text-sm font-medium rounded-full transition-colors",
-                !isAnnual ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                !isAnnual
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               Monthly
@@ -114,14 +110,20 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
               onClick={() => setIsAnnual(true)}
               className={cn(
                 "px-5 py-2 text-sm font-medium rounded-full transition-colors inline-flex items-center gap-1.5",
-                isAnnual ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                isAnnual
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               Yearly
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
-                isAnnual ? "bg-emerald-500/20 text-emerald-300" : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              )}>
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                  isAnnual
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                )}
+              >
                 Save 20%
               </span>
             </button>
@@ -134,7 +136,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         <div className="grid md:grid-cols-3 gap-6 items-start">
           {PLAN_META.map((plan, i) => {
             const price = isAnnual ? plan.yearly : plan.monthly;
-            
+
             return (
               <motion.div
                 key={plan.key}
@@ -144,9 +146,9 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                 transition={{ duration: 0.5, delay: i * 0.1, ease: easeSmooth }}
                 className={cn(
                   "rounded-3xl border p-8 flex flex-col relative",
-                  plan.popular 
-                    ? "border-primary shadow-xl bg-foreground text-background" 
-                    : "border-border bg-background text-foreground"
+                  plan.popular
+                    ? "border-primary shadow-xl bg-foreground text-background"
+                    : "border-border bg-background text-foreground",
                 )}
               >
                 {plan.popular && (
@@ -156,15 +158,25 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     </span>
                   </div>
                 )}
-                
+
                 <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-                <p className={cn("text-sm mb-6", plan.popular ? "opacity-80" : "text-muted-foreground")}>
+                <p
+                  className={cn(
+                    "text-sm mb-6",
+                    plan.popular ? "opacity-80" : "text-muted-foreground",
+                  )}
+                >
                   {plan.desc}
                 </p>
-                
+
                 <div className="flex items-baseline gap-1 mb-8">
                   <span className="text-4xl font-bold">${price}</span>
-                  <span className={cn("text-sm font-medium", plan.popular ? "opacity-80" : "text-muted-foreground")}>
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      plan.popular ? "opacity-80" : "text-muted-foreground",
+                    )}
+                  >
                     /month
                   </span>
                 </div>
@@ -173,22 +185,32 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   href={`/${locale}/register`}
                   className={cn(
                     "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8",
-                    plan.popular 
-                      ? "bg-background text-foreground hover:bg-muted" 
-                      : "bg-foreground text-background hover:opacity-90"
+                    plan.popular
+                      ? "bg-background text-foreground hover:bg-muted"
+                      : "bg-foreground text-background hover:opacity-90",
                   )}
                 >
                   {plan.key === "enterprise" ? "Contact Sales" : "Get Started"}
                 </Link>
 
                 <div className="flex-1">
-                  <p className={cn("text-xs font-semibold uppercase tracking-wider mb-4", plan.popular ? "opacity-80" : "text-muted-foreground")}>
+                  <p
+                    className={cn(
+                      "text-xs font-semibold uppercase tracking-wider mb-4",
+                      plan.popular ? "opacity-80" : "text-muted-foreground",
+                    )}
+                  >
                     Includes
                   </p>
                   <ul className="space-y-4">
                     {plan.features.map((feature, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm">
-                        <Check className={cn("h-4 w-4 flex-shrink-0 mt-0.5", plan.popular ? "text-primary-foreground opacity-80" : "text-primary")} />
+                        <Check
+                          className={cn(
+                            "h-4 w-4 flex-shrink-0 mt-0.5",
+                            plan.popular ? "text-primary-foreground opacity-80" : "text-primary",
+                          )}
+                        />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -203,8 +225,12 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       {/* ──────── COMPARISON TABLE ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">Compare Plans</h2>
-          <p className="text-muted-foreground text-sm">Find the perfect set of features for your business scale.</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
+            Compare Plans
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Find the perfect set of features for your business scale.
+          </p>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-border bg-background">
@@ -246,19 +272,23 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           </table>
         </div>
       </section>
-      
+
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Start managing your business better</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Start managing your business better
+            </h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
               Join thousands of businesses that trust our platform. Try it free for 14 days.
             </p>

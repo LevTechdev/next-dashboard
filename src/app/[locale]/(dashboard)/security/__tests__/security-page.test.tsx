@@ -50,9 +50,7 @@ const mockEvents = [
   { id: "e3", type: "MFA_VERIFIED", ip: "103.10.10.1", createdAt: now },
 ];
 
-const mockPasskeys = [
-  { id: "p1", deviceName: "MacBook Pro", createdAt: now, lastUsedAt: now },
-];
+const mockPasskeys = [{ id: "p1", deviceName: "MacBook Pro", createdAt: now, lastUsedAt: now }];
 
 const mockProfile = {
   id: "1",
@@ -106,19 +104,16 @@ describe("Security Center Page", () => {
   });
 
   it("renders the unverified-email alert when the email is not verified", async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (input: unknown) => {
-        const url = typeof input === "string" ? input : "";
-        if (url.includes("/api/profile")) {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({ ...mockProfile, emailVerified: null }),
-          } as Response);
-        }
-        return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
-      },
-    );
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : "";
+      if (url.includes("/api/profile")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ ...mockProfile, emailVerified: null }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);
+    });
 
     render(<SecurityPage />);
     await waitFor(() => {
