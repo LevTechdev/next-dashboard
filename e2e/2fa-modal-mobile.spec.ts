@@ -99,7 +99,7 @@ test.describe("2FA modal at a 375px viewport", () => {
 
     // ── Log out, then sign back in → the TOTP prompt replaces the card ──
     await logoutViaHeader(page);
-    await page.getByPlaceholder("admin@dashboard.com").fill(email);
+    await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
     await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.getByText("Two-Factor Authentication")).toBeVisible();

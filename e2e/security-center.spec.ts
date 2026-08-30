@@ -4,7 +4,7 @@ import { registerFreshUser, loginAs } from "./helpers";
 /**
  * Security Center E2E.
  * Seed the DB first: `npm run db:seed`.
- * Seed admin creds: admin@dashboard.com / admin123.
+ * Seed admin creds: nextdashboards@gmail.com / admin123.
  *
  * The Security Center (src/app/[locale]/(dashboard)/security/page.tsx →
  * src/components/security/security-center.tsx) is only reachable when

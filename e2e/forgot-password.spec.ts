@@ -89,7 +89,7 @@ test.describe("Forgot Password", () => {
   }) => {
     // Headroom for cold CI containers: register + reset + two logins across
     // on-demand-compiled routes (the global test timeout is 30s).
-    test.setTimeout(45_000);
+    // on-demand-compiled routes (the global test timeout is 30s).
     // Fresh account (logged in after registration; the auth pages are public,
     // so the leftover session cookie doesn't interfere with the reset steps).
     const email = await registerFreshUser(page);

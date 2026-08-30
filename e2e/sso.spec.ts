@@ -3,7 +3,7 @@ import { loginAs } from "./helpers";
 
 /**
  * SSO / Enterprise settings E2E (src/components/sso/sso-settings.tsx).
- * Seed the DB first: `npm run db:seed`. Seed admin creds: admin@dashboard.com / admin123.
+ * Seed the DB first: `npm run db:seed`. Seed admin creds: nextdashboards@gmail.com / admin123.
  *
  * The SSO page is only reachable when authenticated; visiting it logged out
  * redirects to /en/login.

@@ -4,7 +4,7 @@ import { fillRegistrationForm, completeSignupOtp } from "./helpers";
 /**
  * Register E2E (pw4).
  * Seed the DB first: `npm run db:seed`.
- * Seeded email for the duplicate test: admin@dashboard.com.
+ * Seeded email for the duplicate test: nextdashboards@gmail.com.
  *
  * The register form (src/app/[locale]/(auth)/register/page.tsx):
  * - name     <input type="text"  placeholder="John Doe">
@@ -45,10 +45,10 @@ test.describe("Register", () => {
   test("shows an attempts-left error for an incorrect verification code", async ({ page }) => {
     await fillRegistrationForm(page, `bad-otp-${Date.now()}@example.com`);
 
-    await expect(page.getByText("Verify your email")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
     // Auto-submit fires on the 6th digit — no "Verify Email" click (it would
     // race the in-flight request; the error surfaces from the auto-submit).
-    await page.getByPlaceholder("6-digit code").fill("000000");
+    await page.locator('input[maxLength="6"]').fill("000000");
 
     await expect(page.getByText(/attempt\(s\) left/i)).toBeVisible();
     // Still on the OTP step — not logged into the dashboard.
@@ -67,7 +67,7 @@ test.describe("Register", () => {
   });
 
   test("rejects a duplicate email and stays on /register", async ({ page }) => {
-    await fillRegistrationForm(page, "admin@dashboard.com");
+    await fillRegistrationForm(page, "nextdashboards@gmail.com");
 
     await expect(page.getByText(/already in use|already exists|failed/i).first()).toBeVisible();
     await expect(page).toHaveURL(/\/en\/register/);

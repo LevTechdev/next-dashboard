@@ -3,7 +3,7 @@ import { createApiKey, loginAs, waitForApiKeysTab } from "./helpers";
 
 /**
  * Integrations developer portal E2E (src/app/[locale]/(dashboard)/integrations/page.tsx).
- * Seed the DB first: `npm run db:seed`. Seed admin creds: admin@dashboard.com / admin123.
+ * Seed the DB first: `npm run db:seed`. Seed admin creds: nextdashboards@gmail.com / admin123.
  *
  * Covers the API Keys tab (create → reveal-once → revoke → reactivate → delete),
  * the Playground tab (whoami against a freshly created key), and the Webhooks tab

@@ -4,7 +4,7 @@ import { loginAs, logoutViaHeader } from "./helpers";
 /**
  * Logout + protected-route E2E (pw5).
  * Seed the DB first: `npm run db:seed`.
- * Seed admin creds: admin@dashboard.com / admin123.
+ * Seed admin creds: nextdashboards@gmail.com / admin123.
  *
  * The logout UI flow (open header user menu → Logout menuitem → confirm the
  * destructive dialog → land back on /login) lives in the shared

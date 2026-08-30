@@ -38,7 +38,7 @@ async function freshCode(secret: string) {
 async function loginWithTotp(page: Page) {
   await page.goto("/en/login");
   await page.waitForLoadState("networkidle");
-  await page.getByPlaceholder("admin@dashboard.com").fill(email);
+  await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
   await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
 
@@ -100,7 +100,7 @@ test.describe("Two-Factor Authentication", () => {
     // 1. Logged-out sign-in with 2FA-enabled account → TOTP prompt appears.
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.getByPlaceholder("admin@dashboard.com").fill(email);
+    await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
     await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.getByText("Two-Factor Authentication")).toBeVisible();
@@ -140,7 +140,7 @@ test.describe("Two-Factor Authentication", () => {
   test("signs in without a TOTP prompt after 2FA is disabled", async ({ page }) => {
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.getByPlaceholder("admin@dashboard.com").fill(email);
+    await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
     await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
 

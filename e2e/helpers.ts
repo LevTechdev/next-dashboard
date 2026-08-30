@@ -9,7 +9,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 export const TEST_PASSWORD = "Kx9#mQ2vLp7!wZ";
 
 /** Seed admin credentials (see `npm run db:seed`). */
-export const SEED_ADMIN_EMAIL = "admin@dashboard.com";
+export const SEED_ADMIN_EMAIL = "nextdashboards@gmail.com";
 export const SEED_ADMIN_PASSWORD = "admin123";
 
 /**
@@ -61,15 +61,15 @@ export async function loginAs(
         }
         return (await page.locator('input[type="email"]').count()) > 0;
       },
-      { timeout: 30_000, message: "login page never served the form" },
+      { timeout: 45_000, message: "login page never served the form" },
     )
     .toBe(true);
   // Values typed before React hydrates are silently dropped (the submit never
   // enables). Retry the fills until the button enables — robust on a cold dev
   // server, where the login route may be the first page compiled in the run.
   const emailInput = page.locator('input[type="email"]');
-  const passwordInput = page.getByPlaceholder("Enter your password");
-  const submit = page.getByRole("button", { name: "Sign In", exact: true });
+  const passwordInput = page.getByPlaceholder("Enter password");
+  const submit = page.getByRole("button", { name: "Log in", exact: true });
   await expect
     .poll(
       async () => {
@@ -157,11 +157,11 @@ export async function fillRegistrationForm(
   options: FillRegistrationFormOptions = {},
 ): Promise<void> {
   const password = options.password ?? TEST_PASSWORD;
-  await page.getByPlaceholder("John Doe").fill(options.name ?? "E2E Test User");
-  await page.getByPlaceholder("you@example.com").fill(email);
-  await page.getByPlaceholder("Min. 6 characters").fill(password);
-  await page.getByPlaceholder("Repeat your password").fill(password);
-  const submit = page.getByRole("button", { name: "Create Account" });
+  await page.getByPlaceholder("Your name").fill(options.name ?? "E2E Test User");
+  await page.getByPlaceholder("Your email").fill(email);
+  await page.getByPlaceholder("Create a password").fill(password);
+  await page.getByPlaceholder("Confirm password").fill(password);
+  const submit = page.getByRole("button", { name: "Create account" });
   await expect(submit).toBeEnabled();
   await submit.click();
 }
@@ -169,17 +169,17 @@ export async function fillRegistrationForm(
 /**
  * Read the dev-mode 6-digit OTP (rendered inline when no mailer is
  * configured) and submit it to complete the signup identity-verification step.
- * Assumes the "Verify your email" step is on screen.
+ * Assumes the "Check your email" step is on screen.
  */
 export async function completeSignupOtp(page: Page): Promise<void> {
-  await expect(page.getByText("Verify your email")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
   expect(code).toMatch(/^\d{6}$/);
   // The OTP input auto-submits the moment the 6th digit lands, so filling the
   // code triggers verification directly. Do NOT click "Verify Email" — the
   // click would race the in-flight request (button flips to a disabled
   // "Verifying…" state) and either time out or double-fire the submission.
-  await page.getByPlaceholder("6-digit code").fill(code);
+  await page.locator('input[maxLength="6"]').fill(code);
   await expect(page).toHaveURL(/\/en\/dashboard/);
 }
 
