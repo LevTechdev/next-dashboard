@@ -6,9 +6,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
 import {
-  Smartphone,
   Sparkles,
-  KeyRound,
   ChevronLeft,
   ChevronRight,
   Fingerprint,
@@ -28,7 +26,7 @@ import { useTranslations } from "next-intl";
 function LoginForm() {
   const t = useTranslations("auth");
   const params = useParams();
-  const locale = params.locale;
+  const _locale = params.locale;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

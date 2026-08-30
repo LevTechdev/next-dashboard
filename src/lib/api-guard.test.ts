@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // The new requireAuth validates JWT tokens from the request.
 // Without a valid token/request, it returns a 401 response.

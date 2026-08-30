@@ -217,7 +217,7 @@ export default function SettingsPage() {
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
 
-  const WEBHOOK_EVENTS = [
+  const WEBHOOK_EVENTS_unused = [
     "order.created",
     "order.updated",
     "order.cancelled",

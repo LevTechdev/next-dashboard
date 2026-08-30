@@ -9,22 +9,14 @@ import {
   Package,
   Shield,
   LayoutDashboard,
-  Megaphone,
-  Tag,
-  PieChart,
   CheckCircle,
   RefreshCw,
   Zap,
   Globe,
-  Users,
-  Bell,
   ArrowRight,
-  ChevronRight,
   Sparkles,
-  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 

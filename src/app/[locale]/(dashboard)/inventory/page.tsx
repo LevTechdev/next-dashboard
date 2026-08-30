@@ -83,7 +83,7 @@ function CategoryBreakdown({
   return (
     <div className="space-y-2.5">
       {Object.entries(catCounts).map(([name, count], i) => {
-        const percentage = Math.round((count / totalProducts) * 100);
+        const _percentage = Math.round((count / totalProducts) * 100);
         const stock = catStock[name] || 0;
         return (
           <motion.div
@@ -128,7 +128,7 @@ export default function InventoryPage() {
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
 
-  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<InventoryData>(
+  const { data, lastUpdated, isRefreshing, refresh } = useRealtimeData<InventoryData>(
     "/api/products?includeCategories=true&includeValue=true",
     {
       interval: 20000,

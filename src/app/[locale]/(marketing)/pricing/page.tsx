@@ -2,8 +2,8 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, ArrowRight, Star, Percent } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, X, ArrowRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PLAN_META = [

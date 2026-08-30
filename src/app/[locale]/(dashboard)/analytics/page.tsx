@@ -149,6 +149,7 @@ export default function AnalyticsPage() {
     "/api/dashboard",
     { interval: 20000 },
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: orders } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
 
   const funnelData = useMemo(() => generateFunnelData(orders || []), [orders]);

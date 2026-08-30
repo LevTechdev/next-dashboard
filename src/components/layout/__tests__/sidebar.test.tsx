@@ -92,7 +92,7 @@ describe("Sidebar", () => {
   });
 
   it("renders in collapsed mode without text labels", () => {
-    const { container } = render(<Sidebar collapsed={true} onToggle={vi.fn()} />);
+    render(<Sidebar collapsed={true} onToggle={vi.fn()} />);
     // Should not show text labels in collapsed mode
     expect(screen.queryByText("Management System")).not.toBeInTheDocument();
     expect(screen.queryByText("Collapse")).not.toBeInTheDocument();

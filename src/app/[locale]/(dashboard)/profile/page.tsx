@@ -64,7 +64,7 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const tprofile = useTranslations("profile");
-  const tsettings = useTranslations("settings");
+  const tsettings_unused = useTranslations("settings");
   const tcommon = useTranslations("common");
   const locale = useLocale();
   const { user, isAuthenticated, updateUser } = useAuth();

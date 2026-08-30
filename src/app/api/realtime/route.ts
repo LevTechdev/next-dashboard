@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
             controller.enqueue(encoder.encode(message));
           }
           prevSnapshot = currentSnapshot;
-        } catch (error) {
+        } catch (_err) {
           const message = `data: ${JSON.stringify({ error: "Failed to fetch data", timestamp: new Date().toISOString() })}\n\n`;
           controller.enqueue(encoder.encode(message));
         }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (_err) {
     return new Response(JSON.stringify({ error: "Invalid request" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 async function fetchDashboardData(tenantId: string | null) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  // monthStart removed (unused)
 
   const [
     totalRevenue,

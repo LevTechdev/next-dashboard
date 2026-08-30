@@ -1,54 +1,25 @@
 "use client";
-import { Sun } from "lucide-react";
-import { Moon } from "lucide-react";
-import { useTranslations } from "next-intl";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  EyeIcon,
-  EyeOffIcon,
-  LoaderCircleIcon,
-  SparklesIcon,
-  XIcon,
-  CheckIcon,
-} from "lucide-animated";
-import {
-  Eye,
-  EyeOff,
-  Loader2,
-  UserPlus,
-  Mail,
-  User,
-  LayoutDashboard,
-  Sparkles,
-  KeyRound,
-  Timer,
-  MailCheck,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { EyeIcon, EyeOffIcon, SparklesIcon, XIcon } from "lucide-animated";
+import { Loader2, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "next-themes";
 import { PasswordStrength } from "@/components/ui/password-strength";
 
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { AnimatedRays } from "@/components/ui/animated-rays";
-import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
 
 export default function RegisterPage() {
   const params = useParams();
   const locale = params?.locale || "en";
-  const t = useTranslations("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,7 +38,7 @@ export default function RegisterPage() {
   const { cooldownLeft, startCooldown } = useResendCooldown();
   const { register } = useAuth();
   const router = useRouter();
-  const cardRef = useRef<HTMLDivElement>(null);
+  const _cardRef = useRef<HTMLDivElement>(null);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,45 +160,6 @@ export default function RegisterPage() {
     } finally {
       setVerifying(false);
     }
-  };
-
-  const passwordStrength = password.length;
-  const getStrengthLabel = () => {
-    if (passwordStrength === 0) return "";
-    if (passwordStrength < 6) return "Weak";
-    if (passwordStrength < 10) return "Medium";
-    return "Strong";
-  };
-  const getStrengthColor = () => {
-    if (passwordStrength < 6) return "bg-red-500";
-    if (passwordStrength < 10) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const hasMinChars = password.length >= 6;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-
-  // Pointer tracking glow
-  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    cardRef.current.style.setProperty("--mouse-x", `${x}px`);
-    cardRef.current.style.setProperty("--mouse-y", `${y}px`);
-  };
-
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as any } },
   };
 
   return (
