@@ -352,6 +352,7 @@ import * as verifyEmailConfirmRoutes from "../auth/verify-email/confirm/route";
 import * as googleRoutes from "../auth/google/route";
 import * as samlLoginRoutes from "../auth/saml/login/route";
 import * as samlConnectionsRoutes from "../auth/saml/connections/route";
+import * as samlAcsRoutes from "../auth/saml/acs/route";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -1824,6 +1825,310 @@ describe("SAML Login", () => {
       const res = await samlLoginRoutes.GET(req);
       expect([302, 307]).toContain(res.status);
       expect(mockResolveConnectionByTenantSlug).toHaveBeenCalledWith("mycompany");
+    });
+
+    it("returns 404 when no params provided", async () => {
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 500 when SAML init throws", async () => {
+      mockResolveConnectionByEmail.mockResolvedValueOnce({
+        id: "conn-1",
+        entryPoint: "https://idp.example.com/sso",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        getAuthorizeUrlAsync: vi.fn().mockRejectedValue(new Error("SAML init failed")),
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login?email=user@test.com",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect(res.status).toBe(500);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAML ACS
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("SAML ACS", () => {
+  function formDataRequest(entries: Record<string, string>): Request {
+    return {
+      formData: () => {
+        const fd = new FormData();
+        for (const [k, v] of Object.entries(entries)) fd.append(k, v);
+        return Promise.resolve(fd);
+      },
+      url: "http://localhost:3000/api/auth/saml/acs",
+      headers: {
+        get: (name: string) => {
+          if (name === "user-agent") return "Mozilla/5.0";
+          if (name === "x-forwarded-for") return "127.0.0.1";
+          return null;
+        },
+      },
+    } as unknown as Request;
+  }
+
+  describe("POST", () => {
+    it("returns 400 when SAMLResponse is missing", async () => {
+      const res = await samlAcsRoutes.POST(formDataRequest({ RelayState: "conn-1" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when RelayState is missing", async () => {
+      const res = await samlAcsRoutes.POST(formDataRequest({ SAMLResponse: "response" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when both are missing", async () => {
+      const res = await samlAcsRoutes.POST(formDataRequest({}));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when SSO connection not found", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce(null);
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "unknown-conn" }),
+      );
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toContain("Unknown SSO connection");
+    });
+
+    it("returns 400 when SSO connection is disabled", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: false,
+        tenantId: "tenant-1",
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 401 when SAML validation throws", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockRejectedValue(new Error("Invalid signature")),
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "bad-response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 401 when no SAML profile is returned", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({ profile: null }),
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 400 when SAML assertion has no email", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { name: "No Email User" },
+        }),
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 403 when account belongs to different workspace", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "user@test.com", name: "Test" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "user@test.com",
+        tenantId: "different-tenant",
+        isActive: true,
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.error).toContain("different workspace");
+    });
+
+    it("returns 403 when account is deactivated", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "user@test.com", name: "Test" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "user@test.com",
+        tenantId: "tenant-1",
+        isActive: false,
+      });
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.error).toContain("deactivated");
+    });
+
+    it("JIT-provisions new user and issues session on first login", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+        name: "Acme SSO",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "new@test.com", name: "New User" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      mockPrisma.user.create.mockResolvedValueOnce({
+        id: "user-new",
+        email: "new@test.com",
+        name: "New User",
+        role: "STAFF",
+        tenantId: "tenant-1",
+      });
+
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect([302, 303]).toContain(res.status);
+      expect(mockPrisma.user.create).toHaveBeenCalled();
+      expect(mockCreateSession).toHaveBeenCalled();
+      expect(mockCreateRefreshToken).toHaveBeenCalled();
+      expect(mockSetAuthCookies).toHaveBeenCalled();
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "SAML_LOGIN" }),
+      );
+    });
+
+    it("logs in existing active user without creating new account", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+        name: "Acme SSO",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "existing@test.com", name: "Existing" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "existing@test.com",
+        tenantId: "tenant-1",
+        isActive: true,
+        name: "Existing",
+        role: "STAFF",
+      });
+
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect([302, 303]).toContain(res.status);
+      expect(mockPrisma.user.create).not.toHaveBeenCalled();
+      expect(mockCreateSession).toHaveBeenCalled();
+    });
+
+    it("falls back to email prefix when name is missing in profile", async () => {
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+        name: "Acme SSO",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "noname@test.com" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      mockPrisma.user.create.mockResolvedValueOnce({
+        id: "user-new",
+        email: "noname@test.com",
+        name: "noname",
+        role: "STAFF",
+        tenantId: "tenant-1",
+      });
+
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect([302, 303]).toContain(res.status);
+      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: "noname" }),
+        }),
+      );
     });
   });
 });
