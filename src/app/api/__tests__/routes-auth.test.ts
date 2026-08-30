@@ -37,6 +37,7 @@ const {
   mockIsDevFallbackAllowed,
   mockRequireAuth,
   mockQrCode,
+  mockSendPasswordResetEmail,
 } = vi.hoisted(() => {
   const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
@@ -180,6 +181,7 @@ const {
       response: null,
     }),
     mockQrCode: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,qrplaceholder") },
+    mockSendPasswordResetEmail: vi.fn().mockResolvedValue({ sent: true }),
   };
 });
 
@@ -255,6 +257,11 @@ vi.mock("@/lib/api-guard", () => ({
 
 vi.mock("qrcode", () => ({ default: mockQrCode }));
 
+vi.mock("@/lib/email", () => ({
+  sendPasswordResetEmail: mockSendPasswordResetEmail,
+  sendEmail: vi.fn().mockResolvedValue({ sent: true }),
+}));
+
 vi.mock("@/lib/step-up", () => ({
   signStepUpToken: mockSignStepUpToken,
   verifyStepUpToken: vi.fn().mockReturnValue(true),
@@ -288,6 +295,7 @@ import * as totpDisableRoutes from "../auth/totp/disable/route";
 import * as refreshRoutes from "../auth/refresh/route";
 import * as backupCodesRoutes from "../auth/backup-codes/route";
 import * as stepUpRoutes from "../auth/step-up/route";
+import * as forgotPasswordRoutes from "../auth/forgot-password/route";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -1142,6 +1150,177 @@ describe("Step-Up Authentication", () => {
         const res = await stepUpRoutes.POST(post({ purpose, password: "pass" }));
         expect(res.status).toBe(200);
       }
+    });
+
+    it("returns 401 when no password or TOTP provided and user has no 2FA", async () => {
+      const userNoMfa = { ...mockUser, totpEnabled: false, totpSecret: null };
+      mockPrisma.user.findUnique.mockResolvedValue(userNoMfa);
+      mockVerifyPassword.mockResolvedValue(false);
+      const res = await stepUpRoutes.POST(post({ purpose: "change_password" }));
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Refresh — additional branch coverage
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Refresh (branch coverage)", () => {
+  it("returns 401 when cookie header exists but no refresh token in it", async () => {
+    mockRotateRefreshToken.mockResolvedValue({
+      status: "invalid",
+      userId: "user-1",
+      familyId: "family-1",
+    });
+    const res = await refreshRoutes.POST(post({}, "other_cookie=value"));
+    const body = await res.json();
+    expect(body.error).toBe("Invalid or expired refresh token");
+    expect(mockClearAuthCookies).toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Forgot Password
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Forgot Password", () => {
+  beforeEach(() => {
+    mockSendPasswordResetEmail.mockResolvedValue({ sent: true });
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+  });
+
+  describe("POST", () => {
+    it("returns 400 when email is missing", async () => {
+      const res = await forgotPasswordRoutes.POST(post({}));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("Email is required");
+    });
+
+    it("returns 400 when email is not a string", async () => {
+      const res = await forgotPasswordRoutes.POST(post({ email: 123 }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns success even when user does not exist (prevents enumeration)", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const res = await forgotPasswordRoutes.POST(post({ email: "nobody@test.com" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+    });
+
+    it("returns success when user exists but is inactive", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "a@test.com",
+        isActive: false,
+      });
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("generates token, sends email, and returns success for active user", async () => {
+      const activeUser = {
+        id: "user-1",
+        email: "a@test.com",
+        isActive: true,
+      };
+      mockPrisma.user.findUnique.mockResolvedValue(activeUser);
+
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "user-1" },
+          data: expect.objectContaining({
+            verificationToken: expect.any(String),
+            verificationTokenExpires: expect.any(Date),
+          }),
+        }),
+      );
+      expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "a@test.com" }),
+      );
+    });
+
+    it("uses custom locale in reset URL", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "a@test.com",
+        isActive: true,
+      });
+
+      const res = await forgotPasswordRoutes.POST(
+        post({ email: "a@test.com", locale: "ja" }),
+      );
+      expect(res.status).toBe(200);
+      expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ locale: "ja" }),
+      );
+    });
+
+    it("falls back to en locale when locale is not a string", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "a@test.com",
+        isActive: true,
+      });
+
+      const res = await forgotPasswordRoutes.POST(
+        post({ email: "a@test.com", locale: 123 }),
+      );
+      expect(res.status).toBe(200);
+      expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ locale: "en" }),
+      );
+    });
+
+    it("logs reset link when email was not sent (no mailer)", async () => {
+      mockSendPasswordResetEmail.mockResolvedValue({ sent: false });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "a@test.com",
+        isActive: true,
+      });
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com" }));
+      expect(res.status).toBe(200);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Reset link for a@test.com"),
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it("returns 500 when an exception occurs", async () => {
+      mockPrisma.user.findUnique.mockRejectedValue(new Error("DB down"));
+      const res = await forgotPasswordRoutes.POST(post({ email: "a@test.com" }));
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body.error).toBe("Something went wrong");
+    });
+
+    it("returns success when body parsing fails", async () => {
+      const badReq = {
+        json: () => Promise.reject(new Error("bad json")),
+        url: "http://localhost:3000/api/auth/forgot-password",
+        headers: {
+          get: (name: string) => {
+            if (name === "user-agent") return "Mozilla/5.0";
+            if (name === "x-forwarded-for") return "127.0.0.1";
+            return null;
+          },
+        },
+      } as unknown as Request;
+      const res = await forgotPasswordRoutes.POST(badReq);
+      expect(res.status).toBe(400);
     });
   });
 });
