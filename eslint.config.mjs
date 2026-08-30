@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Community skills and generated files:
+    ".agents/**",
   ]),
   ...storybook.configs["flat/recommended"],
   {
