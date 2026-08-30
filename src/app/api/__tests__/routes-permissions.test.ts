@@ -256,7 +256,7 @@ beforeEach(() => {
         id: "mock-admin-user",
         sub: "mock-admin-user",
         name: "Admin",
-        email: "admin@dashboard.com",
+        email: "nextdashboards@gmail.com",
         role: "ADMIN",
       },
     },

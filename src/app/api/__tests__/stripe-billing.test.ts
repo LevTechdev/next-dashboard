@@ -60,7 +60,7 @@ const { mockStripe, mockGetStripe, mockStripeConfigured, mockPrisma, mockRequire
           user: {
             id: "u-1",
             name: "Admin",
-            email: "admin@dashboard.com",
+            email: "nextdashboards@gmail.com",
             role: "ADMIN",
           },
         },
@@ -122,7 +122,7 @@ beforeEach(() => {
   mockRequirePermission.mockResolvedValue({ response: null, role: "ADMIN" });
   mockRequireAuth.mockResolvedValue({
     session: {
-      user: { id: "u-1", name: "Admin", email: "admin@dashboard.com", role: "ADMIN" },
+      user: { id: "u-1", name: "Admin", email: "nextdashboards@gmail.com", role: "ADMIN" },
     },
     response: null,
   });
@@ -193,7 +193,7 @@ describe("Billing Checkout", () => {
 
     expect(mockStripe.customers.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        email: "admin@dashboard.com",
+        email: "nextdashboards@gmail.com",
         metadata: { userId: "u-1", tenantId: "tenant-1" },
       }),
     );

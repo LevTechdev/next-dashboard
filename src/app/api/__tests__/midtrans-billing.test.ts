@@ -68,7 +68,7 @@ const {
     mockRequirePermission: vi.fn().mockResolvedValue({ response: null, role: "ADMIN" }),
     mockRequireAuth: vi.fn().mockResolvedValue({
       session: {
-        user: { id: "u-1", name: "Admin", email: "admin@dashboard.com", role: "ADMIN" },
+        user: { id: "u-1", name: "Admin", email: "nextdashboards@gmail.com", role: "ADMIN" },
       },
       response: null,
     }),
@@ -136,7 +136,7 @@ beforeEach(() => {
   mockRequirePermission.mockResolvedValue({ response: null, role: "ADMIN" });
   mockRequireAuth.mockResolvedValue({
     session: {
-      user: { id: "u-1", name: "Admin", email: "admin@dashboard.com", role: "ADMIN" },
+      user: { id: "u-1", name: "Admin", email: "nextdashboards@gmail.com", role: "ADMIN" },
     },
     response: null,
   });
