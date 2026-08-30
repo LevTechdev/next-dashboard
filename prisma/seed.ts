@@ -66,7 +66,7 @@ async function main() {
   const staffPassword = await hash("staff123", 10);
 
   const admin = await prisma.user.create({
-    data: { name: "Admin", email: "admin@dashboard.com", password: adminPassword, role: "ADMIN", position: "System Administrator", emailVerified: new Date(), tenantId: defaultTenant.id },
+    data: { name: "Admin", email: "nextdashboards@gmail.com", password: adminPassword, role: "ADMIN", position: "System Administrator", emailVerified: new Date(), tenantId: defaultTenant.id },
   });
   const manager = await prisma.user.create({
     data: { name: "Sarah Johnson", email: "sarah@dashboard.com", password: staffPassword, role: "MANAGER", position: "Sales Manager", tenantId: defaultTenant.id },
@@ -484,7 +484,7 @@ async function main() {
   console.log("✅ Activity logs created");
 
   console.log("\n🎉 Database seeded successfully!");
-  console.log("📧 Admin login: admin@dashboard.com / admin123");
+  console.log("📧 Admin login: nextdashboards@gmail.com / admin123");
   console.log("📧 Staff login: sarah@dashboard.com / staff123");
 }
 

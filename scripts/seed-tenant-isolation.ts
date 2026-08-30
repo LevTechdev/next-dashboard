@@ -34,7 +34,7 @@ export const ISOLATION = {
 
 export async function seedTenantIsolation() {
   const defaultTenant = await prisma.tenant.findFirst({ orderBy: { createdAt: "asc" } });
-  const admin = await prisma.user.findUnique({ where: { email: "admin@dashboard.com" } });
+  const admin = await prisma.user.findUnique({ where: { email: "nextdashboards@gmail.com" } });
   if (!defaultTenant || !admin) {
     throw new Error("Seed not present — run `npm run db:seed` first");
   }

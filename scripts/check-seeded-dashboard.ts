@@ -25,7 +25,7 @@ import { PrismaClient } from "@prisma/client";
 
 /** Mirrors prisma/seed.ts's default workspace + seed admin. */
 const DEFAULT_TENANT_SLUG = "default";
-const SEED_ADMIN_EMAIL = "admin@dashboard.com";
+const SEED_ADMIN_EMAIL = "nextdashboards@gmail.com";
 
 const prisma = new PrismaClient();
 

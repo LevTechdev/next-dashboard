@@ -47,6 +47,7 @@ model User {
   securityEvents  SecurityEvent[]
   refreshTokens   RefreshToken[]
   webauthnCredentials WebAuthnCredential[]
+  pushSubscriptions  PushSubscription[]
   tenantId        String?
   tenant          Tenant?  @relation(fields: [tenantId], references: [id])
 }
@@ -655,4 +656,20 @@ model AffiliateConversion {
   createdAt        DateTime      @default(now())
 
   @@index([linkId, createdAt])
+}
+
+model PushSubscription {
+  id            String   @id @default(cuid())
+  endpoint      String
+  p256dh        String   // Encryption key (Base64)
+  auth          String   // Auth key (Base64)
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId      String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@unique([endpoint])
+  @@index([userId])
+  @@index([tenantId])
 }
