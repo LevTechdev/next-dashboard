@@ -1,34 +1,77 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PricingPage from "../pricing/page";
 
+const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+
+// ── Mocks ─────────────────────────────────────────────────────────────
+
+vi.mock("lucide-react", async () => {
+  const actual = await vi.importActual("lucide-react");
+  return actual;
+});
+
+vi.mock("framer-motion", async () => {
+  const actual = await vi.importActual("framer-motion");
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    motion: {
+      div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+      span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+      p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
+      h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+      button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    },
+  };
+});
+
+vi.mock("next-intl", async () => {
+  const mod = await import("@/test-utils/i18n-mock");
+  return mod.createTranslationsMock({});
+});
+
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ locale: "en" }),
+}));
+
+vi.mock("@/hooks/use-analytics", () => ({
+  useAnalytics: () => ({ trackCTA: vi.fn() }),
+}));
+
+// ── Tests ─────────────────────────────────────────────────────────────
+
 beforeEach(() => {
-  render(<PricingPage />);
+  render(<PricingPage params={params} />);
 });
 
 describe("Pricing Page", () => {
-  it("renders the header section", () => {
-    expect(screen.getByText("Simple Pricing")).toBeInTheDocument();
-    expect(screen.getByText("Scale With You")).toBeInTheDocument();
+  it("renders the header section with badge and title", () => {
+    expect(screen.getByText("Pricing")).toBeInTheDocument();
+    expect(screen.getByText("Simple, Transparent Pricing")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
-    expect(
-      screen.getByText(/Choose the perfect plan/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Start free, scale when you need to/)).toBeInTheDocument();
+  });
+
+  it("renders billing period toggle", () => {
+    expect(screen.getByText("Monthly")).toBeInTheDocument();
+    expect(screen.getByText("Yearly")).toBeInTheDocument();
+    expect(screen.getByText("Save 20%")).toBeInTheDocument();
   });
 
   it("renders all 3 pricing tiers", () => {
-    // Tier names appear in both pricing cards and comparison table headers
     expect(screen.getAllByText("Starter").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Professional").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Enterprise").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders pricing values", () => {
-    expect(screen.getByText("$29")).toBeInTheDocument();
-    expect(screen.getByText("$79")).toBeInTheDocument();
-    expect(screen.getByText("$199")).toBeInTheDocument();
+  it("renders pricing values (monthly by default)", () => {
+    expect(screen.getAllByText("$29").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("$79").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("$199").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("/month").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders Most Popular badge on Professional", () => {
@@ -36,93 +79,75 @@ describe("Pricing Page", () => {
   });
 
   it("renders CTA buttons with accessible links for each plan", () => {
-    const goToDashboardButtons = screen.getAllByText("Go to Dashboard");
-    expect(goToDashboardButtons.length).toBeGreaterThanOrEqual(1);
+    const getStartedButtons = screen.getAllByText("Get Started");
+    expect(getStartedButtons.length).toBe(2);
     expect(screen.getByText("Contact Sales")).toBeInTheDocument();
 
-    // Verify each CTA link has a proper href
-    for (const button of goToDashboardButtons) {
+    // Starter and Professional CTAs link to register
+    for (const button of getStartedButtons) {
       const anchor = button.closest("a");
       expect(anchor).toHaveAttribute("href");
-      expect(anchor?.getAttribute("href")).toContain("/dashboard");
+      expect(anchor?.getAttribute("href")).toContain("/register");
     }
 
+    // Enterprise CTA
     const contactSales = screen.getByText("Contact Sales");
     const contactAnchor = contactSales.closest("a");
     expect(contactAnchor).toHaveAttribute("href");
-    expect(contactAnchor?.getAttribute("href")).toContain("/dashboard");
+    expect(contactAnchor?.getAttribute("href")).toContain("/register");
+  });
+
+  it("renders plan descriptions", () => {
+    expect(screen.getByText("Perfect for small businesses getting started.")).toBeInTheDocument();
+    expect(screen.getByText("For growing teams who need full power.")).toBeInTheDocument();
+    expect(screen.getByText("Custom solutions for high-volume businesses.")).toBeInTheDocument();
   });
 
   it("renders feature lists", () => {
-    expect(screen.getByText("Up to 500 orders/month")).toBeInTheDocument();
-    expect(screen.getByText("Up to 5,000 orders/month")).toBeInTheDocument();
+    expect(screen.getByText("Up to 100 orders/month")).toBeInTheDocument();
+    expect(screen.getByText("Up to 3 team members")).toBeInTheDocument();
+    expect(screen.getByText("Basic analytics")).toBeInTheDocument();
+    expect(screen.getByText("Email support")).toBeInTheDocument();
+    expect(screen.getByText("Up to 1,000 orders/month")).toBeInTheDocument();
+    expect(screen.getByText("Up to 10 team members")).toBeInTheDocument();
     expect(screen.getByText("Unlimited orders")).toBeInTheDocument();
-    expect(screen.getByText("3 team members")).toBeInTheDocument();
-    expect(screen.getByText("10 team members")).toBeInTheDocument();
     expect(screen.getByText("Unlimited team members")).toBeInTheDocument();
   });
 
   it("renders the comparison table with semantic table structure", () => {
-    expect(screen.getByText("Compare plans")).toBeInTheDocument();
-    expect(screen.getByText("Feature")).toBeInTheDocument();
+    expect(screen.getByText("Compare Plans")).toBeInTheDocument();
+    expect(screen.getByText("Features")).toBeInTheDocument();
 
     // Verify table has proper accessible structure
     const table = document.querySelector("table");
     expect(table).toBeInTheDocument();
-    expect(table).toHaveAttribute("class");
 
     // Table headers render tier names
     const starterHeaders = screen.getAllByText("Starter");
     expect(starterHeaders.length).toBeGreaterThanOrEqual(2); // card + table header
   });
 
-  it("renders FAQ section with semantic details elements", () => {
-    expect(screen.getByText("Frequently Asked Questions")).toBeInTheDocument();
-
-    // Verify FAQ uses semantic HTML5 <details>/<summary> elements
-    const faqQuestions = [
-      "Can I upgrade or downgrade my plan at any time?",
-      "Is there a free trial available?",
-      "What payment methods do you accept?",
-      "Can I cancel my subscription?",
-    ];
-
-    for (const question of faqQuestions) {
-      expect(screen.getByText(question)).toBeInTheDocument();
-
-      // Each FAQ question should be wrapped in a <summary> inside <details>
-      const summary = screen.getByText(question).closest("summary");
-      expect(summary).toBeInTheDocument();
-      const details = summary?.closest("details");
-      expect(details).toBeInTheDocument();
-    }
-  });
-
-  it("renders FAQ answers with accessible content", () => {
-    expect(
-      screen.getByText(/Yes, you can change your plan at any time/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Yes! All plans come with a 14-day free trial/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/We accept all major credit cards/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Yes, you can cancel anytime/)
-    ).toBeInTheDocument();
+  it("renders comparison table rows", () => {
+    expect(screen.getByText("Monthly Orders")).toBeInTheDocument();
+    expect(screen.getByText("Team Members")).toBeInTheDocument();
+    expect(screen.getByText("Analytics")).toBeInTheDocument();
+    expect(screen.getByText("Support")).toBeInTheDocument();
+    expect(screen.getByText("API Access")).toBeInTheDocument();
+    expect(screen.getByText("Custom Exports")).toBeInTheDocument();
+    expect(screen.getByText("RBAC")).toBeInTheDocument();
+    expect(screen.getByText("100")).toBeInTheDocument();
+    expect(screen.getByText("1,000")).toBeInTheDocument();
   });
 
   it("renders bottom CTA with accessible link", () => {
-    expect(screen.getByText("Not Sure Which Plan?")).toBeInTheDocument();
+    expect(screen.getByText("Start managing your business better")).toBeInTheDocument();
+    expect(screen.getByText(/Try it free for 14 days/)).toBeInTheDocument();
 
-    const trialTexts = screen.getAllByText(/14-day free trial/);
-    expect(trialTexts.length).toBeGreaterThanOrEqual(1);
-
-    // Bottom CTA button
-    const ctaButtons = screen.getAllByText("Go to Dashboard");
-    const bottomCta = ctaButtons[ctaButtons.length - 1];
+    const dashboardButtons = screen.getAllByText("Get Started Free");
+    expect(dashboardButtons.length).toBeGreaterThanOrEqual(1);
+    const bottomCta = dashboardButtons[dashboardButtons.length - 1];
     const anchor = bottomCta.closest("a");
     expect(anchor).toHaveAttribute("href");
+    expect(anchor?.getAttribute("href")).toContain("/register");
   });
 });

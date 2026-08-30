@@ -1,0 +1,145 @@
+name: E2E (reusable)
+
+# Single source of truth for the Playwright E2E job. Called by both
+# .github/workflows/e2e.yml (every push/PR, all branches) and
+# .github/workflows/ci.yml (main-push-only "release gate" wired into
+# release.needs) — so the two runs can never drift apart.
+#
+# The caller passes the DB/secret values as inputs: reusable workflows cannot
+# read the caller's `env`, and these are CI-only placeholders, not real
+# secrets (real secrets would use the `secrets:` map instead).
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version
+        required: false
+        type: string
+        default: "20"
+      artifact-suffix:
+        description: Suffix appended to uploaded artifact names (e.g. -gate)
+        required: false
+        type: string
+        default: ""
+      database-url:
+        description: Postgres connection string for the test database
+        required: true
+        type: string
+      jwt-secret:
+        description: JWT signing secret placeholder for E2E
+        required: true
+        type: string
+      nextauth-secret:
+        description: NEXTAUTH_SECRET placeholder for E2E
+        required: true
+        type: string
+      nextauth-url:
+        description: NEXTAUTH_URL (the dev server runs on :3010)
+        required: true
+        type: string
+      google-client-id:
+        description: GOOGLE_CLIENT_ID placeholder for E2E
+        required: true
+        type: string
+      google-client-secret:
+        description: GOOGLE_CLIENT_SECRET placeholder for E2E
+        required: true
+        type: string
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: ${{ inputs.database-url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: "npm"
+      - run: npm ci
+      - name: Verify E2E suite stays at 82 tests
+        # Pins the suite size so adding/removing a spec (or a test inside one)
+        # is a conscious change: this step fails until the count below is
+        # updated in the same PR. Runs via `playwright test --list`, which
+        # only collects tests — no dev server, no browser, no DB — so it
+        # fails fast, before the Postgres service is even needed. It fires
+        # for BOTH callers (e2e.yml on every branch + ci.yml's release gate).
+        run: |
+          output=$(npx playwright test --list 2>&1)
+          count=$(echo "$output" | grep -oE 'Total: [0-9]+ tests' | grep -oE '[0-9]+')
+          echo "$output" | tail -3
+          if [ -z "$count" ]; then
+            echo "::error::Could not collect the E2E suite (playwright --list failed above)."
+            exit 1
+          fi
+          echo "E2E suite count: $count"
+          if [ "$count" != "82" ]; then
+            echo "::error::E2E suite count drifted from 82 to $count. If the change is intentional, update the pinned count in this workflow in the same PR."
+            exit 1
+          fi
+      - name: Create database schema
+        run: npx prisma db push
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Seed database
+        run: npm run db:seed
+      - name: Verify seeded data yields non-zero dashboard stats
+        # Fast browser-free guard against the "empty dashboard despite seeded
+        # DB" bug class (seed rows missing tenantId while tenant-scoped API
+        # routes filter by it). Replicates /api/dashboard's exact queries via
+        # scripts/check-seeded-dashboard.ts and exits non-zero on zeros. The
+        # full browser-level assertion rides the E2E suite below.
+        run: npm run check:seed
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          JWT_SECRET: ${{ inputs.jwt-secret }}
+          NEXTAUTH_SECRET: ${{ inputs.nextauth-secret }}
+          NEXTAUTH_URL: ${{ inputs.nextauth-url }}
+          GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
+          GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
+          # No OpenAI key is provisioned for CI, so force the AI copilot's
+          # dev-mode mock reply (AI_MOCK=1). The Playwright-spawned dev
+          # server inherits this env from the test process, keeping the
+          # copilot deterministic in E2E without an OpenAI account.
+          AI_MOCK: "1"
+      - name: Verify SecurityEvent hash chain is intact
+        # Fails when the tamper-evident audit chain is broken — either a
+        # content/prevHash mismatch (the 409 GET /api/security/audit/verify
+        # reports) or NULL-hash rows the verify walk silently skips. Runs the
+        # REAL verifyAuditChain via scripts/check-audit-chain.ts; the chain
+        # reflects everything the E2E suite just did, so corruption surfaces
+        # here instead of silently accumulating across runs.
+        run: npm run check:audit-chain
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report${{ inputs.artifact-suffix }}
+          path: playwright-report/
+          retention-days: 14
+      - name: Upload test results
+        # Per-test error-context.md files + traces (on-first-retry) for debugging.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results${{ inputs.artifact-suffix }}
+          path: test-results/
+          retention-days: 14

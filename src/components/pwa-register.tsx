@@ -4,6 +4,9 @@ import { useEffect } from "react";
 
 export function PWARegister() {
   useEffect(() => {
+    // Skip service worker registration in development to avoid stale chunk caching
+    if (process.env.NODE_ENV === "development") return;
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")

@@ -9,13 +9,12 @@ beforeEach(() => {
 describe("Changelog Page", () => {
   it("renders the header section", () => {
     expect(screen.getByText("Release Notes")).toBeInTheDocument();
-    expect(screen.getByText("New")).toBeInTheDocument();
+    // The h1 renders "What's " + FlipFadeText cycling through words like "new.", "shipping.", etc.
+    expect(screen.getByText("What's")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
-    expect(
-      screen.getByText(/Stay up to date with the latest/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Stay up to date with the latest/)).toBeInTheDocument();
   });
 
   it("renders the latest version badge", () => {
@@ -44,46 +43,34 @@ describe("Changelog Page", () => {
 
   it("renders changelog items from version 2.5.0", () => {
     expect(
-      screen.getByText(
-        "Real-time dashboard auto-refresh with Server-Sent Events"
-      )
+      screen.getByText("Real-time dashboard auto-refresh with Server-Sent Events"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Role-based access control with Admin, Manager, and Staff roles"
-      )
+      screen.getByText("Role-based access control with Admin, Manager, and Staff roles"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Redesigned analytics charts with interactive tooltips")
+      screen.getByText("Redesigned analytics charts with interactive tooltips"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Fixed pagination issues on order list exceeding 1000 records"
-      )
+      screen.getByText("Fixed pagination issues on order list exceeding 1000 records"),
     ).toBeInTheDocument();
   });
 
   it("renders changelog items from version 2.0.0", () => {
     expect(
-      screen.getByText("Complete dashboard redesign with real-time analytics")
+      screen.getByText("Complete dashboard redesign with real-time analytics"),
     ).toBeInTheDocument();
+    expect(screen.getByText("Team management with role-based permissions")).toBeInTheDocument();
     expect(
-      screen.getByText("Team management with role-based permissions")
+      screen.getByText("REST API with webhook support for custom integrations"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("REST API with webhook support for custom integrations")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Progressive Web App with offline support")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Progressive Web App with offline support")).toBeInTheDocument();
   });
 
   it("renders subscribe section with accessible email input", () => {
     expect(screen.getByText("Stay Updated")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Get notified about new releases, features, and updates/
-      )
+      screen.getByText(/Get notified about new releases, features, and updates/),
     ).toBeInTheDocument();
 
     // Verify email input has proper accessibility attributes
@@ -99,7 +86,7 @@ describe("Changelog Page", () => {
   it("renders bottom CTA with accessible link", () => {
     expect(screen.getByText("Ready to Get Started?")).toBeInTheDocument();
     expect(
-      screen.getByText(/Join thousands of businesses already using Dashboard/)
+      screen.getByText(/Join thousands of businesses already using Dashboard/),
     ).toBeInTheDocument();
 
     const ctaButton = screen.getByText("Go to Dashboard");
@@ -127,9 +114,10 @@ describe("Changelog Page", () => {
     });
 
     it("renders release stat icons", () => {
-      const commitIcon = document.querySelector('[data-testid="icon-gitcommit"]');
-      const sparklesIcon = document.querySelector('[data-testid="icon-sparkles"]');
-      const rocketIcon = document.querySelector('[data-testid="icon-rocket"]');
+      // Stats use animated icons (GitCommitHorizontalIcon/SparklesIcon/RocketIcon) + static Bug
+      const commitIcon = document.querySelector('[data-testid="icon-gitcommithorizontalicon"]');
+      const sparklesIcon = document.querySelector('[data-testid="icon-sparklesicon"]');
+      const rocketIcon = document.querySelector('[data-testid="icon-rocketicon"]');
       const bugIcon = document.querySelector('[data-testid="icon-bug"]');
       expect(commitIcon).toBeInTheDocument();
       expect(sparklesIcon).toBeInTheDocument();

@@ -50,9 +50,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   // so it won't fire before init completes.
   return (
     <PHProvider client={posthog}>
-      <PostHogPageViewTracker>
-        {children}
-      </PostHogPageViewTracker>
+      <PostHogPageViewTracker>{children}</PostHogPageViewTracker>
     </PHProvider>
   );
 }

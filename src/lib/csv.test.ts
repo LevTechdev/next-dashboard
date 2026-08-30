@@ -66,19 +66,29 @@ beforeEach(() => {
 afterEach(() => {
   // Restore original globals
   if (originalCreateElement) {
-    (globalThis.document as unknown as { createElement: typeof originalCreateElement }).createElement = originalCreateElement;
+    (
+      globalThis.document as unknown as { createElement: typeof originalCreateElement }
+    ).createElement = originalCreateElement;
   }
   if (originalBodyAppendChild) {
-    (globalThis.document as unknown as { body: { appendChild: typeof originalBodyAppendChild } }).body.appendChild = originalBodyAppendChild;
+    (
+      globalThis.document as unknown as { body: { appendChild: typeof originalBodyAppendChild } }
+    ).body.appendChild = originalBodyAppendChild;
   }
   if (originalBodyRemoveChild) {
-    (globalThis.document as unknown as { body: { removeChild: typeof originalBodyRemoveChild } }).body.removeChild = originalBodyRemoveChild;
+    (
+      globalThis.document as unknown as { body: { removeChild: typeof originalBodyRemoveChild } }
+    ).body.removeChild = originalBodyRemoveChild;
   }
   if (originalCreateObjectURL) {
-    (globalThis.URL as unknown as { createObjectURL: typeof originalCreateObjectURL }).createObjectURL = originalCreateObjectURL;
+    (
+      globalThis.URL as unknown as { createObjectURL: typeof originalCreateObjectURL }
+    ).createObjectURL = originalCreateObjectURL;
   }
   if (originalRevokeObjectURL) {
-    (globalThis.URL as unknown as { revokeObjectURL: typeof originalRevokeObjectURL }).revokeObjectURL = originalRevokeObjectURL;
+    (
+      globalThis.URL as unknown as { revokeObjectURL: typeof originalRevokeObjectURL }
+    ).revokeObjectURL = originalRevokeObjectURL;
   }
 });
 
@@ -100,7 +110,7 @@ describe("csv export", () => {
     // Should set filename
     expect(mockCreateElement.mock.results[0].value.setAttribute).toHaveBeenCalledWith(
       "download",
-      "test-export.csv"
+      "test-export.csv",
     );
     // Should click the link
     expect(mockCreateElement.mock.results[0].value.click).toHaveBeenCalledTimes(1);
@@ -225,17 +235,16 @@ describe("csv escaping", () => {
 
 describe("dataExtractor", () => {
   it("transforms data via extractor before generating CSV", () => {
-    interface NameRow { name: string }
+    interface NameRow {
+      name: string;
+    }
     const col = [
       {
         key: (row: NameRow) => row.name,
         header: "Full Name",
       },
     ];
-    const rawRows: NameRow[] = [
-      { name: "John Doe" },
-      { name: "Jane Smith" },
-    ];
+    const rawRows: NameRow[] = [{ name: "John Doe" }, { name: "Jane Smith" }];
 
     downloadCsv(col, rawRows, "test");
 
@@ -253,8 +262,7 @@ describe("csv with custom key function", () => {
   it("supports function-based column keys", () => {
     const col = [
       {
-        key: (row: { name: string; age: number }) =>
-          `${row.name} (${row.age})`,
+        key: (row: { name: string; age: number }) => `${row.name} (${row.age})`,
         header: "Person",
       },
     ];

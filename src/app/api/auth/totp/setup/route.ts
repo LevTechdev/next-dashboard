@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
-import { TOTP } from "otplib";
+import { generateTotpSecret, totpKeyUri } from "@/lib/totp";
 import QRCode from "qrcode";
 
 export const dynamic = "force-dynamic";
@@ -24,15 +24,10 @@ export async function GET(req: Request) {
   }
 
   // Generate a new TOTP secret
-  const totp = new TOTP();
-  const secret = totp.generateSecret();
+  const secret = await generateTotpSecret();
 
   // Create otpauth URL for QR code
-  const otpauth = totp.toURI({
-    issuer: "Dashboard",
-    label: user.email,
-    secret,
-  });
+  const otpauth = totpKeyUri({ issuer: "Dashboard", email: user.email, secret });
 
   // Generate QR code as data URL
   const qrCode = await QRCode.toDataURL(otpauth);

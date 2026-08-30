@@ -25,6 +25,7 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
 
   typecheck:
     name: TypeScript
@@ -49,6 +50,8 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm test -- --coverage
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -83,6 +86,8 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npx vitest run --config vitest.api.config.ts --coverage
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -102,39 +107,34 @@ jobs:
       - run: npm run build
         env:
           NEXTAUTH_SECRET: "ci-placeholder"
-          NEXTAUTH_URL: "http://localhost:3000"
-          DATABASE_URL: "file:./prisma/dev.db"
+          NEXTAUTH_URL: "http://localhost:3010"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb"
           GOOGLE_CLIENT_ID: "ci-placeholder"
           GOOGLE_CLIENT_SECRET: "ci-placeholder"
 
+  # Release gate: calls the shared Playwright E2E job (e2e-reusable.yml) on
+  # pushes to main ONLY and blocks semantic-release on failure (see
+  # release.needs). e2e.yml keeps the every-branch coverage for PRs and
+  # feature branches; on a main push the suite therefore runs twice (here +
+  # e2e.yml) — the accepted tradeoff for making a failed E2E run block the
+  # release without cross-workflow needs (which GitHub Actions does not
+  # support). Single source of truth: both callers use e2e-reusable.yml, so
+  # the two runs cannot drift.
   e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-      - run: npm ci
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-      - name: Seed database
-        run: npm run db:seed
-        env:
-          DATABASE_URL: "file:./prisma/dev.db"
-      - name: Run E2E tests
-        run: npm run test:e2e
-        env:
-          DATABASE_URL: "file:./prisma/dev.db"
-          JWT_SECRET: "ci-e2e-secret"
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 14
+    name: Playwright E2E (release gate)
+    if: github.event_name == 'push'
+    # The shared job forces AI_MOCK=1 for its dev server (see
+    # e2e-reusable.yml) — CI has no OpenAI key, so the copilot answers with
+    # the dev-mode mock reply.
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      artifact-suffix: "-gate"
+      database-url: "postgresql://postgres:postgres@localhost:5432/testdb"
+      jwt-secret: "ci-e2e-secret"
+      nextauth-secret: "ci-e2e-secret"
+      nextauth-url: "http://localhost:3010"
+      google-client-id: "ci-placeholder"
+      google-client-secret: "ci-placeholder"
 
   coverage-merge:
     name: Coverage Report
@@ -171,7 +171,7 @@ jobs:
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [lint, typecheck, test, test-components, test-api, build]
+    needs: [lint, typecheck, test, test-components, test-api, build, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write

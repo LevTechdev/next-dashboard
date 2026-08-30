@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { installAuthFetch, refreshAccessToken } from "@/lib/client-refresh";
 
 interface User {
   id: string;
@@ -21,8 +22,23 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string, totpToken?: string) => Promise<{ success: boolean; requires2FA?: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string,
+    totpToken?: string,
+  ) => Promise<{ success: boolean; requires2FA?: boolean; error?: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    /** True when an email OTP was issued and must be entered to verify. */
+    emailOtpRequired?: boolean;
+    /** Dev-only fallback: the raw 6-digit code (never present in production). */
+    devOtp?: string;
+  }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -51,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const refreshUser = useCallback(async () => {
+    // Ensure the 401→refresh→retry fetch wrapper is active before the first call.
+    installAuthFetch();
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
@@ -68,64 +86,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check auth status on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);
 
-  const login = useCallback(async (email: string, password: string, totpToken?: string) => {
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, totpToken }),
-      });
+  // Proactively rotate the short-lived access token while authenticated so it
+  // stays fresh (well under its 15m lifetime) and 401s stay rare.
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(
+      () => {
+        refreshAccessToken();
+      },
+      12 * 60 * 1000,
+    );
+    return () => clearInterval(id);
+  }, [user]);
 
-      const data = await res.json();
+  const login = useCallback(
+    async (email: string, password: string, totpToken?: string) => {
+      setError(null);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, totpToken }),
+        });
 
-      if (!res.ok) {
-        return { success: false, error: data.error || "Login failed" };
+        const data = await res.json();
+
+        if (!res.ok) {
+          return { success: false, error: data.error || "Login failed" };
+        }
+
+        if (data.requires2FA) {
+          return { success: false, requires2FA: true };
+        }
+
+        if (data.user) {
+          setUser(data.user);
+        }
+
+        router.refresh();
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: "Network error. Please try again." };
       }
+    },
+    [router],
+  );
 
-      if (data.requires2FA) {
-        return { success: false, requires2FA: true };
+  const register = useCallback(
+    async (name: string, email: string, password: string) => {
+      setError(null);
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          return { success: false, error: data.error || "Registration failed" };
+        }
+
+        if (data.user) {
+          setUser(data.user);
+        }
+
+        router.refresh();
+        return {
+          success: true,
+          emailOtpRequired: data.emailOtpRequired === true,
+          devOtp: typeof data.devOtp === "string" ? data.devOtp : undefined,
+        };
+      } catch (err: any) {
+        return { success: false, error: "Network error. Please try again." };
       }
-
-      if (data.user) {
-        setUser(data.user);
-      }
-
-      router.refresh();
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: "Network error. Please try again." };
-    }
-  }, [router]);
-
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || "Registration failed" };
-      }
-
-      if (data.user) {
-        setUser(data.user);
-      }
-
-      router.refresh();
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: "Network error. Please try again." };
-    }
-  }, [router]);
+    },
+    [router],
+  );
 
   const logout = useCallback(async () => {
     try {

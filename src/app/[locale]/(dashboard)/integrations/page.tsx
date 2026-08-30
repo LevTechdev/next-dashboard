@@ -3,22 +3,29 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import {
-  Key,
-  Globe,
-  Plus,
-  Copy,
+  RefreshCwIcon,
+  ClockIcon,
+  PlusIcon,
+  CopyIcon,
+  SearchIcon,
+  KeyIcon,
+  EarthIcon,
+  CircleCheckIcon,
+} from "lucide-animated";
+import {
   Pencil,
   Trash2,
   Power,
   PowerOff,
-  RefreshCw,
-  CheckCircle2,
   XCircle,
-  Clock,
   AlertTriangle,
   Loader2,
-  Search,
+  FlaskConical,
+  SquareTerminal,
+  ChevronDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -80,22 +88,11 @@ interface WebhookDelivery {
   endpoint: { name: string; url: string };
 }
 
-const WEBHOOK_EVENTS = [
-  { value: "order.created", label: "Order Created" },
-  { value: "order.updated", label: "Order Updated" },
-  { value: "order.cancelled", label: "Order Cancelled" },
-  { value: "order.refunded", label: "Order Refunded" },
-  { value: "customer.created", label: "Customer Created" },
-  { value: "customer.updated", label: "Customer Updated" },
-  { value: "product.created", label: "Product Created" },
-  { value: "product.updated", label: "Product Updated" },
-  { value: "product.low_stock", label: "Low Stock Alert" },
-  { value: "payment.completed", label: "Payment Completed" },
-  { value: "payment.failed", label: "Payment Failed" },
-];
-
 const EVENT_GROUPS = [
-  { label: "Orders", events: ["order.created", "order.updated", "order.cancelled", "order.refunded"] },
+  {
+    label: "Orders",
+    events: ["order.created", "order.updated", "order.cancelled", "order.refunded"],
+  },
   { label: "Customers", events: ["customer.created", "customer.updated"] },
   { label: "Products", events: ["product.created", "product.updated", "product.low_stock"] },
   { label: "Payments", events: ["payment.completed", "payment.failed"] },
@@ -115,15 +112,30 @@ function formatDate(dateStr: string | null, locale: string = "en-US") {
 }
 
 function getEventLabel(value: string, t: (key: string) => string) {
-  const key = "event" + value
-    .split(".")
-    .map((part) => part.split("_").map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(""))
-    .join("");
+  const key =
+    "event" +
+    value
+      .split(".")
+      .map((part) =>
+        part
+          .split("_")
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(""),
+      )
+      .join("");
   return t(key);
 }
 
 function getGroupLabel(label: string, t: (key: string) => string) {
   return t("group" + label);
+}
+
+function formatJson(data: unknown): string {
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
@@ -136,24 +148,26 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {t("subtitle")}
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t("subtitle")}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="api-keys" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
+            <KeyIcon size={16} className="h-4 w-4" />
             {t("tabApiKeys")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
+            <EarthIcon size={16} className="h-4 w-4" />
             {t("tabWebhooks")}
           </TabsTrigger>
           <TabsTrigger value="deliveries" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+            <ClockIcon size={16} className="h-4 w-4" />
             {t("tabDeliveries")}
+          </TabsTrigger>
+          <TabsTrigger value="playground" className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4" />
+            {t("tabPlayground")}
           </TabsTrigger>
         </TabsList>
 
@@ -165,6 +179,9 @@ export default function IntegrationsPage() {
         </TabsContent>
         <TabsContent value="deliveries" className="mt-6">
           <DeliveriesTab />
+        </TabsContent>
+        <TabsContent value="playground" className="mt-6">
+          <PlaygroundTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -201,7 +218,10 @@ function ApiKeysTab() {
   }, []);
 
   useEffect(() => {
-    fetchKeys();
+    const init = async () => {
+      await fetchKeys();
+    };
+    init();
   }, [fetchKeys]);
 
   const handleCreate = async () => {
@@ -259,8 +279,14 @@ function ApiKeysTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(t("confirmDeleteKey"))) return;
+    const ok = await confirm({
+      description: t("confirmDeleteKey"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/api-keys", {
         method: "DELETE",
@@ -283,9 +309,7 @@ function ApiKeysTab() {
     toast.success(t("keyCopiedToast"));
   };
 
-  const filteredKeys = keys.filter((k) =>
-    k.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredKeys = keys.filter((k) => k.name.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
     return (
@@ -302,7 +326,7 @@ function ApiKeysTab() {
         <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+              <CircleCheckIcon size={20} className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-emerald-800 dark:text-emerald-300">
                   {t("keyCreatedTitle")}
@@ -315,7 +339,7 @@ function ApiKeysTab() {
                     {showNewKey}
                   </code>
                   <Button size="sm" variant="secondary" onClick={() => handleCopyKey(showNewKey)}>
-                    <Copy className="h-4 w-4" />
+                    <CopyIcon size={16} className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
@@ -335,7 +359,10 @@ function ApiKeysTab() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <SearchIcon
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          />
           <Input
             placeholder={tc("search")}
             value={search}
@@ -345,7 +372,7 @@ function ApiKeysTab() {
         </div>
         <div className="flex-1" />
         <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" /> {t("createKey")}
+          <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("createKey")}
         </Button>
       </div>
 
@@ -353,18 +380,16 @@ function ApiKeysTab() {
       {filteredKeys.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Key className="h-12 w-12 text-gray-300 mb-4" />
+            <KeyIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {search ? t("noKeysMatch") : t("noKeys")}
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {search
-                ? t("tryDifferentSearch")
-                : t("createFirstKey")}
+              {search ? t("tryDifferentSearch") : t("createFirstKey")}
             </p>
             {!search && (
               <Button variant="outline" className="mt-4" onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4 mr-2" /> {t("createKey")}
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("createKey")}
               </Button>
             )}
           </CardContent>
@@ -388,12 +413,18 @@ function ApiKeysTab() {
                         {key.prefix}
                       </code>
                       {key.lastUsedAt && (
-                        <span>{t("lastUsed")} {formatDate(key.lastUsedAt)}</span>
+                        <span>
+                          {t("lastUsed")} {formatDate(key.lastUsedAt)}
+                        </span>
                       )}
                       {key.expiresAt && (
-                        <span>{t("expires")} {formatDate(key.expiresAt)}</span>
+                        <span>
+                          {t("expires")} {formatDate(key.expiresAt)}
+                        </span>
                       )}
-                      <span>{t("created")} {formatDate(key.createdAt)}</span>
+                      <span>
+                        {t("created")} {formatDate(key.createdAt)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -430,9 +461,7 @@ function ApiKeysTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("createKeyTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("createKeyDesc")}
-            </DialogDescription>
+            <DialogDescription>{t("createKeyDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -455,9 +484,7 @@ function ApiKeysTab() {
                   <SelectItem value="admin">{t("permissionAdmin")}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-400 mt-1">
-                {t("permissionHelp")}
-              </p>
+              <p className="text-xs text-gray-400 mt-1">{t("permissionHelp")}</p>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t("expirationLabel")}</label>
@@ -486,7 +513,7 @@ function ApiKeysTab() {
                 </>
               ) : (
                 <>
-                  <Key className="h-4 w-4 mr-2" /> {t("generateKey")}
+                  <KeyIcon size={16} className="h-4 w-4 mr-2" /> {t("generateKey")}
                 </>
               )}
             </Button>
@@ -518,7 +545,7 @@ function WebhooksTab() {
 
   const fetchEndpoints = useCallback(async () => {
     try {
-      const res = await fetch("/api/webhooks");
+      const res = await fetch("/api/webhooks", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setEndpoints(data);
@@ -531,7 +558,10 @@ function WebhooksTab() {
   }, []);
 
   useEffect(() => {
-    fetchEndpoints();
+    const init = async () => {
+      await fetchEndpoints();
+    };
+    init();
   }, [fetchEndpoints]);
 
   const resetForm = () => {
@@ -613,8 +643,14 @@ function WebhooksTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
-    if (!confirm(t("confirmDeleteWebhook"))) return;
+    const ok = await confirm({
+      description: t("confirmDeleteWebhook"),
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch("/api/webhooks", {
         method: "DELETE",
@@ -664,7 +700,7 @@ function WebhooksTab() {
         toast.success(
           data.status === "DELIVERED"
             ? t("testSuccessfulToast", { statusCode: data.statusCode, durationMs: data.durationMs })
-            : t("testFailedToast", { code: data.statusCode || "timeout" })
+            : t("testFailedToast", { code: data.statusCode || "timeout" }),
         );
         await fetchEndpoints();
       } else {
@@ -687,7 +723,7 @@ function WebhooksTab() {
 
   const toggleEvent = (event: string) => {
     setFormEvents((prev) =>
-      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event],
     );
   };
 
@@ -707,7 +743,7 @@ function WebhooksTab() {
   const filteredEndpoints = endpoints.filter(
     (ep) =>
       ep.name.toLowerCase().includes(search.toLowerCase()) ||
-      ep.url.toLowerCase().includes(search.toLowerCase())
+      ep.url.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -745,7 +781,7 @@ function WebhooksTab() {
                       toast.success(t("secretCopied"));
                     }}
                   >
-                    <Copy className="h-4 w-4" />
+                    <CopyIcon size={16} className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
@@ -765,7 +801,10 @@ function WebhooksTab() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <SearchIcon
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          />
           <Input
             placeholder={tc("search")}
             value={search}
@@ -774,8 +813,13 @@ function WebhooksTab() {
           />
         </div>
         <div className="flex-1" />
-        <Button onClick={() => { resetForm(); setShowCreate(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
+        <Button
+          onClick={() => {
+            resetForm();
+            setShowCreate(true);
+          }}
+        >
+          <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("addEndpoint")}
         </Button>
       </div>
 
@@ -783,18 +827,23 @@ function WebhooksTab() {
       {filteredEndpoints.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Globe className="h-12 w-12 text-gray-300 mb-4" />
+            <EarthIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {search ? t("noWebhooksMatch") : t("noWebhooks")}
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {search
-                ? t("tryDifferentSearch")
-                : t("createFirstWebhook")}
+              {search ? t("tryDifferentSearch") : t("createFirstWebhook")}
             </p>
             {!search && (
-              <Button variant="outline" className="mt-4" onClick={() => { resetForm(); setShowCreate(true); }}>
-                <Plus className="h-4 w-4 mr-2" /> {t("addEndpoint")}
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  resetForm();
+                  setShowCreate(true);
+                }}
+              >
+                <PlusIcon size={16} className="h-4 w-4 mr-2" /> {t("addEndpoint")}
               </Button>
             )}
           </CardContent>
@@ -813,8 +862,8 @@ function WebhooksTab() {
                           ep.status === "ACTIVE"
                             ? "success"
                             : ep.status === "PAUSED"
-                            ? "warning"
-                            : "danger"
+                              ? "warning"
+                              : "danger"
                         }
                       >
                         {ep.status}
@@ -834,12 +883,21 @@ function WebhooksTab() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span>
                         {t("events")}{" "}
-                        {ep.subscribedEvents.slice(0, 3).map((e) => getEventLabel(e, t)).join(", ")}
+                        {ep.subscribedEvents
+                          .slice(0, 3)
+                          .map((e) => getEventLabel(e, t))
+                          .join(", ")}
                         {ep.subscribedEvents.length > 3 &&
                           ` ${t("more", { count: ep.subscribedEvents.length - 3 })}`}
                       </span>
-                      <span>{t("deliveriesLabel")} {ep._count.deliveries}</span>
-                      {ep.lastTriggeredAt && <span>{t("last")} {formatDate(ep.lastTriggeredAt)}</span>}
+                      <span>
+                        {t("deliveriesLabel")} {ep._count.deliveries}
+                      </span>
+                      {ep.lastTriggeredAt && (
+                        <span>
+                          {t("last")} {formatDate(ep.lastTriggeredAt)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -853,7 +911,7 @@ function WebhooksTab() {
                       {testing === ep.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <RefreshCw className="h-4 w-4 text-blue-500" />
+                        <RefreshCwIcon size={16} className="h-4 w-4 text-blue-500" />
                       )}
                     </Button>
                     <Button
@@ -910,7 +968,7 @@ function WebhooksTab() {
               {showEdit ? t("editWebhookDesc") : t("addWebhookDesc")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t("nameLabel")}</label>
               <Input
@@ -991,7 +1049,7 @@ function WebhooksTab() {
               {tc("cancel")}
             </Button>
             <Button onClick={showEdit ? handleUpdate : handleCreate}>
-              <Globe className="h-4 w-4 mr-2" />
+              <EarthIcon size={16} className="h-4 w-4 mr-2" />
               {showEdit ? t("updateWebhook") : t("createWebhookBtn")}
             </Button>
           </DialogFooter>
@@ -1032,7 +1090,7 @@ function DeliveriesTab() {
 
   const fetchEndpointList = useCallback(async () => {
     try {
-      const res = await fetch("/api/webhooks");
+      const res = await fetch("/api/webhooks", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setEndpoints(data.map((ep: WebhookEndpoint) => ({ id: ep.id, name: ep.name })));
@@ -1043,11 +1101,17 @@ function DeliveriesTab() {
   }, []);
 
   useEffect(() => {
-    fetchEndpointList();
+    const init = async () => {
+      await fetchEndpointList();
+    };
+    init();
   }, [fetchEndpointList]);
 
   useEffect(() => {
-    fetchDeliveries();
+    const init = async () => {
+      await fetchDeliveries();
+    };
+    init();
   }, [fetchDeliveries]);
 
   if (loading) {
@@ -1076,7 +1140,7 @@ function DeliveriesTab() {
           </SelectContent>
         </Select>
         <Button variant="outline" size="sm" onClick={fetchDeliveries}>
-          <RefreshCw className="h-4 w-4 mr-2" /> {tc("refresh")}
+          <RefreshCwIcon size={16} className="h-4 w-4 mr-2" /> {tc("refresh")}
         </Button>
       </div>
 
@@ -1084,13 +1148,11 @@ function DeliveriesTab() {
       {deliveries.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Clock className="h-12 w-12 text-gray-300 mb-4" />
+            <ClockIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
               {t("noDeliveries")}
             </h3>
-            <p className="text-sm text-gray-400 mt-1">
-              {t("noDeliveriesDesc")}
-            </p>
+            <p className="text-sm text-gray-400 mt-1">{t("noDeliveriesDesc")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -1098,52 +1160,62 @@ function DeliveriesTab() {
           {deliveries.map((d) => (
             <Card key={d.id} className="hover:shadow-sm transition-shadow">
               <CardContent className="p-4">
-                <div
-                  className="flex items-start justify-between gap-4 cursor-pointer"
-                  onClick={() =>
-                    setExpandedDelivery(expandedDelivery === d.id ? null : d.id)
-                  }
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div>
-                      {d.status === "DELIVERED" ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : d.status === "PENDING" ? (
-                        <Clock className="h-5 w-5 text-amber-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{getEventLabel(d.event, t)}</span>
-                        <Badge
-                          variant={
-                            d.status === "DELIVERED"
-                              ? "success"
-                              : d.status === "PENDING"
-                              ? "warning"
-                              : "danger"
-                          }
-                        >
-                          {d.status}
-                        </Badge>
-                        {d.statusCode && (
-                          <span className="text-xs text-gray-500">{t("statusHttp", { code: d.statusCode })}</span>
+                <AnimatedDisclosure
+                  open={expandedDelivery === d.id}
+                  onToggle={() => setExpandedDelivery(expandedDelivery === d.id ? null : d.id)}
+                  trigger={({ open }) => (
+                    <>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div>
+                          {d.status === "DELIVERED" ? (
+                            <CircleCheckIcon size={20} className="h-5 w-5 text-green-500" />
+                          ) : d.status === "PENDING" ? (
+                            <ClockIcon size={20} className="h-5 w-5 text-amber-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{getEventLabel(d.event, t)}</span>
+                            <Badge
+                              variant={
+                                d.status === "DELIVERED"
+                                  ? "success"
+                                  : d.status === "PENDING"
+                                    ? "warning"
+                                    : "danger"
+                              }
+                            >
+                              {d.status}
+                            </Badge>
+                            {d.statusCode && (
+                              <span className="text-xs text-gray-500">
+                                {t("statusHttp", { code: d.statusCode })}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                            <span>{d.endpoint.name}</span>
+                            {d.durationMs && <span>{d.durationMs}ms</span>}
+                            <span>{formatDate(d.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={cn(
+                          "h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200",
+                          open && "rotate-180",
                         )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                        <span>{d.endpoint.name}</span>
-                        {d.durationMs && <span>{d.durationMs}ms</span>}
-                        <span>{formatDate(d.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expanded Details */}
-                {expandedDelivery === d.id && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+                      />
+                    </>
+                  )}
+                  triggerClassName="flex items-start justify-between gap-4 w-full text-left cursor-pointer group"
+                  contentClassName="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800"
+                >
+                  {/* Expanded Details */}
+                  <div className="space-y-3">
                     <div>
                       <p className="text-xs font-semibold text-gray-500 mb-1">{t("endpointUrl")}</p>
                       <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded block break-all">
@@ -1153,10 +1225,13 @@ function DeliveriesTab() {
                     {d.payload && (
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-1">{t("payload")}</p>
-                        <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-40 overflow-auto whitespace-pre-wrap">
+                        <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-40 overflow-auto scrollbar-thin whitespace-pre-wrap">
                           {(() => {
-                            try { return JSON.stringify(JSON.parse(d.payload), null, 2); }
-                            catch { return d.payload; }
+                            try {
+                              return JSON.stringify(JSON.parse(d.payload), null, 2);
+                            } catch {
+                              return d.payload;
+                            }
                           })()}
                         </pre>
                       </div>
@@ -1164,18 +1239,266 @@ function DeliveriesTab() {
                     {d.response && (
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-1">{t("response")}</p>
-                        <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-32 overflow-auto whitespace-pre-wrap">
+                        <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-32 overflow-auto scrollbar-thin whitespace-pre-wrap">
                           {d.response}
                         </pre>
                       </div>
                     )}
                   </div>
-                )}
+                </AnimatedDisclosure>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Playground Tab ─────────────────────────────────────────────────────────
+
+function PlaygroundTab() {
+  const t = useTranslations("integrations");
+  const [apiKey, setApiKey] = useState("");
+  const [latestPrefix, setLatestPrefix] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{
+    status: number;
+    ok: boolean;
+    latencyMs: number;
+    data: unknown;
+  } | null>(null);
+
+  // Show the most recently created key prefix so users can pick which saved
+  // key to test (raw keys are only ever shown once, at creation).
+  useEffect(() => {
+    let active = true;
+    fetch("/api/api-keys")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((keys) => {
+        if (active && Array.isArray(keys) && keys.length > 0) {
+          setLatestPrefix(keys[0].prefix || null);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const whoamiUrl = `${baseUrl}/api/v1/whoami`;
+
+  const handleSend = async () => {
+    const key = apiKey.trim();
+    if (!key) {
+      toast.error(t("missingKey"));
+      return;
+    }
+    setSending(true);
+    const start = performance.now();
+    try {
+      const res = await fetch("/api/v1/whoami", {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      const data = await res.json().catch(() => null);
+      setResult({
+        status: res.status,
+        ok: res.ok,
+        latencyMs: Math.round(performance.now() - start),
+        data,
+      });
+    } catch {
+      setResult({ status: 0, ok: false, latencyMs: 0, data: null });
+      toast.error(t("requestFailed"));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(t("copied"));
+  };
+
+  const placeholder = apiKey.trim() || "dash_…";
+  const curlSample = `curl -H "Authorization: Bearer ${placeholder}" \\
+  ${whoamiUrl}`;
+  const fetchSample = `const res = await fetch("${whoamiUrl}", {
+  headers: { Authorization: "Bearer ${placeholder}" },
+});`;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+      {/* Request builder + response */}
+      <div className="lg:col-span-3 space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 text-indigo-500" />
+              <CardTitle>{t("playgroundTitle")}</CardTitle>
+            </div>
+            <CardDescription>{t("playgroundDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{t("endpointLabel")}</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-mono">
+                  {t("whoamiEndpoint")}
+                </code>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">{t("whoamiDesc")}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{t("apiKeyLabel")}</label>
+              <div className="flex gap-2">
+                <Input
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={t("apiKeyPlaceholder")}
+                  className="font-mono"
+                  onKeyDown={(e) => e.key === "Enter" && !sending && handleSend()}
+                />
+                <Button variant="outline" onClick={handleSend} disabled={sending}>
+                  {sending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("sending")}
+                    </>
+                  ) : (
+                    <>
+                      <FlaskConical className="h-4 w-4 mr-2" /> {t("sendRequest")}
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">
+                {t("apiKeyHint")}
+                {latestPrefix ? ` ${t("latestPrefix")}: ${latestPrefix}` : ""}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <SquareTerminal className="h-5 w-5 text-emerald-500" />
+                <CardTitle>{t("responseLabel")}</CardTitle>
+              </div>
+              {result && (
+                <div className="flex items-center gap-3 shrink-0">
+                  <span
+                    className={`text-xs font-semibold ${result.status >= 200 && result.status < 300 ? "text-green-600" : "text-red-500"}`}
+                  >
+                    {t("statusLabel")}: {result.status || "ERR"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {t("latency")}: {result.latencyMs}ms
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={() => setResult(null)}>
+                    {t("clear")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {result === null ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <SquareTerminal className="h-10 w-10 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-400">{t("noResponse")}</p>
+              </div>
+            ) : (
+              <div className="relative">
+                <pre className="text-xs font-mono bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-800 p-4 rounded-lg overflow-auto scrollbar-thin max-h-80 whitespace-pre-wrap">
+                  {result.data === null ? t("requestFailed") : formatJson(result.data)}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 bg-white/80 dark:bg-gray-900/60"
+                  onClick={() => copyText(formatJson(result.data))}
+                >
+                  <CopyIcon size={14} className="h-3.5 w-3.5 mr-1" />
+                  {t("copyResponse")}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick start reference */}
+      <div className="lg:col-span-2 space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("quickStartTitle")}</CardTitle>
+            <CardDescription>{t("quickStartDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                {t("baseUrlLabel")}
+              </label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-mono break-all">
+                  {whoamiUrl}
+                </code>
+                <Button variant="ghost" size="sm" onClick={() => copyText(whoamiUrl)}>
+                  <CopyIcon size={14} className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                {t("authHeaderLabel")}
+              </label>
+              <code className="block px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-mono break-all">
+                Authorization: Bearer {placeholder}
+              </code>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                {t("exampleCurl")}
+              </label>
+              <div className="relative">
+                <pre className="text-xs font-mono bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-800 p-3 rounded-lg overflow-auto scrollbar-thin whitespace-pre-wrap">
+                  {curlSample}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-1.5 right-1.5 bg-white/80 dark:bg-gray-900/60"
+                  onClick={() => copyText(curlSample)}
+                >
+                  <CopyIcon size={14} className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+                {t("exampleFetch")}
+              </label>
+              <div className="relative">
+                <pre className="text-xs font-mono bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-800 p-3 rounded-lg overflow-auto scrollbar-thin whitespace-pre-wrap">
+                  {fetchSample}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-1.5 right-1.5 bg-white/80 dark:bg-gray-900/60"
+                  onClick={() => copyText(fetchSample)}
+                >
+                  <CopyIcon size={14} className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">{t("scopeHint")}</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

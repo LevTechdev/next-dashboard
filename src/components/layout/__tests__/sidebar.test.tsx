@@ -5,7 +5,15 @@ import { Sidebar } from "../sidebar";
 // Mock next-intl using shared helper (async import avoids vitest hoisting issues)
 vi.mock("next-intl", async () => {
   const mod = await import("@/test-utils/i18n-mock");
-  return mod.createTranslationsMock(mod.mergeMessages(mod.navMessages, mod.appMessages, mod.salesMessages, mod.commonMessages, mod.dashboardMessages));
+  return mod.createTranslationsMock(
+    mod.mergeMessages(
+      mod.navMessages,
+      mod.appMessages,
+      mod.salesMessages,
+      mod.commonMessages,
+      mod.dashboardMessages,
+    ),
+  );
 });
 
 // Mock next/navigation

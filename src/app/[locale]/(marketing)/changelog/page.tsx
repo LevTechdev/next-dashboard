@@ -2,26 +2,23 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  Sparkles,
-  Bug,
-  Rocket,
-  RefreshCw,
-  GitCommit,
-  Bell,
-} from "lucide-react";
+  RefreshCwIcon,
+  BellIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  RocketIcon,
+  GitCommitHorizontalIcon,
+} from "lucide-animated";
+import { Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  AnimateSection,
-  AnimateUp,
-  buttonTap,
-} from "@/components/motion";
+import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedRays } from "@/components/ui/animated-rays";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 
 interface ChangelogEntry {
   version: string;
@@ -39,7 +36,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.5.0",
     date: "April 14, 2026",
     tag: "Latest Release",
-    tagColor: "bg-indigo-500/20 text-indigo-400",
+    tagColor: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
     items: [
       {
         type: "feature",
@@ -63,7 +60,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.4.0",
     date: "March 28, 2026",
     tag: "Feature Release",
-    tagColor: "bg-emerald-500/20 text-emerald-400",
+    tagColor: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
     items: [
       {
         type: "feature",
@@ -87,7 +84,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.3.0",
     date: "March 10, 2026",
     tag: "Improvement",
-    tagColor: "bg-blue-500/20 text-blue-400",
+    tagColor: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
     items: [
       {
         type: "feature",
@@ -111,7 +108,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.2.0",
     date: "February 20, 2026",
     tag: "Feature Release",
-    tagColor: "bg-emerald-500/20 text-emerald-400",
+    tagColor: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
     items: [
       {
         type: "feature",
@@ -135,7 +132,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.1.0",
     date: "February 5, 2026",
     tag: "Improvement",
-    tagColor: "bg-blue-500/20 text-blue-400",
+    tagColor: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
     items: [
       {
         type: "feature",
@@ -155,7 +152,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.0.0",
     date: "January 15, 2026",
     tag: "Major Release",
-    tagColor: "bg-purple-500/20 text-purple-400",
+    tagColor: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
     items: [
       {
         type: "feature",
@@ -183,21 +180,21 @@ export const changelog: ChangelogEntry[] = [
 
 export const typeConfig = {
   feature: {
-    icon: Sparkles,
+    icon: SparklesIcon,
     label: "New Feature",
-    color: "text-emerald-400",
+    color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-500/10",
   },
   improvement: {
-    icon: Rocket,
+    icon: RocketIcon,
     label: "Improvement",
-    color: "text-blue-400",
+    color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-500/10",
   },
   fix: {
     icon: Bug,
     label: "Bug Fix",
-    color: "text-amber-400",
+    color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-500/10",
   },
 };
@@ -205,6 +202,7 @@ export const typeConfig = {
 export default function ChangelogPage() {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
+  const t = useTranslations("changelogPage");
   const ctaHref = `/${locale}/dashboard`;
 
   return (
@@ -233,32 +231,41 @@ export default function ChangelogPage() {
             <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-700/50 bg-zinc-800/30 backdrop-blur-sm mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-300/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
             >
-              <RefreshCw className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">
-                Release Notes
+              <RefreshCwIcon
+                size={14}
+                className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400"
+              />
+              <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
+                {t("badge")}
               </span>
             </motion.div>
 
             <motion.h1
               variants={{
                 hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 max-w-4xl mx-auto"
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
             >
-              What&apos;s&nbsp;
+              {t("heroPrefix")}&nbsp;
               <span className="inline-flex">
-                <FlipFadeText
-                  words={["new.", "shipping.", "improved.", "next."]}
+                <FlipRevealText
+                  words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                   interval={2800}
-                  textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-400 !via-purple-400 !to-pink-400 !font-bold !tracking-tight"
+                  textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight"
                   className="!min-h-0 inline-flex"
-                  staggerDelay={0.06}
-                  letterDuration={0.4}
                 />
               </span>
             </motion.h1>
@@ -266,12 +273,15 @@ export default function ChangelogPage() {
             <motion.p
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                },
               }}
-              className="text-base lg:text-lg text-zinc-400 max-w-2xl mx-auto"
+              className="text-base lg:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto"
             >
-              Stay up to date with the latest features, improvements, and bug
-              fixes. We ship regularly based on your feedback.
+              {t("heroSubtitle")}
             </motion.p>
           </motion.div>
         </div>
@@ -284,14 +294,12 @@ export default function ChangelogPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/20">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-medium text-zinc-300">
-              Latest version:{" "}
-              <span className="text-white font-semibold">2.5.0</span>
+            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+              {t("latestVersion")}{" "}
+              <span className="text-zinc-900 dark:text-white font-semibold">2.5.0</span>
             </span>
             <span className="text-[10px] text-zinc-500">—</span>
-            <span className="text-[10px] text-zinc-500">
-              Released April 14, 2026
-            </span>
+            <span className="text-[10px] text-zinc-600 dark:text-zinc-500">{t("released")}</span>
           </div>
         </div>
       </AnimateSection>
@@ -320,24 +328,24 @@ export default function ChangelogPage() {
                   className="relative pl-12 md:pl-20"
                 >
                   {/* Timeline dot */}
-                  <div className="absolute left-[11px] md:left-[27px] top-2 w-3 h-3 rounded-full bg-indigo-500 border-2 border-[#0b0c11] ring-2 ring-indigo-500/20" />
+                  <div className="absolute left-[11px] md:left-[27px] top-2 w-3 h-3 rounded-full bg-indigo-500 border-2 border-zinc-50 dark:border-[#0b0c11] ring-2 ring-indigo-500/20" />
 
                   <div className="double-bezel">
                     <div className="double-bezel-inner">
                       {/* Version header */}
                       <div className="flex items-center gap-3 mb-4 flex-wrap">
-                        <h3 className="text-base font-bold text-white font-mono">
+                        <h3 className="text-base font-bold text-zinc-900 dark:text-white font-mono">
                           v{entry.version}
                         </h3>
                         <span
                           className={cn(
                             "text-[9px] font-semibold uppercase tracking-widest px-2 py-1 rounded-full",
-                            entry.tagColor
+                            entry.tagColor,
                           )}
                         >
                           {entry.tag}
                         </span>
-                        <span className="text-[10px] text-zinc-600 font-mono">
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-600 font-mono">
                           {entry.date}
                         </span>
                       </div>
@@ -363,15 +371,13 @@ export default function ChangelogPage() {
                               <div
                                 className={cn(
                                   "flex-shrink-0 mt-0.5 inline-flex p-1 rounded-md",
-                                  config.bg
+                                  config.bg,
                                 )}
                               >
-                                <Icon
-                                  className={cn("h-3 w-3", config.color)}
-                                />
+                                <Icon size={12} className={cn("h-3 w-3", config.color)} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs text-zinc-300 leading-relaxed">
+                                <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
                                   {item.text}
                                 </p>
                               </div>
@@ -391,19 +397,19 @@ export default function ChangelogPage() {
       {/* ════════════════════════
           RELEASE STATS with Animated Counters
           ════════════════════════ */}
-      <AnimateSection className="py-14 border-t border-zinc-800/60 bg-zinc-900/30">
+      <AnimateSection className="py-14 border-t border-zinc-200 dark:border-zinc-800/60 bg-zinc-100/60 dark:bg-zinc-900/30">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { label: "Total Releases", end: 24, icon: GitCommit, suffix: "+" },
-              { label: "New Features", end: 42, icon: Sparkles, suffix: "+" },
-              { label: "Improvements", end: 128, icon: Rocket, suffix: "+" },
-              { label: "Bug Fixes", end: 56, icon: Bug, suffix: "+" },
+              { labelKey: "statReleases", end: 24, icon: GitCommitHorizontalIcon, suffix: "+" },
+              { labelKey: "statFeatures", end: 42, icon: SparklesIcon, suffix: "+" },
+              { labelKey: "statImprovements", end: 128, icon: RocketIcon, suffix: "+" },
+              { labelKey: "statFixes", end: 56, icon: Bug, suffix: "+" },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <motion.div
-                  key={stat.label}
+                  key={stat.labelKey}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -411,13 +417,13 @@ export default function ChangelogPage() {
                   className="text-center"
                 >
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 mb-3">
-                    <Icon className="h-4 w-4 text-indigo-400" />
+                    <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <div className="text-2xl lg:text-3xl font-bold text-white tabular-nums">
+                  <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
                     <AnimatedCounter end={stat.end} duration={2000} suffix={stat.suffix} />
                   </div>
-                  <div className="text-xs text-zinc-500 mt-1 font-medium">
-                    {stat.label}
+                  <div className="text-xs text-zinc-600 dark:text-zinc-500 mt-1 font-medium">
+                    {t(stat.labelKey)}
                   </div>
                 </motion.div>
               );
@@ -429,31 +435,30 @@ export default function ChangelogPage() {
       {/* ════════════════════════
           SUBSCRIBE SECTION
           ════════════════════════ */}
-      <AnimateSection className="py-16 border-t border-zinc-800/60">
+      <AnimateSection className="py-16 border-t border-zinc-200 dark:border-zinc-800/60">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <AnimateUp>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-700/50 bg-zinc-800/30 backdrop-blur-sm mb-4">
-              <Bell className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">
-                Stay Updated
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-300/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-4">
+              <BellIcon size={14} className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
+                {t("subscribeBadge")}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-              Never Miss a Release
+            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white mb-2">
+              {t("subscribeTitle")}
             </h2>
-            <p className="text-sm text-zinc-400 mb-6 max-w-md mx-auto">
-              Get notified about new releases, features, and updates directly
-              to your inbox.
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-md mx-auto">
+              {t("subscribeDesc")}
             </p>
             <div className="flex items-center justify-center gap-3 max-w-md mx-auto">
               <input
                 type="email"
-                placeholder="Enter your email"
-                className="flex-1 h-10 px-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                placeholder={t("emailPlaceholder")}
+                className="flex-1 h-10 px-4 rounded-xl bg-white border border-zinc-300 text-xs text-zinc-700 placeholder:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-700/50 dark:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
               />
-              <Button className="h-10 px-5 text-xs gap-1.5 bg-white text-[#0b0c11] hover:bg-zinc-200 rounded-xl font-medium shrink-0 press-scale">
-                Subscribe
-                <ArrowRight className="h-3.5 w-3.5" />
+              <Button className="h-10 px-5 text-xs gap-1.5 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-[#0b0c11] dark:hover:bg-zinc-200 rounded-xl font-medium shrink-0 press-scale">
+                {t("subscribeBtn")}
+                <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
               </Button>
             </div>
           </AnimateUp>
@@ -477,19 +482,17 @@ export default function ChangelogPage() {
 
               <div className="relative text-center">
                 <AnimateUp>
-                  <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                    Ready to Get Started?
+                  <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
+                    {t("ctaTitle")}
                   </h2>
-                  <p className="text-base text-zinc-400 max-w-xl mx-auto mb-8">
-                    Join thousands of businesses already using Dashboard.
+                  <p className="text-base text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto mb-8">
+                    {t("ctaDesc")}
                   </p>
                   <Link href={ctaHref}>
                     <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
-                      <Button
-                        className="h-11 px-8 text-sm gap-2 bg-white text-[#0b0c11] hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-black/20 press-scale"
-                      >
-                        Go to Dashboard
-                        <ArrowRight className="h-4 w-4" />
+                      <Button className="h-11 px-8 text-sm gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-[#0b0c11] dark:hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-black/20 press-scale">
+                        {t("ctaButton")}
+                        <ArrowRightIcon size={16} className="h-4 w-4" />
                       </Button>
                     </motion.div>
                   </Link>

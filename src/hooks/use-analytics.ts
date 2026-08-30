@@ -26,7 +26,7 @@ export function useAnalytics() {
         ...properties,
       });
     },
-    [locale]
+    [locale],
   );
 
   /**
@@ -41,7 +41,7 @@ export function useAnalytics() {
         locale,
       });
     },
-    [capture, locale]
+    [capture, locale],
   );
 
   /**
@@ -54,7 +54,7 @@ export function useAnalytics() {
         locale,
       });
     },
-    [capture, locale]
+    [capture, locale],
   );
 
   /**
@@ -67,7 +67,7 @@ export function useAnalytics() {
         to: toLocale,
       });
     },
-    [capture]
+    [capture],
   );
 
   /**
@@ -80,7 +80,7 @@ export function useAnalytics() {
         locale,
       });
     },
-    [capture, locale]
+    [capture, locale],
   );
 
   return {

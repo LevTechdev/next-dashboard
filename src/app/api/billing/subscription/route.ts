@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
+import { getStripe, stripeConfigured } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +43,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Plan not found" }, { status: 404 });
   }
 
+  // Plan gating: paid plans require Stripe Checkout (/api/billing/checkout).
+  // Only the Free plan (price 0) can be switched directly.
+  if (plan.price > 0) {
+    return NextResponse.json(
+      { error: "Paid plans require Stripe checkout" },
+      { status: 400 },
+    );
+  }
+
   // Resolve real admin user ID for DB relations
   const adminUser = await prisma.user.findFirst({
     where: { role: "ADMIN" },
     orderBy: { createdAt: "asc" },
-    select: { id: true },
+    select: { id: true, tenantId: true },
   });
 
   if (!adminUser) {
@@ -100,6 +110,7 @@ export async function POST(req: Request) {
       entity: "Subscription",
       entityId: subscription.id,
       details: `Changed subscription to ${plan.name} plan`,
+      tenantId: adminUser.tenantId,
     },
   });
 
@@ -117,7 +128,7 @@ export async function PUT(req: Request) {
   const adminUser = await prisma.user.findFirst({
     where: { role: "ADMIN" },
     orderBy: { createdAt: "asc" },
-    select: { id: true },
+    select: { id: true, tenantId: true },
   });
 
   if (!adminUser) {
@@ -136,6 +147,14 @@ export async function PUT(req: Request) {
   }
 
   if (action === "cancel") {
+    // When the subscription is backed by Stripe, cancel at period end there too
+    // so the customer stops being billed. Free plans are local-only.
+    if (subscription.stripeSubscriptionId && stripeConfigured()) {
+      await getStripe().subscriptions.update(subscription.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    }
+
     const updated = await prisma.subscription.update({
       where: { userId },
       data: { cancelAtPeriodEnd: true },
@@ -144,17 +163,24 @@ export async function PUT(req: Request) {
 
     await prisma.auditLog.create({
       data: {
-        action: "CANCEL_SUBSCRIPTION",
-        entity: "Subscription",
-        entityId: subscription.id,
-        details: `Scheduled cancellation of ${subscription.plan.name} plan at period end`,
-      },
+      action: "CANCEL_SUBSCRIPTION",
+      entity: "Subscription",
+      entityId: subscription.id,
+      details: `Scheduled cancellation of ${subscription.plan.name} plan at period end`,
+      tenantId: adminUser.tenantId,
+    },
     });
 
     return NextResponse.json(updated);
   }
 
   if (action === "reactivate") {
+    if (subscription.stripeSubscriptionId && stripeConfigured()) {
+      await getStripe().subscriptions.update(subscription.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+    }
+
     const updated = await prisma.subscription.update({
       where: { userId },
       data: { cancelAtPeriodEnd: false },

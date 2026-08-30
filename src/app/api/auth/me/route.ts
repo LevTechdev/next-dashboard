@@ -42,9 +42,6 @@ export async function GET(req: Request) {
     return NextResponse.json(user);
   } catch (error) {
     console.error("Auth me error:", error);
-    return NextResponse.json(
-      { error: "Authentication failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
   }
 }

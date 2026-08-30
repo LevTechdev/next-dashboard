@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/api-guard";
+import { getTenantId } from "@/lib/tenancy";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  const { session, response } = await requireAuth(request);
+  if (response) return response;
+  const tenantId = getTenantId(session);
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -12,7 +17,7 @@ export async function GET(request: NextRequest) {
 
       const sendData = async () => {
         try {
-          const data = await fetchDashboardData();
+          const data = await fetchDashboardData(tenantId);
           const currentSnapshot = JSON.stringify(data);
 
           const changed = prevSnapshot !== "";
@@ -51,28 +56,40 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticated so the audit row can be attributed to a real workspace;
+    // the caller's supplied userId is honored as an override (the client
+    // never calls this endpoint today, but keep the old contract working).
+    const { session, response } = await requireAuth(request);
+    if (response) return response;
+
     const body = await request.json();
     const { action, entity, entityId, details, userId } = body;
 
     if (action && entity) {
       await prisma.activityLog.create({
-        data: { action, entity, entityId: entityId || null, details: details || JSON.stringify(body) },
+        data: {
+          action,
+          entity,
+          entityId: entityId || null,
+          details: details || JSON.stringify(body),
+          userId: userId || session.user.id,
+          tenantId: session.user.tenantId,
+        },
       });
     }
 
-    return new Response(
-      JSON.stringify({ success: true, timestamp: new Date().toISOString() }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Invalid request" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Invalid request" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
-async function fetchDashboardData() {
+async function fetchDashboardData(tenantId: string | null) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -93,39 +110,44 @@ async function fetchDashboardData() {
     lowStockDetails,
     budgetAlerts,
   ] = await Promise.all([
-    prisma.order.aggregate({ _sum: { grandTotal: true } }),
-    prisma.order.count(),
-    prisma.customer.count({ where: { isActive: true } }),
-    prisma.product.count({ where: { isActive: true } }),
+    prisma.order.aggregate({ where: { tenantId }, _sum: { grandTotal: true } }),
+    prisma.order.count({ where: { tenantId } }),
+    prisma.customer.count({ where: { isActive: true, tenantId } }),
+    prisma.product.count({ where: { isActive: true, tenantId } }),
     prisma.order.findMany({
+      where: { tenantId },
       take: 5,
       orderBy: { createdAt: "desc" },
       include: { customer: true, channel: true },
     }),
-    prisma.order.count({ where: { status: "PENDING" } }),
-    prisma.product.count({ where: { stock: { lte: 10 }, isActive: true } }),
+    prisma.order.count({ where: { status: "PENDING", tenantId } }),
+    prisma.product.count({ where: { stock: { lte: 10 }, isActive: true, tenantId } }),
     prisma.order.aggregate({
       _sum: { grandTotal: true },
-      where: { createdAt: { gte: todayStart } },
+      where: { createdAt: { gte: todayStart }, tenantId },
     }),
-    prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.campaign.count({ where: { status: "ACTIVE" } }),
-    prisma.discount.count({ where: { isActive: true, endsAt: { gte: now } } }),
+    prisma.order.count({ where: { createdAt: { gte: todayStart }, tenantId } }),
+    prisma.campaign.count({ where: { status: "ACTIVE", tenantId } }),
+    prisma.discount.count({ where: { isActive: true, endsAt: { gte: now }, tenantId } }),
     prisma.discount.findMany({
-      where: { isActive: true, endsAt: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) } },
+      where: {
+        isActive: true,
+        tenantId,
+        endsAt: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+      },
       take: 3,
       orderBy: { endsAt: "asc" },
       select: { code: true, name: true, endsAt: true },
     }),
     prisma.product.findMany({
-      where: { stock: { lte: 10 }, isActive: true },
+      where: { stock: { lte: 10 }, isActive: true, tenantId },
       take: 5,
       orderBy: { stock: "asc" },
       select: { name: true, stock: true, sku: true },
     }),
     // Fetch active campaigns with budget/spent data for budget alerts
     prisma.campaign.findMany({
-      where: { status: "ACTIVE", budget: { gt: 0 } },
+      where: { status: "ACTIVE", budget: { gt: 0 }, tenantId },
       select: { id: true, name: true, budget: true, spent: true },
     }),
   ]);

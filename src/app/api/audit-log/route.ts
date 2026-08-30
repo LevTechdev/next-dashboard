@@ -2,25 +2,46 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-guard";
 import { formatDateTime } from "@/lib/utils";
+import { effectiveTenantId, tenantWhere } from "@/lib/tenancy";
 
 export async function GET(req: Request) {
-  const { response } = await requireAuth(req);
+  const { session, response } = await requireAuth(req);
   if (response) return response;
+
+  // Only the caller's workspace's audit records. All audit rows are
+  // tenant-attributed (writes + db:backfill-audit), so a strict filter applies.
+  const tenantScope = tenantWhere(await effectiveTenantId(session!));
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() || "";
+  const actionFilter = searchParams.get("action")?.trim() || "";
+  const dateFrom = searchParams.get("from")?.trim() || "";
+  const dateTo = searchParams.get("to")?.trim() || "";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(50, Math.max(10, parseInt(searchParams.get("limit") || "25")));
 
-  // Build search filter if query provided
-  const whereFilter: any = {};
+  // Build filter if query/action/dates provided (AND-combined with tenant scope).
+  const whereFilter: any = { AND: [tenantScope] };
   if (q) {
-    whereFilter.OR = [
-      { action: { contains: q, mode: "insensitive" } },
-      { details: { contains: q, mode: "insensitive" } },
-      { entity: { contains: q, mode: "insensitive" } },
-      { user: { name: { contains: q, mode: "insensitive" } } },
-    ];
+    whereFilter.AND.push({
+      OR: [
+        { action: { contains: q, mode: "insensitive" } },
+        { details: { contains: q, mode: "insensitive" } },
+        { entity: { contains: q, mode: "insensitive" } },
+        { user: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    });
+  }
+  if (actionFilter) {
+    whereFilter.AND.push({ action: { contains: actionFilter, mode: "insensitive" } });
+  }
+  if (dateFrom) {
+    whereFilter.AND.push({ createdAt: { gte: new Date(dateFrom) } });
+  }
+  if (dateTo) {
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+    whereFilter.AND.push({ createdAt: { lte: to } });
   }
 
   const [logs, totalCount] = await Promise.all([

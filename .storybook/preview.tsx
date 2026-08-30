@@ -11,8 +11,23 @@ export const withTheme: Decorator = (Story, context) => {
   );
 };
 
+/**
+ * Emulates `prefers-reduced-motion: reduce` for stories by toggling a
+ * `data-motion` attribute on the wrapper. Components that opt out of motion
+ * via CSS (e.g. the radial-glow-button shine) are expected to also match
+ * `[data-motion="reduced"]` so their reduced-motion state can be previewed.
+ */
+export const withMotion: Decorator = (Story, context) => {
+  const motion = context.globals.motion || "full";
+  return (
+    <div data-motion={motion}>
+      <Story />
+    </div>
+  );
+};
+
 const preview: Preview = {
-  decorators: [withTheme],
+  decorators: [withTheme, withMotion],
 
   parameters: {
     controls: {
@@ -32,6 +47,19 @@ const preview: Preview = {
   },
 
   globalTypes: {
+    motion: {
+      name: "Motion",
+      description: "Emulates the prefers-reduced-motion media query for stories",
+      defaultValue: "full",
+      toolbar: {
+        icon: "eye",
+        items: [
+          { value: "full", icon: "eye", title: "Full motion" },
+          { value: "reduced", icon: "eyeclose", title: "Reduced motion" },
+        ],
+        dynamicTitle: true,
+      },
+    },
     theme: {
       name: "Theme",
       description: "Global theme for components",

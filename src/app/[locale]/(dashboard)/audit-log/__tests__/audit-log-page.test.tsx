@@ -40,8 +40,24 @@ describe("Audit Log Page", () => {
       json: () =>
         Promise.resolve({
           logs: [
-            { id: "1", action: "USER_LOGIN", entity: "user", details: "Admin logged in", user: { name: "Admin", role: "ADMIN" }, createdAt: "2024-07-01T10:00:00Z", formattedDate: "Jul 1, 2024" },
-            { id: "2", action: "ORDER_CREATE", entity: "order", details: "Order #1234 created", user: { name: "Staff", role: "STAFF" }, createdAt: "2024-07-01T11:00:00Z", formattedDate: "Jul 1, 2024" },
+            {
+              id: "1",
+              action: "USER_LOGIN",
+              entity: "user",
+              details: "Admin logged in",
+              user: { name: "Admin", role: "ADMIN" },
+              createdAt: "2024-07-01T10:00:00Z",
+              formattedDate: "Jul 1, 2024",
+            },
+            {
+              id: "2",
+              action: "ORDER_CREATE",
+              entity: "order",
+              details: "Order #1234 created",
+              user: { name: "Staff", role: "STAFF" },
+              createdAt: "2024-07-01T11:00:00Z",
+              formattedDate: "Jul 1, 2024",
+            },
           ],
           pagination: { page: 1, limit: 25, total: 2, totalPages: 1 },
         }),

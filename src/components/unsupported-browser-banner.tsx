@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useViewTransition } from "@/components/view-transition-provider";
-import { X, AlertTriangle } from "lucide-react";
+import { XIcon } from "lucide-animated";
+import { AlertTriangle } from "lucide-react";
 
 const DISMISSED_KEY = "codebuff-vt-banner-dismissed";
 
@@ -22,9 +23,7 @@ export default function UnsupportedBrowserBanner() {
   useEffect(() => {
     setMounted(true);
     try {
-      setDismissed(
-        localStorage.getItem(DISMISSED_KEY) === "true"
-      );
+      setDismissed(localStorage.getItem(DISMISSED_KEY) === "true");
     } catch {
       // localStorage may be blocked (e.g. private browsing, permissions)
       setDismissed(false);
@@ -56,8 +55,7 @@ export default function UnsupportedBrowserBanner() {
         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
         <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
           <strong className="font-semibold">Smooth page transitions aren&apos;t supported</strong>{" "}
-          in this browser. Upgrade to{" "}
-          <span className="font-medium">Chrome 111+</span>,{" "}
+          in this browser. Upgrade to <span className="font-medium">Chrome 111+</span>,{" "}
           <span className="font-medium">Edge 111+</span>,{" "}
           <span className="font-medium">Firefox 128+</span>,{" "}
           <span className="font-medium">Safari 18+</span>, or{" "}
@@ -68,7 +66,7 @@ export default function UnsupportedBrowserBanner() {
           className="ml-auto shrink-0 p-1 rounded-md text-amber-500 hover:text-amber-700 dark:text-amber-300 dark:hover:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
           aria-label="Dismiss notification"
         >
-          <X className="h-4 w-4" />
+          <XIcon size={16} className="h-4 w-4" />
         </button>
       </div>
     </div>

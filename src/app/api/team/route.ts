@@ -9,13 +9,22 @@ export async function GET(req: Request) {
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, role: true, position: true, isActive: true, avatar: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      position: true,
+      isActive: true,
+      avatar: true,
+      createdAt: true,
+    },
   });
   return NextResponse.json(users);
 }
 
 export async function POST(req: Request) {
-  const { response } = await requirePermission("create", "team");
+  const { session, response } = await requirePermission("create", "team", req);
   if (response) return response;
 
   const body = await req.json();
@@ -28,6 +37,7 @@ export async function POST(req: Request) {
       role: body.role || "STAFF",
       position: body.position,
       phone: body.phone,
+      tenantId: session!.user.tenantId,
     },
   });
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });
@@ -38,7 +48,13 @@ export async function PUT(req: Request) {
   if (response) return response;
 
   const body = await req.json();
-  const data: any = { name: body.name, email: body.email, role: body.role, position: body.position, isActive: body.isActive };
+  const data: any = {
+    name: body.name,
+    email: body.email,
+    role: body.role,
+    position: body.position,
+    isActive: body.isActive,
+  };
   if (body.password) data.password = await hash(body.password, 10);
   const user = await prisma.user.update({ where: { id: body.id }, data });
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });
