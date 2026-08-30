@@ -125,6 +125,7 @@ describe("verifyMidtransSignature", () => {
       grossAmount: "458200.00",
       signatureKey: "",
     };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require("crypto");
     payload.signatureKey = crypto
       .createHash("sha512")

@@ -218,9 +218,9 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
           
           <div className="relative z-10">
             <Layers className="h-10 w-10 mx-auto mb-6 opacity-80" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Don't see your tool?</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Don&apos;t see your tool?</h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              We're constantly adding new integrations. You can also use our API and Webhooks to build custom connections.
+              We&apos;re constantly adding new integrations. You can also use our API and Webhooks to build custom connections.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link

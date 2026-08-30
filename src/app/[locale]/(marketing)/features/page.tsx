@@ -96,7 +96,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <LayoutDashboard className="h-5 w-5 text-blue-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Unified Dashboard</h3>
-              <p className="text-sm text-muted-foreground">Get a bird's-eye view of your entire business. Monitor sales, track inventory, and manage customers from a single, intuitive interface.</p>
+              <p className="text-sm text-muted-foreground">Get a bird&apos;s-eye view of your entire business. Monitor sales, track inventory, and manage customers from a single, intuitive interface.</p>
             </BentoCard>
           </motion.div>
 

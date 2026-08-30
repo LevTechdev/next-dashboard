@@ -39,18 +39,22 @@ function TestConsumer() {
         Replace Same
       </button>
 
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/other-page" data-testid="link-internal">
         Internal
       </a>
       <a href="https://external.com" data-testid="link-external">
         External
       </a>
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/other-page" target="_blank" data-testid="link-blank">
         Blank
       </a>
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/other-page" download data-testid="link-download">
         Download
       </a>
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/other-page" rel="external" data-testid="link-rel-external">
         Rel External
       </a>

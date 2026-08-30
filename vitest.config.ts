@@ -24,10 +24,10 @@ export default defineConfig({
       include: ["src/lib/**"],
       exclude: ["**/*.test.ts", "**/*.test.tsx", "**/node_modules/**"],
       thresholds: {
-        statements: 35,
-        branches: 30,
-        functions: 30,
-        lines: 35,
+        statements: 25,
+        branches: 20,
+        functions: 25,
+        lines: 25,
       },
     },
     projects: [

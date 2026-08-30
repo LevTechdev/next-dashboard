@@ -359,7 +359,7 @@ export default function RegisterPage() {
                   <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">Creative resources</span>
                 </div>
                 <p className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-8">
-                  "I was able to reduce the time taken to present high-level designs by 35% using the platform."
+                  &quot;I was able to reduce the time taken to present high-level designs by 35% using the platform.&quot;
                 </p>
                 <div className="flex items-center justify-between">
                   <div>

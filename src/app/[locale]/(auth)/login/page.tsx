@@ -291,7 +291,7 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Link href="/en/register" className="text-[#F25C38] hover:underline">
                     Create one
                   </Link>
@@ -323,7 +323,7 @@ function LoginForm() {
                 </span>
               </div>
               <p className="text-zinc-900 font-semibold text-lg sm:text-xl mb-8 leading-snug">
-                "I was able to reduce the time taken to present high-level designs by 35% using the platform."
+                &quot;I was able to reduce the time taken to present high-level designs by 35% using the platform.&quot;
               </p>
               <div className="flex items-center justify-between">
                 <div>

@@ -1,3 +1,4 @@
+// eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from "@storybook/react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./card";
 import { Button } from "./button";

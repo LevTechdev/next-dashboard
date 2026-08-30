@@ -1,3 +1,4 @@
+// eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "./button";
 import { SparklesIcon, SunIcon } from "lucide-animated";
