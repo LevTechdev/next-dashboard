@@ -1,40 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useCallback } from "react";
-import {
-  Bell,
-  BellRing,
-  CheckCheck,
-  Trash2,
-  Mail,
-  Settings2,
-  Loader2,
-  AlertTriangle,
-  Clock,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  X,
-  Save,
-  RefreshCw,
-  Inbox,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { BellIcon, CheckCheckIcon, XIcon, RefreshCwIcon } from "lucide-animated";
+import { BellRing, Trash2, Mail, Loader2, AlertTriangle, Filter, Save, Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -82,8 +58,15 @@ interface NotificationPreferences {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const NOTIFICATION_TYPES = [
-  "order", "customer", "product", "revenue",
-  "inventory", "discount", "campaign", "milestone", "alert",
+  "order",
+  "customer",
+  "product",
+  "revenue",
+  "inventory",
+  "discount",
+  "campaign",
+  "milestone",
+  "alert",
 ] as const;
 
 const TYPE_ICONS: Record<string, string> = {
@@ -118,7 +101,6 @@ function formatDate(dateStr: string | null, t: (key: string, params?: any) => st
 
 export default function NotificationsPage() {
   const tsettings = useTranslations("settings");
-  const tcommon = useTranslations("common");
   const tnotif = useTranslations("notifications");
   const [activeTab, setActiveTab] = useState("inbox");
 
@@ -171,28 +153,29 @@ function InboxTab() {
   const [filterType, setFilterType] = useState("all");
   const [filterRead, setFilterRead] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState("");
-
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filterType !== "all") params.set("type", filterType);
-      if (filterRead === "unread") params.set("read", "false");
-      if (filterRead === "read") params.set("read", "true");
-      params.set("limit", "100");
-      const res = await fetch(`/api/notifications?${params}`);
-      if (res.ok) setData(await res.json());
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [filterType, filterRead]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    let cancelled = false;
+    const params = new URLSearchParams();
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+    if (filterType !== "all") params.set("type", filterType);
+    if (filterRead === "unread") params.set("read", "false");
+    if (filterRead === "read") params.set("read", "true");
+    params.set("limit", "100");
+    fetch(`/api/notifications?${params}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setData(data);
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterType, filterRead, refreshKey]);
 
   const handleMarkRead = async (id: string) => {
     const res = await fetch("/api/notifications", {
@@ -206,7 +189,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            n.id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n
+            n.id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n,
           ),
           unreadCount: prev.unreadCount - 1,
         };
@@ -226,7 +209,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            n.id === id ? { ...n, read: false, readAt: null } : n
+            n.id === id ? { ...n, read: false, readAt: null } : n,
           ),
           unreadCount: prev.unreadCount + 1,
         };
@@ -266,7 +249,7 @@ function InboxTab() {
         return {
           ...prev,
           notifications: prev.notifications.map((n) =>
-            selectedIds.has(n.id) ? { ...n, read: true, readAt: new Date().toISOString() } : n
+            selectedIds.has(n.id) ? { ...n, read: true, readAt: new Date().toISOString() } : n,
           ),
           unreadCount: Math.max(0, prev.unreadCount - selectedIds.size),
         };
@@ -276,9 +259,17 @@ function InboxTab() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(tnotif("deleteConfirmToast", { count: selectedIds.size }))) return;
+    const ok = await confirm({
+      title: tcommon("delete"),
+      description: tnotif("deleteConfirmToast", { count: selectedIds.size }),
+      confirmLabel: tcommon("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
     const idsToDelete = Array.from(selectedIds);
     const res = await fetch("/api/notifications/batch", {
       method: "POST",
@@ -314,7 +305,11 @@ function InboxTab() {
         if (!prev) return prev;
         return {
           ...prev,
-          notifications: prev.notifications.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })),
+          notifications: prev.notifications.map((n) => ({
+            ...n,
+            read: true,
+            readAt: new Date().toISOString(),
+          })),
           unreadCount: 0,
         };
       });
@@ -374,7 +369,10 @@ function InboxTab() {
             >
               <option value="all">{tnotif("filterAllTypes")}</option>
               {NOTIFICATION_TYPES.map((t) => (
-                <option key={t} value={t}>{tnotif(`type${t.charAt(0).toUpperCase() + t.slice(1)}`)} ({data?.typeCounts[t]?.unread || 0})</option>
+                <option key={t} value={t}>
+                  {tnotif(`type${t.charAt(0).toUpperCase() + t.slice(1)}`)} (
+                  {data?.typeCounts[t]?.unread || 0})
+                </option>
               ))}
             </select>
           </div>
@@ -388,16 +386,26 @@ function InboxTab() {
             <option value="read">{tnotif("filterRead")}</option>
           </select>
           <div className="flex-1" />
-          <Button variant="ghost" size="sm" onClick={fetchNotifications} title={tcommon("refresh")}>
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRefreshKey((k) => k + 1)}
+            title={tcommon("refresh")}
+          >
+            <RefreshCwIcon size={16} className="h-4 w-4" />
           </Button>
           {data && data.unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="text-xs gap-1">
-              <CheckCheck className="h-4 w-4" /> {tnotif("markAllRead")}
+              <CheckCheckIcon size={16} className="h-4 w-4" /> {tnotif("markAllRead")}
             </Button>
           )}
           {notifications.filter((n) => n.read).length > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleDeleteAllRead} className="text-xs gap-1 text-red-500">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteAllRead}
+              className="text-xs gap-1 text-red-500"
+            >
               <Trash2 className="h-4 w-4" /> {tnotif("clearRead")}
             </Button>
           )}
@@ -413,15 +421,31 @@ function InboxTab() {
           {/* Summary */}
           {data && (
             <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span><strong className="text-gray-900 dark:text-gray-100">{notifications.length}</strong> {tnotif("notifCount")}</span>
-              <span><strong className="text-indigo-600 dark:text-indigo-400">{data.unreadCount}</strong> {tnotif("unreadCountLabel")}</span>
+              <span>
+                <strong className="text-gray-900 dark:text-gray-100">{notifications.length}</strong>{" "}
+                {tnotif("notifCount")}
+              </span>
+              <span>
+                <strong className="text-indigo-600 dark:text-indigo-400">{data.unreadCount}</strong>{" "}
+                {tnotif("unreadCountLabel")}
+              </span>
               {selectedIds.size > 0 && (
                 <span className="flex items-center gap-2 ml-auto">
                   <strong>{selectedIds.size}</strong> {tnotif("selectedCount")}
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleBatchMarkRead}>
-                    <CheckCheck className="h-3 w-3 mr-1" /> {tnotif("markReadBtn")}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={handleBatchMarkRead}
+                  >
+                    <CheckCheckIcon size={12} className="h-3 w-3 mr-1" /> {tnotif("markReadBtn")}
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs text-red-500" onClick={handleBatchDelete}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-red-500"
+                    onClick={handleBatchDelete}
+                  >
                     <Trash2 className="h-3 w-3 mr-1" /> {tnotif("deleteBtn")}
                   </Button>
                 </span>
@@ -433,8 +457,10 @@ function InboxTab() {
           {notifications.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
-                <Bell className="h-12 w-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">{tnotif("noNotifications")}</h3>
+                <BellIcon size={48} className="h-12 w-12 text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                  {tnotif("noNotifications")}
+                </h3>
                 <p className="text-sm text-gray-400 mt-1">
                   {filterType !== "all" || filterRead !== "all"
                     ? tnotif("tryChangingFilters")
@@ -460,8 +486,9 @@ function InboxTab() {
                   key={n.id}
                   className={cn(
                     "transition-all duration-150",
-                    !n.read && "border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10",
-                    selectedIds.has(n.id) && "ring-2 ring-indigo-400"
+                    !n.read &&
+                      "border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10",
+                    selectedIds.has(n.id) && "ring-2 ring-indigo-400",
                   )}
                 >
                   <CardContent className="p-4">
@@ -474,20 +501,23 @@ function InboxTab() {
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </div>
-                      <span className="text-lg shrink-0 pt-0.5">
-                        {TYPE_ICONS[n.type] || "🔔"}
-                      </span>
+                      <span className="text-lg shrink-0 pt-0.5">{TYPE_ICONS[n.type] || "🔔"}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className={cn("text-sm", !n.read ? "font-semibold" : "font-medium text-gray-600 dark:text-gray-400")}>
+                          <h4
+                            className={cn(
+                              "text-sm",
+                              !n.read
+                                ? "font-semibold"
+                                : "font-medium text-gray-600 dark:text-gray-400",
+                            )}
+                          >
                             {n.title}
                           </h4>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
                             {tnotif(`type${n.type.charAt(0).toUpperCase() + n.type.slice(1)}`)}
                           </Badge>
-                          {!n.read && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                          )}
+                          {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
                         </div>
                         {n.description && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
@@ -495,8 +525,14 @@ function InboxTab() {
                           </p>
                         )}
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-[10px] text-gray-400">{formatDate(n.createdAt, tnotif)}</span>
-                          {n.link && (                              <a href={n.link} className="text-[10px] text-indigo-500 hover:underline">
+                          <span className="text-[10px] text-gray-400">
+                            {formatDate(n.createdAt, tnotif)}
+                          </span>
+                          {n.link && (
+                            <a
+                              href={n.link}
+                              className="text-[10px] text-indigo-500 hover:underline"
+                            >
                               {tnotif("viewDetails")}
                             </a>
                           )}
@@ -517,7 +553,7 @@ function InboxTab() {
                             className="p-1 text-gray-400 hover:text-indigo-500 transition-colors"
                             title={tnotif("markAsRead")}
                           >
-                            <CheckCheck className="h-3.5 w-3.5" />
+                            <CheckCheckIcon size={14} className="h-3.5 w-3.5" />
                           </button>
                         )}
                         <button
@@ -525,7 +561,7 @@ function InboxTab() {
                           className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                           title={tnotif("deleteTitle")}
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <XIcon size={14} className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -542,7 +578,12 @@ function InboxTab() {
 
 // ─── Toggle Component ───────────────────────────────────────────────────────
 
-function Toggle({ checked, onChange, label, description }: {
+function Toggle({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
@@ -561,7 +602,7 @@ function Toggle({ checked, onChange, label, description }: {
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only peer"
         />
-        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
       </label>
     </div>
   );
@@ -578,26 +619,26 @@ function AlertRulesTab() {
   const [localPendingThreshold, setLocalPendingThreshold] = useState(5);
   const [localBudgetPercent, setLocalBudgetPercent] = useState(80);
 
-  const fetchPrefs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications/preferences");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.preferences) {
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/notifications/preferences")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.preferences) {
           setPrefs(data.preferences);
           setLocalLowStock(data.preferences.lowStockThreshold);
           setLocalPendingThreshold(data.preferences.pendingOrderThreshold);
           setLocalBudgetPercent(data.preferences.campaignBudgetPercent);
         }
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => { fetchPrefs(); }, [fetchPrefs]);
 
   const updatePref = async (field: string, value: boolean | number) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -698,7 +739,9 @@ function AlertRulesTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshStockLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localLowStock} units</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localLowStock} units
+              </span>
             </div>
             <input
               type="range"
@@ -714,15 +757,15 @@ function AlertRulesTab() {
               <span>25</span>
               <span>50</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshStockDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshStockDesc")}</p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshPendingLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localPendingThreshold} orders</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localPendingThreshold} orders
+              </span>
             </div>
             <input
               type="range"
@@ -738,15 +781,15 @@ function AlertRulesTab() {
               <span>10</span>
               <span>20</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshPendingDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshPendingDesc")}</p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshBudgetLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{localBudgetPercent}%</span>
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                {localBudgetPercent}%
+              </span>
             </div>
             <input
               type="range"
@@ -762,13 +805,19 @@ function AlertRulesTab() {
               <span>75%</span>
               <span>100%</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {tnotif("threshBudgetDesc")}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{tnotif("threshBudgetDesc")}</p>
           </div>
 
           <Button onClick={handleSaveThresholds} disabled={saving}>
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tnotif("savingBtn")}</> : <><Save className="h-4 w-4 mr-2" /> {tnotif("saveThresholds")}</>}
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {tnotif("savingBtn")}
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" /> {tnotif("saveThresholds")}
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -784,21 +833,21 @@ function EmailPrefsTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const fetchPrefs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications/preferences");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.preferences) setPrefs(data.preferences);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/notifications/preferences")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.preferences) setPrefs(data.preferences);
+        if (!cancelled) setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => { fetchPrefs(); }, [fetchPrefs]);
 
   const updatePref = async (field: string, value: boolean) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -855,10 +904,20 @@ function EmailPrefsTab() {
               <CardDescription>{tnotif("emailDesc")}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleToggleAll(true)} disabled={saving}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleAll(true)}
+                disabled={saving}
+              >
                 {tnotif("enableAll")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleToggleAll(false)} disabled={saving}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleAll(false)}
+                disabled={saving}
+              >
                 {tnotif("disableAll")}
               </Button>
             </div>
@@ -919,10 +978,10 @@ function EmailPrefsTab() {
       <Card>
         <CardContent className="p-6 text-center">
           <Mail className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{tnotif("emailDeliveryTitle")}</h3>
-          <p className="text-xs text-gray-400 mt-1">
-            {tnotif("emailDeliveryDesc")}
-          </p>
+          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {tnotif("emailDeliveryTitle")}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">{tnotif("emailDeliveryDesc")}</p>
         </CardContent>
       </Card>
     </div>

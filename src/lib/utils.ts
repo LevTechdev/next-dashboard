@@ -14,6 +14,25 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/** App locale code → Intl locale tag for the 4 base languages (id, gb, cn, jp). */
+const INTL_LOCALES: Record<string, string> = {
+  en: "en-GB",
+  id: "id-ID",
+  zh: "zh-CN",
+  ja: "ja-JP",
+};
+
+/** Format an integer with the grouping separators of the current app locale (id/gb/cn/jp). */
+export function formatLocaleNumber(value: number, locale?: string): string {
+  const tag = INTL_LOCALES[locale || "en"] || "en-GB";
+  return new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }).format(value);
+}
+
+/** Keep only integer digits — strips decimals, signs and separators for integer-only inputs. */
+export function sanitizeInteger(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 export function formatNumber(num: number): string {
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + "M";
@@ -70,6 +89,12 @@ export function getStatusColor(status: string): string {
     NEW: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   };
   return colors[status] || "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+}
+
+/** Truncate long text (e.g. product names) with an ellipsis for compact, single-line display. */
+export function shortenName(name: string, max = 48): string {
+  if (!name) return "";
+  return name.length > max ? name.slice(0, max - 1).trimEnd() + "\u2026" : name;
 }
 
 export function generateId(): string {

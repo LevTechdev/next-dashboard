@@ -8,6 +8,12 @@ vi.mock("lucide-react", async () => {
   return actual;
 });
 
+// Mock confirm provider (page uses useConfirm for confirm dialogs)
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn(() => vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
+}));
+
 // Mock useAuth
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(),
@@ -35,8 +41,24 @@ beforeEach(() => {
     ok: true,
     json: () =>
       Promise.resolve([
-        { id: "1", name: "Summer Sale 2024", type: "EMAIL", channel: "email", budget: 5000, spent: 3200, status: "ACTIVE" },
-        { id: "2", name: "Social Blast", type: "SOCIAL", channel: "instagram", budget: 2000, spent: 2100, status: "ACTIVE" },
+        {
+          id: "1",
+          name: "Summer Sale 2024",
+          type: "EMAIL",
+          channel: "email",
+          budget: 5000,
+          spent: 3200,
+          status: "ACTIVE",
+        },
+        {
+          id: "2",
+          name: "Social Blast",
+          type: "SOCIAL",
+          channel: "instagram",
+          budget: 2000,
+          spent: 2100,
+          status: "ACTIVE",
+        },
       ]),
   } as Response);
 });

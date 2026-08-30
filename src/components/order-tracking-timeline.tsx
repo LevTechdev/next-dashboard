@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/utils";
-import { Check, Clock, Truck, PackageCheck, XCircle } from "lucide-react";
+import { CheckIcon, ClockIcon, TruckIcon } from "lucide-animated";
+import { PackageCheck, RotateCcw, XCircle } from "lucide-react";
 
 interface TrackingEvent {
   status: string;
@@ -19,11 +20,20 @@ interface OrderTrackingTimelineProps {
 const STATUS_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  PENDING: { label: "Order Placed", icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
-  PROCESSING: { label: "Processing", icon: PackageCheck, color: "text-blue-600 dark:text-blue-400" },
-  SHIPPED: { label: "Shipped", icon: Truck, color: "text-purple-600 dark:text-purple-400" },
-  DELIVERED: { label: "Delivered", icon: Check, color: "text-green-600 dark:text-green-400" },
+  PENDING: {
+    label: "Order Placed",
+    icon: ClockIcon,
+    color: "text-yellow-600 dark:text-yellow-400",
+  },
+  PROCESSING: {
+    label: "Processing",
+    icon: PackageCheck,
+    color: "text-blue-600 dark:text-blue-400",
+  },
+  SHIPPED: { label: "Shipped", icon: TruckIcon, color: "text-purple-600 dark:text-purple-400" },
+  DELIVERED: { label: "Delivered", icon: CheckIcon, color: "text-green-600 dark:text-green-400" },
   CANCELLED: { label: "Cancelled", icon: XCircle, color: "text-red-600 dark:text-red-400" },
+  REFUNDED: { label: "Refunded", icon: RotateCcw, color: "text-orange-600 dark:text-orange-400" },
 };
 
 export function OrderTrackingTimeline({
@@ -32,6 +42,7 @@ export function OrderTrackingTimeline({
   className,
 }: OrderTrackingTimelineProps) {
   const isCancelled = currentStatus === "CANCELLED";
+  const isRefunded = currentStatus === "REFUNDED";
   const currentIndex = STATUS_FLOW.indexOf(currentStatus);
 
   return (
@@ -49,21 +60,22 @@ export function OrderTrackingTimeline({
                 <div key={status} className="flex flex-col items-center">
                   <div
                     className={cn(
-                      "flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500",
+                      "relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-500",
                       isCompleted
-                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        ? "bg-[hsl(var(--ai-accent))] border-[hsl(var(--ai-accent))] text-white"
                         : "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400",
-                      isCurrent && "ring-2 ring-indigo-500/30 ring-offset-2 dark:ring-offset-gray-900"
+                      isCurrent &&
+                        "ring-2 ring-[hsl(var(--ai-accent)/0.3)] ring-offset-2 dark:ring-offset-gray-900",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon size={16} className="h-4 w-4" />
                   </div>
                   <span
                     className={cn(
                       "text-[10px] font-medium mt-1.5 whitespace-nowrap",
                       isCompleted
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-gray-400 dark:text-gray-500"
+                        ? "text-[hsl(var(--ai-accent-strong))]"
+                        : "text-gray-400 dark:text-gray-500",
                     )}
                   >
                     {config.label}
@@ -83,14 +95,29 @@ export function OrderTrackingTimeline({
                   className={cn(
                     "flex-1 h-0.5 transition-all duration-500",
                     isCompleted
-                      ? "bg-indigo-500"
+                      ? "bg-[hsl(var(--ai-accent))]"
                       : isCurrent
-                      ? "bg-gradient-to-r from-indigo-500 to-gray-300 dark:to-gray-600"
-                      : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-gradient-to-r from-[hsl(var(--ai-accent))] to-gray-300 dark:to-gray-600"
+                        : "bg-gray-200 dark:bg-gray-700",
                   )}
                 />
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Refunded Badge */}
+      {isRefunded && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+          <RotateCcw className="h-5 w-5 text-orange-500 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+              Order Refunded
+            </p>
+            <p className="text-xs text-orange-500 dark:text-orange-400">
+              This order has been refunded and will not be processed further.
+            </p>
           </div>
         </div>
       )}
@@ -117,30 +144,27 @@ export function OrderTrackingTimeline({
           <div className="space-y-0">
             {events.map((event, i) => {
               const config = STATUS_CONFIG[event.status];
-              const Icon = config?.icon || Clock;
+              const Icon = config?.icon || ClockIcon;
               const isLast = i === events.length - 1;
               return (
                 <div key={i} className="flex gap-3 relative pb-4 last:pb-0">
-                  {/* Timeline Line */}
+                  {/* Timeline Line — runs behind the dots, lime in light mode */}
                   {!isLast && (
-                    <div className="absolute left-[11px] top-6 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+                    <div className="absolute left-[9.5px] top-[14px] bottom-0 w-px bg-[hsl(var(--ai-accent))]" />
                   )}
                   {/* Dot */}
                   <div className="relative z-10 mt-1">
                     <div
                       className={cn(
                         "flex items-center justify-center w-5 h-5 rounded-full",
-                        isLast
-                          ? "bg-indigo-100 dark:bg-indigo-900/30"
-                          : "bg-gray-100 dark:bg-gray-800"
+                        isLast ? "bg-[hsl(var(--ai-accent-soft))]" : "bg-gray-100 dark:bg-gray-800",
                       )}
                     >
                       <Icon
+                        size={12}
                         className={cn(
                           "h-3 w-3",
-                          isLast
-                            ? "text-indigo-600 dark:text-indigo-400"
-                            : "text-gray-400"
+                          isLast ? "text-[hsl(var(--ai-accent-strong))]" : "text-gray-400",
                         )}
                       />
                     </div>
@@ -181,12 +205,28 @@ export function getTrackingEventsFromOrder(order: any): TrackingEvent[] {
     });
   }
 
-  // If order has progressed past PENDING, add processing event
+  // Prefer the real fulfillment timestamps stamped by the state machine
+  // (processingAt / shippedAt / deliveredAt / refundedAt) when present.
+  const explicit: { status: string; at?: string | Date | null }[] = [
+    { status: "PROCESSING", at: order.processingAt },
+    { status: "SHIPPED", at: order.shippedAt },
+    { status: "DELIVERED", at: order.deliveredAt },
+    { status: "REFUNDED", at: order.refundedAt },
+  ];
+  const explicitEvents = explicit.filter((e) => Boolean(e.at));
+  if (explicitEvents.length > 0) {
+    for (const e of explicitEvents) {
+      events.push({ status: e.status, timestamp: e.at! });
+    }
+    return events;
+  }
+
+  // Legacy fallback for orders created before fulfillment timestamps existed:
+  // approximate the intermediate steps between createdAt and updatedAt.
   const statusFlow = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
   const currentIdx = statusFlow.indexOf(order.status);
 
   if (currentIdx >= 1) {
-    // Approximate timestamps based on order updatedAt
     const createdDate = new Date(order.createdAt);
     const updatedDate = new Date(order.updatedAt);
     const duration = updatedDate.getTime() - createdDate.getTime();
@@ -207,6 +247,11 @@ export function getTrackingEventsFromOrder(order: any): TrackingEvent[] {
       status: "PROCESSING",
       timestamp: order.updatedAt,
     });
+  }
+
+  // Refunded legacy orders (no refundedAt stamped yet) still get a terminal event.
+  if (order.status === "REFUNDED" && !order.refundedAt && events.length > 0) {
+    events.push({ status: "REFUNDED", timestamp: order.updatedAt || order.createdAt });
   }
 
   return events;

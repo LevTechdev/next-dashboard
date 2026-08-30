@@ -1,16 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  Bell,
-  BellRing,
-  X,
-  CheckCheck,
-  FlaskConical,
-  Filter,
-} from "lucide-react";
+import { BellIcon, XIcon, CheckCheckIcon } from "lucide-animated";
+import { BellRing, FlaskConical, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollContainer } from "@/components/ui/scroll-container";
 import { cn } from "@/lib/utils";
+import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
 import {
   useRealtime,
   type NotificationType,
@@ -57,6 +53,11 @@ export function NotificationPanel() {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const ref = useRef<HTMLDivElement>(null);
+  const filterRowRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard focus can land on a filter pill clipped by the overflow-x row;
+  // scroll it into view.
+  useScrollFocusedIntoView(filterRowRef);
 
   // Close on click outside
   useEffect(() => {
@@ -70,14 +71,10 @@ export function NotificationPanel() {
   }, []);
 
   const filtered =
-    filter === "all"
-      ? notifications
-      : notifications.filter((n) => n.type === filter);
+    filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
 
   const unreadByType = (type: FilterType) =>
-    type === "all"
-      ? unreadCount
-      : notifications.filter((n) => n.type === type && !n.read).length;
+    type === "all" ? unreadCount : notifications.filter((n) => n.type === type && !n.read).length;
 
   const handleSimulateNotification = () => {
     const types: NotificationType[] = [
@@ -109,11 +106,12 @@ export function NotificationPanel() {
         size="icon"
         className="text-gray-500 relative"
         onClick={() => setOpen(!open)}
+        aria-label="Notifications"
       >
         {unreadCount > 0 ? (
           <BellRing className="h-5 w-5 animate-pulse" />
         ) : (
-          <Bell className="h-5 w-5" />
+          <BellIcon size={20} className="h-5 w-5" />
         )}
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-950">
@@ -131,7 +129,7 @@ export function NotificationPanel() {
                 Notifications
               </h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-medium text-lime-700 dark:text-indigo-400 bg-lime-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded-full">
                   {unreadCount} new
                 </span>
               )}
@@ -140,7 +138,7 @@ export function NotificationPanel() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1 text-[10px] text-gray-400 hover:text-indigo-500"
+                className="h-7 gap-1 text-[10px] text-gray-400 hover:text-lime-600"
                 onClick={handleSimulateNotification}
                 title="Simulate a test notification"
               >
@@ -155,7 +153,7 @@ export function NotificationPanel() {
                   onClick={markAllRead}
                   title="Mark all as read"
                 >
-                  <CheckCheck className="h-4 w-4" />
+                  <CheckCheckIcon size={16} className="h-4 w-4" />
                 </Button>
               )}
               <Button
@@ -163,8 +161,9 @@ export function NotificationPanel() {
                 size="icon"
                 className="h-7 w-7 text-gray-400 hover:text-gray-600"
                 onClick={() => setOpen(false)}
+                aria-label="Close notifications"
               >
-                <X className="h-4 w-4" />
+                <XIcon size={16} className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -178,16 +177,16 @@ export function NotificationPanel() {
                   connectionStatus === "connected"
                     ? "bg-emerald-500"
                     : connectionStatus === "connecting"
-                    ? "bg-yellow-500 animate-pulse"
-                    : "bg-red-500"
+                      ? "bg-yellow-500 animate-pulse"
+                      : "bg-red-500",
                 )}
               />
               <span className="text-[10px] text-gray-400">
                 {connectionStatus === "connected"
                   ? "Live"
                   : connectionStatus === "connecting"
-                  ? "Connecting..."
-                  : "Disconnected"}
+                    ? "Connecting..."
+                    : "Disconnected"}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -209,9 +208,23 @@ export function NotificationPanel() {
             </div>
           </div>
 
-          {/* Type filter pills */}
-          <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none">
-            {(["all", "order", "customer", "inventory", "campaign", "discount", "alert"] as FilterType[]).map((t) => {
+          {/* Type filter pills — scrollbar hidden via the real scrollbar-none
+              utility (like the tabs bar); hiding never disables scrolling. */}
+          <div
+            ref={filterRowRef}
+            className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none"
+          >
+            {(
+              [
+                "all",
+                "order",
+                "customer",
+                "inventory",
+                "campaign",
+                "discount",
+                "alert",
+              ] as FilterType[]
+            ).map((t) => {
               const count = unreadByType(t);
               return (
                 <button
@@ -220,8 +233,8 @@ export function NotificationPanel() {
                   className={cn(
                     "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all",
                     filter === t
-                      ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      ? "bg-lime-100 dark:bg-indigo-900/30 text-lime-700 dark:text-indigo-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
                   )}
                 >
                   {t !== "all" && <span>{notificationIcons[t as NotificationType]}</span>}
@@ -231,8 +244,8 @@ export function NotificationPanel() {
                       className={cn(
                         "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
                         filter === t
-                          ? "bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                          ? "bg-lime-200 dark:bg-indigo-800 text-lime-800 dark:text-indigo-200"
+                          : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                       )}
                     >
                       {count}
@@ -244,16 +257,16 @@ export function NotificationPanel() {
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px]">
+          <ScrollContainer className="flex-1 min-h-[200px] max-h-[400px]">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <Bell className="h-10 w-10 mb-3 opacity-30" />
+                <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
                 <p className="text-sm font-medium">No notifications yet</p>
                 <p className="text-xs mt-1">Real-time updates will appear here</p>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mt-4 text-xs text-indigo-500 hover:text-indigo-600 gap-1"
+                  className="mt-4 text-xs text-lime-600 hover:text-lime-700 gap-1"
                   onClick={handleSimulateNotification}
                 >
                   <FlaskConical className="h-3 w-3" />
@@ -263,7 +276,9 @@ export function NotificationPanel() {
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                 <Filter className="h-8 w-8 mb-2 opacity-30" />
-                <p className="text-sm font-medium">No {typeLabels[filter]?.toLowerCase() || ""} notifications</p>
+                <p className="text-sm font-medium">
+                  No {typeLabels[filter]?.toLowerCase() || ""} notifications
+                </p>
                 <p className="text-xs mt-1">Try a different filter</p>
               </div>
             ) : (
@@ -273,7 +288,7 @@ export function NotificationPanel() {
                     key={n.id}
                     className={cn(
                       "flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
-                      !n.read && "bg-indigo-50/50 dark:bg-indigo-900/10"
+                      !n.read && "bg-lime-50/50 dark:bg-indigo-900/10",
                     )}
                   >
                     <span className="text-lg shrink-0 mt-0.5">
@@ -294,18 +309,16 @@ export function NotificationPanel() {
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                         {n.description}
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {formatTimeAgo(n.timestamp)}
-                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">{formatTimeAgo(n.timestamp)}</p>
                     </div>
                     {!n.read && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />
+                      <span className="w-2 h-2 rounded-full bg-lime-500 shrink-0 mt-1.5" />
                     )}
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </ScrollContainer>
 
           {/* Footer */}
           {notifications.length > 0 && (
@@ -321,7 +334,7 @@ export function NotificationPanel() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 text-xs text-gray-500 hover:text-indigo-600 gap-1"
+                className="flex-shrink-0 text-xs text-gray-500 hover:text-lime-700 gap-1"
                 onClick={handleSimulateNotification}
               >
                 <FlaskConical className="h-3 w-3" />

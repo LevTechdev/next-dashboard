@@ -1,7 +1,9 @@
 "use client";
 
-import { Globe, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckIcon, EarthIcon } from "lucide-animated";
 import { useViewTransition } from "@/components/view-transition-provider";
+import { setLocaleCookie } from "@/lib/locale-cookie";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,13 +28,18 @@ const LANGUAGES = [
 export function LanguageToggle({ locale, pathname }: { locale: string; pathname: string }) {
   const { push: pushWithTransition } = useViewTransition();
   const { trackLanguageSwitch } = useAnalytics();
+  const router = useRouter();
 
   const switchLocale = (newLocale: string) => {
     if (newLocale === locale) return;
     trackLanguageSwitch(locale, newLocale);
     const newPath = pathname.replace(/^\/[a-z]{2}(?:-\w{2})?/, `/${newLocale}`);
     localStorage.setItem("dashboard-locale", newLocale);
+    // Persist locale for next-intl middleware and bust the client Router Cache
+    // so server components re-render with the new locale's messages.
+    setLocaleCookie(newLocale);
     pushWithTransition(newPath);
+    router.refresh();
   };
 
   const current = LANGUAGES.find((l) => l.code === locale) || LANGUAGES[0];
@@ -45,10 +52,11 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
           size="icon"
           className="text-gray-500 gap-1 px-2 min-w-[56px] active:scale-95 transition-transform duration-150"
           title={current.name}
+          aria-label="Switch language"
         >
           <span className="flex items-center gap-1.5">
             <span className="text-sm leading-none">{current.flag}</span>
-            <Globe className="h-3.5 w-3.5" />
+            <EarthIcon size={14} className="h-3.5 w-3.5" />
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -66,8 +74,8 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
               className={cn(
                 "flex items-center gap-3 cursor-pointer group",
                 isSelected
-                  ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                  : "text-gray-700 dark:text-gray-300"
+                  ? "bg-lime-50 dark:bg-indigo-900/20 text-lime-600 dark:text-indigo-400 font-medium"
+                  : "text-gray-700 dark:text-gray-300",
               )}
             >
               <span className="text-base shrink-0">{lang.flag}</span>
@@ -78,7 +86,10 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
                 </span>
               </div>
               {isSelected ? (
-                <Check className="h-4 w-4 text-indigo-500 animate-in zoom-in-50 duration-200" />
+                <CheckIcon
+                  size={16}
+                  className="h-4 w-4 text-lime-600 animate-in zoom-in-50 duration-200"
+                />
               ) : (
                 <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}

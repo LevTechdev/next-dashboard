@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
-import { TOTP } from "otplib";
+import { verifyTotp } from "@/lib/totp";
+import { logSecurityEvent } from "@/lib/security-events";
 
 export const dynamic = "force-dynamic";
 
@@ -14,27 +15,17 @@ export async function POST(req: Request) {
   const { token, secret } = body;
 
   if (!token || !secret) {
-    return NextResponse.json(
-      { error: "Token and secret are required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Token and secret are required" }, { status: 400 });
   }
 
   if (typeof token !== "string" || token.length < 6) {
-    return NextResponse.json(
-      { error: "Invalid verification code" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
   // Verify the TOTP code
-  const totp = new TOTP();
-  const isValid = totp.verify(token, secret);
+  const isValid = verifyTotp(token, secret);
   if (!isValid) {
-    return NextResponse.json(
-      { error: "Invalid verification code" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
   // Find the user
@@ -57,6 +48,8 @@ export async function POST(req: Request) {
       totpEnabled: true,
     },
   });
+
+  await logSecurityEvent({ userId: user.id, type: "TOTP_ENABLED", req, tenantId: user.tenantId });
 
   return NextResponse.json({ success: true });
 }

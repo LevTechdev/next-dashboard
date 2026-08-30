@@ -38,7 +38,7 @@ describe("PageTransition", () => {
     render(
       <PageTransition>
         <div data-testid="child-content">Hello</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     expect(screen.getByTestId("child-content")).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe("PageTransition", () => {
     render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     expect(screen.getByTestId("mock-progress-bar")).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe("PageTransition", () => {
     const { container } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // Before mount, class should not include view-transition-page
@@ -76,7 +76,7 @@ describe("PageTransition", () => {
     const { rerender } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // Initial: overlay exists in DOM but is hidden (aria-hidden = true)
@@ -88,7 +88,7 @@ describe("PageTransition", () => {
     rerender(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // Overlay should appear
@@ -101,14 +101,14 @@ describe("PageTransition", () => {
     const { rerender } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     mockPathname = "/slow-route";
     rerender(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     expect(screen.getByLabelText("Page is loading")).toBeInTheDocument();
@@ -132,14 +132,14 @@ describe("PageTransition", () => {
     const { rerender, unmount } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     mockPathname = "/cleanup";
     rerender(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // Unmount while overlay is showing
@@ -157,7 +157,7 @@ describe("PageTransition", () => {
     const { container } = render(
       <PageTransition className="custom-wrapper">
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     const wrapper = container.querySelector(".custom-wrapper");
@@ -169,11 +169,26 @@ describe("PageTransition", () => {
   it("applies vt-fallback-fade class when view transitions are not supported", () => {
     mockUseViewTransition.mockReturnValue({ isSupported: false });
 
-    const { container } = render(
+    const { container, rerender } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
+
+    // No fallback fade on the very first paint (prevents blank initial load)
+    expect(container.querySelector(".view-transition-page")?.className).not.toContain(
+      "vt-fallback-fade",
+    );
+
+    // Navigate — the fade fallback applies from the first route change onward
+    mockPathname = "/next";
+    act(() => {
+      rerender(
+        <PageTransition>
+          <div>Content</div>
+        </PageTransition>,
+      );
+    });
 
     const wrapper = container.querySelector(".view-transition-page");
     expect(wrapper).toBeInTheDocument();
@@ -186,7 +201,7 @@ describe("PageTransition", () => {
     const { container } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     const wrapper = container.querySelector(".view-transition-page");
@@ -198,7 +213,7 @@ describe("PageTransition", () => {
     const { container } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     const wrapper = container.querySelector("[style]");
@@ -213,7 +228,7 @@ describe("PageTransition", () => {
     const { container, rerender } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // Change pathname
@@ -221,7 +236,7 @@ describe("PageTransition", () => {
     rerender(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     // The key should change, triggering remount for CSS animation
@@ -235,14 +250,14 @@ describe("PageTransition", () => {
     const { rerender } = render(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     mockPathname = "/accessible";
     rerender(
       <PageTransition>
         <div>Content</div>
-      </PageTransition>
+      </PageTransition>,
     );
 
     const overlay = screen.getByLabelText("Page is loading");

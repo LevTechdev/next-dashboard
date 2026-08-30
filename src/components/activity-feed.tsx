@@ -1,31 +1,34 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import {
+  ClockIcon,
+  BellIcon,
+  RefreshCwIcon,
+  DollarSignIcon,
+  DownloadIcon,
+  SparklesIcon,
+  UsersIcon,
+} from "lucide-animated";
+import {
   ShoppingCart,
-  Users,
   Package,
-  DollarSign,
   AlertTriangle,
-  Clock,
   Megaphone,
   Gift,
   BellRing,
   Filter,
-  Download,
-  Loader2,
-  Bell,
   ExternalLink,
-  Sparkles,
-  RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useRealtime, type NotificationType, type RealtimeNotification } from "@/components/realtime-provider";
+import { ScrollContainer } from "@/components/ui/scroll-container";
+import { useRealtime, type NotificationType } from "@/components/realtime-provider";
 import { motion, AnimatePresence } from "framer-motion";
+import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
 
 // ── Types ──
 
@@ -39,6 +42,8 @@ interface ActivityItem {
   timestamp: Date;
   read?: boolean;
   isNew?: boolean;
+  /** Epoch ms the item arrived via real-time; drives the "New" badge / count windows. */
+  arrivedAt?: number;
 }
 
 interface ApiNotification {
@@ -52,23 +57,89 @@ interface ApiNotification {
 
 // ── Constants ──
 
-const TYPE_CONFIG: Record<ActivityType, { icon: typeof ShoppingCart; color: string; bg: string; label: string }> = {
-  order:      { icon: ShoppingCart,   color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50 dark:bg-blue-900/20",     label: "Orders" },
-  customer:   { icon: Users,          color: "text-purple-600 dark:text-purple-400",  bg: "bg-purple-50 dark:bg-purple-900/20",  label: "Customers" },
-  product:    { icon: Package,        color: "text-orange-600 dark:text-orange-400",  bg: "bg-orange-50 dark:bg-orange-900/20",  label: "Products" },
-  revenue:    { icon: DollarSign,     color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", label: "Revenue" },
-  inventory:  { icon: AlertTriangle,  color: "text-amber-600 dark:text-amber-400",    bg: "bg-amber-50 dark:bg-amber-900/20",   label: "Inventory" },
-  discount:   { icon: Clock,          color: "text-rose-600 dark:text-rose-400",      bg: "bg-rose-50 dark:bg-rose-900/20",     label: "Discounts" },
-  campaign:   { icon: Megaphone,      color: "text-pink-600 dark:text-pink-400",      bg: "bg-pink-50 dark:bg-pink-900/20",      label: "Campaigns" },
-  milestone:  { icon: Gift,           color: "text-yellow-600 dark:text-yellow-400",   bg: "bg-yellow-50 dark:bg-yellow-900/20",  label: "Milestones" },
-  alert:      { icon: BellRing,       color: "text-red-600 dark:text-red-400",        bg: "bg-red-50 dark:bg-red-900/20",        label: "Alerts" },
+const TYPE_CONFIG: Record<
+  ActivityType,
+  {
+    icon: React.ComponentType<{ className?: string; size?: number }>;
+    color: string;
+    bg: string;
+    label: string;
+  }
+> = {
+  order: {
+    icon: ShoppingCart,
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    label: "Orders",
+  },
+  customer: {
+    icon: UsersIcon,
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-900/20",
+    label: "Customers",
+  },
+  product: {
+    icon: Package,
+    color: "text-orange-600 dark:text-orange-400",
+    bg: "bg-orange-50 dark:bg-orange-900/20",
+    label: "Products",
+  },
+  revenue: {
+    icon: DollarSignIcon,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    label: "Revenue",
+  },
+  inventory: {
+    icon: AlertTriangle,
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    label: "Inventory",
+  },
+  discount: {
+    icon: ClockIcon,
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    label: "Discounts",
+  },
+  campaign: {
+    icon: Megaphone,
+    color: "text-pink-600 dark:text-pink-400",
+    bg: "bg-pink-50 dark:bg-pink-900/20",
+    label: "Campaigns",
+  },
+  milestone: {
+    icon: Gift,
+    color: "text-yellow-600 dark:text-yellow-400",
+    bg: "bg-yellow-50 dark:bg-yellow-900/20",
+    label: "Milestones",
+  },
+  alert: {
+    icon: BellRing,
+    color: "text-red-600 dark:text-red-400",
+    bg: "bg-red-50 dark:bg-red-900/20",
+    label: "Alerts",
+  },
 };
 
 const FILTER_ORDER: (ActivityType | "all")[] = [
-  "all", "order", "customer", "inventory", "campaign", "discount", "alert", "milestone", "revenue", "product",
+  "all",
+  "order",
+  "customer",
+  "inventory",
+  "campaign",
+  "discount",
+  "alert",
+  "milestone",
+  "revenue",
+  "product",
 ];
 
 const MAX_VISIBLE = 15;
+
+// How long real-time arrivals keep their "New" badge / count contribution.
+const NEW_BADGE_MS = 5000;
+const NEW_COUNT_MS = 8000;
 
 // ── Helpers ──
 
@@ -86,22 +157,25 @@ function formatTimeAgo(date: Date): string {
 export function ActivityFeed({ className }: { className?: string }) {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
-  const {
-    notifications: realtimeNotifications,
-    connectionStatus,
-  } = useRealtime();
+  const { notifications: realtimeNotifications, connectionStatus } = useRealtime();
 
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  // Single source of truth: the whole feed (fetched + real-time arrivals in
+  // arrival order, capped). Everything else — the visible list, filter
+  // counts, "New" badges and the "+N new" counter — derives from it during
+  // render.
+  const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ActivityType | "all">("all");
-  const [newIds, setNewIds] = useState<Set<string>>(new Set());
-  const [newCount, setNewCount] = useState(0);
   const [paused, setPaused] = useState(false);
-  const knownIdsRef = useRef<Set<string>>(new Set());
-  const pendingItemsRef = useRef<ActivityItem[]>([]);
+  // Clock tick that re-renders when the oldest "New" badge / count expires,
+  // so the derived markers disappear on schedule.
+  const [now, setNow] = useState(() => Date.now());
   const activityListRef = useRef<HTMLDivElement>(null);
-  const newCountTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const newBadgeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const filterRowRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard focus can land on a filter pill clipped by the overflow-x row;
+  // scroll it into view.
+  useScrollFocusedIntoView(filterRowRef);
 
   // ── Fetch initial activities from API ──
   useEffect(() => {
@@ -120,113 +194,83 @@ export function ActivityFeed({ className }: { className?: string }) {
           timestamp: new Date(n.createdAt),
           read: n.read,
         }));
-        setActivities(items);
-        knownIdsRef.current = new Set(items.map((i: ActivityItem) => i.id));
+        setItems(items);
       } catch {
         // keep empty state
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // ── Listen for real-time notifications ──
-  useEffect(() => {
-    // Use the realtimeNotifications snapshot to find truly new items by ID
-    let foundNew = false;
-    const newItems: ActivityItem[] = [];
-    const newIdSet = new Set<string>();
+  // ── Real-time arrivals: derive what's new, then merge it into the feed ──
+  const processedIdsRef = useRef<Set<string>>(new Set());
 
-    for (const n of realtimeNotifications) {
-      if (!knownIdsRef.current.has(n.id)) {
-        knownIdsRef.current.add(n.id);
-        const item: ActivityItem = {
+  useEffect(() => {
+    // Only process notifications we haven't seen before in this session
+    const fresh = realtimeNotifications.filter((n) => !processedIdsRef.current.has(n.id));
+    if (fresh.length > 0) {
+      // Mark as processed
+      fresh.forEach((n) => processedIdsRef.current.add(n.id));
+
+      // Append to feed state
+      setItems((prev) => {
+        const arrivals: ActivityItem[] = fresh.map((n) => ({
           id: n.id,
           type: n.type,
           title: n.title,
           description: n.description,
           timestamp: n.timestamp,
           isNew: true,
-        };
-        newItems.push(item);
-        newIdSet.add(n.id);
-        foundNew = true;
-      }
+          arrivedAt: n.timestamp.getTime(),
+        }));
+        // Prepend and cap to MAX_VISIBLE
+        return [...arrivals, ...prev].slice(0, MAX_VISIBLE);
+      });
     }
+  }, [realtimeNotifications]);
 
-    if (!foundNew) return;
+  // While paused, arrivals are hidden from the feed but still counted.
+  const visibleItems = paused ? items.filter((a) => a.arrivedAt === undefined) : items;
 
-    // Update new IDs for "New" badge animation
-    setNewIds((prev) => {
-      const next = new Set(prev);
-      newIdSet.forEach((id) => next.add(id));
-      return next;
-    });
+  // Derived "New" badges / "+N new" counter from arrival timestamps.
+  const arrivalItems = useMemo(() => items.filter((a) => a.arrivedAt != null), [items]);
+  const newIds = useMemo(
+    () => new Set(arrivalItems.filter((a) => now - a.arrivedAt! < NEW_BADGE_MS).map((a) => a.id)),
+    [arrivalItems, now],
+  );
+  const newCount = useMemo(
+    () => arrivalItems.filter((a) => now - a.arrivedAt! < NEW_COUNT_MS).length,
+    [arrivalItems, now],
+  );
 
-    // Track new count
-    setNewCount((prev) => prev + newItems.length);
-
-    // Clear "new" badges after 5 seconds
-    clearTimeout(newBadgeTimerRef.current);
-    newBadgeTimerRef.current = setTimeout(() => {
-      setNewIds(new Set());
-    }, 5000);
-
-    // Clear new count after 8 seconds
-    clearTimeout(newCountTimerRef.current);
-    newCountTimerRef.current = setTimeout(() => {
-      setNewCount(0);
-    }, 8000);
-
-    if (paused) {
-      // Queue items while paused — flush on resume
-      pendingItemsRef.current.push(...newItems);
-      return;
-    }
-
-    setActivities((prev) => {
-      const merged = [...newItems, ...prev];
-      return merged.slice(0, MAX_VISIBLE);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realtimeNotifications, paused]);
-
-  // ── Cleanup timers ──
+  // Re-render at the next expiry so the derived markers disappear on time
+  // (setState inside a timer callback is fine).
   useEffect(() => {
-    return () => {
-      clearTimeout(newBadgeTimerRef.current);
-      clearTimeout(newCountTimerRef.current);
-    };
-  }, []);
+    if (arrivalItems.length === 0) return;
+    const nextExpiry = Math.min(
+      ...arrivalItems.map((a) => a.arrivedAt! + NEW_BADGE_MS),
+      ...arrivalItems.map((a) => a.arrivedAt! + NEW_COUNT_MS),
+    );
+    const delay = nextExpiry - now;
+    if (delay <= 0) return;
+    const timer = setTimeout(() => setNow(Date.now()), delay);
+    return () => clearTimeout(timer);
+  }, [arrivalItems, now]);
 
   // ── Filter ──
-  const filtered = filter === "all"
-    ? activities
-    : activities.filter((a) => a.type === filter);
+  const filtered = filter === "all" ? visibleItems : visibleItems.filter((a) => a.type === filter);
 
   const countByType = (type: ActivityType | "all") => {
-    if (type === "all") return activities.length;
-    return activities.filter((a) => a.type === type).length;
+    if (type === "all") return visibleItems.length;
+    return visibleItems.filter((a) => a.type === type).length;
   };
 
-  // ── Pause / Resume for new activity intake ──
-  const handlePauseToggle = () => {
-    setPaused((p) => {
-      if (p) {
-        // Was paused → now resuming: flush pending items
-        const pending = pendingItemsRef.current;
-        pendingItemsRef.current = [];
-        if (pending.length > 0) {
-          setActivities((prev) => {
-            const merged = [...pending, ...prev];
-            return merged.slice(0, MAX_VISIBLE);
-          });
-        }
-      }
-      return !p;
-    });
-  };
+  // ── Pause / Resume: hiding is a render-time filter, so nothing to flush ──
+  const handlePauseToggle = () => setPaused((p) => !p);
 
   // ── Scroll to top of feed ──
   const handleScrollToTop = () => {
@@ -237,8 +281,10 @@ export function ActivityFeed({ className }: { className?: string }) {
   const exportActivities = () => {
     const csvRows = [
       ["Type", "Title", "Description", "Timestamp"].join(","),
-      ...activities.map((a) =>
-        [a.type, `"${a.title}"`, `"${a.description}"`, new Date(a.timestamp).toISOString()].join(",")
+      ...visibleItems.map((a) =>
+        [a.type, `"${a.title}"`, `"${a.description}"`, new Date(a.timestamp).toISOString()].join(
+          ",",
+        ),
       ),
     ];
     const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
@@ -256,18 +302,20 @@ export function ActivityFeed({ className }: { className?: string }) {
       <CardHeader className="pb-3 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              connectionStatus === "connected"
-                ? "bg-emerald-50 dark:bg-emerald-900/20"
-                : connectionStatus === "connecting"
-                ? "bg-yellow-50 dark:bg-yellow-900/20"
-                : "bg-red-50 dark:bg-red-900/20"
-            )}>
+            <div
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                connectionStatus === "connected"
+                  ? "bg-emerald-50 dark:bg-emerald-900/20"
+                  : connectionStatus === "connecting"
+                    ? "bg-yellow-50 dark:bg-yellow-900/20"
+                    : "bg-red-50 dark:bg-red-900/20",
+              )}
+            >
               {connectionStatus === "connected" ? (
                 <ActivityDot className="text-emerald-500" />
               ) : connectionStatus === "connecting" ? (
-                <RefreshCw className="h-4 w-4 text-yellow-500 animate-spin" />
+                <RefreshCwIcon size={16} className="h-4 w-4 text-yellow-500 animate-spin" />
               ) : (
                 <AlertTriangle className="h-4 w-4 text-red-500" />
               )}
@@ -282,8 +330,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     exit={{ scale: 0.5, opacity: 0 }}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold"
                   >
-                    <Sparkles className="h-2.5 w-2.5" />
-                    +{newCount} new
+                    <SparklesIcon size={10} className="h-2.5 w-2.5" />+{newCount} new
                   </motion.span>
                 )}
               </CardTitle>
@@ -314,7 +361,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               title="Export as CSV"
               aria-label="Export activity feed as CSV"
             >
-              <Download className="h-3.5 w-3.5" />
+              <DownloadIcon size={14} className="h-3.5 w-3.5" />
             </Button>
             <a
               href={`/${locale}/notifications`}
@@ -336,23 +383,23 @@ export function ActivityFeed({ className }: { className?: string }) {
               connectionStatus === "connected"
                 ? "bg-emerald-500"
                 : connectionStatus === "connecting"
-                ? "bg-yellow-500 animate-pulse"
-                : "bg-red-500"
+                  ? "bg-yellow-500 animate-pulse"
+                  : "bg-red-500",
             )}
           />
           <span className="text-[10px] text-gray-400 font-medium">
             {connectionStatus === "connected"
               ? "Live"
               : connectionStatus === "connecting"
-              ? "Connecting..."
-              : "Disconnected"}
+                ? "Connecting..."
+                : "Disconnected"}
           </span>
-          {activities.length > 0 && (
+          {visibleItems.length > 0 && (
             <span className="text-[10px] text-gray-300 dark:text-gray-600 mx-1">·</span>
           )}
-          {activities.length > 0 && (
+          {visibleItems.length > 0 && (
             <span className="text-[10px] text-gray-400">
-              {filtered.length} of {activities.length}
+              {filtered.length} of {visibleItems.length}
             </span>
           )}
         </div>
@@ -364,7 +411,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               className="h-6 text-[10px] text-indigo-500 gap-1 px-2"
               onClick={handlePauseToggle}
             >
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCwIcon size={12} className="h-3 w-3" />
               Resume
             </Button>
           ) : (
@@ -372,7 +419,9 @@ export function ActivityFeed({ className }: { className?: string }) {
               variant="ghost"
               size="sm"
               className="h-6 text-[10px] text-gray-400 gap-1 px-2"
-              onClick={() => { setPaused(true); }}
+              onClick={() => {
+                setPaused(true);
+              }}
             >
               <span className="w-2 h-2 rounded-full bg-gray-400" />
               Pause
@@ -381,8 +430,13 @@ export function ActivityFeed({ className }: { className?: string }) {
         </div>
       </div>
 
-      {/* Type Filter Pills */}
-      <div className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none shrink-0">
+      {/* Type Filter Pills — scrollbar hidden via the real scrollbar-none
+          utility (like the tabs bar and notification panel); hiding never
+          disables scrolling. */}
+      <div
+        ref={filterRowRef}
+        className="flex gap-1.5 px-4 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none shrink-0"
+      >
         {FILTER_ORDER.map((t) => {
           const count = countByType(t);
           const config = t !== "all" ? TYPE_CONFIG[t] : null;
@@ -395,12 +449,10 @@ export function ActivityFeed({ className }: { className?: string }) {
                 "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all shrink-0",
                 isActive
                   ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-300 dark:ring-indigo-700"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
               )}
             >
-              {config && (
-                <config.icon className={cn("h-3 w-3", config.color)} />
-              )}
+              {config && <config.icon size={12} className={cn("h-3 w-3", config.color)} />}
               {t === "all" ? "All" : config?.label || t}
               {count > 0 && (
                 <span
@@ -408,7 +460,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
                     isActive
                       ? "bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                   )}
                 >
                   {count}
@@ -420,9 +472,9 @@ export function ActivityFeed({ className }: { className?: string }) {
       </div>
 
       {/* Activity List */}
-      <div
+      <ScrollContainer
         ref={activityListRef}
-        className="flex-1 overflow-y-auto min-h-[200px] max-h-[380px]"
+        className="flex-1 min-h-[200px] max-h-[380px]"
         role="log"
         aria-live="polite"
         aria-label="Live activity feed"
@@ -445,9 +497,9 @@ export function ActivityFeed({ className }: { className?: string }) {
         )}
 
         {/* Empty State */}
-        {!loading && activities.length === 0 && (
+        {!loading && visibleItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <Bell className="h-10 w-10 mb-3 opacity-30" />
+            <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No activity yet</p>
             <p className="text-xs text-gray-400 mt-1">Real-time updates will appear here</p>
             <p className="text-xs text-gray-300 dark:text-gray-600 mt-3 max-w-[200px] text-center leading-relaxed">
@@ -457,10 +509,12 @@ export function ActivityFeed({ className }: { className?: string }) {
         )}
 
         {/* Filtered Empty */}
-        {!loading && activities.length > 0 && filtered.length === 0 && (
+        {!loading && visibleItems.length > 0 && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <Filter className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No matching activity</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              No matching activity
+            </p>
             <p className="text-xs text-gray-400 mt-1">Try a different filter</p>
           </div>
         )}
@@ -469,107 +523,118 @@ export function ActivityFeed({ className }: { className?: string }) {
         {!loading && filtered.length > 0 && (
           <AnimatePresence initial={false} mode="popLayout">
             {filtered.slice(0, MAX_VISIBLE).map((item, index) => {
-                const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.alert;
-                const Icon = config.icon;
-                const isNewItem = newIds.has(item.id);
+              const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.alert;
+              const Icon = config.icon;
+              const isNewItem = newIds.has(item.id);
 
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={isNewItem ? { opacity: 0, y: -20, scale: 0.95 } : { opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, overflow: "hidden" }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 35,
-                      mass: 0.8,
-                    }}
-                    layout
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={isNewItem ? { opacity: 0, y: -20, scale: 0.95 } : { opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                    marginTop: 0,
+                    marginBottom: 0,
+                    overflow: "hidden",
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                    mass: 0.8,
+                  }}
+                  layout
+                  className={cn(
+                    "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group relative overflow-hidden",
+                    isNewItem && "bg-indigo-50/60 dark:bg-indigo-900/15",
+                  )}
+                >
+                  {/* New item glow indicator */}
+                  {isNewItem && (
+                    <motion.div
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ delay: 4, duration: 1 }}
+                      className="absolute inset-0 pointer-events-none"
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+                    </motion.div>
+                  )}
+
+                  {/* Icon */}
+                  <div
                     className={cn(
-                      "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group relative overflow-hidden",
-                      isNewItem && "bg-indigo-50/60 dark:bg-indigo-900/15"
-                    )}
-                  >
-                    {/* New item glow indicator */}
-                    {isNewItem && (
-                      <motion.div
-                        initial={{ opacity: 1 }}
-                        animate={{ opacity: 0 }}
-                        transition={{ delay: 4, duration: 1 }}
-                        className="absolute inset-0 pointer-events-none"
-                      >
-                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
-                      </motion.div>
-                    )}
-
-                    {/* Icon */}
-                    <div className={cn(
                       "flex-shrink-0 p-2 rounded-lg transition-transform group-hover:scale-110 duration-200",
                       config.bg,
-                      isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600"
-                    )}>
-                      <Icon className={cn("h-4 w-4", config.color)} />
-                    </div>
+                      isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600",
+                    )}
+                  >
+                    <Icon size={16} className={cn("h-4 w-4", config.color)} />
+                  </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn(
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p
+                        className={cn(
                           "text-sm truncate",
                           isNewItem
                             ? "font-semibold text-gray-900 dark:text-gray-100"
-                            : "font-medium text-gray-900 dark:text-gray-100"
-                        )}>
-                          {item.title}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
-                            isNewItem && "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                          )}
+                            : "font-medium text-gray-900 dark:text-gray-100",
+                        )}
+                      >
+                        {item.title}
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
+                          isNewItem &&
+                            "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400",
+                        )}
+                      >
+                        {item.type}
+                      </Badge>
+                      {isNewItem && (
+                        <motion.span
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-500 text-white"
                         >
-                          {item.type}
-                        </Badge>
-                        {isNewItem && (
-                          <motion.span
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-500 text-white"
-                          >
-                            New
-                          </motion.span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5">
-                        <span>{formatTimeAgo(item.timestamp)}</span>
-                        {index === 0 && newIds.size === 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-emerald-500">
-                            <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                            latest
-                          </span>
-                        )}
-                      </p>
+                          New
+                        </motion.span>
+                      )}
                     </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5">
+                      <span>{formatTimeAgo(item.timestamp)}</span>
+                      {index === 0 && newIds.size === 0 && (
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-500">
+                          <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                          latest
+                        </span>
+                      )}
+                    </p>
+                  </div>
 
-                    {/* Unread indicator */}
-                    {isNewItem && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                        className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
-                      />
-                    )}
-                  </motion.div>
-                );
-              })}
+                  {/* Unread indicator */}
+                  {isNewItem && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                      className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         )}
 
@@ -580,12 +645,12 @@ export function ActivityFeed({ className }: { className?: string }) {
               onClick={handleScrollToTop}
               className="pointer-events-auto inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-all"
             >
-              <RefreshCw className="h-2.5 w-2.5" />
+              <RefreshCwIcon size={10} className="h-2.5 w-2.5" />
               Scroll to top
             </button>
           </div>
         )}
-      </div>
+      </ScrollContainer>
     </Card>
   );
 }

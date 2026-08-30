@@ -33,14 +33,10 @@ export function AnimatedCounter({
   });
 
   return (
-    <span
-      className={cn(
-        "tabular-nums transition-opacity",
-        isAnimating && "opacity-90",
-        className
-      )}
-    >
-      {prefix}{formatter ? formatter(value) : value.toFixed(decimals)}{suffix}
+    <span className={cn("tabular-nums transition-opacity", isAnimating && "opacity-90", className)}>
+      {prefix}
+      {formatter ? formatter(value) : value.toFixed(decimals)}
+      {suffix}
     </span>
   );
 }

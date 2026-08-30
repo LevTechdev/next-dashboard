@@ -13,9 +13,13 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createCoverageMap } from "istanbul-lib-coverage";
-import { createContext } from "istanbul-lib-report";
-import reports from "istanbul-reports";
+import istanbulCoverage from "istanbul-lib-coverage";
+import istanbulReport from "istanbul-lib-report";
+import istanbulReports from "istanbul-reports";
+
+const { createCoverageMap } = istanbulCoverage;
+const { createContext } = istanbulReport;
+const reports = istanbulReports;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

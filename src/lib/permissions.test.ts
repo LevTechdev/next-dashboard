@@ -1,12 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  can,
-  canAccessPage,
-  filterNavItemsByRole,
-  getRole,
-  ROLES,
-  type Role,
-} from "./permissions";
+import { can, canAccessPage, filterNavItemsByRole, getRole, ROLES, type Role } from "./permissions";
 
 // ── ROLES constant ─────────────────────────────────────────────────────────
 
@@ -149,7 +142,7 @@ describe("can()", () => {
         expect(can("ADMIN", "read", resource)).toBe(true);
         expect(can("ADMIN", "update", resource)).toBe(true);
         expect(can("ADMIN", "delete", resource)).toBe(true);
-      }
+      },
     );
 
     it.each(["marketing", "discounts"] as const)(
@@ -159,18 +152,15 @@ describe("can()", () => {
         expect(can("MANAGER", "read", resource)).toBe(true);
         expect(can("MANAGER", "update", resource)).toBe(true);
         expect(can("MANAGER", "delete", resource)).toBe(true);
-      }
+      },
     );
 
-    it.each(["marketing", "discounts"] as const)(
-      "denies STAFF any action on %s",
-      (resource) => {
-        expect(can("STAFF", "create", resource)).toBe(false);
-        expect(can("STAFF", "read", resource)).toBe(false);
-        expect(can("STAFF", "update", resource)).toBe(false);
-        expect(can("STAFF", "delete", resource)).toBe(false);
-      }
-    );
+    it.each(["marketing", "discounts"] as const)("denies STAFF any action on %s", (resource) => {
+      expect(can("STAFF", "create", resource)).toBe(false);
+      expect(can("STAFF", "read", resource)).toBe(false);
+      expect(can("STAFF", "update", resource)).toBe(false);
+      expect(can("STAFF", "delete", resource)).toBe(false);
+    });
   });
 
   describe("Team & Settings (ADMIN only, all actions)", () => {
@@ -181,28 +171,22 @@ describe("can()", () => {
         expect(can("ADMIN", "read", resource)).toBe(true);
         expect(can("ADMIN", "update", resource)).toBe(true);
         expect(can("ADMIN", "delete", resource)).toBe(true);
-      }
+      },
     );
 
-    it.each(["team", "settings"] as const)(
-      "denies MANAGER any action on %s",
-      (resource) => {
-        expect(can("MANAGER", "create", resource)).toBe(false);
-        expect(can("MANAGER", "read", resource)).toBe(false);
-        expect(can("MANAGER", "update", resource)).toBe(false);
-        expect(can("MANAGER", "delete", resource)).toBe(false);
-      }
-    );
+    it.each(["team", "settings"] as const)("denies MANAGER any action on %s", (resource) => {
+      expect(can("MANAGER", "create", resource)).toBe(false);
+      expect(can("MANAGER", "read", resource)).toBe(false);
+      expect(can("MANAGER", "update", resource)).toBe(false);
+      expect(can("MANAGER", "delete", resource)).toBe(false);
+    });
 
-    it.each(["team", "settings"] as const)(
-      "denies STAFF any action on %s",
-      (resource) => {
-        expect(can("STAFF", "create", resource)).toBe(false);
-        expect(can("STAFF", "read", resource)).toBe(false);
-        expect(can("STAFF", "update", resource)).toBe(false);
-        expect(can("STAFF", "delete", resource)).toBe(false);
-      }
-    );
+    it.each(["team", "settings"] as const)("denies STAFF any action on %s", (resource) => {
+      expect(can("STAFF", "create", resource)).toBe(false);
+      expect(can("STAFF", "read", resource)).toBe(false);
+      expect(can("STAFF", "update", resource)).toBe(false);
+      expect(can("STAFF", "delete", resource)).toBe(false);
+    });
   });
 });
 
@@ -232,7 +216,7 @@ describe("canAccessPage()", () => {
         expect(canAccessPage(page, "ADMIN")).toBe(true);
         expect(canAccessPage(page, "MANAGER")).toBe(true);
         expect(canAccessPage(page, "STAFF")).toBe(true);
-      }
+      },
     );
   });
 
@@ -264,19 +248,16 @@ describe("canAccessPage()", () => {
   });
 
   describe("pages restricted to ADMIN only", () => {
-    it.each(["team", "settings", "audit-log"] as const)(
-      "allows ADMIN to access %s",
-      (page) => {
-        expect(canAccessPage(page, "ADMIN")).toBe(true);
-      }
-    );
+    it.each(["team", "settings", "audit-log"] as const)("allows ADMIN to access %s", (page) => {
+      expect(canAccessPage(page, "ADMIN")).toBe(true);
+    });
 
     it.each(["team", "settings", "audit-log"] as const)(
       "denies MANAGER and STAFF from accessing %s",
       (page) => {
         expect(canAccessPage(page, "MANAGER")).toBe(false);
         expect(canAccessPage(page, "STAFF")).toBe(false);
-      }
+      },
     );
   });
 });
@@ -314,11 +295,7 @@ describe("filterNavItemsByRole()", () => {
 
   it("filters correctly for MANAGER", () => {
     const result = filterNavItemsByRole(allItems, "MANAGER");
-    expect(result.map((i) => i.href)).toEqual([
-      "/dashboard",
-      "/analytics",
-      "/orders",
-    ]);
+    expect(result.map((i) => i.href)).toEqual(["/dashboard", "/analytics", "/orders"]);
   });
 
   it("filters correctly for STAFF", () => {
@@ -358,9 +335,7 @@ describe("filterNavItemsByRole()", () => {
     });
 
     it("handles query params with MANAGER role", () => {
-      const items = [
-        { href: "/analytics?tab=revenue&range=90d", label: "Analytics" },
-      ];
+      const items = [{ href: "/analytics?tab=revenue&range=90d", label: "Analytics" }];
       const result = filterNavItemsByRole(items, "MANAGER");
       // MANAGER can access analytics
       expect(result.map((i) => i.label)).toEqual(["Analytics"]);

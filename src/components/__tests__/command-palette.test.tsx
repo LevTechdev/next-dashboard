@@ -49,13 +49,17 @@ describe("CommandPalette", () => {
     renderCommandPalette();
 
     // Dialog should be closed initially
-    expect(screen.queryByPlaceholderText("Search orders, customers, products...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search orders, customers, products..."),
+    ).not.toBeInTheDocument();
 
     // Press Ctrl+K
     fireEvent.keyDown(document, { key: "k", metaKey: true });
 
     // Dialog should now be open
-    expect(screen.getByPlaceholderText("Search orders, customers, products...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search orders, customers, products..."),
+    ).toBeInTheDocument();
   });
 
   it("opens dialog on Cmd+K and closes on Escape", () => {
@@ -69,7 +73,9 @@ describe("CommandPalette", () => {
     // Close with Escape
     fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(screen.queryByPlaceholderText("Search orders, customers, products...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search orders, customers, products..."),
+    ).not.toBeInTheDocument();
   });
 
   it("toggles dialog open/close on repeated Ctrl+K", () => {
@@ -81,7 +87,9 @@ describe("CommandPalette", () => {
 
     // Second press closes
     fireEvent.keyDown(document, { key: "k", metaKey: true });
-    expect(screen.queryByPlaceholderText("Search orders, customers, products...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search orders, customers, products..."),
+    ).not.toBeInTheDocument();
   });
 
   // ── Initial state when opened ─────────────────────────────────────
@@ -109,17 +117,23 @@ describe("CommandPalette", () => {
     fireEvent.change(input, { target: { value: "test" } });
 
     // Wait for debounce (250ms) and fetch
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith("/api/search?q=test");
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockFetch).toHaveBeenCalledWith("/api/search?q=test");
+      },
+      { timeout: 3000 },
+    );
   });
 
   it("shows loading indicator while fetching", async () => {
     // Use a promise that stays pending so loading state is visible
     let resolvePromise: (value: any) => void;
-    mockFetch.mockImplementation(() => new Promise((resolve) => {
-      resolvePromise = resolve;
-    }));
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePromise = resolve;
+        }),
+    );
 
     renderCommandPalette();
 
@@ -129,9 +143,12 @@ describe("CommandPalette", () => {
     fireEvent.change(input, { target: { value: "test" } });
 
     // Wait for loading indicator to appear
-    await waitFor(() => {
-      expect(screen.getByText(/Searching/)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Searching/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Resolve the pending fetch to clean up
     resolvePromise!({ json: () => Promise.resolve({ orders: [], customers: [], products: [] }) });
@@ -160,9 +177,12 @@ describe("CommandPalette", () => {
     const input = getSearchInput();
     fireEvent.change(input, { target: { value: "zzz" } });
 
-    await waitFor(() => {
-      expect(screen.getByText(/No results found/)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/No results found/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   it("displays search results with order, customer, product sections", async () => {
@@ -209,17 +229,20 @@ describe("CommandPalette", () => {
     const input = getSearchInput();
     fireEvent.change(input, { target: { value: "premium" } });
 
-    await waitFor(() => {
-      // Section headers
-      expect(screen.getByText("Orders")).toBeInTheDocument();
-      expect(screen.getByText("Customers")).toBeInTheDocument();
-      expect(screen.getByText("Products")).toBeInTheDocument();
+    await waitFor(
+      () => {
+        // Section headers
+        expect(screen.getByText("Orders")).toBeInTheDocument();
+        expect(screen.getByText("Customers")).toBeInTheDocument();
+        expect(screen.getByText("Products")).toBeInTheDocument();
 
-      // Data
-      expect(screen.getByText("ORD-001")).toBeInTheDocument();
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      expect(screen.getByText("Premium Widget")).toBeInTheDocument();
-    }, { timeout: 3000 });
+        // Data
+        expect(screen.getByText("ORD-001")).toBeInTheDocument();
+        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
+        expect(screen.getByText("Premium Widget")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   // ── Keyboard navigation ─────────────────────────────────────────────
@@ -228,7 +251,16 @@ describe("CommandPalette", () => {
     mockFetch.mockResolvedValue({
       json: () =>
         Promise.resolve({
-          orders: [{ id: "1", orderNumber: "ORD-001", status: "completed", grandTotal: 100000, customer: { name: "Test" }, channel: { name: "Web" } }],
+          orders: [
+            {
+              id: "1",
+              orderNumber: "ORD-001",
+              status: "completed",
+              grandTotal: 100000,
+              customer: { name: "Test" },
+              channel: { name: "Web" },
+            },
+          ],
           customers: [],
           products: [],
         }),
@@ -241,9 +273,12 @@ describe("CommandPalette", () => {
     const input = getSearchInput();
     fireEvent.change(input, { target: { value: "test" } });
 
-    await waitFor(() => {
-      expect(screen.getByText("ORD-001")).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText("ORD-001")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Press ArrowDown
     fireEvent.keyDown(input, { key: "ArrowDown" });
@@ -259,7 +294,16 @@ describe("CommandPalette", () => {
     mockFetch.mockResolvedValue({
       json: () =>
         Promise.resolve({
-          orders: [{ id: "1", orderNumber: "ORD-001", status: "completed", grandTotal: 100000, customer: { name: "Test" }, channel: { name: "Web" } }],
+          orders: [
+            {
+              id: "1",
+              orderNumber: "ORD-001",
+              status: "completed",
+              grandTotal: 100000,
+              customer: { name: "Test" },
+              channel: { name: "Web" },
+            },
+          ],
           customers: [],
           products: [],
         }),
@@ -272,9 +316,12 @@ describe("CommandPalette", () => {
     const input = getSearchInput();
     fireEvent.change(input, { target: { value: "test" } });
 
-    await waitFor(() => {
-      expect(screen.getByText("ORD-001")).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText("ORD-001")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Press ArrowUp at top - should not throw
     expect(() => {
@@ -307,9 +354,12 @@ describe("CommandPalette", () => {
     fireEvent.change(input, { target: { value: "error" } });
 
     // Should show "No results found" since query.length >= 2
-    await waitFor(() => {
-      expect(screen.getByText(/No results found/)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/No results found/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   // ── Cleanup on close ────────────────────────────────────────────────

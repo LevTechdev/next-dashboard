@@ -42,9 +42,7 @@ describe("UnsupportedBrowserBanner", () => {
 
     // After mount, the useEffect fires which sets mounted=true and reads localStorage
     await waitFor(() => {
-      expect(
-        screen.getByText(/Smooth page transitions aren.t supported/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Smooth page transitions aren.t supported/i)).toBeInTheDocument();
     });
 
     // Key content is present
@@ -87,7 +85,7 @@ describe("UnsupportedBrowserBanner", () => {
     // Banner should disappear
     await waitFor(() => {
       expect(
-        screen.queryByText(/Smooth page transitions aren.t supported/i)
+        screen.queryByText(/Smooth page transitions aren.t supported/i),
       ).not.toBeInTheDocument();
     });
 
@@ -106,9 +104,7 @@ describe("UnsupportedBrowserBanner", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
-      expect(
-        screen.getByText(/Smooth page transitions aren.t supported/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Smooth page transitions aren.t supported/i)).toBeInTheDocument();
     });
 
     vi.restoreAllMocks();
@@ -117,11 +113,9 @@ describe("UnsupportedBrowserBanner", () => {
   // ── Dismiss button handles localStorage setItem error ────────────────
 
   it("dismisses the banner even when localStorage.setItem throws", async () => {
-    const setItemSpy = vi
-      .spyOn(Storage.prototype, "setItem")
-      .mockImplementation(() => {
-        throw new Error("localStorage quota exceeded");
-      });
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("localStorage quota exceeded");
+    });
 
     render(<UnsupportedBrowserBanner />);
 
@@ -137,7 +131,7 @@ describe("UnsupportedBrowserBanner", () => {
     // Banner should disappear
     await waitFor(() => {
       expect(
-        screen.queryByText(/Smooth page transitions aren.t supported/i)
+        screen.queryByText(/Smooth page transitions aren.t supported/i),
       ).not.toBeInTheDocument();
     });
 
@@ -158,7 +152,7 @@ describe("UnsupportedBrowserBanner", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText(/Smooth page transitions aren.t supported/i)
+        screen.queryByText(/Smooth page transitions aren.t supported/i),
       ).not.toBeInTheDocument();
     });
 
@@ -185,7 +179,7 @@ describe("UnsupportedBrowserBanner", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText(/Smooth page transitions aren.t supported/i)
+        screen.queryByText(/Smooth page transitions aren.t supported/i),
       ).not.toBeInTheDocument();
     });
 

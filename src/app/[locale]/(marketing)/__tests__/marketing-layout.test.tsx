@@ -7,7 +7,7 @@ function renderLayout() {
   return render(
     <MarketingLayout>
       <div data-testid="child-content">Page Content</div>
-    </MarketingLayout>
+    </MarketingLayout>,
   );
 }
 
@@ -78,11 +78,7 @@ describe("Marketing Layout", () => {
 
   it("renders footer description", () => {
     renderLayout();
-    expect(
-      screen.getByText(
-        /A comprehensive business management platform/
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText(/A comprehensive business management platform/)).toBeInTheDocument();
   });
 
   it("renders footer Product links with proper hrefs", () => {
@@ -117,10 +113,8 @@ describe("Marketing Layout", () => {
     const currentYear = new Date().getFullYear().toString();
     expect(
       screen.getByText(
-        new RegExp(
-          `© ${currentYear} Dashboard Management System.*All rights reserved.`
-        )
-      )
+        new RegExp(`© ${currentYear} Dashboard Management System.*All rights reserved.`),
+      ),
     ).toBeInTheDocument();
   });
 });

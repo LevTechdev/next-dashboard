@@ -8,6 +8,12 @@ vi.mock("lucide-react", async () => {
   return actual;
 });
 
+// Mock confirm provider (page uses useConfirm for confirm dialogs)
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: vi.fn(() => vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
+}));
+
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/billing",
@@ -19,7 +25,12 @@ describe("Billing Page", () => {
     vi.clearAllMocks();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ subscription: null, invoices: [], totals: { totalPaid: 0, totalInvoices: 0 } }),
+      json: () =>
+        Promise.resolve({
+          subscription: null,
+          invoices: [],
+          totals: { totalPaid: 0, totalInvoices: 0 },
+        }),
     } as Response);
   });
 
@@ -27,7 +38,9 @@ describe("Billing Page", () => {
     render(<BillingPage />);
     await waitFor(() => {});
     expect(screen.getByText("Subscription & Billing")).toBeInTheDocument();
-    expect(screen.getByText("Manage your plan, view invoices, and update payment information")).toBeInTheDocument();
+    expect(
+      screen.getByText("Manage your plan, view invoices, and update payment information"),
+    ).toBeInTheDocument();
   });
 
   it("renders tab navigation", async () => {
