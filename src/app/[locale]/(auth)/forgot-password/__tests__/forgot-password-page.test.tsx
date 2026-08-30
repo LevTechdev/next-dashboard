@@ -50,7 +50,7 @@ describe("Forgot Password Page", () => {
 
     // Sent state: the heading + success box both use the same translated text.
     // Synchronous query: findBy* polls via timers, which are faked here.
-    expect(screen.getAllByText("Reset link sent").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/reset link sent/i).length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(/reset-password\?token=abc/i),
     ).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe("Forgot Password Page", () => {
       vi.advanceTimersByTime(61_000);
     });
     expect(localStorage.getItem(FORGOT_PASSWORD_COOLDOWN_KEY)).toBeNull();
-    expect(screen.getByRole("button", { name: /Resend Link/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Resend/i })).toBeEnabled();
   });
 
   it("resends the link from the sent state and restarts the cooldown", async () => {
@@ -116,12 +116,12 @@ describe("Forgot Password Page", () => {
     });
 
     // Second send from the sent view issues a new request + fresh cooldown.
-    fireEvent.click(screen.getByRole("button", { name: /Resend Link/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Resend/i }));
     await act(async () => {});
 
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(localStorage.getItem(FORGOT_PASSWORD_COOLDOWN_KEY)).toBeTruthy();
-    expect(toast.success).toHaveBeenLastCalledWith("Reset link sent");
+    expect(toast.success).toHaveBeenLastCalledWith("Reset Link Sent");
     expect(screen.getByText(/reset-password\?token=def/i)).toBeInTheDocument();
   });
 
@@ -158,7 +158,7 @@ describe("Forgot Password Page", () => {
 
     expect(toast.error).toHaveBeenCalledWith("Something went wrong");
     // Still on the form (not the sent state).
-    expect(screen.queryAllByText("Reset link sent")).toHaveLength(0);
+    expect(screen.queryAllByText(/reset link sent/i)).toHaveLength(0);
     expect(localStorage.getItem(FORGOT_PASSWORD_COOLDOWN_KEY)).toBeNull();
   });
 });
