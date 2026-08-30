@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PricingPage from "../pricing/page";
 
+const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+
 // ── Mocks ─────────────────────────────────────────────────────────────
 
 vi.mock("lucide-react", async () => {
@@ -111,7 +113,7 @@ vi.mock("@/hooks/use-analytics", () => ({
 // ── Tests ─────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  render(<PricingPage />);
+  render(<PricingPage params={params} />);
 });
 
 describe("Pricing Page", () => {

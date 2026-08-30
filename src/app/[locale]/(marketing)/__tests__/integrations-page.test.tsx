@@ -2,8 +2,10 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import IntegrationsOverviewPage from "../integrations-overview/page";
 
+const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+
 beforeEach(() => {
-  render(<IntegrationsOverviewPage />);
+  render(<IntegrationsOverviewPage params={params} />);
 });
 
 describe("Integrations Overview Page", () => {

@@ -2,8 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import FeaturesPage from "../features/page";
 
+// React.use() checks thenable.status — "fulfilled" returns value synchronously
+const params = { status: "fulfilled", value: { locale: "en" }, then: () => {} } as unknown as Promise<{ locale: string }>;
+
 beforeEach(() => {
-  render(<FeaturesPage />);
+  render(<FeaturesPage params={params} />);
 });
 
 describe("Features Page", () => {
