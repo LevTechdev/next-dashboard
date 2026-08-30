@@ -38,6 +38,13 @@ const {
   mockRequireAuth,
   mockQrCode,
   mockSendPasswordResetEmail,
+  mockListSecurityEvents,
+  mockRevokeSession,
+  mockResolveConnectionByEmail,
+  mockResolveConnectionByTenantSlug,
+  mockBuildSaml,
+  mockVerifyOtp,
+  mockIsOtpExpired,
 } = vi.hoisted(() => {
   const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
@@ -93,6 +100,12 @@ const {
       activityLog: deepModel({}),
       securityEvent: deepModel({}),
       backupCode: deepModel({}),
+      ssoConnection: deepModel({
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockImplementation(({ create }: any) => Promise.resolve({ id: "conn-1", ...create })),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      }),
+      auditLog: deepModel({}),
       $transaction: vi
         .fn()
         .mockImplementation((fns: any[]) =>
@@ -182,6 +195,17 @@ const {
     }),
     mockQrCode: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,qrplaceholder") },
     mockSendPasswordResetEmail: vi.fn().mockResolvedValue({ sent: true }),
+    mockListSecurityEvents: vi.fn().mockResolvedValue([]),
+    mockRevokeSession: vi.fn().mockResolvedValue(true),
+    mockResolveConnectionByEmail: vi.fn().mockResolvedValue(null),
+    mockResolveConnectionByTenantSlug: vi.fn().mockResolvedValue(null),
+    mockBuildSaml: vi.fn().mockReturnValue({
+      validatePostResponseAsync: vi.fn().mockResolvedValue({ profile: null }),
+      getAuthorizeUrlAsync: vi.fn().mockResolvedValue("https://idp.example.com/sso"),
+      generateServiceProviderMetadata: vi.fn().mockReturnValue("<xml/>"),
+    }),
+    mockVerifyOtp: vi.fn().mockReturnValue(false),
+    mockIsOtpExpired: vi.fn().mockReturnValue(false),
   };
 });
 
@@ -215,6 +239,7 @@ vi.mock("@/lib/sessions", () => ({
   listActiveSessions: mockListActiveSessions,
   revokeOtherSessions: mockRevokeOtherSessions,
   rotateSessionAccessToken: mockRotateSessionAccessToken,
+  revokeSession: mockRevokeSession,
 }));
 
 vi.mock("@/lib/refresh-tokens", () => ({
@@ -238,6 +263,7 @@ vi.mock("@/lib/backup-codes", () => ({
 
 vi.mock("@/lib/security-events", () => ({
   logSecurityEvent: mockLogSecurityEvent,
+  listSecurityEvents: mockListSecurityEvents,
 }));
 
 vi.mock("@/lib/hibp", () => ({
@@ -248,6 +274,27 @@ vi.mock("@/lib/hibp", () => ({
 vi.mock("@/lib/email-verification", () => ({
   issueEmailOtp: mockIssueEmailOtp,
   isDevFallbackAllowed: mockIsDevFallbackAllowed,
+  sanitizeVerifyEmailRedirect: (v: string | null) => v || "security",
+}));
+
+vi.mock("@/lib/email-otp", () => ({
+  verifyOtp: mockVerifyOtp,
+  isOtpExpired: mockIsOtpExpired,
+  MAX_OTP_ATTEMPTS: 5,
+}));
+
+vi.mock("@/lib/saml", () => ({
+  buildSaml: mockBuildSaml,
+  resolveConnectionByEmail: mockResolveConnectionByEmail,
+  resolveConnectionByTenantSlug: mockResolveConnectionByTenantSlug,
+  profileToIdentity: (p: any) => ({ email: p?.email, name: p?.name }),
+  getOrigin: () => "http://localhost:3000",
+}));
+
+vi.mock("@/lib/tenancy", () => ({
+  getTenantId: (s: any) => s?.user?.tenantId,
+  effectiveTenantId: async (s: any) => s?.user?.tenantId || "tenant-1",
+  tenantWhere: () => ({}),
 }));
 
 vi.mock("@/lib/api-guard", () => ({
@@ -296,6 +343,15 @@ import * as refreshRoutes from "../auth/refresh/route";
 import * as backupCodesRoutes from "../auth/backup-codes/route";
 import * as stepUpRoutes from "../auth/step-up/route";
 import * as forgotPasswordRoutes from "../auth/forgot-password/route";
+import * as resetPasswordRoutes from "../auth/reset-password/route";
+import * as securityEventsRoutes from "../auth/security-events/route";
+import * as sessionByIdRoutes from "../auth/sessions/[id]/route";
+import * as verifyEmailOtpRoutes from "../auth/verify-email/otp/route";
+import * as verifyEmailSendRoutes from "../auth/verify-email/send/route";
+import * as verifyEmailConfirmRoutes from "../auth/verify-email/confirm/route";
+import * as googleRoutes from "../auth/google/route";
+import * as samlLoginRoutes from "../auth/saml/login/route";
+import * as samlConnectionsRoutes from "../auth/saml/connections/route";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -1321,6 +1377,453 @@ describe("Forgot Password", () => {
       } as unknown as Request;
       const res = await forgotPasswordRoutes.POST(badReq);
       expect(res.status).toBe(400);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Reset Password
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Reset Password", () => {
+  describe("POST", () => {
+    it("returns 400 when token is missing", async () => {
+      const res = await resetPasswordRoutes.POST(post({ password: "newpass123" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when token is not a string", async () => {
+      const res = await resetPasswordRoutes.POST(post({ token: 123, password: "newpass123" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when password is missing", async () => {
+      const res = await resetPasswordRoutes.POST(post({ token: "valid-token" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when password is too short", async () => {
+      const res = await resetPasswordRoutes.POST(post({ token: "valid-token", password: "short" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when token is not found or expired", async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+      const res = await resetPasswordRoutes.POST(
+        post({ token: "expired-token", password: "newpass123" }),
+      );
+      expect(res.status).toBe(400);
+    });
+
+    it("updates password and returns success on valid token", async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: "user-1",
+        email: "a@test.com",
+        tenantId: "tenant-1",
+      });
+      const res = await resetPasswordRoutes.POST(
+        post({ token: "valid-token", password: "newpass123" }),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockHashPassword).toHaveBeenCalledWith("newpass123");
+      expect(mockPrisma.user.update).toHaveBeenCalled();
+      expect(mockPrisma.activityLog.create).toHaveBeenCalled();
+    });
+
+    it("returns 500 when an exception occurs", async () => {
+      mockPrisma.user.findFirst.mockRejectedValue(new Error("DB down"));
+      const res = await resetPasswordRoutes.POST(
+        post({ token: "valid-token", password: "newpass123" }),
+      );
+      expect(res.status).toBe(500);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Security Events
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Security Events", () => {
+  describe("GET", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockRequireAuth.mockResolvedValueOnce({
+        session: null,
+        response: new Response("Unauthorized", { status: 401 }),
+      });
+      const res = await securityEventsRoutes.GET(get());
+      expect(res.status).toBe(401);
+    });
+
+    it("returns list of security events", async () => {
+      mockListSecurityEvents.mockResolvedValueOnce([
+        { id: "evt-1", type: "LOGIN", createdAt: new Date() },
+      ]);
+      const res = await securityEventsRoutes.GET(get());
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toHaveLength(1);
+      expect(mockListSecurityEvents).toHaveBeenCalled();
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Session by ID
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Session by ID", () => {
+  describe("DELETE", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockRequireAuth.mockResolvedValueOnce({
+        session: null,
+        response: new Response("Unauthorized", { status: 401 }),
+      });
+      const req = post() as any;
+      req.params = Promise.resolve({ id: "sess-1" });
+      const res = await sessionByIdRoutes.DELETE(req, { params: Promise.resolve({ id: "sess-1" }) });
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 404 when session not found", async () => {
+      mockRevokeSession.mockResolvedValueOnce(false);
+      const res = await sessionByIdRoutes.DELETE(post(), {
+        params: Promise.resolve({ id: "nonexistent" }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it("revokes session and logs event on success", async () => {
+      mockRevokeSession.mockResolvedValueOnce(true);
+      const res = await sessionByIdRoutes.DELETE(post(), {
+        params: Promise.resolve({ id: "sess-1" }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "SESSION_REVOKED" }),
+      );
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Verify Email OTP
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Verify Email OTP", () => {
+  const mockUserWithOtp = {
+    id: "user-1",
+    email: "a@test.com",
+    emailVerified: null,
+    emailOtpHash: "hashed-otp",
+    emailOtpExpires: new Date(Date.now() + 3600000),
+    emailOtpAttempts: 0,
+    tenantId: "tenant-1",
+  };
+
+  describe("POST", () => {
+    it("returns 400 when code is empty", async () => {
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "" }));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 when user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(404);
+    });
+
+    it("returns alreadyVerified when email is already verified", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUserWithOtp,
+        emailVerified: new Date(),
+      });
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.alreadyVerified).toBe(true);
+    });
+
+    it("returns OTP_NOT_REQUESTED when no OTP hash exists", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUserWithOtp,
+        emailOtpHash: null,
+      });
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("OTP_NOT_REQUESTED");
+    });
+
+    it("returns OTP_EXPIRED when OTP is expired", async () => {
+      mockIsOtpExpired.mockReturnValueOnce(true);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUserWithOtp);
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("OTP_EXPIRED");
+    });
+
+    it("returns OTP_TOO_MANY_ATTEMPTS when attempts exceeded", async () => {
+      mockIsOtpExpired.mockReturnValueOnce(false);
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUserWithOtp,
+        emailOtpAttempts: 5,
+      });
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("OTP_TOO_MANY_ATTEMPTS");
+    });
+
+    it("returns OTP_INVALID with attemptsLeft on wrong code", async () => {
+      mockVerifyOtp.mockReturnValueOnce(false);
+      mockIsOtpExpired.mockReturnValueOnce(false);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUserWithOtp);
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "000000" }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("OTP_INVALID");
+      expect(body.attemptsLeft).toBe(4);
+    });
+
+    it("returns success on valid code", async () => {
+      mockVerifyOtp.mockReturnValueOnce(true);
+      mockIsOtpExpired.mockReturnValueOnce(false);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(mockUserWithOtp);
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "EMAIL_VERIFIED" }),
+      );
+    });
+
+    it("returns 500 when an exception occurs", async () => {
+      mockPrisma.user.findUnique.mockRejectedValue(new Error("DB down"));
+      const res = await verifyEmailOtpRoutes.POST(post({ code: "123456" }));
+      expect(res.status).toBe(500);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Verify Email Send
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Verify Email Send", () => {
+  describe("POST", () => {
+    it("returns 404 when user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      const res = await verifyEmailSendRoutes.POST(post({}));
+      expect(res.status).toBe(404);
+    });
+
+    it("returns alreadyVerified when email is already verified", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        emailVerified: new Date(),
+      });
+      const res = await verifyEmailSendRoutes.POST(post({}));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.alreadyVerified).toBe(true);
+    });
+
+    it("returns success with devOtp in dev mode", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "a@test.com",
+        emailVerified: null,
+      });
+      mockIssueEmailOtp.mockResolvedValueOnce({ sent: true, code: "654321" });
+      mockIsDevFallbackAllowed.mockReturnValueOnce(true);
+      const res = await verifyEmailSendRoutes.POST(post({}));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.devOtp).toBe("654321");
+      expect(body.verificationUrl).toBeDefined();
+    });
+
+    it("returns success without devOtp when mailer is configured", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "a@test.com",
+        emailVerified: null,
+      });
+      mockIssueEmailOtp.mockResolvedValueOnce({ sent: true, code: "654321" });
+      mockIsDevFallbackAllowed.mockReturnValue(false);
+      const res = await verifyEmailSendRoutes.POST(post({}));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.devOtp).toBeUndefined();
+    });
+
+    it("uses custom locale and from in verification URL", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "a@test.com",
+        emailVerified: null,
+      });
+      mockIsDevFallbackAllowed.mockReturnValueOnce(true);
+      const res = await verifyEmailSendRoutes.POST(
+        post({ locale: "ja", from: "profile" }),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.verificationUrl).toContain("locale=ja");
+      expect(body.verificationUrl).toContain("from=profile");
+    });
+
+    it("returns 500 when an exception occurs", async () => {
+      mockPrisma.user.findUnique.mockRejectedValue(new Error("DB down"));
+      const res = await verifyEmailSendRoutes.POST(post({}));
+      expect(res.status).toBe(500);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Verify Email Confirm
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Verify Email Confirm", () => {
+  describe("GET", () => {
+    it("returns 400 when token is missing", async () => {
+      const req = {
+        url: "http://localhost:3000/api/auth/verify-email/confirm",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await verifyEmailConfirmRoutes.GET(req);
+      expect(res.status).toBe(400);
+    });
+
+    it("redirects with verified=invalid when token not found", async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+      const req = {
+        url: "http://localhost:3000/api/auth/verify-email/confirm?token=bad-token",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await verifyEmailConfirmRoutes.GET(req);
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toContain("verified=invalid");
+    });
+
+    it("redirects with verified=true on valid token", async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: "user-1",
+        tenantId: "tenant-1",
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/verify-email/confirm?token=valid-token&locale=en&from=security",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await verifyEmailConfirmRoutes.GET(req);
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toContain("verified=true");
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "EMAIL_VERIFIED" }),
+      );
+    });
+
+    it("falls back to en for unsupported locale", async () => {
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: "user-1",
+        tenantId: "tenant-1",
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/verify-email/confirm?token=valid-token&locale=fr",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await verifyEmailConfirmRoutes.GET(req);
+      expect(res.status).toBe(302);
+      expect(res.headers.get("location")).toContain("/en/");
+    });
+
+    it("returns 500 when an exception occurs", async () => {
+      mockPrisma.user.findFirst.mockRejectedValue(new Error("DB down"));
+      const req = {
+        url: "http://localhost:3000/api/auth/verify-email/confirm?token=bad",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await verifyEmailConfirmRoutes.GET(req);
+      expect(res.status).toBe(500);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Google OAuth
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Google OAuth", () => {
+  describe("GET", () => {
+    it("redirects to Google OAuth consent screen when configured", async () => {
+      const original = process.env.GOOGLE_CLIENT_ID;
+      process.env.GOOGLE_CLIENT_ID = "test-client-id";
+      try {
+        const res = await googleRoutes.GET();
+        expect(res.status).toBe(307);
+        const location = res.headers.get("location");
+        expect(location).toContain("accounts.google.com");
+        expect(location).toContain("response_type=code");
+      } finally {
+        process.env.GOOGLE_CLIENT_ID = original;
+      }
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAML Login
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("SAML Login", () => {
+  describe("GET", () => {
+    it("returns 404 when no SSO connection found", async () => {
+      mockResolveConnectionByEmail.mockResolvedValueOnce(null);
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login?email=user@test.com",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect(res.status).toBe(404);
+      const body = await res.json();
+      expect(body.error).toContain("No SSO configured");
+    });
+
+    it("redirects to IdP when connection is found", async () => {
+      mockResolveConnectionByEmail.mockResolvedValueOnce({
+        id: "conn-1",
+        entryPoint: "https://idp.example.com/sso",
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login?email=user@test.com",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect([302, 307]).toContain(res.status);
+      const location = res.headers.get("location");
+      expect(location).toContain("idp.example.com");
+    });
+
+    it("resolves connection by tenant slug", async () => {
+      mockResolveConnectionByTenantSlug.mockResolvedValueOnce({
+        id: "conn-1",
+        entryPoint: "https://idp.example.com/sso",
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login?tenant=mycompany",
+        headers: { get: () => null },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect([302, 307]).toContain(res.status);
+      expect(mockResolveConnectionByTenantSlug).toHaveBeenCalledWith("mycompany");
     });
   });
 });
