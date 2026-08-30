@@ -207,32 +207,31 @@ export function ActivityFeed({ className }: { className?: string }) {
   }, []);
 
   // ── Real-time arrivals: derive what's new, then merge it into the feed ──
-  const itemsIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
-  const newArrivals = useMemo(
-    () => realtimeNotifications.filter((n) => !itemsIds.has(n.id)),
-    [realtimeNotifications, itemsIds],
-  );
+  const processedIdsRef = useRef<Set<string>>(new Set());
 
-  // React's "adjusting state during render" pattern (docs: storing info from
-  // previous renders) — merge unseen arrivals into the single source of
-  // truth. Guarded, so it converges in one extra render instead of looping.
-  if (newArrivals.length > 0) {
-    setItems((prev) => {
-      const prevIds = new Set(prev.map((i) => i.id));
-      const fresh = newArrivals.filter((n) => !prevIds.has(n.id));
-      if (fresh.length === 0) return prev;
-      const arrivals: ActivityItem[] = fresh.map((n) => ({
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        description: n.description,
-        timestamp: n.timestamp,
-        isNew: true,
-        arrivedAt: n.timestamp.getTime(),
-      }));
-      return [...arrivals, ...prev].slice(0, MAX_VISIBLE);
-    });
-  }
+  useEffect(() => {
+    // Only process notifications we haven't seen before in this session
+    const fresh = realtimeNotifications.filter((n) => !processedIdsRef.current.has(n.id));
+    if (fresh.length > 0) {
+      // Mark as processed
+      fresh.forEach((n) => processedIdsRef.current.add(n.id));
+
+      // Append to feed state
+      setItems((prev) => {
+        const arrivals: ActivityItem[] = fresh.map((n) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          description: n.description,
+          timestamp: n.timestamp,
+          isNew: true,
+          arrivedAt: n.timestamp.getTime(),
+        }));
+        // Prepend and cap to MAX_VISIBLE
+        return [...arrivals, ...prev].slice(0, MAX_VISIBLE);
+      });
+    }
+  }, [realtimeNotifications]);
 
   // While paused, arrivals are hidden from the feed but still counted.
   const visibleItems = paused ? items.filter((a) => a.arrivedAt === undefined) : items;

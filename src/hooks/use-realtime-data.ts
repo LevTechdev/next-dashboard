@@ -119,7 +119,9 @@ export function useRealtimeData<T = unknown>(
         import("@/lib/supabase/client")
           .then(({ createClient }) => {
             const supabase = createClient();
-            supabase.removeChannel(channelRef.current!);
+            if (channelRef.current) {
+              supabase.removeChannel(channelRef.current);
+            }
           })
           .catch(() => {});
         channelRef.current = null;

@@ -34,7 +34,10 @@ export async function issueEmailOtp(opts: {
 
 /** Whether the current environment may expose the dev-mode OTP/code fallback. */
 export function isDevFallbackAllowed(): boolean {
-  return process.env.NODE_ENV !== "production";
+  // If a real mailer is configured (SMTP or Resend), force the user to check their email
+  // even in development mode, so they can verify real email delivery.
+  const hasMailer = Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY);
+  return process.env.NODE_ENV !== "production" && !hasMailer;
 }
 
 /**

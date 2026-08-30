@@ -31,6 +31,21 @@ export type SecurityEventType =
  * Append a security event. Best-effort: never throws into the caller so a
  * logging failure can't break the security action it records.
  */
+/**
+ * True when the app is connected through a pgbouncer **transaction-mode**
+ * pooler (e.g. Supabase's default pooler on port 6543 with `?pgbouncer=true`).
+ *
+ * In transaction mode, Postgres advisory locks and Prisma interactive
+ * transactions are unsupported — pgbouncer releases the connection back to the
+ * pool at the end of every statement, so a `BEGIN` / advisory-lock / `COMMIT`
+ * sequence spans multiple physical connections and always times out (P2028).
+ *
+ * Detection: presence of `pgbouncer=true` in DATABASE_URL (Supabase convention).
+ */
+const isPgBouncer =
+  typeof process.env.DATABASE_URL === "string" &&
+  process.env.DATABASE_URL.includes("pgbouncer=true");
+
 export async function logSecurityEvent(params: {
   userId: string | null;
   type: SecurityEventType;
@@ -50,15 +65,51 @@ export async function logSecurityEvent(params: {
       tenantId: params.tenantId ?? null,
       createdAt,
     };
-    // Append under an advisory lock so the hash chain stays linear under
-    // concurrent writers. The lock is Postgres-specific; ignored elsewhere.
+
+    if (isPgBouncer) {
+      // pgbouncer transaction-mode: advisory locks and interactive transactions
+      // are unsupported. Fall back to sequential queries (best-effort ordering
+      // — the hash chain may have gaps under heavy concurrency but the
+      // `repair:audit-chain` script can restore it).
+      const last = await prisma.securityEvent.findFirst({
+        orderBy: { seq: "desc" },
+        select: { hash: true },
+      });
+      const prevHash = last?.hash ?? GENESIS_HASH;
+      const hash = computeHash(prevHash, event);
+      const created = await prisma.securityEvent.create({
+        data: {
+          userId: event.userId,
+          type: event.type,
+          ip: event.ip,
+          userAgent: event.userAgent,
+          metadata: params.metadata ? (params.metadata as object) : undefined,
+          tenantId: event.tenantId,
+          createdAt,
+          prevHash,
+          hash,
+        },
+      });
+      await forwardToSiem({
+        id: created.id,
+        seq: created.seq,
+        userId: created.userId,
+        type: created.type,
+        ip: created.ip,
+        userAgent: created.userAgent,
+        metadata: created.metadata,
+        createdAt: created.createdAt,
+      });
+      return;
+    }
+
+    // Non-pgbouncer path: use an advisory lock inside an interactive
+    // transaction to guarantee strict sequential hash-chain ordering.
     //
     // The interactive transaction needs a longer-than-default timeout: while
     // one worker holds the advisory lock, a concurrent writer WAITS on it
     // inside the transaction, and Prisma's 5s default deadline can expire
-    // mid-wait (P2028), silently dropping the event (the parallel e2e suite
-    // hit exactly this on concurrent logins). 15s covers the worst-case lock
-    // wait plus the two queries below.
+    // mid-wait (P2028). 15s covers the worst-case lock wait plus both queries.
     await prisma.$transaction(
       async (tx) => {
         try {
@@ -97,10 +148,6 @@ export async function logSecurityEvent(params: {
           createdAt: created.createdAt,
         });
       },
-      // Prisma interactive transactions default to a 5s timeout; the advisory
-      // lock wait counts against it, so concurrent logins (parallel e2e
-      // workers) could expire mid-wait and drop the event. 15s gives the
-      // worst-case lock wait + both queries room to complete.
       { timeout: 15_000 },
     );
   } catch (err) {

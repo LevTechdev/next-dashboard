@@ -57,7 +57,7 @@ describe("createSnapTransaction", () => {
       orderId: "MT-123",
       grossAmountIdr: 458_200,
       items: [{ id: "plan-pro", name: "Pro Plan", price: 458_200, quantity: 1 }],
-      customer: { firstName: "Admin", email: "admin@dashboard.com" },
+      customer: { firstName: "Admin", email: "nextdashboards@gmail.com" },
       enabledPayments: ["dana", "gopay"],
     });
 
@@ -74,7 +74,7 @@ describe("createSnapTransaction", () => {
     expect(body.transaction_details).toEqual({ order_id: "MT-123", gross_amount: 458_200 });
     expect(body.item_details).toHaveLength(1);
     expect(body.enabled_payments).toEqual(["dana", "gopay"]);
-    expect(body.customer_details.email).toBe("admin@dashboard.com");
+    expect(body.customer_details.email).toBe("nextdashboards@gmail.com");
 
     expect(result).toEqual({
       token: "snap-token",

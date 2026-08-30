@@ -67,7 +67,20 @@ export function installAuthFetch(): void {
       "GET"
     ).toUpperCase();
 
-    const res = await nativeFetch(input as RequestInfo, init);
+        let res: Response;
+    try {
+      res = await nativeFetch(input as RequestInfo, init);
+    } catch (err) {
+      // If the network is down or CORS fails, fetch natively throws a TypeError.
+      // To prevent unhandled rejections from crashing the Next.js app or polluting
+      // the console if a caller forgets a try/catch, we intercept it and return a 503.
+      console.warn("[client-refresh] Network fetch failed:", err);
+      return new Response(JSON.stringify({ error: "Network Error" }), {
+        status: 503,
+        statusText: "Service Unavailable",
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     // Only auto-recover idempotent GETs (retrying a consumed request body is unsafe).
     if (res.status !== 401 || method !== "GET" || !isSameOriginApi(url) || isAuthEndpoint(url)) {
