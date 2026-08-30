@@ -3,13 +3,13 @@ id = "next-dashboard"
 
 [api]
 enabled = true
-port = 54321
+port = 54331
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
+port = 54334
 shadow_port = 54320
 major_version = 15
 
@@ -20,9 +20,9 @@ api_url = "http://localhost"
 
 [inbucket]
 enabled = true
-port = 54324
-smtp_port = 54325
-pop3_port = 54326
+port = 54335
+smtp_port = 54336
+pop3_port = 54337
 
 [auth]
 enabled = true
@@ -44,3 +44,7 @@ file_size_limit = "50MiB"
 
 [realtime]
 enabled = true
+
+[analytics]
+enabled = true
+port = 54332
