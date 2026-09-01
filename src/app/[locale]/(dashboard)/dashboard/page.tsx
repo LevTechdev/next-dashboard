@@ -1,3 +1,4 @@
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 "use client";
 
 import { useEffect, type ComponentType } from "react";

@@ -287,18 +287,12 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 </Link>
               ) : (
                 <>
-                  <RadialGlowButton asChild size="sm">
-                    <Link href={`/${locale}/login`}>{t("signIn")}</Link>
-                  </RadialGlowButton>
-                  <RadialGlowButton asChild size="sm">
-                    <Link href={`/${locale}/register`}>
-                      {t("signUp")}
-                      <ChevronRightIcon
-                        size={14}
-                        className="h-3.5 w-3.5 inline-block align-middle ml-1.5"
-                      />
-                    </Link>
-                  </RadialGlowButton>
+                  <Link href={`/${locale}/login`} className="text-sm font-medium text-foreground hover:opacity-70 transition-opacity px-2">
+                    {t("signIn")}
+                  </Link>
+                  <Link href={`/${locale}/register`} className="inline-flex items-center justify-center text-sm font-medium bg-foreground text-background px-4 py-1.5 rounded-full hover:opacity-90 transition-opacity">
+                    {t("signUp")}
+                  </Link>
                 </>
               )}
             </div>

@@ -1291,7 +1291,11 @@
     },
     "ctaTitle": "Siap untuk merilis lebih cepat?",
     "ctaDesc": "Bergabunglah dengan ribuan pengembang yang membangun aplikasi web generasi berikutnya.",
-    "ctaButton": "Mulai Hari Ini"
+    "ctaButton": "Mulai Hari Ini",
+    "heroPrefix": "Semua yang Anda butuhkan,",
+    "heroWord1": "siap untuk skala.",
+    "heroWord2": "siap untuk tumbuh.",
+    "heroWord3": "siap untuk berkinerja."
   },
   "homePage": {
     "badge": "Kini dalam Beta Publik",
@@ -1364,7 +1368,7 @@
   },
   "changelogPage": {
     "badge": "Catatan Rilis",
-    "heroPrefix": "Apa yang",
+    "heroPrefix": "Produk",
     "word1": "baru.",
     "word2": "dirilis.",
     "word3": "disempurnakan.",
@@ -1446,7 +1450,10 @@
           }
         ]
       }
-    ]
+    ],
+    "heroWord1": "Changelog",
+    "heroWord2": "Pembaruan",
+    "heroWord3": "Rilis"
   },
   "integrationsPage": {
     "heroTag": "Koneksi Mulus",
@@ -1459,7 +1466,11 @@
     "popularTag": "Populer",
     "ctaTitle": "Bangun integrasi Anda sendiri",
     "ctaDesc": "Butuh sesuatu yang spesifik? Gunakan API kami yang kuat untuk membangun koneksi kustom ke platform apa pun.",
-    "ctaButton": "Lihat Dokumentasi API"
+    "ctaButton": "Lihat Dokumentasi API",
+    "heroPrefix": "Terhubung dengan",
+    "heroWord1": "alat favorit Anda.",
+    "heroWord2": "aplikasi favorit Anda.",
+    "heroWord3": "semua yang Anda gunakan."
   },
   "site": {
     "navFeatures": "Fitur",
@@ -1928,7 +1939,7 @@
   },
   "homepage": {
     "badge": "Kini dalam Beta Publik",
-    "heroPrefix": "Beroperasi dengan",
+    "heroPrefix": "Bisnis Anda,",
     "word1": "presisi.",
     "word2": "kejelasan.",
     "word3": "kecepatan.",
@@ -2059,7 +2070,10 @@
       "title": "Disukai oleh pengembang",
       "subtitle": "Lihat apa yang komunitas katakan tentang Next Dashboard.",
       "seeMore": "Baca semua ulasan"
-    }
+    },
+    "heroWord1": "Sepenuhnya Terpadu.",
+    "heroWord2": "Sepenuhnya Otomatis.",
+    "heroWord3": "Sepenuhnya Terhubung."
   },
   "pricingPage": {
     "heroTag": "Harga Sederhana",
@@ -2076,6 +2090,10 @@
     "faqSubtitle": "Segala hal yang perlu Anda ketahui tentang harga dan penagihan kami.",
     "ctaTitle": "Siap untuk mulai membangun?",
     "ctaDesc": "Bergabunglah dengan ribuan pengembang yang merilis lebih cepat dengan Next Dashboard.",
-    "ctaButton": "Mulai uji coba gratis Anda"
+    "ctaButton": "Mulai uji coba gratis Anda",
+    "heroPrefix": "Harga yang",
+    "heroWord1": "berskala dengan Anda.",
+    "heroWord2": "sesuai anggaran Anda.",
+    "heroWord3": "tumbuh bersama Anda."
   }
 }

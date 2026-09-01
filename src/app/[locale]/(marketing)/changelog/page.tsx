@@ -4,6 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 import {
   RefreshCw,
   Bell,

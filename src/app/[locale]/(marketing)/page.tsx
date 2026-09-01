@@ -290,7 +290,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground">
-            {t("heroTitle")}
+            {t("heroPrefix")}{" "}
+            <br className="hidden sm:block" />
+            <span className="text-primary inline-flex">
+              <FlipFadeText words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]} interval={2500} />
+            </span>
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">

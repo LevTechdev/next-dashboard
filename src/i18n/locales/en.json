@@ -1291,7 +1291,11 @@
     },
     "ctaTitle": "Ready to ship faster?",
     "ctaDesc": "Join thousands of developers building the next generation of web applications.",
-    "ctaButton": "Get Started Today"
+    "ctaButton": "Get Started Today",
+    "heroPrefix": "Everything you need,",
+    "heroWord1": "ready to scale.",
+    "heroWord2": "ready to grow.",
+    "heroWord3": "ready to perform."
   },
   "homePage": {
     "badge": "Now in Public Beta",
@@ -1364,7 +1368,7 @@
   },
   "changelogPage": {
     "badge": "Release Notes",
-    "heroPrefix": "What's",
+    "heroPrefix": "Product",
     "word1": "new.",
     "word2": "shipping.",
     "word3": "improved.",
@@ -1446,7 +1450,10 @@
           }
         ]
       }
-    ]
+    ],
+    "heroWord1": "Changelog",
+    "heroWord2": "Updates",
+    "heroWord3": "Releases"
   },
   "integrationsPage": {
     "heroTag": "Seamless Connections",
@@ -1459,7 +1466,11 @@
     "popularTag": "Popular",
     "ctaTitle": "Build your own integration",
     "ctaDesc": "Need something specific? Use our robust API to build custom connections to any platform.",
-    "ctaButton": "View API Docs"
+    "ctaButton": "View API Docs",
+    "heroPrefix": "Connect with",
+    "heroWord1": "your favorite tools.",
+    "heroWord2": "your favorite apps.",
+    "heroWord3": "everything you use."
   },
   "site": {
     "navFeatures": "Features",
@@ -1928,7 +1939,7 @@
   },
   "homepage": {
     "badge": "Now in Public Beta",
-    "heroPrefix": "Operate with",
+    "heroPrefix": "Your Business,",
     "word1": "precision.",
     "word2": "clarity.",
     "word3": "speed.",
@@ -2059,7 +2070,10 @@
       "title": "Loved by developers",
       "subtitle": "See what our community has to say about Next Dashboard.",
       "seeMore": "Read all reviews"
-    }
+    },
+    "heroWord1": "Fully Unified.",
+    "heroWord2": "Fully Automated.",
+    "heroWord3": "Fully Connected."
   },
   "pricingPage": {
     "heroTag": "Simple Pricing",
@@ -2076,6 +2090,10 @@
     "faqSubtitle": "Everything you need to know about our pricing and billing.",
     "ctaTitle": "Ready to start building?",
     "ctaDesc": "Join thousands of developers shipping faster with Next Dashboard.",
-    "ctaButton": "Start your free trial"
+    "ctaButton": "Start your free trial",
+    "heroPrefix": "Pricing that",
+    "heroWord1": "scales with you.",
+    "heroWord2": "fits your budget.",
+    "heroWord3": "grows with you."
   }
 }
