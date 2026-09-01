@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon, SparklesIcon, XIcon } from "lucide-animated";
 import { Loader2, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
@@ -18,13 +19,15 @@ import { PasswordStrength } from "@/components/ui/password-strength";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
+  const t = useTranslations("auth");
   const params = useParams();
   const locale = params?.locale || "en";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // ── Email-OTP verification step (shown right after signup) ──
   const [otpRequired, setOtpRequired] = useState(false);
@@ -222,9 +225,9 @@ export default function RegisterPage() {
                     className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                   {otpError && (
-                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                    <div className="text-sm text-red-500 mt-2 flex items-center gap-1">
                       <XIcon className="h-4 w-4" /> {otpError}
-                    </p>
+                    </div>
                   )}
                 </div>
                 <Button
@@ -261,21 +264,17 @@ export default function RegisterPage() {
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Full Name
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("fullName")}</Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="John Doe"
+                    placeholder={t("namePlaceholder")}
                     disabled={isLoading}
                     className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Email
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("email")}</Label>
                   <Input
                     type="email"
                     value={email}
@@ -286,9 +285,7 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Password
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("password")}</Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
@@ -336,8 +333,7 @@ export default function RegisterPage() {
               </form>
 
               <p className="text-center text-sm text-gray-500 dark:text-zinc-400 mt-8">
-                Already have an account?{" "}
-                <Link
+                {t("haveAccount")} <Link
                   href={`/${locale}/login`}
                   className="text-[#EE5D36] font-semibold hover:underline"
                 >

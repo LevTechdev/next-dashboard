@@ -32,7 +32,10 @@
     "affiliates": "Afiliasi",
     "logoutConfirmTitle": "Keluar?",
     "logoutConfirmDesc": "Anda yakin ingin keluar dari akun Anda?",
-    "sso": "SSO / Perusahaan"
+    "sso": "SSO / Perusahaan",
+    "aiGenerator": "Generator AI",
+    "projects": "Proyek",
+    "superAdmin": "Super Admin"
   },
   "dashboard": {
     "title": "Ikhtisar Dashboard",
@@ -1234,72 +1237,61 @@
     "ctaViewPricing": "Lihat Harga"
   },
   "featuresPage": {
-    "badge": "Kemampuan Andal",
-    "heroPrefix": "Semua yang Anda Butuhkan untuk",
-    "word1": "tumbuh.",
-    "word2": "berskala.",
-    "word3": "berkembang.",
-    "word4": "sukses.",
-    "heroSubtitle": "Dari analitik waktu nyata hingga kolaborasi tim — jelajahi semua alat yang menjadikan Dashboard platform manajemen bisnis terbaik.",
-    "groupBadge1": "Fitur Inti",
-    "groupBadge2": "Manajemen",
-    "groupBadge3": "Pertumbuhan",
-    "groupBadge4": "Keamanan",
-    "g1Title": "Analitik & Wawasan",
-    "g1Desc": "Ambil keputusan berbasis data dengan analitik andal dan dashboard waktu nyata.",
-    "g1f1Title": "Dashboard Langsung",
-    "g1f1Desc": "Ikhtisar waktu nyata metrik utama Anda termasuk pendapatan, pesanan, pelanggan, dan kinerja produk. Diperbarui otomatis setiap 15 detik.",
-    "g1f2Title": "Analitik Pendapatan",
-    "g1f2Desc": "Grafik pendapatan interaktif dengan rincian bulanan, analisis tren, dan distribusi saluran. Arahkan kursor untuk tooltip terperinci.",
-    "g1f3Title": "Laporan Penjualan",
-    "g1f3Desc": "Laporan penjualan lengkap dengan rincian saluran, ringkasan pelanggan, dan kinerja produk.",
-    "g1f4Title": "Analitik Saluran",
-    "g1f4Desc": "Pantau kinerja di 6+ saluran penjualan termasuk Toko Online, Facebook, Instagram, TikTok, dan Shopify.",
-    "g2Title": "Manajemen Pesanan & Pelanggan",
-    "g2Desc": "Kelola pesanan secara efisien dan bangun hubungan pelanggan yang lebih kuat.",
-    "g2f1Title": "Pesanan Multi-Saluran",
-    "g2f1Desc": "Lihat dan kelola pesanan dari semua saluran penjualan dalam satu antarmuka terpadu. Pantau status, pembayaran, dan pengiriman sekilas.",
-    "g2f2Title": "Profil Pelanggan",
-    "g2f2Desc": "Profil pelanggan terperinci dengan riwayat pesanan, total belanja, dan informasi kontak.",
-    "g2f3Title": "Pelacakan Inventaris",
-    "g2f3Desc": "Pantau tingkat stok di seluruh katalog produk dengan pembaruan inventaris waktu nyata dan peringatan stok menipis.",
-    "g2f4Title": "Pelacakan Pesanan",
-    "g2f4Desc": "Lacak pemenuhan pesanan dari pemesanan hingga pengiriman dengan linimasa visual setiap perubahan status.",
-    "g3Title": "Pemasaran & Pertumbuhan",
-    "g3Desc": "Dorong pertumbuhan dengan alat pemasaran andal dan fitur promosi.",
-    "g3f1Title": "Manajemen Kampanye",
-    "g3f1Desc": "Buat, lacak, dan analisis kampanye pemasaran lintas saluran. Pantau metrik kinerja dan ROI.",
-    "g3f2Title": "Mesin Diskon",
-    "g3f2Desc": "Buat dan kelola kode diskon, penawaran promosi, dan harga musiman.",
-    "g3f3Title": "Analitik Pertumbuhan",
-    "g3f3Desc": "Pantau metrik pertumbuhan pendapatan, pelanggan, pesanan, dan produk dengan perubahan persentase.",
-    "g3f4Title": "Ekspor Data",
-    "g3f4Desc": "Ekspor pesanan, pelanggan, dan laporan ke CSV dengan dukungan penuh UTF-8.",
-    "g4Title": "Tim & Keamanan",
-    "g4Desc": "Berkolaborasi efektif dengan tim sambil menjaga keamanan data Anda.",
-    "g4f1Title": "Akses Berbasis Peran",
-    "g4f1Desc": "Izin terperinci dengan peran Admin, Manajer, dan Staf. Kendalikan akses di semua bagian.",
-    "g4f2Title": "Manajemen Tim",
-    "g4f2Desc": "Tambahkan anggota tim, tetapkan peran, dan kelola izin akses.",
-    "g4f3Title": "Pembaruan Waktu Nyata",
-    "g4f3Desc": "Server-Sent Events menghadirkan pembaruan instan ke semua klien yang terhubung.",
-    "g4f4Title": "Log Audit",
-    "g4f4Desc": "Log aktivitas lengkap yang melacak setiap tindakan dalam sistem.",
-    "perfTitle": "Dibangun untuk performa",
-    "perfSubtitle": "Setiap fitur dirancang agar cepat, andal, dan intuitif.",
-    "perf1Title": "Waktu Respons Sub-detik",
-    "perf1Desc": "Kueri database dioptimalkan di bawah 50md. Halaman dirender di bawah 100md.",
-    "perf2Title": "Jaminan Uptime 99,9%",
-    "perf2Desc": "Infrastruktur terdistribusi dengan failover otomatis. Nol waktu henti terencana.",
-    "perf3Title": "Sinkronisasi Data Waktu Nyata",
-    "perf3Desc": "Server-Sent Events mendorong pembaruan ke semua klien terhubung secara instan.",
-    "statFeatures": "Total Fitur",
-    "statIntegrations": "Integrasi",
-    "statUsers": "Pengguna Aktif",
-    "statCountries": "Negara",
-    "ctaTitle": "Siap Memulai?",
-    "ctaDesc": "Mulai uji coba gratis 14 hari Anda. Tanpa kartu kredit.",
-    "ctaButton": "Buka Dashboard"
+    "heroTag": "Kemampuan Canggih",
+    "heroTitle": "Semua yang Anda butuhkan, siap untuk berkembang",
+    "heroSubtitle": "Berhenti membuang waktu berminggu-minggu untuk kode dasar. Next Dashboard memberi Anda fitur siap produksi untuk autentikasi, pembayaran, multi-bahasa, dan keamanan tinggi.",
+    "cta": "Mulai Membangun Sekarang",
+    "mainFeatures": {
+      "auth": {
+        "title": "Autentikasi Tingkat Perusahaan",
+        "desc": "Manajemen identitas lengkap dengan dukungan kredensial, tautan ajaib, login sosial, dan 2FA. Dibangun di atas NextAuth.js."
+      },
+      "payments": {
+        "title": "Pemrosesan Pembayaran Global",
+        "desc": "Proses langganan dan pembayaran sekali jalan di seluruh dunia dengan Stripe dan Midtrans."
+      },
+      "i18n": {
+        "title": "Multi-bahasa Kelas Satu",
+        "desc": "Rilis ke pasar global secara instan. Perutean lokal, format tanggal/waktu, dan manajemen kamus dengan next-intl."
+      },
+      "dashboard": {
+        "title": "Dasbor Admin yang Indah",
+        "desc": "Antarmuka admin bawaan dengan tabel data, grafik interaktif, dan pemfilteran tingkat lanjut."
+      }
+    },
+    "grid": {
+      "title": "Fitur canggih lainnya",
+      "subtitle": "Kami telah memikirkan semuanya agar Anda tidak perlu repot.",
+      "items": [
+        {
+          "title": "Dukungan Mode Gelap",
+          "desc": "Mode gelap sempurna dengan deteksi preferensi sistem."
+        },
+        {
+          "title": "Akses Berbasis Peran",
+          "desc": "Izin terperinci untuk pengguna, admin, dan peran kustom."
+        },
+        {
+          "title": "Rute API",
+          "desc": "Titik akhir API yang aman dan terbatas siap untuk aplikasi seluler Anda."
+        },
+        {
+          "title": "Templat Email",
+          "desc": "Email transaksional yang indah dibangun dengan React Email."
+        },
+        {
+          "title": "SEO Dioptimalkan",
+          "desc": "Peta situs dinamis, robots.txt, dan tag meta yang dioptimalkan."
+        },
+        {
+          "title": "Aman dengan Tipe Data",
+          "desc": "Keamanan tipe data penuh dengan TypeScript, Prisma, dan Zod."
+        }
+      ]
+    },
+    "ctaTitle": "Siap untuk merilis lebih cepat?",
+    "ctaDesc": "Bergabunglah dengan ribuan pengembang yang membangun aplikasi web generasi berikutnya.",
+    "ctaButton": "Mulai Hari Ini"
   },
   "homePage": {
     "badge": "Kini dalam Beta Publik",
@@ -1391,43 +1383,83 @@
     "subscribeBtn": "Berlangganan",
     "ctaTitle": "Siap Memulai?",
     "ctaDesc": "Bergabunglah dengan ribuan bisnis yang telah menggunakan Dashboard.",
-    "ctaButton": "Buka Dashboard"
+    "ctaButton": "Buka Dashboard",
+    "entries": [
+      {
+        "version": "2.5.0",
+        "date": "15 Agustus 2026",
+        "tag": "Rilis Terbaru",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Menambahkan dukungan multi-bahasa komprehensif (Inggris & Indonesia)."
+          },
+          {
+            "type": "feature",
+            "text": "Mengintegrasikan gerbang pembayaran Midtrans bersama Stripe."
+          },
+          {
+            "type": "improvement",
+            "text": "Memfaktorkan ulang halaman pemasaran untuk menggunakan tata letak bento-box."
+          },
+          {
+            "type": "fix",
+            "text": "Memperbaiki ketidaksesuaian hidrasi pada komponen pemilih bahasa."
+          }
+        ]
+      },
+      {
+        "version": "2.4.1",
+        "date": "28 Juli 2026",
+        "tag": "Peningkatan",
+        "items": [
+          {
+            "type": "improvement",
+            "text": "Pembaruan ke Next.js 15 RC dan React 19."
+          },
+          {
+            "type": "improvement",
+            "text": "Meningkatkan kinerja animasi di seluruh grafik dasbor."
+          },
+          {
+            "type": "fix",
+            "text": "Memperbaiki kondisi balapan dalam middleware autentikasi."
+          }
+        ]
+      },
+      {
+        "version": "2.3.0",
+        "date": "10 Juni 2026",
+        "tag": "Rilis Fitur",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Memperkenalkan Dasbor Analitik interaktif baru."
+          },
+          {
+            "type": "feature",
+            "text": "Menambahkan Pemilih Rentang Tanggal kustom untuk laporan."
+          },
+          {
+            "type": "improvement",
+            "text": "Mengoptimalkan rendering sisi server untuk tabel dengan data berat."
+          }
+        ]
+      }
+    ]
   },
   "integrationsPage": {
-    "badge": "Integrasi Mulus",
-    "heroPrefix": "Hubungkan",
-    "word1": "stack Anda.",
-    "word2": "alat Anda.",
-    "word3": "aplikasi Anda.",
-    "word4": "platform Anda.",
-    "heroSubtitle": "Terhubung mulus dengan alat yang sudah Anda gunakan. Sinkronkan data pembayaran, e-commerce, komunikasi, dan platform analitik.",
-    "popular": "Populer",
-    "connect": "Hubungkan",
-    "catBadge": "Jelajah per Kategori",
-    "catTitle": "Jelajahi per Kategori",
-    "catSubtitle": "Telusuri integrasi yang tersusun berdasarkan fungsi untuk menemukan yang tepat bagi alur kerja Anda.",
-    "featBadge": "Fitur Integrasi",
-    "featTitle": "Dibangun untuk Koneksi Mulus",
-    "featDesc": "Setiap integrasi dibangun dengan keandalan dan pengalaman developer sebagai prioritas. Hubungkan sekali dan biarkan data mengalir.",
-    "feat1": "Sinkronisasi data dua arah waktu nyata",
-    "feat2": "Autentikasi aman OAuth 2.0",
-    "feat3": "Coba ulang otomatis dengan exponential backoff",
-    "feat4": "Dukungan webhook untuk pembaruan berbasis acara",
-    "feat5": "Pembatasan laju dan manajemen kuota",
-    "feat6": "Log sinkronisasi terperinci dan jejak audit",
-    "statusConnected": "Terhubung",
-    "statusSyncing": "Menyinkronkan...",
-    "statusDisconnected": "Terputus",
-    "apiTitle": "Bangun Integrasi Anda Sendiri",
-    "apiDesc": "REST API dan webhook kami memudahkan pembuatan integrasi khusus. Dokumentasi lengkap, SDK, dan dukungan developer disertakan.",
-    "apiButton": "Lihat Dokumentasi API",
-    "statTotal": "Total Integrasi",
-    "statConnections": "Koneksi Aktif",
-    "statRequests": "Permintaan API/bln",
-    "statPlatforms": "Platform",
-    "ctaTitle": "Mulai Terhubung Hari Ini",
-    "ctaDesc": "Tanpa kartu kredit. Mulai dengan paket gratis dan hubungkan hingga 5 integrasi.",
-    "ctaButton": "Buka Dashboard"
+    "heroTag": "Koneksi Mulus",
+    "heroTitle": "Terhubung dengan alat favorit Anda",
+    "heroSubtitle": "Next Dashboard hadir dengan alat dan platform terbaik di industri. Perluas kemampuan aplikasi Anda tanpa konfigurasi.",
+    "cta": "Jelajahi Dokumentasi",
+    "categoriesTitle": "Telusuri berdasarkan kategori",
+    "categoriesSubtitle": "Temukan integrasi yang sempurna untuk kebutuhan spesifik Anda.",
+    "allIntegrations": "Semua Integrasi",
+    "popularTag": "Populer",
+    "ctaTitle": "Bangun integrasi Anda sendiri",
+    "ctaDesc": "Butuh sesuatu yang spesifik? Gunakan API kami yang kuat untuk membangun koneksi kustom ke platform apa pun.",
+    "ctaButton": "Lihat Dokumentasi API"
   },
   "site": {
     "navFeatures": "Fitur",
@@ -1460,7 +1492,7 @@
     "dontHaveAccount": "Belum punya akun?",
     "alreadyHaveAccount": "Sudah punya akun?",
     "nameLabel": "Nama",
-    "namePlaceholder": "Nama Anda",
+    "namePlaceholder": "Budi Santoso",
     "createPasswordPlaceholder": "Buat kata sandi",
     "confirmPasswordLabel": "Konfirmasi Kata Sandi",
     "confirmPasswordPlaceholder": "Konfirmasi kata sandi",
@@ -1474,14 +1506,30 @@
     "invalidResetToken": "Invalid or expired reset token",
     "forgotPasswordTitle": "Forgot your password?",
     "forgotPasswordSubtitle": "Enter your email and we'll send a reset link",
-    "email": "Email Address",
+    "email": "Email",
     "sendResetLink": "Send Reset Link",
     "resetLinkSent": "Reset Link Sent",
     "resetLinkSentDesc": "Check your email for a link to reset your password",
     "sendingResetLink": "Mengirim tautan reset...",
     "resendResetLink": "Kirim ulang tautan reset",
     "resendInSeconds": "Kirim ulang dalam {seconds}d",
-    "resetError": "Terjadi kesalahan. Silakan coba lagi"
+    "resetError": "Terjadi kesalahan. Silakan coba lagi",
+    "loginDescription": "Masuk ke akun Anda untuk melanjutkan penjelajahan dan memanfaatkan sumber daya kami.",
+    "password": "Kata Sandi",
+    "forgotPassword": "Lupa kata sandi?",
+    "loginButton": "Masuk",
+    "noAccount": "Belum punya akun?",
+    "createOne": "Buat satu",
+    "createAccount": "Buat akun",
+    "registerDescription": "Daftar untuk mulai menggunakan Next Dashboard.",
+    "fullName": "Nama Lengkap",
+    "createAccountButton": "Buat akun",
+    "creatingAccount": "Membuat akun...",
+    "haveAccount": "Sudah punya akun?",
+    "twoFactorAuth": "Otentikasi Dua Faktor",
+    "twoFactorDescription": "Masukkan kode 6 digit dari aplikasi authenticator Anda untuk melanjutkan.",
+    "verificationCode": "Kode Verifikasi",
+    "verifyButton": "Verifikasi"
   },
   "csvImport": {
     "importCsv": "Impor CSV",
@@ -1877,5 +1925,93 @@
     "selectedOf": "{selected} dari {total} dipilih",
     "reset": "Atur Ulang",
     "exportCount": "Ekspor ({count} kolom)"
+  },
+  "homepage": {
+    "heroTag": "Starter Kit SaaS Next.js Terlengkap",
+    "heroTitle": "Bisnis Anda, Sepenuhnya Terpadu",
+    "heroSubtitle": "Semua yang Anda butuhkan untuk membangun SaaS modern: Autentikasi, pembayaran Stripe & Midtrans, multi-bahasa, mode gelap, dasbor, dan banyak lagi. Siap untuk digunakan.",
+    "ctaPrimary": "Mulai Membangun",
+    "ctaSecondary": "Lihat Dasbor",
+    "stats": {
+      "downloads": "10R+",
+      "downloadsLabel": "Pengembang",
+      "rating": "4.9/5",
+      "ratingLabel": "Ulasan",
+      "uptime": "99.9%",
+      "uptimeLabel": "Waktu Aktif"
+    },
+    "trustedBy": "DIPERCAYA OLEH TIM INOVATIF DI SELURUH DUNIA",
+    "demo": {
+      "revenue": "Total Pendapatan",
+      "orders": "Total Pesanan",
+      "customers": "Total Pelanggan",
+      "products": "Total Produk"
+    },
+    "demoOrders": {
+      "title": "Pesanan Terbaru",
+      "desc": "Anda menerima 24 pesanan hari ini",
+      "customer": "Pelanggan",
+      "status": "Status",
+      "amount": "Jumlah",
+      "statusCompleted": "Selesai",
+      "statusProcessing": "Diproses",
+      "statusFailed": "Gagal"
+    },
+    "featuresTitle": "Semua yang Anda butuhkan untuk berkembang",
+    "featuresSubtitle": "Berhenti membangun kode dasar yang sama berulang kali. Langsung fokus ke logika bisnis Anda dengan modul bawaan kami.",
+    "auth": {
+      "title": "Autentikasi Aman",
+      "desc": "Email/password, login sosial, dan autentikasi multi-faktor terpasang."
+    },
+    "payments": {
+      "title": "Pembayaran Global",
+      "desc": "Terima kartu kredit via Stripe dan metode pembayaran lokal via Midtrans."
+    },
+    "i18n": {
+      "title": "Multi-bahasa",
+      "desc": "Dukungan bawaan untuk berbagai bahasa dengan Next-Intl."
+    },
+    "components": {
+      "title": "Komponen UI",
+      "desc": "Komponen yang indah dan dapat diakses, dibangun dengan Radix UI dan Tailwind CSS."
+    },
+    "theme": {
+      "title": "Mode Gelap",
+      "desc": "Dukungan mode gelap kelas satu dengan next-themes."
+    },
+    "dashboard": {
+      "title": "Dasbor Admin",
+      "desc": "Dasbor admin komprehensif dengan grafik, tabel, dan metrik."
+    },
+    "security": {
+      "title": "Keamanan Perusahaan",
+      "desc": "Kontrol akses berbasis peran, manajemen sesi, dan perlindungan rute API."
+    },
+    "performance": {
+      "title": "Kinerja Tinggi",
+      "desc": "Dioptimalkan untuk Core Web Vitals dengan Next.js App Router dan React Server Components."
+    },
+    "socialProof": {
+      "title": "Disukai oleh pengembang",
+      "subtitle": "Lihat apa yang komunitas katakan tentang Next Dashboard.",
+      "seeMore": "Baca semua ulasan"
+    }
+  },
+  "pricingPage": {
+    "heroTag": "Harga Sederhana",
+    "heroTitle": "Harga yang berkembang bersama Anda",
+    "heroSubtitle": "Mulai gratis, tingkatkan saat Anda butuh. Tidak ada biaya tersembunyi.",
+    "monthly": "Bulanan",
+    "yearly": "Tahunan",
+    "yearlyDiscount": "Hemat 20%",
+    "featuresIncluded": "Semua termasuk:",
+    "mostPopular": "Paling Populer",
+    "getStarted": "Mulai",
+    "contactSales": "Hubungi Sales",
+    "faqTitle": "Pertanyaan yang Sering Diajukan",
+    "faqSubtitle": "Segala hal yang perlu Anda ketahui tentang harga dan penagihan kami.",
+    "ctaTitle": "Siap untuk mulai membangun?",
+    "ctaDesc": "Bergabunglah dengan ribuan pengembang yang merilis lebih cepat dengan Next Dashboard.",
+    "ctaButton": "Mulai uji coba gratis Anda"
   }
 }

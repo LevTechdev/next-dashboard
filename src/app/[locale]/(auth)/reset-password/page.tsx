@@ -21,8 +21,9 @@ function ResetPasswordForm() {
   const tauth = useTranslations("auth");
 
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirm, setConfirm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {

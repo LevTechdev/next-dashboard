@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -15,8 +16,11 @@ import {
   Globe,
   ArrowRight,
   Sparkles,
+  ChartLine,
+  LayoutGridIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -43,6 +47,7 @@ function BentoCard({
 }
 
 export default function FeaturesPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations('featuresPage');
   const { locale } = use(params);
 
   return (
@@ -64,11 +69,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
             Platform Features
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Everything you need,
-            <br />
-            <span className="text-primary">built right in.</span>
-          </h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground"><FlipFadeText>{}</FlipFadeText></h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             A comprehensive suite of tools designed to help you manage orders, analyze revenue, and
@@ -88,7 +89,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
           >
             <BentoCard className="h-full">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
-                <LayoutDashboard className="h-5 w-5 text-blue-500" />
+                <LayoutGridIcon className="h-5 w-5 text-blue-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Unified Dashboard</h3>
               <p className="text-sm text-muted-foreground">

@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import AboutPage from "../about/page";
 
+const mockParams = Promise.resolve({ locale: "en" });
+(mockParams as any).status = "fulfilled";
+(mockParams as any).value = { locale: "en" };
+
 beforeEach(() => {
-  render(<AboutPage />);
+  render(<AboutPage params={mockParams as any} />);
 });
 
 describe("About Page", () => {

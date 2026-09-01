@@ -9,8 +9,12 @@ vi.mock("sonner", () => ({
   },
 }));
 
+const mockParams = Promise.resolve({ locale: "en" });
+(mockParams as any).status = "fulfilled";
+(mockParams as any).value = { locale: "en" };
+
 beforeEach(() => {
-  render(<ContactPage />);
+  render(<ContactPage params={mockParams as any} />);
 });
 
 describe("Contact Page", () => {
@@ -136,6 +140,6 @@ describe("Contact Page", () => {
     ).toBeInTheDocument();
     const ctaBtn = screen.getByText("Start Free Trial");
     const anchor = ctaBtn.closest("a");
-    expect(anchor?.getAttribute("href")).toContain("/dashboard");
+    expect(anchor?.getAttribute("href")).toContain("/register");
   });
 });

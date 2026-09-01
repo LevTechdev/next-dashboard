@@ -13,6 +13,8 @@ import {
   Building2,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ function LoginForm() {
   const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [totpRequired, setTotpRequired] = useState(false);
   const [view, setView] = useState("login");
@@ -108,7 +111,7 @@ function LoginForm() {
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-white shadow-sm z-50"
+          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-zinc-900 dark:text-white shadow-sm z-50"
           aria-label="Toggle theme"
         >
           <Sun className="h-5 w-5 hidden dark:block" />
@@ -120,18 +123,15 @@ function LoginForm() {
         {/* Left Side */}
         <div className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
           <div className="w-full max-w-sm mx-auto">
-            <div className="text-[#F25C38] mb-6">
+            <div className="flex items-center gap-2 text-[#F25C38] mb-6">
               <Sparkles className="w-8 h-8 fill-current" />
+              <span className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Next Dashboard</span>
             </div>
 
             {totpRequired ? (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">
-                  Two-Factor Auth
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Enter the 6-digit code from your authenticator app to continue.
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">{t("twoFactorAuth")}</h1>
+                <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
 
                 <form
                   onSubmit={(e) => {
@@ -141,7 +141,7 @@ function LoginForm() {
                   className="space-y-6"
                 >
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Verification Code</Label>
+                    <Label className="text-zinc-700">{t("verificationCode")}</Label>
                     <div className="relative flex justify-between gap-2 w-full">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div
@@ -260,19 +260,15 @@ function LoginForm() {
               </div>
             ) : (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-                  Welcome back
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Log in to your account to continue exploring and utilizing our resources.
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">{t("welcomeBack")}</h1>
+                <p className="text-sm text-zinc-500 mb-8">{t("loginDescription")}</p>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Email</Label>
+                    <Label className="text-zinc-700">{t("email")}</Label>
                     <Input
                       type="email"
-                      placeholder="Your email"
+                      placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
@@ -281,15 +277,27 @@ function LoginForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Password</Label>
-                    <Input
-                      type="password"
-                      placeholder="Enter password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
-                      required
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-zinc-700 dark:text-zinc-300">{t("password")}</Label>
+                      <Link href={`/en/forgot-password`} className="text-sm font-medium text-[#F25C38] hover:underline">{t("forgotPassword")}</Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("passwordPlaceholder")}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button
@@ -299,11 +307,9 @@ function LoginForm() {
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Logging in...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> {t("loggingIn")}
                       </>
-                    ) : (
-                      "Log in"
-                    )}
+                    ) : t("loginButton")}
                   </Button>
                 </form>
 
@@ -356,10 +362,7 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/en/register" className="text-[#F25C38] hover:underline">
-                    Create one
-                  </Link>
+                  {t("noAccount")} <Link href="/en/register" className="text-[#F25C38] hover:underline">{t("createOne")}</Link>
                 </p>
 
                 <p className="mt-2 text-center text-xs text-zinc-400">

@@ -48,6 +48,40 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    // Calculate growth vs previous month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    let currentMonthRevenue = 0;
+    let previousMonthRevenue = 0;
+    let currentMonthOrders = 0;
+    let previousMonthOrders = 0;
+
+    ordersLastYear.forEach(order => {
+      const d = new Date(order.createdAt);
+      if (d.getFullYear() === currentYear) {
+        if (d.getMonth() === currentMonth) {
+          currentMonthRevenue += order.grandTotal;
+          currentMonthOrders++;
+        } else if (d.getMonth() === currentMonth - 1) {
+          previousMonthRevenue += order.grandTotal;
+          previousMonthOrders++;
+        }
+      } else if (currentMonth === 0 && d.getFullYear() === currentYear - 1 && d.getMonth() === 11) {
+        previousMonthRevenue += order.grandTotal;
+        previousMonthOrders++;
+      }
+    });
+
+    const calculateGrowth = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Number((((current - previous) / previous) * 100).toFixed(1));
+    };
+
+    const revenueGrowth = calculateGrowth(currentMonthRevenue, previousMonthRevenue);
+    const ordersGrowth = calculateGrowth(currentMonthOrders, previousMonthOrders);
+
     // Calculate monthly revenue in JavaScript (database-agnostic)
     const monthNames = [
       "Jan",
@@ -97,9 +131,9 @@ export async function GET(req: Request) {
         totalOrders,
         totalCustomers,
         totalProducts,
-        revenueGrowth: 12.5,
-        ordersGrowth: 8.3,
-        customersGrowth: 15.2,
+        revenueGrowth,
+        ordersGrowth,
+        customersGrowth: 15.2, // TODO: Pull from actual customer dates if needed
         productsGrowth: 5.1,
       },
       recentOrders: recentOrders.map(withDecryptedCustomer),

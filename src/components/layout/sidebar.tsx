@@ -7,31 +7,32 @@ import { TransitionLink } from "@/components/transition-link";
 import { cn } from "@/lib/utils";
 import { ScrollContainer } from "@/components/ui/scroll-container";
 import {
-  BellIcon,
+  LayoutGridIcon,
+  SparklesIcon,
+  FileCode2Icon,
+  ChartBarIncreasingIcon,
+  CartIcon,
+  BoxesIcon,
   UsersIcon,
-  FileTextIcon,
   BoxIcon,
-  SettingsIcon,
-  UsersRoundIcon,
-  PanelLeftOpenIcon,
-  PanelLeftCloseIcon,
-  CreditCardIcon,
+  ArchiveIcon,
+  RadioTowerIcon,
+  LinkIcon,
+  BadgePercentIcon,
+  FileChartLineIcon,
+  ClipboardCheckIcon,
+  ShieldCheckIcon,
   EarthIcon,
+  KeyIcon,
+  UsersRoundIcon,
+  CreditCardIcon,
+  BellIcon,
+  LockKeyholeIcon,
+  SettingsIcon,
+  UserIcon,
+  PanelLeftOpenIcon,
+  PanelLeftCloseIcon
 } from "lucide-animated";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Package,
-  BarChart3,
-  Megaphone,
-  Tag,
-  ShoppingBag,
-  ClipboardList,
-  UserCircle,
-  Shield,
-  Share2,
-  Building2,
-} from "lucide-react";
 import {
   OnlineStoreIcon,
   FacebookBrandIcon,
@@ -48,39 +49,42 @@ function useLocale() {
 }
 
 const navItems = [
-  { label: "dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "analytics", href: "/analytics", icon: BarChart3 },
-  { label: "sales", href: "/sales", icon: ShoppingCart },
-  { label: "orders", href: "/orders", icon: ShoppingBag },
+  { label: "dashboard", href: "/dashboard", icon: LayoutGridIcon },
+    { label: "aiGenerator", href: "/dashboard/generate", icon: SparklesIcon },
+    { label: "projects", href: "/dashboard/projects", icon: ArchiveIcon },
+  { label: "analytics", href: "/analytics", icon: ChartBarIncreasingIcon },
+  { label: "sales", href: "/sales", icon: CartIcon },
+  { label: "orders", href: "/orders", icon: BoxesIcon },
 ];
 
 const managementItems = [
   { label: "customers", href: "/customers", icon: UsersIcon },
-  { label: "products", href: "/products", icon: Package },
-  { label: "inventory", href: "/inventory", icon: BoxIcon },
-  { label: "marketing", href: "/marketing", icon: Megaphone },
-  { label: "affiliates", href: "/affiliates", icon: Share2 },
-  { label: "discounts", href: "/discounts", icon: Tag },
+  { label: "products", href: "/products", icon: BoxIcon },
+  { label: "inventory", href: "/inventory", icon: ArchiveIcon },
+  { label: "marketing", href: "/marketing", icon: RadioTowerIcon },
+  { label: "affiliates", href: "/affiliates", icon: LinkIcon },
+  { label: "discounts", href: "/discounts", icon: BadgePercentIcon },
 ];
 
 const insightsItems = [
-  { label: "reports", href: "/reports", icon: FileTextIcon },
-  { label: "auditLog", href: "/audit-log", icon: ClipboardList },
+  { label: "reports", href: "/reports", icon: FileChartLineIcon },
+  { label: "auditLog", href: "/audit-log", icon: ClipboardCheckIcon },
 ];
 
 const adminItems = [
-  { label: "roles", href: "/roles", icon: Shield },
+    { label: "superAdmin", href: "/admin", icon: ShieldCheckIcon },
+  { label: "roles", href: "/roles", icon: ShieldCheckIcon },
   { label: "integrations", href: "/integrations", icon: EarthIcon },
-  { label: "sso", href: "/sso", icon: Building2 },
+  { label: "sso", href: "/sso", icon: KeyIcon },
 ];
 
 const settingsItems = [
   { label: "team", href: "/team", icon: UsersRoundIcon },
   { label: "billing", href: "/billing", icon: CreditCardIcon },
   { label: "notifications", href: "/notifications", icon: BellIcon },
-  { label: "security", href: "/security", icon: Shield },
+  { label: "security", href: "/security", icon: LockKeyholeIcon },
   { label: "settings", href: "/settings", icon: SettingsIcon },
-  { label: "profile", href: "/profile", icon: UserCircle },
+  { label: "profile", href: "/profile", icon: UserIcon },
 ];
 
 const channelItems = [
@@ -202,8 +206,8 @@ export function Sidebar({
         viewTransitionName="nav-logo"
         className="flex items-center gap-3 h-16 px-4 border-b border-gray-200/70 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group"
       >
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl avatar-brand shadow-lg shadow-black/10 dark:shadow-black/30 shrink-0 group-hover:scale-105 transition-transform">
-          <LayoutDashboard className="h-5 w-5" />
+        <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-foreground text-background shadow-lg shrink-0 group-hover:scale-105 transition-transform">
+          <LayoutGridIcon className="h-4 w-4" />
         </div>
         {!collapsed && (
           <div className="flex flex-col">

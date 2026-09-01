@@ -76,6 +76,30 @@ export default function SettingsPage() {
   const { settings: appearance, update: updateAppearance } = useAppearance();
   const confirm = useConfirm();
 
+  // -- Notifications --
+  const [notifPrefs, setNotifPrefs] = useState<any>(null);
+  
+  useEffect(() => {
+    fetch("/api/profile/notifications")
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) setNotifPrefs(d);
+      });
+  }, []);
+
+  const updateNotifPref = async (updates: any) => {
+    setNotifPrefs((prev: any) => ({ ...prev, ...updates }));
+    try {
+      await fetch("/api/profile/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
+
   // ── API Keys ──
   interface ApiKey {
     id: string;
@@ -759,7 +783,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("emailNotificationsDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
+                <input type="checkbox" checked={notifPrefs?.emailOnAlert ?? true} onChange={(e) => updateNotifPref({ emailOnAlert: e.target.checked })} className="sr-only peer" />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -769,7 +793,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("orderUpdatesDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
+                <input type="checkbox" checked={notifPrefs?.emailOnOrder ?? true} onChange={(e) => updateNotifPref({ emailOnOrder: e.target.checked })} className="sr-only peer" />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -779,7 +803,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("marketingAlertsDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" />
+                <input type="checkbox" checked={notifPrefs?.emailOnCampaign ?? false} onChange={(e) => updateNotifPref({ emailOnCampaign: e.target.checked })} className="sr-only peer" />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -807,7 +831,12 @@ export default function SettingsPage() {
                   max="100"
                   step="5"
                   value={localThreshold}
-                  onChange={(e) => setLocalThreshold(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value);
+                    setLocalThreshold(v);
+                    setBudgetThreshold(v);
+                    updateNotifPref({ campaignBudgetPercent: v });
+                  }}
                   className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-indigo-600"
                 />
               </div>

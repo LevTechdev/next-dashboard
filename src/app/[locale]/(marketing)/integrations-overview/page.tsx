@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -18,6 +19,7 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -166,9 +168,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
             Integrations
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Connect your favorite tools
-          </h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground"><FlipFadeText>{}</FlipFadeText></h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Sync data, automate workflows, and bring all your business tools together in one unified

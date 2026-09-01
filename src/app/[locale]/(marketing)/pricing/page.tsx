@@ -1,10 +1,15 @@
 "use client";
 
 import { use, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, X, ArrowRight, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 const PLAN_META = [
   {
@@ -64,8 +69,48 @@ const PLAN_META = [
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export default function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations('pricingPage');
   const { locale } = use(params);
+  const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  const handleSubscribe = async (planKey: string) => {
+    if (planKey === "enterprise") {
+      router.push(`/${locale}/register`);
+      return;
+    }
+    setLoadingKey(planKey);
+    try {
+      const plansRes = await fetch("/api/billing/plans");
+      const plans = await plansRes.json();
+      const plan = plans.find((p: any) => p.name.toLowerCase() === planKey.toLowerCase());
+      
+      if (!plan) {
+        toast.error("Plan not found. Please try again.");
+        return;
+      }
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: plan.id, locale }),
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        router.push(`/${locale}/register`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast.error(err.message || "Checkout failed");
+    } finally {
+      setLoadingKey(null);
+    }
+  };
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden min-h-screen">
@@ -86,9 +131,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
             Pricing
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Simple, Transparent Pricing
-          </h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground"><FlipFadeText>{}</FlipFadeText></h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
             Start free, scale when you need to. Choose the plan that fits your business needs.
@@ -181,17 +224,20 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   </span>
                 </div>
 
-                <Link
-                  href={`/${locale}/register`}
+                <button
+                  onClick={() => handleSubscribe(plan.key)}
+                  disabled={loadingKey === plan.key}
                   className={cn(
-                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8",
+                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8 flex justify-center items-center gap-2",
                     plan.popular
                       ? "bg-background text-foreground hover:bg-muted"
                       : "bg-foreground text-background hover:opacity-90",
+                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : ""
                   )}
                 >
-                  {plan.key === "enterprise" ? "Contact Sales" : "Get Started"}
-                </Link>
+                  {loadingKey === plan.key ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {plan.key === "enterprise" ? t('contactSales') : t('getStarted')}
+                </button>
 
                 <div className="flex-1">
                   <p

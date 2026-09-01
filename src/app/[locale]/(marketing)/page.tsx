@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -29,6 +30,7 @@ import {
   Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 // ─── Static demo data that mirrors the actual dashboard API shape ────────────
 
@@ -258,6 +260,7 @@ function BentoCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations('homepage');
   const { locale } = use(params);
 
   const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
@@ -265,30 +268,35 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden">
       {/* ───────────────────── HERO ───────────────────── */}
-      <section className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center overflow-hidden">
+      <section className="relative pt-28 pb-16 px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center overflow-hidden">
         {/* Background glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/8 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-violet-500/5 rounded-full blur-[80px]" />
         </div>
 
+        {/* ── Text Block ── */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: easeSmooth }}
-          className="relative z-10"
+          transition={{ duration: 0.7, ease: easeSmooth }}
+          className="relative z-10 max-w-4xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-background/80 backdrop-blur-sm text-muted-foreground text-xs font-semibold mb-7 shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
             Business Management Platform
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Your Business,
-            <br />
-            <span className="text-primary">Fully Unified</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground">
+            <FlipFadeText
+              words={["Your Business, Fully Unified", "Manage Everything, Effortlessly", "Scale Fast, Stay Secure"]}
+              interval={3000}
+              className="min-h-[80px] sm:min-h-[100px] md:min-h-[120px]"
+              textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight"
+            />
           </h1>
 
-          <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             One platform to manage orders, customers, products, payments, and analytics — with
             real-time data, multi-channel integration, and enterprise-grade security built in.
           </p>
@@ -296,96 +304,172 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
             <Link
               href={`/${locale}/register`}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
             >
               Get Started Free
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href={`/${locale}/login`}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border bg-background/60 backdrop-blur text-sm font-semibold text-foreground hover:bg-background transition"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full border border-border bg-background/60 backdrop-blur text-sm font-semibold text-foreground hover:bg-background transition"
             >
               Live Demo
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           </div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap justify-center gap-4 mt-8 text-xs text-muted-foreground">
-            {[
-              "No credit card required",
-              "Deploy in minutes",
-              "Multi-tenant ready",
-              "SOC 2 compliant",
-            ].map((b) => (
-              <span key={b} className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-primary" />
-                {b}
-              </span>
-            ))}
-          </div>
         </motion.div>
-      </section>
 
-      {/* ──────── DASHBOARD PREVIEW (Stats strip) ──────── */}
-      <section className="px-4 sm:px-6 lg:px-12 pb-8 max-w-7xl mx-auto">
+        {/* ── Visual Showcase with Floating Stat Cards ── */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2, ease: easeSmooth }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          transition={{ duration: 0.8, delay: 0.3, ease: easeSmooth }}
+          className="relative z-10 mt-14 w-full max-w-5xl mx-auto"
         >
-          {[
-            {
-              label: "Total Revenue",
-              value: DEMO_STATS.totalRevenue,
-              prefix: "$",
-              growth: DEMO_STATS.revenueGrowth,
-              icon: TrendingUp,
-              color: "text-emerald-500",
-            },
-            {
-              label: "Total Orders",
-              value: DEMO_STATS.totalOrders,
-              growth: DEMO_STATS.ordersGrowth,
-              icon: ShoppingCart,
-              color: "text-blue-500",
-            },
-            {
-              label: "Customers",
-              value: DEMO_STATS.totalCustomers,
-              growth: DEMO_STATS.customersGrowth,
-              icon: Users,
-              color: "text-violet-500",
-            },
-            {
-              label: "Products",
-              value: DEMO_STATS.totalProducts,
-              growth: DEMO_STATS.productsGrowth,
-              icon: Package,
-              color: "text-amber-500",
-            },
-          ].map(({ label, value, prefix = "", growth, icon: Icon, color }) => (
-            <div
-              key={label}
-              className="rounded-2xl border border-border bg-background p-4 flex flex-col gap-2 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">{label}</span>
-                <Icon className={cn("h-4 w-4", color)} />
-              </div>
-              <div className="text-2xl font-bold text-foreground">
-                <AnimatedStat value={value} prefix={prefix} />
-              </div>
-              <div
-                className={cn(
-                  "text-xs font-semibold flex items-center gap-1",
-                  growth > 0 ? "text-emerald-600" : "text-red-500",
-                )}
-              >
-                <TrendingUp className="h-3 w-3" />+{growth}% vs last month
+          <div className="relative">
+            {/* Central dashboard preview */}
+            <div className="relative rounded-2xl border border-border bg-background shadow-2xl shadow-black/5 dark:shadow-black/30 overflow-hidden aspect-[16/9] max-h-[420px]">
+              {/* Simulated dashboard UI */}
+              <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/30 p-4 sm:p-6">
+                {/* Title bar */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="flex-1 h-5 rounded-md bg-muted/50 max-w-[200px] ml-3" />
+                </div>
+
+                {/* Sidebar + content */}
+                <div className="flex gap-4 h-[calc(100%-40px)]">
+                  {/* Mini sidebar */}
+                  <div className="hidden sm:flex flex-col gap-2 w-[140px] shrink-0">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className={cn("h-7 rounded-lg", i === 0 ? "bg-primary/15" : "bg-muted/40")} />
+                    ))}
+                  </div>
+
+                  {/* Content area */}
+                  <div className="flex-1 flex flex-col gap-3">
+                    {/* Mini stat cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { color: "bg-emerald-500/20", w: "w-12" },
+                        { color: "bg-blue-500/20", w: "w-10" },
+                        { color: "bg-violet-500/20", w: "w-14" },
+                        { color: "bg-amber-500/20", w: "w-11" },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg bg-muted/30 p-2.5">
+                          <div className={cn("h-2 rounded-full mb-2", s.color, s.w)} />
+                          <div className="h-4 rounded bg-muted/50 w-16" />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Chart area */}
+                    <div className="flex-1 rounded-xl bg-muted/20 p-3 flex items-end gap-1">
+                      {DEMO_MONTHLY.map((v, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-sm bg-primary/20 hover:bg-primary/30 transition-colors"
+                          style={{ height: `${(v / Math.max(...DEMO_MONTHLY)) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* ── Floating Stat Cards ── */}
+
+            {/* Top-left: Uptime */}
+            <motion.div
+              initial={{ opacity: 0, x: -30, y: -20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6, ease: easeSmooth }}
+              className="absolute -top-6 -left-4 sm:-left-8 z-20"
+            >
+              <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl shadow-black/5 p-4 min-w-[140px]">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  <AnimatedStat value={99.9} decimals={1} suffix="%" />
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Guaranteed uptime SLA</p>
+              </div>
+            </motion.div>
+
+            {/* Top-right: Rating */}
+            <motion.div
+              initial={{ opacity: 0, x: 30, y: -20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.75, ease: easeSmooth }}
+              className="absolute -top-4 -right-2 sm:-right-6 z-20"
+            >
+              <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl shadow-black/5 p-4 min-w-[130px]">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground">4.8</p>
+                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Average customer rating</p>
+              </div>
+            </motion.div>
+
+            {/* Bottom-left: Data points */}
+            <motion.div
+              initial={{ opacity: 0, x: -30, y: 20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9, ease: easeSmooth }}
+              className="absolute -bottom-6 -left-2 sm:-left-6 z-20"
+            >
+              <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl shadow-black/5 p-4 min-w-[150px]">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  <AnimatedStat value={2.5} decimals={1} suffix="M+" />
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Data points processed</p>
+              </div>
+            </motion.div>
+
+            {/* Bottom-right: Feature tags */}
+            <motion.div
+              initial={{ opacity: 0, x: 30, y: 20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.6, delay: 1.05, ease: easeSmooth }}
+              className="absolute -bottom-8 -right-2 sm:-right-4 z-20"
+            >
+              <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-sm shadow-xl shadow-black/5 p-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {["Analytics", "Payments", "Security", "API", "Multi-Channel"].map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex px-2.5 py-1 rounded-full border border-border bg-muted/50 text-[10px] sm:text-xs font-medium text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* ── Trust badges ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.2, ease: easeSmooth }}
+          className="relative z-10 flex flex-wrap justify-center gap-4 mt-16 text-xs text-muted-foreground"
+        >
+          {[
+            "No credit card required",
+            "Deploy in minutes",
+            "Multi-tenant ready",
+            "SOC 2 compliant",
+          ].map((b) => (
+            <span key={b} className="flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5 text-primary" />
+              {b}
+            </span>
           ))}
         </motion.div>
       </section>
@@ -496,7 +580,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium mb-0.5">Orders</p>
-                  <p className="text-lg font-bold text-foreground">Recent Orders</p>
+                  <p className="text-lg font-bold text-foreground">{t('demoOrders.title')}</p>
                 </div>
                 <Link
                   href={`/${locale}/login`}
@@ -644,7 +728,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           >
             <BentoCard className="h-full">
               <Shield className="h-8 w-8 text-emerald-500 mb-3" />
-              <p className="text-lg font-bold text-foreground mb-1">Enterprise Security</p>
+              <p className="text-lg font-bold text-foreground mb-1">{t('security.title')}</p>
               <p className="text-sm text-muted-foreground mb-4">
                 TOTP 2FA, WebAuthn passkeys, SAML SSO, session management, and audit logs.
               </p>
