@@ -260,7 +260,7 @@ function BentoCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketingPage({ params }: { params: Promise<{ locale: string }> }) {
-  const t = useTranslations('homePage');
+  const t = useTranslations('homepage');
   const { locale } = use(params);
 
 
