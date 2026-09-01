@@ -42,6 +42,7 @@ const navLinks = [
 ] as const;
 
 import { MarketingHeader } from "@/components/layout/marketing-header";
+import { MarketingFooter } from "@/components/layout/marketing-footer";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -71,79 +72,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         </main>
 
         {/* ═══ FOOTER ═══ */}
-        <footer className="border-t border-border bg-zinc-100 dark:bg-[#0b0c11]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-              {/* Brand (same viewTransitionName as navbar logo → morphs on nav) */}
-              <div className="md:col-span-2 max-w-sm">
-                <Link href={`/${locale}`} className="flex items-center gap-2.5 mb-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-foreground text-background">
-                    <LayoutDashboard className="h-[18px] w-[18px]" />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">Dashboard</span>
-                </Link>
-                <p className="text-sm text-muted-foreground leading-relaxed">{t("footerDesc")}</p>
-              </div>
-
-              {/* Product */}
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-                  {t("footerProduct")}
-                </h3>
-                <ul className="space-y-3">
-                  {[
-                    { labelKey: "navFeatures", href: "/features" },
-                    { labelKey: "navIntegrations", href: "/integrations-overview" },
-                    { labelKey: "navChangelog", href: "/changelog" },
-                    { labelKey: "navPricing", href: "/pricing" },
-                    { labelKey: "navAbout", href: "/about" },
-                    { labelKey: "navContact", href: "/contact" },
-                  ].map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={`/${locale}${link.href}`}
-                        className="text-sm text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors"
-                      >
-                        {t(link.labelKey)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Company */}
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-                  {t("footerCompany")}
-                </h3>
-                <ul className="space-y-3">
-                  <li>
-                    <Link
-                      href={`/${locale}/dashboard`}
-                      className="text-sm text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors"
-                    >
-                      {t("dashboard")}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href={`/${locale}/features`}
-                      className="text-sm text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors"
-                    >
-                      {t("navFeatures")}
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-14 pt-8 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center">
-                &copy; {new Date().getFullYear()} {t("footerRights")}
-              </p>
-            </div>
-          </div>
-        </footer>
+        <MarketingFooter />
       </div>
     </ViewTransitionProvider>
   );

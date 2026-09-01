@@ -128,13 +128,15 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
             <Star className="h-3.5 w-3.5" />
-            Pricing
+            {t("heroTag")}
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground"><FlipFadeText>{}</FlipFadeText></h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
+            {t("heroTitle")}
+          </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
-            Start free, scale when you need to. Choose the plan that fits your business needs.
+            {t("heroSubtitle")}
           </p>
 
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
@@ -147,7 +149,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Monthly
+              {t("monthly")}
             </button>
             <button
               onClick={() => setIsAnnual(true)}
@@ -158,7 +160,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Yearly
+              {t("yearly")}
               <span
                 className={cn(
                   "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
@@ -167,7 +169,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
                 )}
               >
-                Save 20%
+                {t("yearlyDiscount")}
               </span>
             </button>
           </div>
@@ -197,7 +199,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                 {plan.popular && (
                   <div className="absolute top-0 right-8 -translate-y-1/2">
                     <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                      Most Popular
+                      {t("mostPopular")}
                     </span>
                   </div>
                 )}
@@ -246,7 +248,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                       plan.popular ? "opacity-80" : "text-muted-foreground",
                     )}
                   >
-                    Includes
+                    {t("featuresIncluded")}
                   </p>
                   <ul className="space-y-4">
                     {plan.features.map((feature, j) => (
@@ -272,10 +274,10 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
-            Compare Plans
+            {t("faqTitle")}
           </h2>
           <p className="text-muted-foreground text-sm">
-            Find the perfect set of features for your business scale.
+            {t("faqSubtitle")}
           </p>
         </div>
 
@@ -333,17 +335,17 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
 
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Start managing your business better
+              {t("ctaTitle")}
             </h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              Join thousands of businesses that trust our platform. Try it free for 14 days.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
               >
-                Get Started Free
+                {t("ctaButton")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

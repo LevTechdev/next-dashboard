@@ -263,6 +263,8 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
   const t = useTranslations('homepage');
   const { locale } = use(params);
 
+
+
   const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
   return (
@@ -284,35 +286,18 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-background/80 backdrop-blur-sm text-muted-foreground text-xs font-semibold mb-7 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Business Management Platform
+            {t("heroTag")}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground">
-            Your Business,<br />
-            <FlipFadeText
-              words={["Fully Unified", "Effortlessly Managed", "Securely Scaled"]}
-              interval={3000}
-              className="min-h-[80px] sm:min-h-[100px] md:min-h-[120px] text-[#b3f021] mt-2"
-              textClassName="text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-[#b3f021]"
-            />
+            {t("heroTitle")}
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            One platform to manage orders, customers, products, payments, and analytics — with
-            real-time data, multi-channel integration, and enterprise-grade security built in.
+            {t("heroSubtitle")}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-            <Link
-              href={`/${locale}/register`}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
-            >
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href={`/${locale}/login`}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full border border-border bg-background/60 backdrop-blur text-sm font-semibold text-foreground hover:bg-background transition"
             >
               Live Demo
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
