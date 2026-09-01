@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { SearchIcon, DownloadIcon, TrashIcon, EditIcon, PlusIcon } from "lucide-animated";
+import { SearchIcon, DownloadIcon, TrashIcon, EditIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
