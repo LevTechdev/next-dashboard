@@ -260,7 +260,7 @@ function BentoCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketingPage({ params }: { params: Promise<{ locale: string }> }) {
-  const t = useTranslations('homepage');
+  const t = useTranslations('homePage');
   const { locale } = use(params);
 
 
@@ -302,7 +302,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
               href={`/${locale}/register`}
               className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
             >
-              {t("ctaGetStarted")}
+              {t('ctaAccess')}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
