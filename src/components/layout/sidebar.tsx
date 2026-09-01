@@ -9,7 +9,7 @@ import { ScrollContainer } from "@/components/ui/scroll-container";
 import {
   LayoutGridIcon,
   SparklesIcon,
-  FileCode2Icon,
+  
   ChartBarIncreasingIcon,
   CartIcon,
   BoxesIcon,
