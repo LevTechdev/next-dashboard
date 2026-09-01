@@ -13,8 +13,6 @@ import EmailVerificationBanner from "@/components/email-verification-banner";
 import { AiCopilotProvider, AiCopilotButton, AiCopilotPanel } from "@/components/ai";
 import { ConfirmProvider } from "@/components/ui/confirm-provider";
 import { RoleGuard } from "@/components/auth/role-guard";
-import { canAccessPage, type Role } from "@/lib/permissions";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

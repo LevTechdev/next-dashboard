@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ChangelogPage from "../changelog/page";
 
+const mockParams = Promise.resolve({ locale: "en" });
+(mockParams as any).status = "fulfilled";
+(mockParams as any).value = { locale: "en" };
+
 beforeEach(() => {
-  render(<ChangelogPage />);
+  render(<ChangelogPage params={mockParams as any} />);
 });
 
 describe("Changelog Page", () => {
@@ -114,10 +118,9 @@ describe("Changelog Page", () => {
     });
 
     it("renders release stat icons", () => {
-      // Stats use animated icons (GitCommitHorizontalIcon/SparklesIcon/RocketIcon) + static Bug
-      const commitIcon = document.querySelector('[data-testid="icon-gitcommithorizontalicon"]');
-      const sparklesIcon = document.querySelector('[data-testid="icon-sparklesicon"]');
-      const rocketIcon = document.querySelector('[data-testid="icon-rocketicon"]');
+      const commitIcon = document.querySelector('[data-testid="icon-gitcommithorizontal"]');
+      const sparklesIcon = document.querySelector('[data-testid="icon-sparkles"]');
+      const rocketIcon = document.querySelector('[data-testid="icon-rocket"]');
       const bugIcon = document.querySelector('[data-testid="icon-bug"]');
       expect(commitIcon).toBeInTheDocument();
       expect(sparklesIcon).toBeInTheDocument();

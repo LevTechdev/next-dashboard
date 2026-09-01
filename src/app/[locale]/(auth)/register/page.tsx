@@ -1,59 +1,33 @@
 "use client";
-import { Sun } from "lucide-react";
-import { Moon } from "lucide-react";
-import { useTranslations } from "next-intl";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import {
-  EyeIcon,
-  EyeOffIcon,
-  LoaderCircleIcon,
-  SparklesIcon,
-  XIcon,
-  CheckIcon,
-} from "lucide-animated";
-import {
-  Eye,
-  EyeOff,
-  Loader2,
-  UserPlus,
-  Mail,
-  User,
-  LayoutDashboard,
-  Sparkles,
-  KeyRound,
-  Timer,
-  MailCheck,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { EyeIcon, EyeOffIcon, SparklesIcon, XIcon } from "lucide-animated";
+import { Loader2, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "next-themes";
 import { PasswordStrength } from "@/components/ui/password-strength";
 
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { AnimatedRays } from "@/components/ui/animated-rays";
-import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
 
 export default function RegisterPage() {
+  const t = useTranslations("auth");
   const params = useParams();
   const locale = params?.locale || "en";
-  const t = useTranslations("auth");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // ── Email-OTP verification step (shown right after signup) ──
   const [otpRequired, setOtpRequired] = useState(false);
@@ -67,7 +41,6 @@ export default function RegisterPage() {
   const { cooldownLeft, startCooldown } = useResendCooldown();
   const { register } = useAuth();
   const router = useRouter();
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,45 +164,6 @@ export default function RegisterPage() {
     }
   };
 
-  const passwordStrength = password.length;
-  const getStrengthLabel = () => {
-    if (passwordStrength === 0) return "";
-    if (passwordStrength < 6) return "Weak";
-    if (passwordStrength < 10) return "Medium";
-    return "Strong";
-  };
-  const getStrengthColor = () => {
-    if (passwordStrength < 6) return "bg-red-500";
-    if (passwordStrength < 10) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const hasMinChars = password.length >= 6;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-
-  // Pointer tracking glow
-  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    cardRef.current.style.setProperty("--mouse-x", `${x}px`);
-    cardRef.current.style.setProperty("--mouse-y", `${y}px`);
-  };
-
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as any } },
-  };
-
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#EE5D36] dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {/* Theme Toggle */}
@@ -291,9 +225,9 @@ export default function RegisterPage() {
                     className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                   {otpError && (
-                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                    <div className="text-sm text-red-500 mt-2 flex items-center gap-1">
                       <XIcon className="h-4 w-4" /> {otpError}
-                    </p>
+                    </div>
                   )}
                 </div>
                 <Button
@@ -330,21 +264,17 @@ export default function RegisterPage() {
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Full Name
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("fullName")}</Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="John Doe"
+                    placeholder={t("namePlaceholder")}
                     disabled={isLoading}
                     className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Email
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("email")}</Label>
                   <Input
                     type="email"
                     value={email}
@@ -355,9 +285,7 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Password
-                  </Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("password")}</Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
@@ -405,8 +333,7 @@ export default function RegisterPage() {
               </form>
 
               <p className="text-center text-sm text-gray-500 dark:text-zinc-400 mt-8">
-                Already have an account?{" "}
-                <Link
+                {t("haveAccount")} <Link
                   href={`/${locale}/login`}
                   className="text-[#EE5D36] font-semibold hover:underline"
                 >

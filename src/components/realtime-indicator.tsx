@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActivityIcon, RefreshCwIcon, WifiIcon } from "lucide-animated";
+import { ActivityIcon, RefreshCwIcon } from "lucide-animated";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 

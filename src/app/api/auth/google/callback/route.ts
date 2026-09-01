@@ -5,8 +5,6 @@ import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI =
   process.env.GOOGLE_REDIRECT_URI || "http://localhost:3010/api/auth/google/callback";
 
@@ -91,7 +89,9 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/en/login?error=missing_code", request.url));
     }
 
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
       return NextResponse.redirect(new URL("/en/login?error=google_not_configured", request.url));
     }
 
@@ -101,8 +101,8 @@ export async function GET(request: Request) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: REDIRECT_URI,
         grant_type: "authorization_code",
       }),

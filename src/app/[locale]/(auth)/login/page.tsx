@@ -1,20 +1,20 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
 import {
-  Smartphone,
   Sparkles,
-  KeyRound,
   ChevronLeft,
   ChevronRight,
   Fingerprint,
   Building2,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,9 @@ import { useTranslations } from "next-intl";
 
 function LoginForm() {
   const t = useTranslations("auth");
-  const params = useParams();
-  const locale = params.locale;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [totpRequired, setTotpRequired] = useState(false);
   const [view, setView] = useState("login");
@@ -108,11 +107,11 @@ function LoginForm() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#F25C38] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#b3f021] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-white shadow-sm z-50"
+          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-zinc-900 dark:text-white shadow-sm z-50"
           aria-label="Toggle theme"
         >
           <Sun className="h-5 w-5 hidden dark:block" />
@@ -124,18 +123,15 @@ function LoginForm() {
         {/* Left Side */}
         <div className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
           <div className="w-full max-w-sm mx-auto">
-            <div className="text-[#F25C38] mb-6">
+            <div className="flex items-center gap-2 text-[#9bd419] dark:text-purple-400 mb-6">
               <Sparkles className="w-8 h-8 fill-current" />
+              <span className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Next Dashboard</span>
             </div>
 
             {totpRequired ? (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">
-                  Two-Factor Auth
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Enter the 6-digit code from your authenticator app to continue.
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">{t("twoFactorAuth")}</h1>
+                <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
 
                 <form
                   onSubmit={(e) => {
@@ -145,7 +141,7 @@ function LoginForm() {
                   className="space-y-6"
                 >
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Verification Code</Label>
+                    <Label className="text-zinc-700">{t("verificationCode")}</Label>
                     <div className="relative flex justify-between gap-2 w-full">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div
@@ -153,7 +149,7 @@ function LoginForm() {
                           className={cn(
                             "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
                             totpCode.length === i
-                              ? "border-[#F25C38] ring-1 ring-[#F25C38]"
+                              ? "border-[#b3f021] dark:border-purple-500 ring-1 ring-[#b3f021] dark:ring-purple-500"
                               : "border-zinc-200",
                             totpCode[i] ? "text-zinc-900" : "text-transparent",
                           )}
@@ -183,12 +179,12 @@ function LoginForm() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20"
+                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20"
                     disabled={totpCode.length < 6 || isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Verifying...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> Verifying...
                       </>
                     ) : (
                       "Verify & Login"
@@ -235,17 +231,17 @@ function LoginForm() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="admin@dashboard.com"
                       disabled={isLoading}
-                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#F25C38] focus:ring-[#F25C38]/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
                       required
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-2 shadow-none"
+                    className="w-full h-11 rounded-xl bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 transition-colors text-white font-semibold mt-2 shadow-none"
                   >
                     {isLoading ? (
-                      <LoaderCircleIcon size={16} className="animate-spin" />
+                      <LoaderCircleIcon size={16} className="h-4 w-4 animate-spin" />
                     ) : (
                       t("sendResetLink")
                     )}
@@ -264,50 +260,56 @@ function LoginForm() {
               </div>
             ) : (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-                  Welcome back
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Log in to your account to continue exploring and utilizing our resources.
-                </p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">{t("welcomeBack")}</h1>
+                <p className="text-sm text-zinc-500 mb-8">{t("loginDescription")}</p>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Email</Label>
+                    <Label className="text-zinc-700">{t("email")}</Label>
                     <Input
                       type="email"
-                      placeholder="Your email"
+                      placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
+                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-zinc-700">Password</Label>
-                    <Input
-                      type="password"
-                      placeholder="Enter password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
-                      required
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-zinc-700 dark:text-zinc-300">{t("password")}</Label>
+                      <Link href={`/en/forgot-password`} className="text-sm font-medium text-[#9bd419] dark:text-purple-400 hover:underline">{t("forgotPassword")}</Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("passwordPlaceholder")}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20 mt-2"
+                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20 mt-2"
                     disabled={!email || !password || isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Logging in...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> {t("loggingIn")}
                       </>
-                    ) : (
-                      "Log in"
-                    )}
+                    ) : t("loginButton")}
                   </Button>
                 </form>
 
@@ -360,10 +362,7 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/en/register" className="text-[#F25C38] hover:underline">
-                    Create one
-                  </Link>
+                  {t("noAccount")} <Link href="/en/register" className="text-[#9bd419] dark:text-purple-400 hover:underline">{t("createOne")}</Link>
                 </p>
 
                 <p className="mt-2 text-center text-xs text-zinc-400">
@@ -391,20 +390,20 @@ function LoginForm() {
                   Creative resources
                 </span>
               </div>
-              <p className="text-zinc-900 font-semibold text-lg sm:text-xl mb-8 leading-snug">
+              <p className="text-zinc-900 dark:text-zinc-100 font-semibold text-lg sm:text-xl mb-8 leading-snug">
                 &quot;I was able to reduce the time taken to present high-level designs by 35% using
                 the platform.&quot;
               </p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-zinc-900 font-bold text-sm">Sara Bright</p>
-                  <p className="text-zinc-800/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
+                  <p className="text-zinc-900 dark:text-zinc-100 font-bold text-sm">Sara Bright</p>
+                  <p className="text-zinc-800/80 dark:text-zinc-300/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
+                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
+                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -421,7 +420,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#F25C38]">
+        <div className="min-h-screen flex items-center justify-center bg-[#b3f021] dark:bg-purple-600">
           <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-white" />
         </div>
       }

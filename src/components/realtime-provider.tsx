@@ -187,8 +187,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
             // Signal pages to refresh
             setGlobalRefreshTrigger((prev) => prev + 1);
-          } catch (e) {
-            // Parse errors silently handled
+          } catch (_e) {
+            void _e;
           }
         };
 
@@ -199,7 +199,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           reconnectAttempts++;
           reconnectTimeout = setTimeout(connect, delay);
         };
-      } catch (e) {
+      } catch (_e) {
+        void _e;
         setConnectionStatus("disconnected");
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
         reconnectAttempts++;

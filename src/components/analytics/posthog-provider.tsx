@@ -24,7 +24,7 @@ function PostHogPageViewTracker({ children }: { children: React.ReactNode }) {
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const [initialized, setInitialized] = useState(false);
+  const [, setInitialized] = useState(false);
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;

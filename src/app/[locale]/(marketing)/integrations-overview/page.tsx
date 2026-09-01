@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -18,7 +19,7 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -147,6 +148,7 @@ function BentoCard({ className, children }: { className?: string; children: Reac
 
 export default function IntegrationsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
+  const t = useTranslations('integrationsPage');
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden min-h-screen">
@@ -164,16 +166,19 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
             <Plug className="h-3.5 w-3.5" />
-            Integrations
+            {t("heroTag")}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Connect your favorite tools
+            {t("heroPrefix")}{" "}
+            <br className="hidden sm:block" />
+            <span className="text-primary inline-flex">
+              <FlipFadeText words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]} interval={2500} />
+            </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Sync data, automate workflows, and bring all your business tools together in one unified
-            platform.
+            {t("heroSubtitle")}
           </p>
         </motion.div>
       </section>
@@ -202,7 +207,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
                     </div>
                     {integration.popular && (
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-primary/10 text-primary">
-                        Popular
+                        {t("popularTag")}
                       </span>
                     )}
                   </div>
@@ -244,17 +249,16 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
 
           <div className="relative z-10">
             <Layers className="h-10 w-10 mx-auto mb-6 opacity-80" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Don&apos;t see your tool?</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              We&apos;re constantly adding new integrations. You can also use our API and Webhooks
-              to build custom connections.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
               >
-                View API Docs
+                {t("ctaButton")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

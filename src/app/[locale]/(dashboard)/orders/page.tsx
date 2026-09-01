@@ -32,7 +32,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
-import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { motion } from "framer-motion";
 import {
@@ -59,7 +58,6 @@ export default function OrdersPage() {
   const {
     data: orders,
     loading,
-    lastUpdated,
     isRefreshing,
     refresh,
   } = useRealtimeData<any[]>("/api/orders", {

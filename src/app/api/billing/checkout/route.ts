@@ -160,7 +160,7 @@ export async function POST(req: Request) {
     subscription_data: {
       metadata: { userId: session.user.id, planId: plan.id, tenantId: tenantId ?? "" },
     },
-    success_url: `${origin}/${lang}/billing?checkout=success`,
+    success_url: `${origin}/${lang}/checkout/success`,
     cancel_url: `${origin}/${lang}/billing?checkout=cancelled`,
   });
 

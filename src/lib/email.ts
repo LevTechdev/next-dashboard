@@ -1,5 +1,11 @@
 import { Resend } from "resend";
-import { renderOtpEmail, renderPasswordResetEmail } from "./email-templates";
+import { render } from "@react-email/render";
+import VerifyEmail from "@/emails/VerifyEmail";
+import ResetPasswordEmail from "@/emails/ResetPasswordEmail";
+import WelcomeEmail from "@/emails/WelcomeEmail";
+import InvoiceEmail from "@/emails/InvoiceEmail";
+import * as React from "react";
+
 
 export interface EmailPayload {
   to: string;
@@ -92,9 +98,17 @@ export async function sendOtpEmail(opts: {
   otp: string;
   locale?: string;
 }): Promise<{ sent: boolean }> {
-  const template = renderOtpEmail(opts.otp, opts.locale);
-  return sendEmail({ to: opts.to, ...template });
+  const html = await render(React.createElement(VerifyEmail, { otp: opts.otp, locale: opts.locale }));
+  const text = await render(React.createElement(VerifyEmail, { otp: opts.otp, locale: opts.locale }), { plainText: true });
+  
+  return sendEmail({
+    to: opts.to,
+    subject: opts.locale === "id" ? "Verifikasi Email Anda" : "Verify your email address",
+    html,
+    text,
+  });
 }
+
 
 /** Password reset (forgot-password flow). Uses localized templates. */
 export async function sendPasswordResetEmail(opts: {
@@ -102,6 +116,45 @@ export async function sendPasswordResetEmail(opts: {
   url: string;
   locale?: string;
 }): Promise<{ sent: boolean }> {
-  const template = renderPasswordResetEmail(opts.url, opts.locale);
-  return sendEmail({ to: opts.to, ...template });
+  const html = await render(React.createElement(ResetPasswordEmail, { url: opts.url, locale: opts.locale }));
+  const text = await render(React.createElement(ResetPasswordEmail, { url: opts.url, locale: opts.locale }), { plainText: true });
+
+  return sendEmail({
+    to: opts.to,
+    subject: opts.locale === "id" ? "Atur Ulang Kata Sandi" : "Reset your password",
+    html,
+    text,
+  });
+}
+export async function sendWelcomeEmail(opts: {
+  to: string;
+  name?: string;
+}): Promise<{ sent: boolean }> {
+  const html = await render(React.createElement(WelcomeEmail, { name: opts.name }));
+  const text = await render(React.createElement(WelcomeEmail, { name: opts.name }), { plainText: true });
+
+  return sendEmail({
+    to: opts.to,
+    subject: "Welcome to Next Dashboard!",
+    html,
+    text,
+  });
+}
+
+export async function sendInvoiceEmail(opts: {
+  to: string;
+  invoiceNumber: string;
+  amount: string;
+  date: string;
+  url: string;
+}): Promise<{ sent: boolean }> {
+  const html = await render(React.createElement(InvoiceEmail, { ...opts }));
+  const text = await render(React.createElement(InvoiceEmail, { ...opts }), { plainText: true });
+
+  return sendEmail({
+    to: opts.to,
+    subject: `Payment Receipt (${opts.invoiceNumber})`,
+    html,
+    text,
+  });
 }

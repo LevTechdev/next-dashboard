@@ -1,23 +1,22 @@
 "use client";
 
+import { use } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 import {
-  RefreshCwIcon,
-  BellIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-  RocketIcon,
-  GitCommitHorizontalIcon,
-} from "lucide-animated";
-import { Bug } from "lucide-react";
+  RefreshCw,
+  Bell,
+  ArrowRight,
+  Sparkles,
+  Rocket,
+  GitCommitHorizontal,
+  Bug,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AnimateSection, AnimateUp, buttonTap } from "@/components/motion";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
-import { AnimatedRays } from "@/components/ui/animated-rays";
 import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 
 interface ChangelogEntry {
@@ -36,7 +35,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.5.0",
     date: "April 14, 2026",
     tag: "Latest Release",
-    tagColor: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+    tagColor: "bg-indigo-500/10 text-indigo-500",
     items: [
       {
         type: "feature",
@@ -60,7 +59,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.4.0",
     date: "March 28, 2026",
     tag: "Feature Release",
-    tagColor: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+    tagColor: "bg-emerald-500/10 text-emerald-500",
     items: [
       {
         type: "feature",
@@ -84,7 +83,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.3.0",
     date: "March 10, 2026",
     tag: "Improvement",
-    tagColor: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    tagColor: "bg-blue-500/10 text-blue-500",
     items: [
       {
         type: "feature",
@@ -108,7 +107,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.2.0",
     date: "February 20, 2026",
     tag: "Feature Release",
-    tagColor: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+    tagColor: "bg-emerald-500/10 text-emerald-500",
     items: [
       {
         type: "feature",
@@ -132,7 +131,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.1.0",
     date: "February 5, 2026",
     tag: "Improvement",
-    tagColor: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    tagColor: "bg-blue-500/10 text-blue-500",
     items: [
       {
         type: "feature",
@@ -152,7 +151,7 @@ export const changelog: ChangelogEntry[] = [
     version: "2.0.0",
     date: "January 15, 2026",
     tag: "Major Release",
-    tagColor: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
+    tagColor: "bg-purple-500/10 text-purple-500",
     items: [
       {
         type: "feature",
@@ -180,46 +179,43 @@ export const changelog: ChangelogEntry[] = [
 
 export const typeConfig = {
   feature: {
-    icon: SparklesIcon,
+    icon: Sparkles,
     label: "New Feature",
-    color: "text-emerald-600 dark:text-emerald-400",
+    color: "text-emerald-500",
     bg: "bg-emerald-500/10",
   },
   improvement: {
-    icon: RocketIcon,
+    icon: Rocket,
     label: "Improvement",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   fix: {
     icon: Bug,
     label: "Bug Fix",
-    color: "text-amber-600 dark:text-amber-400",
+    color: "text-amber-500",
     bg: "bg-amber-500/10",
   },
 };
 
-export default function ChangelogPage() {
-  const params = useParams();
-  const locale = (params?.locale as string) || "en";
+const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
+
+export default function ChangelogPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(params);
   const t = useTranslations("changelogPage");
   const ctaHref = `/${locale}/dashboard`;
 
   return (
-    <div className="pt-16 lg:pt-20">
+    <div className="relative overflow-hidden bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 min-h-screen">
       {/* ════════════════════════
-          CINEMATIC HEADER with AnimatedRays + FlipFadeText
+          CINEMATIC HEADER
           ════════════════════════ */}
-      <section className="relative overflow-hidden py-24 lg:py-28">
-        <div className="absolute inset-0 h-[130%] opacity-25 dark:opacity-40">
-          <AnimatedRays className="w-full h-full" />
+      <section className="relative pt-24 pb-16 px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl" />
         </div>
 
-        <div className="absolute inset-0 mesh-gradient-dark pointer-events-none" />
-        <div className="absolute top-1/3 left-1/3 w-72 h-72 bg-indigo-500/8 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-56 h-56 bg-purple-500/6 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 max-w-4xl mx-auto">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -234,16 +230,16 @@ export default function ChangelogPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                  transition: { duration: 0.5, ease: easeSmooth },
                 },
               }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-300/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-6"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm"
             >
-              <RefreshCwIcon
+              <RefreshCw
                 size={14}
-                className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400"
+                className="h-3.5 w-3.5"
               />
-              <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
+              <span className="text-[11px] font-medium uppercase tracking-widest">
                 {t("badge")}
               </span>
             </motion.div>
@@ -254,17 +250,17 @@ export default function ChangelogPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+                  transition: { duration: 0.6, ease: easeSmooth },
                 },
               }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 max-w-4xl mx-auto"
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-4 max-w-4xl mx-auto"
             >
               {t("heroPrefix")}&nbsp;
-              <span className="inline-flex">
+              <span className="inline-flex text-primary">
                 <FlipRevealText
                   words={[t("word1"), t("word2"), t("word3"), t("word4")]}
                   interval={2800}
-                  textClassName="!text-4xl sm:!text-5xl lg:!text-6xl !text-transparent !bg-clip-text !bg-gradient-to-r !from-indigo-600 !via-purple-600 !to-pink-600 dark:!from-indigo-400 dark:!via-purple-400 dark:!to-pink-400 !font-bold !tracking-tight"
+                  textClassName="!text-4xl sm:!text-5xl lg:!text-6xl text-primary !font-bold !tracking-tight"
                   className="!min-h-0 inline-flex"
                 />
               </span>
@@ -276,10 +272,10 @@ export default function ChangelogPage() {
                 visible: {
                   opacity: 1,
                   y: 0,
-                  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                  transition: { duration: 0.5, ease: easeSmooth },
                 },
               }}
-              className="text-base lg:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto"
+              className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             >
               {t("heroSubtitle")}
             </motion.p>
@@ -290,120 +286,116 @@ export default function ChangelogPage() {
       {/* ════════════════════════
           RELEASE VERSION BADGE
           ════════════════════════ */}
-      <AnimateSection className="-mt-8 pb-16">
+      <section className="-mt-8 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/20">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-medium text-muted-foreground">
               {t("latestVersion")}{" "}
-              <span className="text-zinc-900 dark:text-white font-semibold">2.5.0</span>
+              <span className="text-foreground font-semibold">2.5.0</span>
             </span>
-            <span className="text-[10px] text-zinc-500">—</span>
-            <span className="text-[10px] text-zinc-600 dark:text-zinc-500">{t("released")}</span>
+            <span className="text-[10px] text-muted-foreground/50">—</span>
+            <span className="text-[10px] text-muted-foreground">{t("released")}</span>
           </div>
         </div>
-      </AnimateSection>
+      </section>
 
       {/* ════════════════════════
           CHANGELOG TIMELINE
           ════════════════════════ */}
-      <AnimateSection className="pb-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-4 md:left-8 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/40 via-purple-500/20 to-transparent" />
+      <section className="pb-20 max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="relative">
+          {/* Timeline line */}
+          <div className="absolute left-[11px] md:left-[19px] top-4 bottom-0 w-px bg-border" />
 
-            <div className="space-y-10 lg:space-y-12">
-              {changelog.map((entry, idx) => (
-                <motion.div
-                  key={entry.version}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{
-                    duration: 0.6,
-                    delay: idx * 0.1,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="relative pl-12 md:pl-20"
-                >
-                  {/* Timeline dot */}
-                  <div className="absolute left-[11px] md:left-[27px] top-2 w-3 h-3 rounded-full bg-indigo-500 border-2 border-zinc-50 dark:border-[#0b0c11] ring-2 ring-indigo-500/20" />
+          <div className="space-y-12">
+            {changelog.map((entry, idx) => (
+              <motion.div
+                key={entry.version}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{
+                  duration: 0.6,
+                  delay: idx * 0.1,
+                  ease: easeSmooth,
+                }}
+                className="relative pl-12 md:pl-16"
+              >
+                {/* Timeline dot */}
+                <div className="absolute left-[7.5px] md:left-[15.5px] top-4 w-2 h-2 rounded-full bg-primary ring-4 ring-background" />
 
-                  <div className="double-bezel">
-                    <div className="double-bezel-inner">
-                      {/* Version header */}
-                      <div className="flex items-center gap-3 mb-4 flex-wrap">
-                        <h3 className="text-base font-bold text-zinc-900 dark:text-white font-mono">
-                          v{entry.version}
-                        </h3>
-                        <span
-                          className={cn(
-                            "text-[9px] font-semibold uppercase tracking-widest px-2 py-1 rounded-full",
-                            entry.tagColor,
-                          )}
-                        >
-                          {entry.tag}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-600 font-mono">
-                          {entry.date}
-                        </span>
-                      </div>
-
-                      {/* Items */}
-                      <div className="space-y-3">
-                        {entry.items.map((item, itemIdx) => {
-                          const config = typeConfig[item.type];
-                          const Icon = config.icon;
-                          return (
-                            <motion.div
-                              key={itemIdx}
-                              initial={{ opacity: 0, y: 8 }}
-                              whileInView={{ opacity: 1, y: 0 }}
-                              viewport={{ once: true }}
-                              transition={{
-                                delay: 0.1 + itemIdx * 0.05,
-                                duration: 0.4,
-                                ease: [0.16, 1, 0.3, 1],
-                              }}
-                              className="flex items-start gap-3"
-                            >
-                              <div
-                                className={cn(
-                                  "flex-shrink-0 mt-0.5 inline-flex p-1 rounded-md",
-                                  config.bg,
-                                )}
-                              >
-                                <Icon size={12} className={cn("h-3 w-3", config.color)} />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                                  {item.text}
-                                </p>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                <div className="rounded-2xl border border-border bg-background p-6 lg:p-8 hover:border-primary/30 transition-colors">
+                  {/* Version header */}
+                  <div className="flex items-center gap-3 mb-6 flex-wrap border-b border-border pb-4">
+                    <h3 className="text-lg font-bold text-foreground font-mono">
+                      v{entry.version}
+                    </h3>
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full",
+                        entry.tagColor,
+                      )}
+                    >
+                      {entry.tag}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono ml-auto">
+                      {entry.date}
+                    </span>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+
+                  {/* Items */}
+                  <div className="space-y-4">
+                    {entry.items.map((item, itemIdx) => {
+                      const config = typeConfig[item.type];
+                      const Icon = config.icon;
+                      return (
+                        <motion.div
+                          key={itemIdx}
+                          initial={{ opacity: 0, y: 8 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{
+                            delay: 0.1 + itemIdx * 0.05,
+                            duration: 0.4,
+                            ease: easeSmooth,
+                          }}
+                          className="flex items-start gap-3"
+                        >
+                          <div
+                            className={cn(
+                              "flex-shrink-0 mt-0.5 inline-flex p-1.5 rounded-lg",
+                              config.bg,
+                            )}
+                          >
+                            <Icon size={14} className={cn("h-3.5 w-3.5", config.color)} />
+                          </div>
+                          <div className="min-w-0 pt-0.5">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {item.text}
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </AnimateSection>
+      </section>
 
       {/* ════════════════════════
           RELEASE STATS with Animated Counters
           ════════════════════════ */}
-      <AnimateSection className="py-14 border-t border-zinc-200 dark:border-zinc-800/60 bg-zinc-100/60 dark:bg-zinc-900/30">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <section className="py-16 border-t border-border bg-background/50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { labelKey: "statReleases", end: 24, icon: GitCommitHorizontalIcon, suffix: "+" },
-              { labelKey: "statFeatures", end: 42, icon: SparklesIcon, suffix: "+" },
-              { labelKey: "statImprovements", end: 128, icon: RocketIcon, suffix: "+" },
+              { labelKey: "statReleases", end: 24, icon: GitCommitHorizontal, suffix: "+" },
+              { labelKey: "statFeatures", end: 42, icon: Sparkles, suffix: "+" },
+              { labelKey: "statImprovements", end: 128, icon: Rocket, suffix: "+" },
               { labelKey: "statFixes", end: 56, icon: Bug, suffix: "+" },
             ].map((stat, i) => {
               const Icon = stat.icon;
@@ -413,16 +405,16 @@ export default function ChangelogPage() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] as any }}
+                  transition={{ delay: i * 0.1, duration: 0.5, ease: easeSmooth }}
                   className="text-center"
                 >
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 mb-3">
-                    <Icon size={16} className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 mb-4 text-primary">
+                    <Icon size={20} />
                   </div>
-                  <div className="text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
+                  <div className="text-3xl font-bold text-foreground tabular-nums mb-1">
                     <AnimatedCounter end={stat.end} duration={2000} suffix={stat.suffix} />
                   </div>
-                  <div className="text-xs text-zinc-600 dark:text-zinc-500 mt-1 font-medium">
+                  <div className="text-sm font-medium text-muted-foreground">
                     {t(stat.labelKey)}
                   </div>
                 </motion.div>
@@ -430,78 +422,75 @@ export default function ChangelogPage() {
             })}
           </div>
         </div>
-      </AnimateSection>
+      </section>
 
       {/* ════════════════════════
           SUBSCRIBE SECTION
           ════════════════════════ */}
-      <AnimateSection className="py-16 border-t border-zinc-200 dark:border-zinc-800/60">
+      <section className="py-20 border-t border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <AnimateUp>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-300/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-800/30 backdrop-blur-sm mb-4">
-              <BellIcon size={14} className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: easeSmooth }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-background mb-6">
+              <Bell size={14} className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
                 {t("subscribeBadge")}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white mb-2">
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
               {t("subscribeTitle")}
             </h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-md mx-auto">
+            <p className="text-base text-muted-foreground mb-8 max-w-md mx-auto">
               {t("subscribeDesc")}
             </p>
-            <div className="flex items-center justify-center gap-3 max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder={t("emailPlaceholder")}
-                className="flex-1 h-10 px-4 rounded-xl bg-white border border-zinc-300 text-xs text-zinc-700 placeholder:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-700/50 dark:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                className="w-full sm:flex-1 h-12 px-4 rounded-xl bg-background border border-border text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
               />
-              <Button className="h-10 px-5 text-xs gap-1.5 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-[#0b0c11] dark:hover:bg-zinc-200 rounded-xl font-medium shrink-0 press-scale">
+              <Button className="w-full sm:w-auto h-12 px-6 bg-foreground text-background font-medium hover:bg-muted transition-colors rounded-xl shrink-0">
                 {t("subscribeBtn")}
-                <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
+                <ArrowRight size={16} className="h-4 w-4 ml-2" />
               </Button>
             </div>
-          </AnimateUp>
+          </motion.div>
         </div>
-      </AnimateSection>
+      </section>
 
       {/* ════════════════════════
           BOTTOM CTA
           ════════════════════════ */}
-      <AnimateSection className="py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="double-bezel !rounded-[2rem]"
-            whileHover={{ scale: 1.005 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="double-bezel-inner !rounded-[calc(2rem-0.375rem)] !py-16 relative overflow-hidden">
-              <div className="absolute inset-0 mesh-gradient-dark opacity-50" />
-              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/8 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative text-center">
-                <AnimateUp>
-                  <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">
-                    {t("ctaTitle")}
-                  </h2>
-                  <p className="text-base text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto mb-8">
-                    {t("ctaDesc")}
-                  </p>
-                  <Link href={ctaHref}>
-                    <motion.div whileTap={buttonTap} whileHover={{ scale: 1.03 }}>
-                      <Button className="h-11 px-8 text-sm gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-[#0b0c11] dark:hover:bg-zinc-200 rounded-xl font-medium shadow-xl shadow-black/20 press-scale">
-                        {t("ctaButton")}
-                        <ArrowRightIcon size={16} className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  </Link>
-                </AnimateUp>
-              </div>
+      <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
+              {t("ctaDesc")}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href={ctaHref}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
+              >
+                {t("ctaButton")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-          </motion.div>
-        </div>
-      </AnimateSection>
+          </div>
+        </motion.div>
+      </section>
     </div>
   );
 }

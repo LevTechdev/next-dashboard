@@ -155,7 +155,7 @@ export function useDataExport<T = any>({
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
       // Auto-fit column widths
-      const colWidths = columns.map((col, i) => {
+      const colWidths = columns.map((col) => {
         const maxHeaderLen = col.header.length;
         const maxDataLen = rows.reduce((max, row) => {
           const val = String(getCellValue(row, col.key));

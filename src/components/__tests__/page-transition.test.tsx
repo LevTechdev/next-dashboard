@@ -224,8 +224,7 @@ describe("PageTransition", () => {
 
   it("uses pathname as key when VT is not supported (for CSS fallback)", () => {
     mockUseViewTransition.mockReturnValue({ isSupported: false });
-
-    const { container, rerender } = render(
+    const { rerender } = render(
       <PageTransition>
         <div>Content</div>
       </PageTransition>,

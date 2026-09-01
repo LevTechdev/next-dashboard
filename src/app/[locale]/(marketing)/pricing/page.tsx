@@ -1,10 +1,15 @@
 "use client";
 
 import { use, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, ArrowRight, Star, Percent } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, X, ArrowRight, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 const PLAN_META = [
   {
@@ -64,8 +69,48 @@ const PLAN_META = [
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export default function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations('pricingPage');
   const { locale } = use(params);
+  const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  const handleSubscribe = async (planKey: string) => {
+    if (planKey === "enterprise") {
+      router.push(`/${locale}/register`);
+      return;
+    }
+    setLoadingKey(planKey);
+    try {
+      const plansRes = await fetch("/api/billing/plans");
+      const plans = await plansRes.json();
+      const plan = plans.find((p: any) => p.name.toLowerCase() === planKey.toLowerCase());
+      
+      if (!plan) {
+        toast.error("Plan not found. Please try again.");
+        return;
+      }
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: plan.id, locale }),
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        router.push(`/${locale}/register`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast.error(err.message || "Checkout failed");
+    } finally {
+      setLoadingKey(null);
+    }
+  };
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden min-h-screen">
@@ -83,15 +128,19 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
             <Star className="h-3.5 w-3.5" />
-            Pricing
+            {t("heroTag")}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Simple, Transparent Pricing
+            {t("heroPrefix")}{" "}
+            <br className="hidden sm:block" />
+            <span className="text-primary inline-flex">
+              <FlipFadeText words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]} interval={2500} />
+            </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
-            Start free, scale when you need to. Choose the plan that fits your business needs.
+            {t("heroSubtitle")}
           </p>
 
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
@@ -104,7 +153,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Monthly
+              {t("monthly")}
             </button>
             <button
               onClick={() => setIsAnnual(true)}
@@ -115,7 +164,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Yearly
+              {t("yearly")}
               <span
                 className={cn(
                   "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
@@ -124,7 +173,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
                 )}
               >
-                Save 20%
+                {t("yearlyDiscount")}
               </span>
             </button>
           </div>
@@ -154,7 +203,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                 {plan.popular && (
                   <div className="absolute top-0 right-8 -translate-y-1/2">
                     <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                      Most Popular
+                      {t("mostPopular")}
                     </span>
                   </div>
                 )}
@@ -181,17 +230,20 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   </span>
                 </div>
 
-                <Link
-                  href={`/${locale}/register`}
+                <button
+                  onClick={() => handleSubscribe(plan.key)}
+                  disabled={loadingKey === plan.key}
                   className={cn(
-                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8",
+                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8 flex justify-center items-center gap-2",
                     plan.popular
                       ? "bg-background text-foreground hover:bg-muted"
                       : "bg-foreground text-background hover:opacity-90",
+                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : ""
                   )}
                 >
-                  {plan.key === "enterprise" ? "Contact Sales" : "Get Started"}
-                </Link>
+                  {loadingKey === plan.key ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {plan.key === "enterprise" ? t('contactSales') : t('getStarted')}
+                </button>
 
                 <div className="flex-1">
                   <p
@@ -200,7 +252,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                       plan.popular ? "opacity-80" : "text-muted-foreground",
                     )}
                   >
-                    Includes
+                    {t("featuresIncluded")}
                   </p>
                   <ul className="space-y-4">
                     {plan.features.map((feature, j) => (
@@ -226,10 +278,10 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
-            Compare Plans
+            {t("faqTitle")}
           </h2>
           <p className="text-muted-foreground text-sm">
-            Find the perfect set of features for your business scale.
+            {t("faqSubtitle")}
           </p>
         </div>
 
@@ -287,17 +339,17 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
 
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Start managing your business better
+              {t("ctaTitle")}
             </h2>
             <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              Join thousands of businesses that trust our platform. Try it free for 14 days.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
               >
-                Get Started Free
+                {t("ctaButton")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

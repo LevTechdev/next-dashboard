@@ -369,7 +369,7 @@ const { mockGetSession, mockPrisma, mockRequirePermission, mockRequireAuth, mock
               secret: "new-secret-456",
             }),
           ),
-          update: vi.fn().mockImplementation(({ where, data }) =>
+          update: vi.fn().mockImplementation(({ data }) =>
             Promise.resolve({
               ...createMockWebhookEndpoint({
                 name: "Order Notifier Updated",

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { PlusIcon, SearchIcon, DownloadIcon } from "lucide-animated";
+import { PlusIcon } from "lucide-animated";
 import { Tag, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

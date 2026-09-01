@@ -8,67 +8,68 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  password      String
-  role          String   @default("STAFF") // ADMIN, MANAGER, STAFF
-  avatar        String?
-  phone         String?
-  position      String?
-  totpSecret     String?  // Encrypted TOTP secret for 2FA
-  totpEnabled    Boolean  @default(false)
-  emailVerified  DateTime?
-  verificationToken String?
+  id                       String                  @id @default(cuid())
+  name                     String
+  email                    String                  @unique
+  password                 String
+  role                     String                  @default("STAFF") // ADMIN, MANAGER, STAFF
+  avatar                   String?
+  phone                    String?
+  position                 String?
+  totpSecret               String? // Encrypted TOTP secret for 2FA
+  totpEnabled              Boolean                 @default(false)
+  emailVerified            DateTime?
+  verificationToken        String?
   verificationTokenExpires DateTime?
   // Email-OTP identity verification (6-digit code, hashed at rest)
-  emailOtpHash     String?
-  emailOtpExpires  DateTime?
-  emailOtpAttempts Int      @default(0)
-  isActive       Boolean  @default(true)
+  emailOtpHash             String?
+  emailOtpExpires          DateTime?
+  emailOtpAttempts         Int                     @default(0)
+  isActive                 Boolean                 @default(true)
   // ── Security hardening (Phase 1) ──
-  passwordAlgo      String   @default("bcrypt") // "bcrypt" (legacy) | "argon2id"
-  passwordChangedAt DateTime?
-  failedLoginCount  Int      @default(0)
-  lockedUntil       DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  orders          Order[]
-  activities      ActivityLog[]
-  subscription    Subscription?
-  apiKeys         ApiKey[]
-  webhookEndpoints WebhookEndpoint[]
-  invoices        Invoice[]
-  paymentMethods  PaymentMethod[]
-  notifications   Notification[]
-  notificationPref NotificationPreference?
-  sessions        Session[]
-  backupCodes     BackupCode[]
-  securityEvents  SecurityEvent[]
-  refreshTokens   RefreshToken[]
-  webauthnCredentials WebAuthnCredential[]
-  pushSubscriptions  PushSubscription[]
-  tenantId        String?
-  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
+  passwordAlgo             String                  @default("bcrypt") // "bcrypt" (legacy) | "argon2id"
+  passwordChangedAt        DateTime?
+  failedLoginCount         Int                     @default(0)
+  lockedUntil              DateTime?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  orders                   Order[]
+  activities               ActivityLog[]
+  subscription             Subscription?
+  apiKeys                  ApiKey[]
+  webhookEndpoints         WebhookEndpoint[]
+  invoices                 Invoice[]
+  generatedContents        GeneratedContent[]
+  paymentMethods           PaymentMethod[]
+  notifications            Notification[]
+  notificationPref         NotificationPreference?
+  sessions                 Session[]
+  backupCodes              BackupCode[]
+  securityEvents           SecurityEvent[]
+  refreshTokens            RefreshToken[]
+  webauthnCredentials      WebAuthnCredential[]
+  pushSubscriptions        PushSubscription[]
+  tenantId                 String?
+  tenant                   Tenant?                 @relation(fields: [tenantId], references: [id])
 }
 
 /// Workspace / organization boundary for app-layer multi-tenancy.
 model Tenant {
-  id        String     @id @default(cuid())
-  name      String
-  slug      String     @unique
-  createdAt DateTime   @default(now())
-  users     User[]
-  customers Customer[]
-  products  Product[]
-  orders    Order[]
-  categories ProductCategory[]
-  discounts Discount[]
-  campaigns Campaign[]
-  ssoConnection SsoConnection?
+  id             String            @id @default(cuid())
+  name           String
+  slug           String            @unique
+  createdAt      DateTime          @default(now())
+  users          User[]
+  customers      Customer[]
+  products       Product[]
+  orders         Order[]
+  categories     ProductCategory[]
+  discounts      Discount[]
+  campaigns      Campaign[]
+  ssoConnection  SsoConnection?
   securityEvents SecurityEvent[]
-  activityLogs    ActivityLog[]
-  auditLogs       AuditLog[]
+  activityLogs   ActivityLog[]
+  auditLogs      AuditLog[]
 
   @@index([slug])
 }
@@ -77,11 +78,11 @@ model Tenant {
 model SsoConnection {
   id          String   @id @default(cuid())
   tenantId    String   @unique
-  name        String              // display name e.g. "Okta", "Azure AD"
-  entryPoint  String              // IdP SSO URL (where AuthnRequests are sent)
-  idpCert     String              // IdP x509 signing certificate (base64, no PEM headers)
-  spIssuer    String              // our SP entity id / issuer
-  emailDomain String?             // optional domain for IdP discovery by email
+  name        String // display name e.g. "Okta", "Azure AD"
+  entryPoint  String // IdP SSO URL (where AuthnRequests are sent)
+  idpCert     String // IdP x509 signing certificate (base64, no PEM headers)
+  spIssuer    String // our SP entity id / issuer
+  emailDomain String? // optional domain for IdP discovery by email
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -95,7 +96,7 @@ model Session {
   id           String    @id @default(cuid())
   userId       String
   tokenHash    String    @unique // SHA-256 of the CURRENT access token (rotated on refresh)
-  familyId     String?           // refresh-token family this session belongs to
+  familyId     String? // refresh-token family this session belongs to
   ip           String?
   userAgent    String?
   device       String?
@@ -119,8 +120,8 @@ model RefreshToken {
   userId    String
   familyId  String
   tokenHash String    @unique // SHA-256 of the opaque refresh token
-  sessionId String?           // links to the Session for device info + revocation
-  usedAt    DateTime?          // set when rotated (consumed) — reuse ⇒ revoke family
+  sessionId String? // links to the Session for device info + revocation
+  usedAt    DateTime? // set when rotated (consumed) — reuse ⇒ revoke family
   revokedAt DateTime?
   expiresAt DateTime
   createdAt DateTime  @default(now())
@@ -136,9 +137,9 @@ model WebAuthnCredential {
   id           String    @id @default(cuid())
   userId       String
   credentialId String    @unique // base64url credential ID
-  publicKey    Bytes              // COSE public key
+  publicKey    Bytes // COSE public key
   counter      Int       @default(0)
-  transports   String?            // comma-joined (usb,nfc,ble,internal,hybrid)
+  transports   String? // comma-joined (usb,nfc,ble,internal,hybrid)
   deviceName   String?
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
@@ -149,12 +150,12 @@ model WebAuthnCredential {
 
 /// Single-use hashed backup recovery codes for 2FA fallback.
 model BackupCode {
-  id       String    @id @default(cuid())
-  userId   String
-  codeHash String    @unique
-  usedAt   DateTime?
-  createdAt DateTime @default(now())
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -164,12 +165,12 @@ model SecurityEvent {
   id        String   @id @default(cuid())
   seq       Int      @unique @default(autoincrement())
   userId    String?
-  type      String   // LOGIN, LOGIN_FAILED, PASSWORD_CHANGE, TOTP_ENABLED, TOTP_DISABLED, BACKUP_CODES_GENERATED, SESSION_REVOKED, STEP_UP_VERIFIED, APIKEY_CREATED
+  type      String // LOGIN, LOGIN_FAILED, PASSWORD_CHANGE, TOTP_ENABLED, TOTP_DISABLED, BACKUP_CODES_GENERATED, SESSION_REVOKED, STEP_UP_VERIFIED, APIKEY_CREATED
   ip        String?
   userAgent String?
   metadata  Json?
-  prevHash  String?  // hash of the previous event in the chain (tamper-evidence)
-  hash      String?  // sha256(prevHash + canonical(event)) — see lib/audit-chain
+  prevHash  String? // hash of the previous event in the chain (tamper-evidence)
+  hash      String? // sha256(prevHash + canonical(event)) — see lib/audit-chain
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   tenantId  String?
@@ -181,58 +182,58 @@ model SecurityEvent {
 }
 
 model Customer {
-  id             String   @id @default(cuid())
-  name           String
-  email          String?
-  phone          String?
-  avatar         String?
-  city           String?
-  country        String?
-  segment        String?  // VIP, REGULAR, NEW
-  totalSpent     Float    @default(0)
-  totalOrders    Int      @default(0)
-  lastOrderDate  DateTime?
-  notes          String?
-  isActive       Boolean  @default(true)
-  tenantId       String?
-  tenant         Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  orders         Order[]
+  id            String    @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  avatar        String?
+  city          String?
+  country       String?
+  segment       String? // VIP, REGULAR, NEW
+  totalSpent    Float     @default(0)
+  totalOrders   Int       @default(0)
+  lastOrderDate DateTime?
+  notes         String?
+  isActive      Boolean   @default(true)
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
 
   @@index([tenantId])
 }
 
 model ProductCategory {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  tenantId  String?
-  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
-  products  Product[]
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  tenantId String?
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id])
+  products Product[]
 
   @@index([tenantId])
 }
 
 model Product {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  description   String?
-  price         Float
-  costPrice     Float    @default(0)
-  stock         Int      @default(0)
-  sku           String?
-  image         String?
-  images        String[] @default([])
-  categoryId    String?
-  category      ProductCategory? @relation(fields: [categoryId], references: [id])
-  isActive      Boolean  @default(true)
-  tenantId      String?
-  tenant        Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  orderItems    OrderItem[]
+  id             String            @id @default(cuid())
+  name           String
+  slug           String            @unique
+  description    String?
+  price          Float
+  costPrice      Float             @default(0)
+  stock          Int               @default(0)
+  sku            String?
+  image          String?
+  images         String[]          @default([])
+  categoryId     String?
+  category       ProductCategory?  @relation(fields: [categoryId], references: [id])
+  isActive       Boolean           @default(true)
+  tenantId       String?
+  tenant         Tenant?           @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  orderItems     OrderItem[]
   inventoryItems InventoryRecord[]
   affiliateLinks AffiliateLink[]
 
@@ -240,31 +241,31 @@ model Product {
 }
 
 model SalesChannel {
-  id        String   @id @default(cuid())
-  name      String   @unique // Online Store, Facebook, Facebook Shop, Instagram, TikTok, Shopify
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  icon      String?
-  orders    Order[]
+  id       String  @id @default(cuid())
+  name     String  @unique // Online Store, Facebook, Facebook Shop, Instagram, TikTok, Shopify
+  slug     String  @unique
+  isActive Boolean @default(true)
+  icon     String?
+  orders   Order[]
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  orderNumber     String   @unique
+  id              String         @id @default(cuid())
+  orderNumber     String         @unique
   customerId      String?
-  customer        Customer? @relation(fields: [customerId], references: [id])
+  customer        Customer?      @relation(fields: [customerId], references: [id])
   userId          String?
-  user            User?     @relation(fields: [userId], references: [id])
+  user            User?          @relation(fields: [userId], references: [id])
   channelId       String?
-  channel         SalesChannel? @relation(fields: [channelId], references: [id])
-  status          String   @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
-  totalAmount     Float    @default(0)
-  discountAmount  Float    @default(0)
-  shippingAmount  Float    @default(0)
-  taxAmount       Float    @default(0)
-  grandTotal      Float    @default(0)
-  paymentMethod   String?  // CREDIT_CARD, BANK_TRANSFER, E_WALLET, COD
-  paymentStatus   String   @default("UNPAID") // UNPAID, PAID, REFUNDED
+  channel         SalesChannel?  @relation(fields: [channelId], references: [id])
+  status          String         @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  totalAmount     Float          @default(0)
+  discountAmount  Float          @default(0)
+  shippingAmount  Float          @default(0)
+  taxAmount       Float          @default(0)
+  grandTotal      Float          @default(0)
+  paymentMethod   String? // CREDIT_CARD, BANK_TRANSFER, E_WALLET, COD
+  paymentStatus   String         @default("UNPAID") // UNPAID, PAID, REFUNDED
   shippingAddress String?
   notes           String?
   // Fulfillment tracking
@@ -275,9 +276,9 @@ model Order {
   deliveredAt     DateTime?
   refundedAt      DateTime?
   tenantId        String?
-  tenant          Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  tenant          Tenant?        @relation(fields: [tenantId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   items           OrderItem[]
   discount        OrderDiscount?
 
@@ -285,9 +286,9 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String?
   product   Product? @relation(fields: [productId], references: [id])
   name      String
@@ -297,62 +298,62 @@ model OrderItem {
 }
 
 model Discount {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String          @id @default(cuid())
+  code        String          @unique
   name        String
   description String?
-  type        String   @default("PERCENTAGE") // PERCENTAGE, FIXED
+  type        String          @default("PERCENTAGE") // PERCENTAGE, FIXED
   value       Float
-  minPurchase Float    @default(0)
-  maxUses     Int      @default(0)
-  usedCount   Int      @default(0)
+  minPurchase Float           @default(0)
+  maxUses     Int             @default(0)
+  usedCount   Int             @default(0)
   startsAt    DateTime
   endsAt      DateTime
-  isActive    Boolean  @default(true)
+  isActive    Boolean         @default(true)
   tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt   DateTime @default(now())
+  tenant      Tenant?         @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime        @default(now())
   orders      OrderDiscount[]
 
   @@index([tenantId])
 }
 
 model OrderDiscount {
-  id         String   @id @default(cuid())
-  orderId    String   @unique
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  orderId    String    @unique
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   discountId String?
   discount   Discount? @relation(fields: [discountId], references: [id])
   amount     Float
 }
 
 model Campaign {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
-  type        String   @default("EMAIL") // EMAIL, SOCIAL, ADS, SMS, OTHER
-  status      String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED, COMPLETED
-  budget      Float    @default(0)
-  spent       Float    @default(0)
-  channel     String?  // facebook, instagram, tiktok, email, google
+  type        String    @default("EMAIL") // EMAIL, SOCIAL, ADS, SMS, OTHER
+  status      String    @default("DRAFT") // DRAFT, ACTIVE, PAUSED, COMPLETED
+  budget      Float     @default(0)
+  spent       Float     @default(0)
+  channel     String? // facebook, instagram, tiktok, email, google
   startsAt    DateTime?
   endsAt      DateTime?
   tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([tenantId])
 }
 
 model InventoryRecord {
-  id          String   @id @default(cuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  type        String   // IN, OUT, ADJUSTMENT
-  quantity    Int
-  notes       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  type      String // IN, OUT, ADJUSTMENT
+  quantity  Int
+  notes     String?
+  createdAt DateTime @default(now())
 }
 
 model ActivityLog {
@@ -388,9 +389,9 @@ model AuditLog {
 
 model RoleSetting {
   id        String   @id @default(cuid())
-  role      String   // ADMIN, MANAGER, STAFF
-  resource  String   // page or resource name
-  action    String   // access, create, read, update, delete
+  role      String // ADMIN, MANAGER, STAFF
+  resource  String // page or resource name
+  action    String // access, create, read, update, delete
   allowed   Boolean  @default(true)
   updatedBy String?
   createdAt DateTime @default(now())
@@ -403,11 +404,11 @@ model ApiKey {
   id          String    @id @default(cuid())
   name        String
   key         String    @unique // hashed API key
-  prefix      String             // visible prefix like "dash_abc..."
+  prefix      String // visible prefix like "dash_abc..."
   userId      String?
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   permissions String    @default("read") // comma-separated scopes: read, write, admin
-  ipAllowlist String[]  @default([])     // allowed client IPs/CIDRs (empty = any)
+  ipAllowlist String[]  @default([]) // allowed client IPs/CIDRs (empty = any)
   status      String    @default("ACTIVE") // ACTIVE, REVOKED
   lastUsedAt  DateTime?
   expiresAt   DateTime?
@@ -416,187 +417,187 @@ model ApiKey {
 }
 
 model WebhookEndpoint {
-  id               String    @id @default(cuid())
+  id               String            @id @default(cuid())
   name             String
   url              String
-  secret           String    // HMAC signing secret
-  subscribedEvents String[]  // event types to listen for
-  status           String    @default("ACTIVE") // ACTIVE, PAUSED, FAILED
+  secret           String // HMAC signing secret
+  subscribedEvents String[] // event types to listen for
+  status           String            @default("ACTIVE") // ACTIVE, PAUSED, FAILED
   description      String?
   userId           String?
-  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   lastTriggeredAt  DateTime?
-  lastStatus       String?   // success, failed
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  lastStatus       String? // success, failed
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   deliveries       WebhookDelivery[]
 }
 
 model WebhookDelivery {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   endpointId String
   endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
   event      String
-  payload    String   // JSON payload sent
-  status     String   @default("PENDING") // PENDING, DELIVERED, FAILED
+  payload    String // JSON payload sent
+  status     String          @default("PENDING") // PENDING, DELIVERED, FAILED
   statusCode Int?
   response   String?
   durationMs Int?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime        @default(now())
 }
 
 model Plan {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  price       Float
-  yearlyPrice Float?             // yearly billing price (optional)
-  interval    String   @default("MONTHLY") // MONTHLY, YEARLY, ONETIME
-  features    String[] // Array of feature keys or strings
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  description         String?
+  price               Float
+  yearlyPrice         Float? // yearly billing price (optional)
+  interval            String   @default("MONTHLY") // MONTHLY, YEARLY, ONETIME
+  features            String[] // Array of feature keys or strings
   // Feature limits (null = unlimited)
-  maxOrders   Int?
-  maxTeamMembers Int?
-  hasAnalytics   Boolean @default(false)
-  hasReports     Boolean @default(false)
-  hasMultiChannel Boolean @default(false)
-  hasApiAccess   Boolean @default(false)
-  hasRoleBasedAccess Boolean @default(false)
-  supportLevel   String  @default("email") // email, priority, dedicated
-  isActive    Boolean  @default(true)
-  popular     Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  stripePriceId      String? // Stripe recurring Price ID (monthly) — paid plans only
+  maxOrders           Int?
+  maxTeamMembers      Int?
+  hasAnalytics        Boolean  @default(false)
+  hasReports          Boolean  @default(false)
+  hasMultiChannel     Boolean  @default(false)
+  hasApiAccess        Boolean  @default(false)
+  hasRoleBasedAccess  Boolean  @default(false)
+  supportLevel        String   @default("email") // email, priority, dedicated
+  isActive            Boolean  @default(true)
+  popular             Boolean  @default(false)
+  sortOrder           Int      @default(0)
+  stripePriceId       String? // Stripe recurring Price ID (monthly) — paid plans only
   stripeYearlyPriceId String? // Stripe recurring Price ID (yearly), optional
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   subscriptions Subscription[]
   invoices      Invoice[]
 }
 
 model Invoice {
-  id              String   @id @default(cuid())
-  invoiceNumber   String   @unique
-  planId          String?
-  plan            Plan?    @relation(fields: [planId], references: [id])
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  subscriptionId  String?
-  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  amount          Float
-  currency        String   @default("USD")
-  status          String   @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED, REFUNDED
-  description     String?
-  periodStart     DateTime?
-  periodEnd       DateTime?
-  paidAt          DateTime?
-  paymentMethod   String?  // credit_card, bank_transfer, paypal
-  invoiceFile     String?  // URL to generated PDF
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique
+  planId         String?
+  plan           Plan?         @relation(fields: [planId], references: [id])
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  amount         Float
+  currency       String        @default("USD")
+  status         String        @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED, REFUNDED
+  description    String?
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  paidAt         DateTime?
+  paymentMethod  String? // credit_card, bank_transfer, paypal
+  invoiceFile    String? // URL to generated PDF
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model PaymentMethod {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  type       String   // credit_card, paypal, bank_account
-  last4      String?
-  brand      String?  // visa, mastercard, etc.
-  expMonth   Int?
-  expYear    Int?
-  isDefault  Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type      String // credit_card, paypal, bank_account
+  last4     String?
+  brand     String? // visa, mastercard, etc.
+  expMonth  Int?
+  expYear   Int?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model UsageRecord {
-  id         String   @id @default(cuid())
+  id             String        @id @default(cuid())
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  metric     String   // orders, team_members, api_calls
-  value      Int      @default(0)
-  periodStart DateTime
-  periodEnd   DateTime
-  createdAt  DateTime @default(now())
+  metric         String // orders, team_members, api_calls
+  value          Int           @default(0)
+  periodStart    DateTime
+  periodEnd      DateTime
+  createdAt      DateTime      @default(now())
 }
 
 model Notification {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   // order, customer, product, revenue, inventory, discount, campaign, milestone, alert
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String // order, customer, product, revenue, inventory, discount, campaign, milestone, alert
   title       String
   description String?
-  link        String?  // optional link to relevant page
-  read        Boolean  @default(false)
+  link        String? // optional link to relevant page
+  read        Boolean   @default(false)
   readAt      DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
 model NotificationPreference {
-  id              String  @id @default(cuid())
-  userId          String? @unique
-  user            User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  userId                String?  @unique
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Per-category email preferences
-  emailOnOrder    Boolean @default(true)
-  emailOnCustomer Boolean @default(true)
-  emailOnProduct  Boolean @default(true)
-  emailOnRevenue  Boolean @default(true)
-  emailOnInventory Boolean @default(true)
-  emailOnDiscount Boolean @default(true)
-  emailOnCampaign Boolean @default(true)
-  emailOnAlert    Boolean @default(true)
+  emailOnOrder          Boolean  @default(true)
+  emailOnCustomer       Boolean  @default(true)
+  emailOnProduct        Boolean  @default(true)
+  emailOnRevenue        Boolean  @default(true)
+  emailOnInventory      Boolean  @default(true)
+  emailOnDiscount       Boolean  @default(true)
+  emailOnCampaign       Boolean  @default(true)
+  emailOnAlert          Boolean  @default(true)
   // Alert rule thresholds
-  lowStockThreshold      Int  @default(10)  // Alert when stock falls below
-  pendingOrderThreshold  Int  @default(5)   // Alert when pending orders exceed
-  campaignBudgetPercent  Int  @default(80)  // Alert when campaign exceeds % budget
+  lowStockThreshold     Int      @default(10) // Alert when stock falls below
+  pendingOrderThreshold Int      @default(5) // Alert when pending orders exceed
+  campaignBudgetPercent Int      @default(80) // Alert when campaign exceeds % budget
   // In-app notification toggles
-  inAppOnOrder    Boolean @default(true)
-  inAppOnCustomer Boolean @default(true)
-  inAppOnProduct  Boolean @default(true)
-  inAppOnRevenue  Boolean @default(true)
-  inAppOnInventory Boolean @default(true)
-  inAppOnDiscount Boolean @default(true)
-  inAppOnCampaign Boolean @default(true)
-  inAppOnAlert    Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  inAppOnOrder          Boolean  @default(true)
+  inAppOnCustomer       Boolean  @default(true)
+  inAppOnProduct        Boolean  @default(true)
+  inAppOnRevenue        Boolean  @default(true)
+  inAppOnInventory      Boolean  @default(true)
+  inAppOnDiscount       Boolean  @default(true)
+  inAppOnCampaign       Boolean  @default(true)
+  inAppOnAlert          Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Subscription {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId          String
-  plan            Plan     @relation(fields: [planId], references: [id])
-  status          String   @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE
-  currentPeriodStart DateTime @default(now())
-  currentPeriodEnd   DateTime
-  cancelAtPeriodEnd Boolean  @default(false)
+  id                   String        @id @default(cuid())
+  userId               String        @unique
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan          @relation(fields: [planId], references: [id])
+  status               String        @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE
+  currentPeriodStart   DateTime      @default(now())
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean       @default(false)
   stripeCustomerId     String? // Stripe Customer ID for the workspace
   stripeSubscriptionId String? // Stripe Subscription ID (once checkout completes)
-  gateway              String   @default("stripe") // stripe | midtrans — payment provider used to bill this subscription
-  midtransOrderId      String?  // Midtrans Snap order_id for the current (pending/paid) transaction
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  invoices        Invoice[]
-  usageRecords    UsageRecord[]
+  gateway              String        @default("stripe") // stripe | midtrans — payment provider used to bill this subscription
+  midtransOrderId      String? // Midtrans Snap order_id for the current (pending/paid) transaction
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  invoices             Invoice[]
+  usageRecords         UsageRecord[]
 }
 
 // ─── Affiliate Marketing ─────────────────────────────────────────
 
 model AffiliatePlatform {
-  id         String   @id @default(cuid())
-  name       String   @unique // Facebook, Instagram, TikTok Shop, Shopee, Tokopedia, Lazada
-  slug       String   @unique
-  baseUrl    String?  // storefront base URL used to build product links
-  color      String?  // brand color for UI badges
-  isActive   Boolean  @default(true)
-  headlessEnabled Boolean @default(true) // allow Playwright headless fallback for this platform's URL imports
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  connection PlatformConnection?
-  links      AffiliateLink[]
+  id              String              @id @default(cuid())
+  name            String              @unique // Facebook, Instagram, TikTok Shop, Shopee, Tokopedia, Lazada
+  slug            String              @unique
+  baseUrl         String? // storefront base URL used to build product links
+  color           String? // brand color for UI badges
+  isActive        Boolean             @default(true)
+  headlessEnabled Boolean             @default(true) // allow Playwright headless fallback for this platform's URL imports
+  sortOrder       Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  connection      PlatformConnection?
+  links           AffiliateLink[]
 }
 
 model PlatformConnection {
@@ -604,11 +605,11 @@ model PlatformConnection {
   platformId     String            @unique
   platform       AffiliatePlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
   status         String            @default("DISCONNECTED") // CONNECTED, DISCONNECTED, ERROR
-  shopId         String?           // shop_id / seller id / catalog id
-  apiKey         String?           // app key / partner id / client id
-  apiSecret      String?           // app secret / partner key
-  accessToken    String?           // OAuth access token
-  storeUrl       String?           // seller storefront URL
+  shopId         String? // shop_id / seller id / catalog id
+  apiKey         String? // app key / partner id / client id
+  apiSecret      String? // app secret / partner key
+  accessToken    String? // OAuth access token
+  storeUrl       String? // seller storefront URL
   lastSyncAt     DateTime?
   lastError      String?
   productsSynced Int               @default(0)
@@ -617,18 +618,18 @@ model PlatformConnection {
 }
 
 model AffiliateLink {
-  id              String            @id @default(cuid())
-  code            String            @unique // short tracking code used in /api/aff/{code}
+  id              String                @id @default(cuid())
+  code            String                @unique // short tracking code used in /api/aff/{code}
   productId       String
-  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product         Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   platformId      String
-  platform        AffiliatePlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
-  targetUrl       String            // destination product URL on the platform
-  commissionType  String            @default("PERCENTAGE") // PERCENTAGE, FIXED
-  commissionValue Float             @default(10)
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  platform        AffiliatePlatform     @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  targetUrl       String // destination product URL on the platform
+  commissionType  String                @default("PERCENTAGE") // PERCENTAGE, FIXED
+  commissionValue Float                 @default(10)
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   clicks          AffiliateClick[]
   conversions     AffiliateConversion[]
 }
@@ -650,8 +651,8 @@ model AffiliateConversion {
   linkId           String
   link             AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
   orderId          String?       @unique // dashboard order that triggered the conversion
-  amount           Float         // order/sale amount attributed
-  commissionAmount Float         // computed commission for this conversion
+  amount           Float // order/sale amount attributed
+  commissionAmount Float // computed commission for this conversion
   status           String        @default("PENDING") // PENDING, APPROVED, PAID, REJECTED
   createdAt        DateTime      @default(now())
 
@@ -659,17 +660,30 @@ model AffiliateConversion {
 }
 
 model PushSubscription {
-  id            String   @id @default(cuid())
-  endpoint      String
-  p256dh        String   // Encryption key (Base64)
-  auth          String   // Auth key (Base64)
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId      String?
-  userAgent     String?
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  endpoint  String
+  p256dh    String // Encryption key (Base64)
+  auth      String // Auth key (Base64)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId  String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
   @@unique([endpoint])
   @@index([userId])
   @@index([tenantId])
+}
+
+model GeneratedContent {
+  id        String   @id @default(cuid())
+  title     String
+  type      String // blog, email, social, etc
+  content   String   @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

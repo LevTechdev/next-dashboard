@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         router.refresh();
         return { success: true };
-      } catch (err: any) {
+      } catch {
         return { success: false, error: "Network error. Please try again." };
       }
     },
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailOtpRequired: data.emailOtpRequired === true,
           devOtp: typeof data.devOtp === "string" ? data.devOtp : undefined,
         };
-      } catch (err: any) {
+      } catch {
         return { success: false, error: "Network error. Please try again." };
       }
     },

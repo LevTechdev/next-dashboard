@@ -44,7 +44,7 @@ describe("PageProgressBar", () => {
   });
 
   it("completes and hides after the duration + 300ms fade", () => {
-    const { rerender, container } = render(<PageProgressBar duration={600} />);
+    const { rerender } = render(<PageProgressBar duration={600} />);
 
     // Trigger pathname change
     mockPathname = "/another-page";
@@ -73,7 +73,7 @@ describe("PageProgressBar", () => {
   // ── Custom duration ───────────────────────────────────────────────────
 
   it("uses custom duration for the indeterminate animation", () => {
-    const { rerender, container } = render(<PageProgressBar duration={200} />);
+    const { rerender } = render(<PageProgressBar duration={200} />);
 
     mockPathname = "/fast-page";
     rerender(<PageProgressBar duration={200} />);

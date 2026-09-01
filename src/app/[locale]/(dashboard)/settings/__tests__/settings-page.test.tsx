@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ConfirmProvider } from "@/components/ui/confirm-provider";
 import SettingsPage from "../page";

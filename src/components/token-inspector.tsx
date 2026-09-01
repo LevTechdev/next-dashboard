@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
 import {
-  CheckIcon,
   SunIcon,
   MoonIcon,
   SparklesIcon,

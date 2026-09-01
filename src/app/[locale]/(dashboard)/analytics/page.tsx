@@ -27,6 +27,7 @@ interface StatData {
   totalOrders: number;
   totalCustomers: number;
   revenueGrowth: number;
+  ordersGrowth: number;
   customersGrowth: number;
 }
 
@@ -107,7 +108,7 @@ function generateRetentionData() {
 }
 
 // Generate mock geographic data
-function generateGeoData(orders: any[]) {
+function generateGeoData() {
   const regions: Record<string, number> = {};
   const countries: Record<string, number> = {};
   const regionNames = [
@@ -149,11 +150,11 @@ export default function AnalyticsPage() {
     "/api/dashboard",
     { interval: 20000 },
   );
-  const { data: orders } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
+  const { data: ordersData } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
 
-  const funnelData = useMemo(() => generateFunnelData(orders || []), [orders]);
+  const funnelData = useMemo(() => generateFunnelData(ordersData || []), [ordersData]);
   const retentionData = useMemo(() => generateRetentionData(), []);
-  const geoData = useMemo(() => generateGeoData(orders || []), [orders]);
+  const geoData = useMemo(() => generateGeoData(), []);
 
   if (loading) {
     return (
@@ -218,31 +219,31 @@ export default function AnalyticsPage() {
             endValue: data.stats.totalRevenue,
             formatter: (v: number) => formatCurrency(v),
             duration: 1600,
-            change: "+12.5%",
+            change: data.stats.revenueGrowth >= 0 ? `+${data.stats.revenueGrowth}%` : `${data.stats.revenueGrowth}%`,
             icon: DollarSignIcon,
             color: "text-emerald-500",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            positive: true,
+            positive: data.stats.revenueGrowth >= 0,
           },
           {
             label: tdash("totalOrders"),
             endValue: data.stats.totalOrders,
             duration: 1400,
-            change: "+8.3%",
+            change: data.stats.ordersGrowth >= 0 ? `+${data.stats.ordersGrowth}%` : `${data.stats.ordersGrowth}%`,
             icon: ShoppingCart,
             color: "text-blue-500",
             bg: "bg-blue-50 dark:bg-blue-900/20",
-            positive: true,
+            positive: data.stats.ordersGrowth >= 0,
           },
           {
             label: tdash("totalCustomers"),
             endValue: data.stats.totalCustomers,
             duration: 1400,
-            change: "+15.2%",
+            change: data.stats.customersGrowth >= 0 ? `+${data.stats.customersGrowth}%` : `${data.stats.customersGrowth}%`,
             icon: UsersIcon,
             color: "text-purple-500",
             bg: "bg-purple-50 dark:bg-purple-900/20",
-            positive: true,
+            positive: data.stats.customersGrowth >= 0,
           },
           {
             label: tdash("funnelRate"),
@@ -468,7 +469,7 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topRegions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.regions.map(([region, count], i) => {
+                {geoData.regions.map(([region, count]) => {
                   const maxVal = geoData.regions[0][1];
                   const width = Math.max(10, (count / maxVal) * 100);
                   return (
@@ -496,7 +497,7 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topCountries")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.countries.map(([country, count], i) => {
+                {geoData.countries.map(([country, count]) => {
                   const maxVal = geoData.countries[0][1];
                   const width = Math.max(10, (count / maxVal) * 100);
                   const flags: Record<string, string> = {

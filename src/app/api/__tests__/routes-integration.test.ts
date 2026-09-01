@@ -521,7 +521,7 @@ describe("HTTP integration: auth guard consistency", () => {
       },
     ];
 
-    for (const { route, handler, req, expected } of testCases) {
+    for (const { handler, req, expected } of testCases) {
       const res = await handler(req);
       expect(res.status).toBe(expected);
     }

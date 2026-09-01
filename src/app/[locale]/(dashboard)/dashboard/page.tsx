@@ -1,4 +1,5 @@
 "use client";
+import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 import { useEffect, type ComponentType } from "react";
 import { usePathname } from "next/navigation";

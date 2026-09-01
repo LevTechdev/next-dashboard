@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { PlusIcon, SearchIcon } from "lucide-animated";
+import { PlusIcon } from "lucide-animated";
 import { Megaphone, Edit2, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, formatDate, getStatusColor, sanitizeInteger } from "@/lib/utils";
+import { formatCurrency, getStatusColor, sanitizeInteger } from "@/lib/utils";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { useAuth } from "@/hooks/use-auth";

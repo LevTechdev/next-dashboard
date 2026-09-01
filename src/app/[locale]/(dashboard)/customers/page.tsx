@@ -45,7 +45,6 @@ import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
-import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -79,7 +78,6 @@ export default function CustomersPage() {
   const {
     data: customers,
     loading,
-    lastUpdated,
     isRefreshing,
     refresh,
   } = useRealtimeData<any[]>("/api/customers", {

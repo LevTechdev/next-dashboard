@@ -77,13 +77,11 @@ function CategoryBreakdown({
     catStock["Uncategorized"] = uncategorized.reduce((sum, p) => sum + p.stock, 0);
   }
 
-  const totalProducts = products.length;
   const maxCount = Math.max(...Object.values(catCounts), 1);
 
   return (
     <div className="space-y-2.5">
       {Object.entries(catCounts).map(([name, count], i) => {
-        const percentage = Math.round((count / totalProducts) * 100);
         const stock = catStock[name] || 0;
         return (
           <motion.div
@@ -128,7 +126,7 @@ export default function InventoryPage() {
   const tcommon = useTranslations("common");
   const [search, setSearch] = useState("");
 
-  const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<InventoryData>(
+  const { data, lastUpdated, isRefreshing, refresh } = useRealtimeData<InventoryData>(
     "/api/products?includeCategories=true&includeValue=true",
     {
       interval: 20000,
@@ -360,7 +358,7 @@ export default function InventoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p: Product, i: number) => (
+                  {filtered.map((p: Product) => (
                     <tr
                       key={p.id}
                       className="border-b border-gray-100 dark:border-gray-800 transition-all duration-200"
