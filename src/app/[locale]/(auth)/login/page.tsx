@@ -107,7 +107,7 @@ function LoginForm() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#F25C38] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#b3f021] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -123,7 +123,7 @@ function LoginForm() {
         {/* Left Side */}
         <div className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
           <div className="w-full max-w-sm mx-auto">
-            <div className="flex items-center gap-2 text-[#F25C38] mb-6">
+            <div className="flex items-center gap-2 text-[#9bd419] dark:text-purple-400 mb-6">
               <Sparkles className="w-8 h-8 fill-current" />
               <span className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Next Dashboard</span>
             </div>
@@ -149,7 +149,7 @@ function LoginForm() {
                           className={cn(
                             "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
                             totpCode.length === i
-                              ? "border-[#F25C38] ring-1 ring-[#F25C38]"
+                              ? "border-[#b3f021] dark:border-purple-500 ring-1 ring-[#b3f021] dark:ring-purple-500"
                               : "border-zinc-200",
                             totpCode[i] ? "text-zinc-900" : "text-transparent",
                           )}
@@ -179,12 +179,12 @@ function LoginForm() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20"
+                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20"
                     disabled={totpCode.length < 6 || isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Verifying...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> Verifying...
                       </>
                     ) : (
                       "Verify & Login"
@@ -231,17 +231,17 @@ function LoginForm() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="admin@dashboard.com"
                       disabled={isLoading}
-                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#F25C38] focus:ring-[#F25C38]/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
                       required
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-2 shadow-none"
+                    className="w-full h-11 rounded-xl bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 transition-colors text-white font-semibold mt-2 shadow-none"
                   >
                     {isLoading ? (
-                      <LoaderCircleIcon size={16} className="animate-spin" />
+                      <LoaderCircleIcon size={16} className="h-4 w-4 animate-spin" />
                     ) : (
                       t("sendResetLink")
                     )}
@@ -271,7 +271,7 @@ function LoginForm() {
                       placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
+                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl"
                       required
                     />
                   </div>
@@ -279,7 +279,7 @@ function LoginForm() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-zinc-700 dark:text-zinc-300">{t("password")}</Label>
-                      <Link href={`/en/forgot-password`} className="text-sm font-medium text-[#F25C38] hover:underline">{t("forgotPassword")}</Link>
+                      <Link href={`/en/forgot-password`} className="text-sm font-medium text-[#9bd419] dark:text-purple-400 hover:underline">{t("forgotPassword")}</Link>
                     </div>
                     <div className="relative">
                       <Input
@@ -287,7 +287,7 @@ function LoginForm() {
                         placeholder={t("passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl pr-10"
+                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl pr-10"
                         required
                       />
                       <button
@@ -302,7 +302,7 @@ function LoginForm() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20 mt-2"
+                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20 mt-2"
                     disabled={!email || !password || isLoading}
                   >
                     {isLoading ? (
@@ -362,7 +362,7 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  {t("noAccount")} <Link href="/en/register" className="text-[#F25C38] hover:underline">{t("createOne")}</Link>
+                  {t("noAccount")} <Link href="/en/register" className="text-[#9bd419] dark:text-purple-400 hover:underline">{t("createOne")}</Link>
                 </p>
 
                 <p className="mt-2 text-center text-xs text-zinc-400">
@@ -390,20 +390,20 @@ function LoginForm() {
                   Creative resources
                 </span>
               </div>
-              <p className="text-zinc-900 font-semibold text-lg sm:text-xl mb-8 leading-snug">
+              <p className="text-zinc-900 dark:text-zinc-100 font-semibold text-lg sm:text-xl mb-8 leading-snug">
                 &quot;I was able to reduce the time taken to present high-level designs by 35% using
                 the platform.&quot;
               </p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-zinc-900 font-bold text-sm">Sara Bright</p>
-                  <p className="text-zinc-800/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
+                  <p className="text-zinc-900 dark:text-zinc-100 font-bold text-sm">Sara Bright</p>
+                  <p className="text-zinc-800/80 dark:text-zinc-300/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
+                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
+                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -420,7 +420,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#F25C38]">
+        <div className="min-h-screen flex items-center justify-center bg-[#b3f021] dark:bg-purple-600">
           <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-white" />
         </div>
       }

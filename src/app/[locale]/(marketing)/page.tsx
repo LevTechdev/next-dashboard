@@ -288,11 +288,12 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-foreground">
+            Your Business,<br />
             <FlipFadeText
-              words={["Your Business, Fully Unified", "Manage Everything, Effortlessly", "Scale Fast, Stay Secure"]}
+              words={["Fully Unified", "Effortlessly Managed", "Securely Scaled"]}
               interval={3000}
-              className="min-h-[80px] sm:min-h-[100px] md:min-h-[120px]"
-              textClassName="text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight"
+              className="min-h-[80px] sm:min-h-[100px] md:min-h-[120px] text-[#b3f021] mt-2"
+              textClassName="text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-[#b3f021]"
             />
           </h1>
 
