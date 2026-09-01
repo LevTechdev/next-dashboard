@@ -298,6 +298,16 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+            <Link
+              href={`/${locale}/register`}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
+            >
+              {t("ctaGetStarted")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href={`/${locale}/login`}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full border border-border bg-background/60 backdrop-blur text-sm font-semibold text-foreground hover:bg-background transition"
             >
               Live Demo
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -1143,12 +1153,10 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-primary/40 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-              Start Running Your Business
-              <br />
-              Smarter Today
+              {t("ctaTitle")}
             </h2>
             <p className="opacity-70 mb-8 text-lg">
-              Join thousands of businesses managing their operations on one unified platform.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
