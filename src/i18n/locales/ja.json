@@ -32,7 +32,10 @@
     "affiliates": "アフィリエイト",
     "logoutConfirmTitle": "ログアウトしますか？",
     "logoutConfirmDesc": "アカウントからサインアウトしてもよろしいですか？",
-    "sso": "SSO / エンタープライズ"
+    "sso": "SSO / エンタープライズ",
+    "aiGenerator": "AI生成",
+    "projects": "プロジェクト",
+    "superAdmin": "スーパー管理者"
   },
   "dashboard": {
     "title": "ダッシュボード概要",
@@ -762,7 +765,8 @@
     "channelQris": "QRIS（QRスキャン）",
     "channelBankTransfer": "銀行振込（バーチャル口座）",
     "channelCreditCard": "クレジット／デビットカード",
-    "checkoutLocalRedirect": "ローカル決済（Midtrans）へ移動しています...",
+    "checkoutLocalPopup": "安全な決済ウィンドウ（Midtrans）を開いています...",
+    "paymentPending": "決済を処理中です。確認され次第、プランを有効にします。",
     "localPaymentsTitle": "ローカル決済方法",
     "localPaymentsDesc": "Midtrans を利用したインドネシアの決済方法で支払えます — 国際カードは不要です。",
     "localPaymentsNote": "プランタブのチェックアウト時に決済方法を選択できます。"
@@ -1169,141 +1173,65 @@
     "ctaViewPricing": "料金を見る"
   },
   "featuresPage": {
-    "badge": "パワフルな機能",
-    "heroPrefix": "必要なすべてがここに、そして",
-    "word1": "成長。",
-    "word2": "拡大。",
-    "word3": "繁栄。",
-    "word4": "成功。",
-    "heroSubtitle": "リアルタイム分析からチームコラボレーションまで——Dashboard を究極のビジネス管理プラットフォームにするすべてのツールをご覧ください。",
-    "groupBadge1": "コア機能",
-    "groupBadge2": "管理",
-    "groupBadge3": "グロース",
-    "groupBadge4": "セキュリティ",
-    "g1Title": "分析とインサイト",
-    "g1Desc": "強力な分析とリアルタイムダッシュボードでデータ駆動の意思決定を。",
-    "g1f1Title": "ライブダッシュボード",
-    "g1f1Desc": "収益・注文・顧客・商品パフォーマンスなど主要指標をリアルタイムに一望。15 秒ごとに自動更新。",
-    "g1f2Title": "収益分析",
-    "g1f2Desc": "月次内訳・トレンド分析・チャネル分布を含むインタラクティブな収益チャート。ホバーで詳細表示。",
-    "g1f3Title": "売上レポート",
-    "g1f3Desc": "チャネル内訳、顧客サマリー、商品パフォーマンスを含む包括的な売上レポート。",
-    "g1f4Title": "チャネル分析",
-    "g1f4Desc": "オンラインストア、Facebook、Instagram、TikTok、Shopify など 6 以上の販売チャネルを追跡。",
-    "g2Title": "注文・顧客管理",
-    "g2Desc": "注文を効率的に管理し、より強固な顧客関係を構築。",
-    "g2f1Title": "マルチチャネル注文",
-    "g2f1Desc": "すべての販売チャネルの注文を統一インターフェースで管理。ステータス・支払い・配送を一目で把握。",
-    "g2f2Title": "顧客プロフィール",
-    "g2f2Desc": "注文履歴、累計購入額、連絡先を含む詳細な顧客プロフィール。",
-    "g2f3Title": "在庫追跡",
-    "g2f3Desc": "リアルタイムの在庫更新と低在庫アラートで全商品の在庫を監視。",
-    "g2f4Title": "注文追跡",
-    "g2f4Desc": "注文から配達まで、ステータス変更をビジュアルなタイムラインで追跡。",
-    "g3Title": "マーケティングとグロース",
-    "g3Desc": "強力なマーケティングツールとプロモーション機能で成長を推進。",
-    "g3f1Title": "キャンペーン管理",
-    "g3f1Desc": "チャネル横断のマーケティングキャンペーンを作成・追跡・分析。KPI と ROI を監視。",
-    "g3f2Title": "割引エンジン",
-    "g3f2Desc": "割引コード、プロモーション、季節価格を作成・管理。",
-    "g3f3Title": "グロース分析",
-    "g3f3Desc": "収益・顧客・注文・商品の成長指標を増減率とともに追跡。",
-    "g3f4Title": "データエクスポート",
-    "g3f4Desc": "注文・顧客・レポートを UTF-8 完全対応の CSV へエクスポート。",
-    "g4Title": "チームとセキュリティ",
-    "g4Desc": "データを安全に保ちながらチームで効果的に協働。",
-    "g4f1Title": "ロールベースアクセス",
-    "g4f1Desc": "管理者・マネージャー・スタッフの役割での細かな権限設定。全セクションのアクセスを制御。",
-    "g4f2Title": "チーム管理",
-    "g4f2Desc": "メンバー追加、役割割り当て、アクセス権限の管理。",
-    "g4f3Title": "リアルタイム更新",
-    "g4f3Desc": "Server-Sent Events が全接続クライアントへ即時に更新を配信。",
-    "g4f4Title": "監査ログ",
-    "g4f4Desc": "システム内のすべての操作を記録する完全なアクティビティログ。",
-    "perfTitle": "パフォーマンスのための設計",
-    "perfSubtitle": "すべての機能が高速・信頼性・直感性を追求。",
-    "perf1Title": "サブセカンド応答",
-    "perf1Desc": "DB クエリは 50ms 未満に最適化。ページ描画は 100ms 未満。",
-    "perf2Title": "99.9% 稼働保証",
-    "perf2Desc": "自動フェイルオーバー付き分散インフラ。計画停止ゼロ。",
-    "perf3Title": "リアルタイムデータ同期",
-    "perf3Desc": "Server-Sent Events が全クライアントに即時更新を配信。",
-    "statFeatures": "総機能数",
-    "statIntegrations": "連携",
-    "statUsers": "アクティブユーザー",
-    "statCountries": "展開国",
-    "ctaTitle": "始める準備はできましたか？",
-    "ctaDesc": "14 日間の無料トライアルを開始。クレジットカード不要。",
-    "ctaButton": "ダッシュボードへ"
-  },
-  "homePage": {
-    "badge": "パブリックベータ公開中",
-    "heroPrefix": "オペレーションに",
-    "word1": "精密さを。",
-    "word2": "明瞭さを。",
-    "word3": "スピードを。",
-    "word4": "自信を。",
-    "heroSubtitle": "断片化したデータとの格闘はもう終わり。分析・注文・チームを、現代のオペレーターのためのコマンドセンターに統合。",
-    "ctaEnter": "ダッシュボードへ",
-    "ctaDocs": "ドキュメントを見る",
-    "trustBusinesses": "企業",
-    "trustCountries": "ヶ国",
-    "trustUptime": "稼働率",
-    "mOrders": "処理済み注文",
-    "mUsers": "アクティブユーザー",
-    "mRevenue": "収益成長",
-    "mResponse": "平均応答",
-    "partnersLabel": "業界をリードするチームに選ばれています",
-    "cOrders": "処理済み注文",
-    "cUptime": "稼働率 SLA",
-    "cUsers": "アクティブユーザー",
-    "cRefresh": "データ更新",
-    "cGrowth": "平均成長率",
-    "cCustomers": "総顧客数",
-    "featuresBadge": "プラットフォームの実力",
-    "featuresTitle": "効率のアーキテクチャ。",
-    "featuresSubtitle": "大量処理オペレーションに必要なすべてを、最大限の明瞭さとリアルタイム応答のために構築。",
-    "learnMore": "詳しく見る",
-    "f1Title": "リアルタイム分析",
-    "f1Desc": "ライブ更新のダッシュボードでビジネス指標を監視。収益・注文・顧客成長をその場で把握。",
-    "f1Tag": "分析",
-    "f2Title": "マルチチャネル注文",
-    "f2Desc": "オンラインストア、Facebook、Instagram、Shopify など 6 以上のチャネルを統合管理。",
-    "f2Tag": "注文",
-    "f3Title": "顧客インテリジェンス",
-    "f3Desc": "深い分析、セグメンテーション、行動インサイトで顧客理解を深化。",
-    "f3Tag": "CRM",
-    "f4Title": "ロールベースセキュリティ",
-    "f4Desc": "管理者・マネージャー・スタッフ役割による綿密な権限制御。完全な監査ログで説明責任を確保。",
-    "f4Tag": "セキュリティ",
-    "statusLive": "ライブ",
-    "statusActive": "稼働中",
-    "connected": "接続済み",
-    "syncActive": "リアルタイム同期中",
-    "growthTitle": "成長指標",
-    "gRevenue": "収益",
-    "gOrders": "注文",
-    "gConversion": "コンバージョン",
-    "gAvgOrder": "平均注文",
-    "queueTitle": "優先キュー",
-    "q1": "保留中の注文を処理",
-    "q2": "顧客フィードバックを確認",
-    "q3": "在庫レベルを更新",
-    "q4": "月次レポートを作成",
-    "q5": "マーケティング施策を確認",
-    "liveTitle": "ひと目でライブに把握。",
-    "liveSubtitle": "システム状態、成長指標、優先タスクを一つのビューで——常に最新。",
-    "testiBadge": "お客様の声",
-    "testiTitle": "オペレーターに選ばれています。",
-    "testiSubtitle": "Dashboard に切り替えたチームの感想をご覧ください。",
-    "testi1Quote": "Dashboard はマルチチャネル運営のあり方を変えました。リアルタイム分析だけで毎日何時間も節約できています。",
-    "testi1Role": "オペレーションディレクター、Pixelcraft",
-    "testi2Quote": "ロールベースアクセスと監査ログのおかげで、5 名から 50 名へ安心してチームを拡大できました。",
-    "testi2Role": "CTO、Studio Nine",
-    "ctaTitle": "スケールへの準備は万全。",
-    "ctaDesc": "数分で Dashboard を導入し、チームの運用力を即座にアップグレード。複雑な設定は不要。",
-    "ctaAccess": "ワークスペースへ",
-    "ctaSales": "営業に相談"
+    "heroTag": "パワフルな機能",
+    "heroTitle": "必要なものをすべて、スケールする準備ができています",
+    "heroSubtitle": "土台づくりに何週間も費やすのはもうやめましょう。Next Dashboardは、認証、決済、国際化、堅牢なセキュリティのための本番レディな機能をすぐに提供します。",
+    "cta": "今すぐ構築を始める",
+    "mainFeatures": {
+      "auth": {
+        "title": "エンタープライズ級の認証",
+        "desc": "従来の認証情報、マジックリンク、ソーシャルログイン、必須2FAに対応した完全なID管理。NextAuth.js上に構築され、最大限のセキュリティと柔軟性を実現します。"
+      },
+      "payments": {
+        "title": "グローバルな決済処理",
+        "desc": "世界中でサブスクリプションと単発支払いを処理します。国際カード向けのStripeと、東南アジアのローカル決済手段（GoPay、QRIS、銀行振込）向けのMidtransに対応。"
+      },
+      "i18n": {
+        "title": "最高水準の国際化",
+        "desc": "グローバル市場へ即座に出荷できます。next-intlによる完全にローカライズされたルーティング、日時フォーマット、辞書管理。RTL言語とSEO最適化にも対応。"
+      },
+      "dashboard": {
+        "title": "美しい管理ダッシュボード",
+        "desc": "カスタマイズ可能なデータテーブル、インタラクティブなチャート、メトリックカード、高度なフィルタリングを備えた、レスポンシブな管理インターフェース。ビジネスロジックをすぐに組み込めます。"
+      }
+    },
+    "grid": {
+      "title": "さらに強力な機能",
+      "subtitle": "すべてを網羅しているので、余計な手間は不要です。",
+      "items": [
+        {
+          "title": "ダークモード対応",
+          "desc": "システム設定を自動検出する、完成度の高いダークモード。"
+        },
+        {
+          "title": "ロールベースのアクセス制御",
+          "desc": "ユーザー、管理者、カスタムロール向けのきめ細かな権限。"
+        },
+        {
+          "title": "APIルート",
+          "desc": "モバイルアプリですぐ使える、安全でレート制限付きのAPIエンドポイント。"
+        },
+        {
+          "title": "メールテンプレート",
+          "desc": "React Emailで構築された、美しくレスポンシブなトランザクションメール。"
+        },
+        {
+          "title": "SEO最適化",
+          "desc": "動的サイトマップ、robots.txt、最適化されたメタタグ。"
+        },
+        {
+          "title": "型安全",
+          "desc": "TypeScript、Prisma、Zodによるエンドツーエンドの型安全性。"
+        }
+      ]
+    },
+    "ctaTitle": "より速くリリースする準備はできていますか？",
+    "ctaDesc": "次世代のウェブアプリケーションを構築する何千人もの開発者に加わりましょう。",
+    "ctaButton": "今すぐ始める",
+    "heroPrefix": "必要なものをすべて、",
+    "heroWord1": "スケールする準備ができています。",
+    "heroWord2": "成長する準備ができています。",
+    "heroWord3": "パフォーマンスを発揮する準備ができています。"
   },
   "changelogPage": {
     "badge": "リリースノート",
@@ -1326,43 +1254,199 @@
     "subscribeBtn": "購読する",
     "ctaTitle": "始める準備はできましたか？",
     "ctaDesc": "Dashboard を利用する何千もの企業に加わりましょう。",
-    "ctaButton": "ダッシュボードへ"
+    "ctaButton": "ダッシュボードへ",
+    "entries": [
+      {
+        "version": "2.5.0",
+        "date": "2026年4月14日",
+        "tag": "最新リリース",
+        "tagColor": "bg-indigo-500/10 text-indigo-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Server-Sent Eventsによるリアルタイムのダッシュボード自動更新"
+          },
+          {
+            "type": "feature",
+            "text": "管理者・マネージャー・スタッフの役割を持つロールベースのアクセス制御"
+          },
+          {
+            "type": "improvement",
+            "text": "インタラクティブなツールチップ付きで再設計されたアナリティクスチャート"
+          },
+          {
+            "type": "fix",
+            "text": "1000件を超える注文リストのページネーションの問題を修正"
+          }
+        ]
+      },
+      {
+        "version": "2.4.0",
+        "date": "2026年3月28日",
+        "tag": "機能リリース",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Facebook、Instagram、TikTok向けのマルチチャネル注文管理"
+          },
+          {
+            "type": "feature",
+            "text": "支出パターンに基づく顧客セグメンテーション"
+          },
+          {
+            "type": "improvement",
+            "text": "注文読み込みが40%高速化するデータベースクエリの最適化"
+          },
+          {
+            "type": "improvement",
+            "text": "UTF-8完全対応で強化されたCSVエクスポート"
+          }
+        ]
+      },
+      {
+        "version": "2.3.0",
+        "date": "2026年3月10日",
+        "tag": "改善",
+        "tagColor": "bg-blue-500/10 text-blue-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "コード生成と追跡機能付きのディスカウントエンジン"
+          },
+          {
+            "type": "improvement",
+            "text": "通知設定を管理できるよう再設計された通知システム"
+          },
+          {
+            "type": "improvement",
+            "text": "詳細なアクションのメタデータで更新された監査ログ"
+          },
+          {
+            "type": "fix",
+            "text": "注文タイムスタンプのタイムゾーン不整合を解消"
+          }
+        ]
+      },
+      {
+        "version": "2.2.0",
+        "date": "2026年2月20日",
+        "tag": "機能リリース",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "注文ステータスの一括更新と一括操作"
+          },
+          {
+            "type": "feature",
+            "text": "在庫切れアラート付きの在庫追跡"
+          },
+          {
+            "type": "improvement",
+            "text": "ダッシュボード読み込み時間のパフォーマンス改善"
+          },
+          {
+            "type": "fix",
+            "text": "非ASCII文字のエクスポートファイル名エンコーディングを修正"
+          }
+        ]
+      },
+      {
+        "version": "2.1.0",
+        "date": "2026年2月5日",
+        "tag": "改善",
+        "tagColor": "bg-blue-500/10 text-blue-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "並べて比較できる売上チャネル比較"
+          },
+          {
+            "type": "improvement",
+            "text": "タブレット表示向けのレスポンシブデザイン改善"
+          },
+          {
+            "type": "fix",
+            "text": "iOS Safariでのモバイルナビゲーションメニューの重なりを修正"
+          }
+        ]
+      },
+      {
+        "version": "2.0.0",
+        "date": "2026年1月15日",
+        "tag": "メジャーリリース",
+        "tagColor": "bg-purple-500/10 text-purple-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "リアルタイム分析を備えたダッシュボードの全面リニューアル"
+          },
+          {
+            "type": "feature",
+            "text": "ロールベースの権限を持つチーム管理"
+          },
+          {
+            "type": "feature",
+            "text": "カスタム連携のためのWebhook対応REST API"
+          },
+          {
+            "type": "feature",
+            "text": "オフライン対応のプログレッシブWebアプリ"
+          },
+          {
+            "type": "improvement",
+            "text": "パフォーマンスが向上したNext.js 16への移行"
+          }
+        ]
+      }
+    ],
+    "typeLabels": {
+      "feature": "新機能",
+      "improvement": "改善",
+      "fix": "バグ修正"
+    },
+    "heroWord1": "変更履歴",
+    "heroWord2": "アップデート",
+    "heroWord3": "リリース"
   },
   "integrationsPage": {
-    "badge": "シームレスな連携",
-    "heroPrefix": "つなげよう、あなたの",
-    "word1": "スタックを。",
-    "word2": "ツールを。",
-    "word3": "アプリを。",
-    "word4": "プラットフォームを。",
-    "heroSubtitle": "既にお使いのツールとシームレスに接続。決済、EC、コミュニケーション、分析プラットフォーム間でデータを同期。",
-    "popular": "人気",
-    "connect": "接続",
-    "catBadge": "カテゴリで探す",
-    "catTitle": "カテゴリ別に探索",
-    "catSubtitle": "機能別に整理された連携をブラウズし、ワークフローに最適なものを見つけましょう。",
-    "featBadge": "連携の特長",
-    "featTitle": "シームレス接続のための設計",
-    "featDesc": "すべての連携は信頼性と開発者体験を重視して構築。一度接続すればデータは自然に流れます。",
-    "feat1": "リアルタイム双方向データ同期",
-    "feat2": "OAuth 2.0 セキュア認証",
-    "feat3": "指数バックオフ付き自動リトライ",
-    "feat4": "イベント駆動更新の Webhook 対応",
-    "feat5": "レート制限とクォータ管理",
-    "feat6": "詳細な同期ログと監査証跡",
-    "statusConnected": "接続済み",
-    "statusSyncing": "同期中...",
-    "statusDisconnected": "未接続",
-    "apiTitle": "独自の連携を構築",
-    "apiDesc": "REST API と Webhook でカスタム連携を簡単に構築。充実したドキュメント、SDK、開発者サポート付き。",
-    "apiButton": "API ドキュメントを見る",
-    "statTotal": "連携総数",
-    "statConnections": "アクティブ接続",
-    "statRequests": "API リクエスト/月",
-    "statPlatforms": "プラットフォーム",
-    "ctaTitle": "今日から接続を始めよう",
-    "ctaDesc": "クレジットカード不要。無料プランで最大 5 つの連携を接続。",
-    "ctaButton": "ダッシュボードへ"
+    "heroTag": "シームレスな連携",
+    "heroTitle": "お気に入りのツールと接続",
+    "heroSubtitle": "Next Dashboardは、業界最高のツールとプラットフォームがプリコンフィグ済み。設定不要でアプリの機能を拡張できます。",
+    "cta": "ドキュメントを見る",
+    "categoriesTitle": "カテゴリから探す",
+    "categoriesSubtitle": "ニーズに合った最適な連携を見つけましょう。",
+    "allIntegrations": "すべての連携",
+    "popularTag": "人気",
+    "ctaTitle": "独自の連携を構築",
+    "ctaDesc": "特別なものが必要ですか？強力なAPIを使って、あらゆるプラットフォームへのカスタム接続を構築できます。",
+    "ctaButton": "APIドキュメントを見る",
+    "heroPrefix": "接続するのは",
+    "heroWord1": "お気に入りのツール。",
+    "heroWord2": "お気に入りのアプリ。",
+    "heroWord3": "日常使いのすべて。",
+    "desc": {
+      "stripe": "決済処理、サブスクリプション管理、請求処理をシームレスに行えます。",
+      "shopify": "Shopifyストアの注文、商品、在庫をリアルタイムで同期します。",
+      "sendgrid": "トランザクションメール、通知、マーケティングキャンペーンを大規模に送信できます。",
+      "slack": "チャンネルでリアルタイムのアラート、注文の更新、チーム通知を受け取れます。",
+      "postgresql": "既存のデータベースを接続して、カスタム分析とレポートを実現します。",
+      "aws": "AWSクラウドサービスでインフラをデプロイ・拡張します。",
+      "ga": "データと合わせてトラフィック、ユーザー行動、コンバージョン指標を追跡します。",
+      "zapier": "3,000以上のアプリを接続し、コードを書かずにワークフローを自動化します。",
+      "social": "ソーシャルコマースチャンネルの注文と広告をひとつの場所で管理します。"
+    },
+    "catPayments": "決済",
+    "catEcommerce": "EC",
+    "catEmail": "メール",
+    "catCommunication": "コミュニケーション",
+    "catData": "データ",
+    "catInfrastructure": "インフラ",
+    "catAnalytics": "アナリティクス",
+    "catAutomation": "自動化",
+    "catSocial": "ソーシャル",
+    "connectButton": "接続する"
   },
   "site": {
     "navFeatures": "機能",
@@ -1376,10 +1460,36 @@
     "signIn": "サインイン",
     "signUp": "新規登録",
     "myAccount": "マイアカウント",
-    "footerDesc": "リアルタイム分析、注文管理、チームコラボレーションなど、ビジネスを効率的に運営するために必要なすべてを備えた総合ビジネス管理プラットフォーム。",
+    "footerDesc": "信頼性が高く、拡張性に優れ、革新的なソリューションでビジネス運営の一元化を支援します。",
     "footerProduct": "製品",
     "footerCompany": "会社",
-    "footerRights": "ダッシュボード管理システム。無断転載を禁じます。"
+    "footerRights": "Next Dashboard。無断複写・転載を禁じます。",
+    "megaAnalyticsTitle": "アナリティクス",
+    "megaAnalyticsDesc": "リアルタイムのメトリクスとレポート",
+    "megaSecurityTitle": "セキュリティ",
+    "megaSecurityDesc": "エンタープライズ級の保護",
+    "megaAutomationTitle": "自動化",
+    "megaAutomationDesc": "スマートなワークフローとトリガー",
+    "megaScaleTitle": "グローバル対応",
+    "megaScaleDesc": "多通貨・多言語対応",
+    "viewAllFeatures": "すべて見る",
+    "footerSolutions": "ソリューション",
+    "footerResources": "リソース",
+    "footerLinkBusinessAutomation": "ビジネス自動化",
+    "footerLinkCloudServices": "クラウドサービス",
+    "footerLinkAnalytics": "アナリティクス",
+    "footerLinkDocumentation": "ドキュメント",
+    "footerLinkAboutUs": "私たちについて",
+    "footerLinkCareers": "採用情報",
+    "footerLegalTerms": "利用規約",
+    "footerLegalPrivacy": "プライバシーポリシー",
+    "footerLegalCookies": "Cookie設定",
+    "footerLegalAccessibility": "アクセシビリティ",
+    "footerCtaTitle": "Next Dashboardで一歩先を行く",
+    "footerCtaDesc": "革新的なビジネスソリューションを求めてNext Dashboardを信頼する何千人ものプロフェッショナルに加わりましょう。",
+    "footerEmailPlaceholder": "メールアドレスを入力",
+    "footerSubscribe": "今すぐ登録",
+    "footerPreviewAlt": "ダッシュボードのプレビュー"
   },
   "auth": {
     "login": "ログイン",
@@ -1404,19 +1514,76 @@
     "creating": "作成中...",
     "verifyAndLogin": "確認してログイン",
     "backToLogin": "← ログインに戻る",
-    "resetPasswordTitle": "Reset Password",
-    "resetPasswordSubtitle": "Enter your new password below",
-    "invalidResetToken": "Invalid or expired reset token",
-    "forgotPasswordTitle": "Forgot your password?",
-    "forgotPasswordSubtitle": "Enter your email and we'll send a reset link",
-    "email": "Email Address",
-    "sendResetLink": "Send Reset Link",
-    "resetLinkSent": "Reset Link Sent",
-    "resetLinkSentDesc": "Check your email for a link to reset your password",
+    "resetPasswordTitle": "パスワードのリセット",
+    "resetPasswordSubtitle": "新しいパスワードを入力してください",
+    "invalidResetToken": "リセットトークンが無効または期限切れです",
+    "forgotPasswordTitle": "パスワードをお忘れですか？",
+    "forgotPasswordSubtitle": "メールアドレスを入力すると、リセットリンクをお送りします",
+    "email": "メールアドレス",
+    "sendResetLink": "リセットリンクを送信",
+    "resetLinkSent": "リセットリンクを送信しました",
+    "resetLinkSentDesc": "パスワードをリセットするためのリンクをメールでご確認ください",
     "sendingResetLink": "リセットリンクを送信中...",
     "resendResetLink": "リセットリンクを再送信",
     "resendInSeconds": "{seconds}秒後に再送信",
-    "resetError": "問題が発生しました。もう一度お試しください"
+    "resetError": "問題が発生しました。もう一度お試しください",
+    "testimonialBadge1": "デザイナーコミュニティ",
+    "testimonialBadge2": "クリエイティブリソース",
+    "testimonialQuote": "「高品質なデザインの発表にかかる時間を、このプラットフォームで35%削減できました。」",
+    "testimonialName": "サラ・ブライト",
+    "testimonialRole": "フリーランスデザイナー",
+    "enterEmailPassword": "メールアドレスとパスワードを入力してください",
+    "invalidCodeLength": "有効な6桁のコードを入力してください",
+    "welcomeBackToast": "お帰りなさい！",
+    "loginFailed": "ログインに失敗しました",
+    "invalidCode": "コードが無効です",
+    "errorGeneric": "エラーが発生しました",
+    "pleaseFillFields": "すべての項目を入力してください",
+    "passwordMinLength": "パスワードは6文字以上必要です",
+    "passwordMismatch": "パスワードが一致しません",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "パスワードの確認",
+    "passwordTooShort": "パスワードは8文字以上必要です",
+    "resetPasswordButton": "パスワードをリセット",
+    "resettingPassword": "リセット中...",
+    "passwordResetSuccess": "パスワードをリセットしました",
+    "registerTitle": "アカウント作成",
+    "registerSubtitle": "コミュニティに参加して、未来を築き始めましょう。",
+    "signUpButton": "登録する",
+    "verifyEmailTitle": "メールアドレスを確認",
+    "verifyEmailDesc": "6桁のコードを送信しました：",
+    "confirmationCode": "確認コード",
+    "verifyContinue": "確認して続行",
+    "developmentOtp": "開発用OTP",
+    "resendCodeIn": "{seconds}秒後にコードを再送信",
+    "didntReceiveCode": "コードが届きませんか？再送信",
+    "accountCreatedCheckEmail": "アカウントが作成されました！メールで6桁のコードを確認してください。",
+    "accountCreated": "アカウントが作成されました！",
+    "emailVerifiedToast": "メールが確認されました！",
+    "newCodeSentToast": "新しいコードをメールに送信しました。",
+    "otpFormatError": "メールに記載された6桁のコードを入力してください。",
+    "otpExpired": "このコードは期限切れです。下から新しいコードをリクエストしてください。",
+    "otpTooManyAttempts": "不正な試行が多すぎます。下から新しいコードをリクエストしてください。",
+    "otpIncorrectAttempts": "コードが正しくありません。残り{attempts}回です。",
+    "otpIncorrect": "コードが正しくありません。新しいコードをリクエストしてください。",
+    "otpGenericError": "問題が発生しました。もう一度お試しください。",
+    "resendFailedGeneric": "コードを再送信できませんでした。もう一度お試しください。",
+    "password": "パスワード",
+    "loginButton": "ログイン",
+    "loginDescription": "アカウントにログインして、引き続きリソースを活用してください。",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "createOne": "作成する",
+    "twoFactorAuth": "二段階認証",
+    "twoFactorDescription": "認証アプリの6桁のコードを入力して続行してください。",
+    "verificationCode": "認証コード",
+    "fullName": "氏名",
+    "haveAccount": "すでにアカウントをお持ちですか？",
+    "createAccount": "アカウント作成",
+    "createAccountButton": "アカウントを作成",
+    "creatingAccount": "アカウントを作成中...",
+    "registerDescription": "登録して、Next Dashboard を使い始めましょう。",
+    "verifyButton": "確認"
   },
   "csvImport": {
     "importCsv": "CSV インポート",
@@ -1829,6 +1996,7 @@
     "compareTitle": "プランを比較",
     "compareSubtitle": "すべてのプランに14日間の無料トライアルが含まれます。クレジットカードは不要です。",
     "faqTitle": "よくある質問",
+    "faqSubtitle": "すべてのプランに14日間の無料トライアルが付いています。クレジットカードは不要です。",
     "faqQ1": "プランはいつでもアップグレード・ダウングレードできますか？",
     "faqA1": "はい、いつでもプランを変更できます。アップグレード時は日割り差額が請求され、ダウングレード時は次の請求サイクル開始時に新しい料金が適用されます。",
     "faqQ2": "無料トライアルはありますか？",
@@ -1877,5 +2045,287 @@
     "proTeam": "10",
     "enterpriseOrders": "無制限",
     "enterpriseTeam": "無制限"
+  },
+  "homepage": {
+    "heroTag": "完全なNext.js SaaSスターターキット",
+    "heroPrefix": "あなたのビジネス、",
+    "heroWord1": "完全に統合。",
+    "heroWord2": "完全に自動化。",
+    "heroWord3": "完全に接続。",
+    "heroSubtitle": "モダンなSaaS構築に必要なすべて：認証、Stripe & Midtrans決済、国際化、ダークモード、ダッシュボードなど。すぐにデプロイ可能。",
+    "ctaAccess": "ワークスペースへ",
+    "ctaTitle": "スケールへの準備は万全。",
+    "ctaDesc": "数分で Dashboard を導入し、チームの運用力を即座にアップグレード。複雑な設定は不要。",
+    "demoOrders": {
+      "title": "最近の注文"
+    },
+    "security": {
+      "title": "エンタープライズセキュリティ"
+    },
+    "marquee": {
+      "label": "ビジネスで既に使っているツールと接続",
+      "d0": "決済・請求",
+      "d1": "インドネシアのゲートウェイ",
+      "d2": "EC同期",
+      "d3": "マーケットプレイスの注文",
+      "d4": "ソーシャルコマース",
+      "d5": "AIを活用したインサイト",
+      "d6": "リアルタイムデータ",
+      "d7": "トランザクションメール"
+    },
+    "heroCard": {
+      "uptime": "稼働率SLA保証",
+      "rating": "平均顧客評価",
+      "data": "処理済みデータポイント",
+      "liveDemo": "ライブデモ",
+      "cue": "スクロール",
+      "chip1": "アナリティクス",
+      "chip2": "決済",
+      "chip3": "セキュリティ",
+      "chip4": "API",
+      "chip5": "マルチチャネル"
+    },
+    "trust": {
+      "b1": "クレジットカード不要",
+      "b2": "数分でデプロイ",
+      "b3": "マルチテナント対応",
+      "b4": "SOC 2準拠"
+    },
+    "bento": {
+      "badge": "プラットフォーム機能",
+      "t1": "ビジネス運営に必要な",
+      "t2": "すべてがここに",
+      "sub": "注文管理からエンタープライズセキュリティまで、あらゆるツールが標準搭載され、すぐに使えます。",
+      "onlineStore": "オンラインストア",
+      "revenueEyebrow": "収益概要",
+      "monthlyLegend": "月次収益",
+      "liveLegend": "15秒ごとにライブ更新",
+      "channelEyebrow": "チャネル別売上",
+      "channelTitle": "マルチチャネルコマース",
+      "ordersEyebrow": "注文",
+      "viewAll": "すべて見る",
+      "catalog": "カタログ",
+      "topTitle": "人気商品",
+      "ordersSuffix": "件の注文",
+      "gatewayTitle": "デュアル決済ゲートウェイ",
+      "gatewayDesc": "グローバルおよびインドネシア市場向けの Stripe + Midtrans。通貨換算は自動です。",
+      "gwBadgeGlobal": "グローバル",
+      "gwBadgeIndonesia": "インドネシア",
+      "gwCardDesc": "カード、Apple Pay、Google Pay",
+      "gwMidDesc": "DANA、GoPay、QRIS、銀行振込",
+      "secBody": "TOTP 2FA、WebAuthnパスキー、SAML SSO、セッション管理、監査ログ。",
+      "s1l": "2FA / TOTP",
+      "s1s": "Google Authenticator",
+      "s2l": "WebAuthn",
+      "s2s": "パスキー・生体認証",
+      "s3l": "SAML SSO",
+      "s3s": "エンタープライズIdP",
+      "s4l": "監査ログ",
+      "s4s": "完全なイベント記録",
+      "aiTitle": "AIビジネスアシスタント",
+      "aiBody": "ビジネスについて平易な言葉で何でも質問できます。GPT-4搭載。",
+      "aiQ1": "先月のベストセラー商品は？",
+      "aiQ2": "Instagramの保留中注文を表示",
+      "aiQ3": "Q3の収益レポートを作成",
+      "ecoEyebrow": "エコシステム",
+      "ecoTitle": "プラットフォーム連携",
+      "apiTitle": "REST API & Webhook",
+      "apiBody": "バージョン管理されたエンドポイント、APIキー管理、Webhook配信ログを備えた完全な公開API v1。",
+      "rtEyebrow": "リアルタイムインフラ",
+      "rtTitle": "ライブダッシュボード更新",
+      "rtBody": "Server-Sent Eventsにより、注文・在庫・決済の更新がすべてのダッシュボードタブへ即時反映されます — 更新不要。",
+      "rt1": "SSEストリーミング",
+      "rt2": "15秒オートポーリング",
+      "rt3": "マルチタブ同期",
+      "rt4": "オフライン検出"
+    },
+    "orderStatus": {
+      "completed": "完了",
+      "processing": "処理中",
+      "shipped": "発送済み",
+      "cancelled": "キャンセル済み"
+    },
+    "why": {
+      "badge": "選ばれる理由",
+      "t1": "現代のコマースチームの",
+      "t2": "ために設計",
+      "f1t": "マルチチャネル注文管理",
+      "f1d": "Shopify、Tokopedia、TikTok Shop、Instagram、Facebook の注文をひとつの受信トレイで同期。",
+      "f2t": "高度なアナリティクスとレポート",
+      "f2d": "収益コホート分析、地域別内訳、コンバージョンファネル、定着率ヒートマップ。",
+      "f3t": "ロールベースのアクセス制御",
+      "f3d": "カスタムロール、チーム管理、機能ごとの権限制御を備えたきめ細かなRBAC。",
+      "f4t": "スマート通知",
+      "f4d": "在庫切れ、注文ステータス変更、支払い失敗、収益マイルストーンを設定可能なアラートで通知。",
+      "l1": "処理済み注文",
+      "l2": "追跡中の収益",
+      "l3": "平均応答時間",
+      "l4": "稼働率SLA"
+    },
+    "plans": {
+      "badge": "料金",
+      "t1": "シンプルで透明な料金",
+      "sub": "無料で始めて、必要な時にスケール。",
+      "starterName": "スターター",
+      "starterDesc": "始めたばかりの小規模ビジネスに最適。",
+      "f1": "月100件までの注文",
+      "f2": "2つの販売チャネル",
+      "f3": "基本アナリティクス",
+      "f4": "メールサポート",
+      "f5": "APIアクセス（読み取り専用）",
+      "proName": "プロ",
+      "proDesc": "フルパワーを求める成長チーム向け。",
+      "popular": "一番人気",
+      "month": "/月",
+      "pf1": "無制限の注文",
+      "pf2": "すべての販売チャネル",
+      "pf3": "高度なアナリティクスとレポート",
+      "pf4": "2FA + SSO + WebAuthn",
+      "pf5": "Stripe & Midtrans決済",
+      "pf6": "AIアシスタント",
+      "pf7": "API & Webhook（フルアクセス）",
+      "pf8": "優先サポート",
+      "ctaFree": "無料で始める",
+      "ctaTrial": "14日間無料トライアルを開始",
+      "entQ": "エンタープライズやカスタムボリュームが必要ですか？",
+      "entContact": "営業に問い合わせ"
+    },
+    "stories": {
+      "badge": "お客様の声",
+      "title": "ビジネスチームに信頼されています",
+      "q1": "手作業のスプレッドシートからリアルタイムダッシュボードへ、たった半日で移行できました。マルチチャネル注文管理で毎週20時間以上を節約。",
+      "q2": "Stripe + Midtrans のデュアル決済統合は、インドネシア市場にとって革新的です。売上照合が完全に自動化されました。",
+      "q3": "2FA、WebAuthn、SSO などのエンタープライズ機能により、SOC 2 準拠をすぐに達成。セキュリティチームも大いに感心していました。"
+    },
+    "final": {
+      "getStarted": "無料で始める",
+      "signIn": "ログイン"
+    }
+  },
+  "pricingPage": {
+    "heroTag": "シンプルな価格設定",
+    "heroTitle": "成長に合わせて選べる価格",
+    "heroSubtitle": "無料で始めて、必要なときにアップグレード。隠れた費用や驚きの請求はありません。",
+    "monthly": "月払い",
+    "yearly": "年払い",
+    "yearlyDiscount": "20%お得",
+    "featuresIncluded": "すべて含まれています：",
+    "mostPopular": "最も人気",
+    "getStarted": "始める",
+    "contactSales": "営業に問い合わせ",
+    "faqTitle": "よくある質問",
+    "faqSubtitle": "価格と請求について知っておくべきすべて。",
+    "ctaTitle": "今すぐ構築を始めませんか？",
+    "ctaDesc": "Next Dashboardでより速くリリースしている何千人もの開発者に加わりましょう。",
+    "ctaButton": "無料トライアルを開始",
+    "heroPrefix": "価格は",
+    "heroWord1": "成長に合わせてスケール。",
+    "heroWord2": "予算にフィット。",
+    "heroWord3": "あなたとともに成長。",
+    "plans": {
+      "starter": {
+        "name": "スターター",
+        "desc": "始めたばかりの小規模ビジネスに最適。",
+        "features": [
+          "月間100件までの注文",
+          "チームメンバー3人まで",
+          "基本的な分析",
+          "標準エクスポート",
+          "メールサポート"
+        ]
+      },
+      "professional": {
+        "name": "プロフェッショナル",
+        "desc": "フルパワーを必要とする成長チーム向け。",
+        "features": [
+          "月間1,000件までの注文",
+          "チームメンバー10人まで",
+          "高度なリアルタイム分析",
+          "優先サポート",
+          "マルチチャネル連携",
+          "カスタムレポート",
+          "ロールベースのアクセス制御",
+          "API & Webhook"
+        ]
+      },
+      "enterprise": {
+        "name": "エンタープライズ",
+        "desc": "大量取引を行うビジネス向けのカスタムソリューション。",
+        "features": [
+          "無制限の注文",
+          "無制限のチームメンバー",
+          "高度なリアルタイム分析",
+          "24時間365日の専任サポート",
+          "マルチチャネル連携",
+          "カスタムレポート",
+          "ロールベースのアクセス制御",
+          "API & Webhook",
+          "カスタムデータエクスポート"
+        ]
+      }
+    },
+    "perMonth": "/月",
+    "compareCols": [
+      "機能",
+      "スターター",
+      "プロフェッショナル",
+      "エンタープライズ"
+    ],
+    "compareRows": [
+      [
+        "月間注文数",
+        "100",
+        "1,000",
+        "無制限"
+      ],
+      [
+        "チームメンバー",
+        "3",
+        "10",
+        "無制限"
+      ],
+      [
+        "分析",
+        "基本",
+        "高度",
+        "高度"
+      ],
+      [
+        "サポート",
+        "メール",
+        "優先",
+        "24時間専任"
+      ],
+      [
+        "APIアクセス",
+        "-",
+        "フル",
+        "フル"
+      ],
+      [
+        "カスタムエクスポート",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
+    ],
+    "toastPlanNotFound": "プランが見つかりません。もう一度お試しください。",
+    "toastCheckoutFailed": "チェックアウトに失敗しました",
+    "compareTitle": "プランを比較",
+    "compareSubtitle": "すべてのプランに14日間の無料トライアルが含まれます。クレジットカードは不要です。",
+    "faqQ1": "プランはいつでもアップグレード・ダウングレードできますか？",
+    "faqA1": "はい、いつでもプランを変更できます。アップグレード時は日割り差額が請求され、ダウングレード時は次の請求サイクル開始時に新しい料金が適用されます。",
+    "faqQ2": "無料トライアルはありますか？",
+    "faqA2": "はい！すべてのプランに14日間の無料トライアルが付いています。クレジットカードは不要です。トライアル期間中に選択したプランの全機能をお試しいただけます。",
+    "faqQ3": "対応している支払い方法は？",
+    "faqA3": "主要なクレジットカード、PayPal、年間プランの銀行振込に対応しています。すべての支払いはStripeを通じて安全に処理されます。",
+    "faqQ4": "サブスクリプションを解約できますか？",
+    "faqA4": "はい、いつでも解約できます。現在の請求期間の終了までアクセスは継続されます。"
   }
 }

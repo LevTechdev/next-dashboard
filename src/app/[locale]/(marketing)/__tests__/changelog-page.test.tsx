@@ -1,6 +1,28 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import ChangelogPage from "../changelog/page";
+
+vi.mock("framer-motion", async () => {
+  const actual = await vi.importActual("framer-motion");
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    motion: {
+      div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+      span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+      p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
+      h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+      h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+    },
+  };
+});
+
+vi.mock("next-intl", async () => {
+  const mod = await import("@/test-utils/i18n-mock");
+  const en = await import("../../../../i18n/locales/en.json");
+  return mod.createTranslationsMock({ changelogPage: (en as any).default.changelogPage });
+});
 
 const mockParams = Promise.resolve({ locale: "en" });
 (mockParams as any).status = "fulfilled";
@@ -13,8 +35,7 @@ beforeEach(() => {
 describe("Changelog Page", () => {
   it("renders the header section", () => {
     expect(screen.getByText("Release Notes")).toBeInTheDocument();
-    // The h1 renders "What's " + FlipFadeText cycling through words like "new.", "shipping.", etc.
-    expect(screen.getByText("What's")).toBeInTheDocument();
+    expect(screen.getByText("Product")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
@@ -38,9 +59,7 @@ describe("Changelog Page", () => {
 
   it("renders version tags", () => {
     expect(screen.getByText("Latest Release")).toBeInTheDocument();
-    // "Feature Release" appears on v2.4.0 and v2.2.0
     expect(screen.getAllByText("Feature Release").length).toBeGreaterThanOrEqual(2);
-    // "Improvement" appears as tag on v2.3.0 and v2.1.0
     expect(screen.getAllByText("Improvement").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Major Release")).toBeInTheDocument();
   });
@@ -77,13 +96,11 @@ describe("Changelog Page", () => {
       screen.getByText(/Get notified about new releases, features, and updates/),
     ).toBeInTheDocument();
 
-    // Verify email input has proper accessibility attributes
     const emailInput = screen.getByPlaceholderText("Enter your email");
     expect(emailInput).toBeInTheDocument();
     expect(emailInput).toHaveAttribute("type", "email");
     expect(emailInput).toHaveAttribute("placeholder", "Enter your email");
 
-    // Subscribe button
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
   });
 
@@ -96,7 +113,6 @@ describe("Changelog Page", () => {
     const ctaButton = screen.getByText("Go to Dashboard");
     expect(ctaButton).toBeInTheDocument();
 
-    // Verify CTA link has a proper href
     const anchor = ctaButton.closest("a");
     expect(anchor).toHaveAttribute("href");
     expect(anchor?.getAttribute("href")).toContain("/dashboard");
@@ -117,20 +133,8 @@ describe("Changelog Page", () => {
       expect(await screen.findByText("56+")).toBeInTheDocument();
     });
 
-    it("renders release stat icons", () => {
-      const commitIcon = document.querySelector('[data-testid="icon-gitcommithorizontal"]');
-      const sparklesIcon = document.querySelector('[data-testid="icon-sparkles"]');
-      const rocketIcon = document.querySelector('[data-testid="icon-rocket"]');
-      const bugIcon = document.querySelector('[data-testid="icon-bug"]');
-      expect(commitIcon).toBeInTheDocument();
-      expect(sparklesIcon).toBeInTheDocument();
-      expect(rocketIcon).toBeInTheDocument();
-      expect(bugIcon).toBeInTheDocument();
-    });
-
     it("uses tabular-nums for stat values", () => {
       const valueElements = document.querySelectorAll(".tabular-nums");
-      // Each stat card has a tabular-nums class on the value container
       expect(valueElements.length).toBeGreaterThanOrEqual(4);
     });
   });

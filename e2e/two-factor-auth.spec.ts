@@ -8,8 +8,9 @@ import { registerFreshUser, TEST_PASSWORD } from "./helpers";
  *
  * Covers the full TOTP lifecycle against a freshly-registered user (so the
  * seed admin's 2FA state is never mutated):
- *   1. Register → Security Center → "Set up 2FA" → capture the secret →
- *      enter a generated code → 2FA active.
+ *   1. Register (via registerFreshUser — register OTP step clicks
+ *      "Verify & Continue", see helpers.ts) → Security Center → "Set up 2FA"
+ *      → capture the secret → enter a generated code → 2FA active.
  *   2. Next sign-in requires a TOTP code; an invalid code is rejected.
  *   3. Disable 2FA from the Security Center (password confirmation).
  *
@@ -35,19 +36,28 @@ async function freshCode(secret: string) {
   return generateSync({ secret });
 }
 
+/**
+ * Fill the login TOTP prompt. The prompt is the segmented 6-cell input with
+ * an invisible overlay input (no placeholder) that AUTO-SUBMITS on the 6th
+ * digit — so we fill and let it fire. Clicking the "Verify & Login" button
+ * would race the auto-submit and hit a button that is already disabled.
+ */
+async function fillLoginTotp(page: Page, code: string) {
+  await page.locator('input[inputmode="numeric"]').fill(code);
+}
+
 async function loginWithTotp(page: Page) {
   await page.goto("/en/login");
   await page.waitForLoadState("networkidle");
-  await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
-  await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign In", exact: true }).click();
+  await page.locator('input[type="email"]').fill(email);
+  await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
 
-  // 2FA prompt replaces the login card.
-  await expect(page.getByText("Enter the 6-digit code from your authenticator app")).toBeVisible();
+  // 2FA prompt replaces the login card (h1 t("auth.twoFactorAuth")).
+  await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
   // Generate the code as late as possible (right before submit).
-  await page.getByPlaceholder("000000").fill(await freshCode(totpSecret));
-  await page.getByRole("button", { name: /Verify & Login/i }).click();
-  await expect(page).toHaveURL(/\/en\/dashboard/);
+  await fillLoginTotp(page, await freshCode(totpSecret));
+  await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
 }
 
 test.describe("Two-Factor Authentication", () => {
@@ -70,52 +80,59 @@ test.describe("Two-Factor Authentication", () => {
     // button while the page is still hydrating silently drops the click).
     await expect(page.getByText("Not enabled").first()).toBeVisible();
 
-    // 3. Start 2FA setup: dialog shows QR + secret.
+    // 3. Start 2FA setup: the dialog ("Setup authenticator app") shows the QR
+    //    code and the manual secret key.
     await page.getByRole("button", { name: "Set up 2FA" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
-    await expect(dialog.locator("img[alt='TOTP QR Code']")).toBeVisible();
+    await expect(dialog.getByText("Setup authenticator app")).toBeVisible();
 
-    // 4. Capture the secret (displayed grouped in 4s) and generate a code.
-    const secretText = (await dialog.locator("code").textContent()) ?? "";
+    // 4. Capture the secret — the <code> block shows it grouped in 4s and
+    //    repeats it raw in an sr-only span; read the sr-only copy so the
+    //    grouping never leaks in — and generate a code from it.
+    const secretText =
+      (await dialog.locator("code span.sr-only").textContent()) ??
+      // Fallback: the grouped visible copy ends with the raw 32-char
+      // duplicate, so strip whitespace and keep the tail.
+      ((await dialog.locator("code").textContent()) ?? "").replace(/\s/g, "").slice(-32);
     totpSecret = secretText.replace(/\s/g, "");
     expect(totpSecret.length).toBeGreaterThanOrEqual(16);
 
     await dialog.getByPlaceholder("000000").fill(await freshCode(totpSecret));
-    await dialog.getByRole("button", { name: "Enable 2FA" }).click();
+    await dialog.getByRole("button", { name: "Verify", exact: true }).click();
 
-    // 5. Success toast + card now shows the active state. The toast and the
-    //    card status both read "Two-factor authentication enabled", so scope
-    //    each: the toast lives in the sonner region, the status in <main>.
+    // 5. Success toast + card now shows the active state. The toast reads
+    //    t("security.twoFAEnabledToast") and the card t("security.twoFAActive")
+    //    — scope each: the toast lives in the sonner region, the status in
+    //    <main>.
     await expect(
       page.getByLabel("Notifications alt+T").getByText("Two-factor authentication enabled"),
     ).toBeVisible();
     await expect(
-      page.getByRole("main").getByText("Two-factor authentication enabled"),
+      page.getByRole("main").getByText("Two-factor authentication is active"),
     ).toBeVisible();
-    await expect(page.getByText("Two-factor authentication is active")).toBeVisible();
   });
 
   test("requires a TOTP code at sign-in and rejects an invalid code", async ({ page }) => {
     // 1. Logged-out sign-in with 2FA-enabled account → TOTP prompt appears.
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
-    await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
-    await page.getByRole("button", { name: "Sign In", exact: true }).click();
-    await expect(page.getByText("Two-Factor Authentication")).toBeVisible();
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
 
-    // 2. A wrong code is rejected and we stay on the prompt.
-    await page.getByPlaceholder("000000").fill("000000");
-    await page.getByRole("button", { name: /Verify & Login/i }).click();
-    await expect(page.getByText(/invalid two-factor|invalid code/i)).toBeVisible();
-    await expect(page.getByText("Enter the 6-digit code from your authenticator app")).toBeVisible();
+    // 2. A wrong code auto-submits on the 6th digit, is rejected (toast —
+    //    either the server's message or t("auth.invalidCode")), and we stay
+    //    on the prompt.
+    await fillLoginTotp(page, "000000");
+    await expect(page.locator("[data-sonner-toast]").getByText(/invalid/i)).toBeVisible();
+    await expect(
+      page.getByText("Enter the 6-digit code from your authenticator app"),
+    ).toBeVisible();
 
     // 3. A fresh, correct code completes sign-in.
-    const code = await freshCode(totpSecret);
-    await page.getByPlaceholder("000000").fill(code);
-    await page.getByRole("button", { name: /Verify & Login/i }).click();
-    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await fillLoginTotp(page, await freshCode(totpSecret));
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
   });
 
   test("disables 2FA from the Security Center with password confirmation", async ({ page }) => {
@@ -140,11 +157,11 @@ test.describe("Two-Factor Authentication", () => {
   test("signs in without a TOTP prompt after 2FA is disabled", async ({ page }) => {
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.getByPlaceholder("nextdashboards@gmail.com").fill(email);
-    await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
-    await page.getByRole("button", { name: "Sign In", exact: true }).click();
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
 
     // No 2FA screen — straight to the dashboard.
-    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
   });
 });

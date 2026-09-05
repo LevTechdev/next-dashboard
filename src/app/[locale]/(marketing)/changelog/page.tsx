@@ -4,7 +4,6 @@ import { use } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
 import {
   RefreshCw,
   Bell,
@@ -30,169 +29,22 @@ interface ChangelogEntry {
   }[];
 }
 
-export const changelog: ChangelogEntry[] = [
-  {
-    version: "2.5.0",
-    date: "April 14, 2026",
-    tag: "Latest Release",
-    tagColor: "bg-indigo-500/10 text-indigo-500",
-    items: [
-      {
-        type: "feature",
-        text: "Real-time dashboard auto-refresh with Server-Sent Events",
-      },
-      {
-        type: "feature",
-        text: "Role-based access control with Admin, Manager, and Staff roles",
-      },
-      {
-        type: "improvement",
-        text: "Redesigned analytics charts with interactive tooltips",
-      },
-      {
-        type: "fix",
-        text: "Fixed pagination issues on order list exceeding 1000 records",
-      },
-    ],
-  },
-  {
-    version: "2.4.0",
-    date: "March 28, 2026",
-    tag: "Feature Release",
-    tagColor: "bg-emerald-500/10 text-emerald-500",
-    items: [
-      {
-        type: "feature",
-        text: "Multi-channel order management for Facebook, Instagram, and TikTok",
-      },
-      {
-        type: "feature",
-        text: "Customer segmentation based on spending patterns",
-      },
-      {
-        type: "improvement",
-        text: "Optimized database queries for 40% faster order loading",
-      },
-      {
-        type: "improvement",
-        text: "Enhanced CSV export with full UTF-8 support",
-      },
-    ],
-  },
-  {
-    version: "2.3.0",
-    date: "March 10, 2026",
-    tag: "Improvement",
-    tagColor: "bg-blue-500/10 text-blue-500",
-    items: [
-      {
-        type: "feature",
-        text: "Discount engine with code generation and tracking",
-      },
-      {
-        type: "improvement",
-        text: "Re-designed notification system with preference controls",
-      },
-      {
-        type: "improvement",
-        text: "Updated audit log with detailed action metadata",
-      },
-      {
-        type: "fix",
-        text: "Resolved timezone inconsistency in order timestamps",
-      },
-    ],
-  },
-  {
-    version: "2.2.0",
-    date: "February 20, 2026",
-    tag: "Feature Release",
-    tagColor: "bg-emerald-500/10 text-emerald-500",
-    items: [
-      {
-        type: "feature",
-        text: "Bulk order status updates and operations",
-      },
-      {
-        type: "feature",
-        text: "Inventory tracking with low-stock alerts",
-      },
-      {
-        type: "improvement",
-        text: "Performance improvements on dashboard load times",
-      },
-      {
-        type: "fix",
-        text: "Fixed export filename encoding for non-ASCII characters",
-      },
-    ],
-  },
-  {
-    version: "2.1.0",
-    date: "February 5, 2026",
-    tag: "Improvement",
-    tagColor: "bg-blue-500/10 text-blue-500",
-    items: [
-      {
-        type: "feature",
-        text: "Sales channel comparison with side-by-side metrics",
-      },
-      {
-        type: "improvement",
-        text: "Responsive design improvements for tablet viewports",
-      },
-      {
-        type: "fix",
-        text: "Fixed mobile navigation menu overlap on iOS Safari",
-      },
-    ],
-  },
-  {
-    version: "2.0.0",
-    date: "January 15, 2026",
-    tag: "Major Release",
-    tagColor: "bg-purple-500/10 text-purple-500",
-    items: [
-      {
-        type: "feature",
-        text: "Complete dashboard redesign with real-time analytics",
-      },
-      {
-        type: "feature",
-        text: "Team management with role-based permissions",
-      },
-      {
-        type: "feature",
-        text: "REST API with webhook support for custom integrations",
-      },
-      {
-        type: "feature",
-        text: "Progressive Web App with offline support",
-      },
-      {
-        type: "improvement",
-        text: "Migrated to Next.js 16 with improved performance",
-      },
-    ],
-  },
-];
-
 export const typeConfig = {
   feature: {
     icon: Sparkles,
-    label: "New Feature",
+    labelKey: "typeLabels.feature",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
   },
   improvement: {
     icon: Rocket,
-    label: "Improvement",
+    labelKey: "typeLabels.improvement",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   fix: {
     icon: Bug,
-    label: "Bug Fix",
+    labelKey: "typeLabels.fix",
     color: "text-amber-500",
     bg: "bg-amber-500/10",
   },
@@ -203,6 +55,7 @@ const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 export default function ChangelogPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   const t = useTranslations("changelogPage");
+  const changelog = t.raw("entries") as ChangelogEntry[];
   const ctaHref = `/${locale}/dashboard`;
 
   return (
@@ -235,10 +88,7 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
               }}
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm"
             >
-              <RefreshCw
-                size={14}
-                className="h-3.5 w-3.5"
-              />
+              <RefreshCw size={14} className="h-3.5 w-3.5" />
               <span className="text-[11px] font-medium uppercase tracking-widest">
                 {t("badge")}
               </span>
@@ -291,8 +141,7 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-medium text-muted-foreground">
-              {t("latestVersion")}{" "}
-              <span className="text-foreground font-semibold">2.5.0</span>
+              {t("latestVersion")} <span className="text-foreground font-semibold">2.5.0</span>
             </span>
             <span className="text-[10px] text-muted-foreground/50">—</span>
             <span className="text-[10px] text-muted-foreground">{t("released")}</span>
@@ -467,18 +316,18 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
           ════════════════════════ */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              {t("ctaDesc")}
-            </p>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={ctaHref}

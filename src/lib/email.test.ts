@@ -3,6 +3,8 @@ import { sendEmail, sendPasswordResetEmail, sendOtpEmail } from "./email";
 
 const ORIGINAL_API_KEY = process.env.RESEND_API_KEY;
 const ORIGINAL_FROM = process.env.EMAIL_FROM;
+const ORIGINAL_RESEND_FROM = process.env.RESEND_FROM;
+const ORIGINAL_TRANSPORT = process.env.EMAIL_TRANSPORT;
 const ORIGINAL_SMTP: Record<string, string | undefined> = {
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
@@ -27,6 +29,8 @@ function clearSmtp() {
 beforeEach(() => {
   setKey(undefined);
   delete process.env.EMAIL_FROM;
+  delete process.env.RESEND_FROM;
+  delete process.env.EMAIL_TRANSPORT;
   clearSmtp();
   vi.resetModules();
   vi.restoreAllMocks();
@@ -36,6 +40,10 @@ afterEach(() => {
   setKey(ORIGINAL_API_KEY);
   if (ORIGINAL_FROM === undefined) delete process.env.EMAIL_FROM;
   else process.env.EMAIL_FROM = ORIGINAL_FROM;
+  if (ORIGINAL_RESEND_FROM === undefined) delete process.env.RESEND_FROM;
+  else process.env.RESEND_FROM = ORIGINAL_RESEND_FROM;
+  if (ORIGINAL_TRANSPORT === undefined) delete process.env.EMAIL_TRANSPORT;
+  else process.env.EMAIL_TRANSPORT = ORIGINAL_TRANSPORT;
   const host = ORIGINAL_SMTP.SMTP_HOST;
   if (host === undefined) delete process.env.SMTP_HOST;
   else process.env.SMTP_HOST = host;
@@ -93,7 +101,7 @@ describe("sendEmail — Resend configured", () => {
     );
   });
 
-  it("throws when resend reports an error", async () => {
+  it("falls back to { sent: false } outside production when resend errors", async () => {
     setKey("re_testkey123");
     vi.doMock("resend", () => ({
       Resend: class {
@@ -105,10 +113,34 @@ describe("sendEmail — Resend configured", () => {
       },
     }));
 
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     const { sendEmail: send } = await import("./email");
-    await expect(send({ to: "a@b.com", subject: "s", html: "h", text: "t" })).rejects.toThrow(
-      /rate_limit_exceeded/,
-    );
+    const result = await send({ to: "a@b.com", subject: "s", html: "h", text: "t" });
+    expect(result).toEqual({ sent: false });
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("rate_limit_exceeded"));
+  });
+
+  it("throws when resend reports an error in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      setKey("re_testkey123");
+      vi.doMock("resend", () => ({
+        Resend: class {
+          emails = {
+            send: vi
+              .fn()
+              .mockResolvedValue({ data: null, error: { message: "rate_limit_exceeded" } }),
+          };
+        },
+      }));
+
+      const { sendEmail: send } = await import("./email");
+      await expect(send({ to: "a@b.com", subject: "s", html: "h", text: "t" })).rejects.toThrow(
+        /rate_limit_exceeded/,
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -175,6 +207,42 @@ describe("sendEmail — SMTP configured (takes priority over Resend)", () => {
   });
 });
 
+describe("sendEmail — EMAIL_TRANSPORT override", () => {
+  it("uses Resend when EMAIL_TRANSPORT=resend even with SMTP configured", async () => {
+    setKey("re_testkey123");
+    process.env.EMAIL_TRANSPORT = "resend";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.RESEND_FROM = "Dashboard <onboarding@resend.dev>";
+    const sendMock = vi.fn().mockResolvedValue({ data: { id: "email_1" }, error: null });
+    vi.doMock("resend", () => ({
+      Resend: class {
+        emails = { send: sendMock };
+      },
+    }));
+
+    const { sendEmail: send } = await import("./email");
+    const result = await send({
+      to: "u@example.com",
+      subject: "S",
+      html: "<p>h</p>",
+      text: "t",
+    });
+
+    expect(result).toEqual({ sent: true });
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "Dashboard <onboarding@resend.dev>" }),
+    );
+  });
+
+  it("throws when EMAIL_TRANSPORT=smtp but no SMTP_HOST is configured", async () => {
+    process.env.EMAIL_TRANSPORT = "smtp";
+    const { sendEmail: send } = await import("./email");
+    await expect(send({ to: "u@example.com", subject: "S", html: "h", text: "t" })).rejects.toThrow(
+      /EMAIL_TRANSPORT=smtp requires SMTP_HOST/,
+    );
+  });
+});
+
 describe("sendOtpEmail", () => {
   it("falls back to console (no transport) and includes the 6-digit code", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -198,8 +266,8 @@ describe("sendOtpEmail", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "u@example.com",
-        subject: expect.stringContaining("verification code"),
-        html: expect.stringContaining(">4</span>"),
+        subject: "Verify your email address",
+        html: expect.stringContaining("482913"),
         text: expect.stringContaining("482913"),
       }),
     );

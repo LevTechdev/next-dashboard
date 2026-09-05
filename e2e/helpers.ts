@@ -123,11 +123,12 @@ export interface RegisterFreshUserOptions {
 
 /**
  * Register a brand-new user and land on the dashboard WITHOUT verifying the
- * email (clicking "Skip for now" on the signup OTP step). Every signup issues
- * a 6-digit email OTP for identity verification; the OTP step is deliberately
- * skipped so the account starts unverified (the flows that call this helper
- * exercise the unverified state themselves, and must not mutate shared state
- * like the seed admin's emailVerified / 2FA settings).
+ * email. Every signup issues a 6-digit email OTP for identity verification;
+ * the current UI has no "Skip for now" affordance on the OTP step, but the
+ * register API sets the session cookie at signup, so navigating straight to
+ * the dashboard leaves the account unverified (the flows that call this
+ * helper exercise the unverified state themselves, and must not mutate shared
+ * state like the seed admin's emailVerified / 2FA settings).
  *
  * Uses a unique auto-generated email by default (Date.now + random suffix so
  * parallel workers never collide); pass `options.email` to pin one, e.g. for
@@ -146,10 +147,17 @@ export interface FillRegistrationFormOptions {
 }
 
 /**
- * Fill the signup form and click "Create Account". Assumes the register page
- * is already loaded (callers wait for hydration via networkidle first).
- * The submit button is disabled until the confirmation matches, so it always
- * receives the same value as the password.
+ * Fill the signup form and click "Sign Up" (t("signUpButton")). Assumes the
+ * register page is already loaded (callers wait for hydration via networkidle
+ * first).
+ *
+ * Selectors match the CURRENT register UI (src/app/[locale]/(auth)/register/
+ * page.tsx): the name placeholder is localized ("John Doe" in en), the email
+ * input's placeholder is the hard-coded "you@example.com", and both password
+ * fields share the bullet "••••••••" placeholder — so the password fields are
+ * located by input type rather than placeholder text. The submit button is
+ * only disabled while a request is in flight (validation fires on submit as
+ * toasts), so it always receives the same value as the password.
  */
 export async function fillRegistrationForm(
   page: Page,
@@ -157,11 +165,12 @@ export async function fillRegistrationForm(
   options: FillRegistrationFormOptions = {},
 ): Promise<void> {
   const password = options.password ?? TEST_PASSWORD;
-  await page.getByPlaceholder("Your name").fill(options.name ?? "E2E Test User");
-  await page.getByPlaceholder("Your email").fill(email);
-  await page.getByPlaceholder("Create a password").fill(password);
-  await page.getByPlaceholder("Confirm password").fill(password);
-  const submit = page.getByRole("button", { name: "Create account" });
+  await page.getByPlaceholder("John Doe").fill(options.name ?? "E2E Test User");
+  await page.getByPlaceholder("you@example.com").fill(email);
+  const passwordInputs = page.locator('input[type="password"]');
+  await passwordInputs.first().fill(password);
+  await passwordInputs.nth(1).fill(password);
+  const submit = page.getByRole("button", { name: "Sign Up", exact: true });
   await expect(submit).toBeEnabled();
   await submit.click();
 }
@@ -169,17 +178,17 @@ export async function fillRegistrationForm(
 /**
  * Read the dev-mode 6-digit OTP (rendered inline when no mailer is
  * configured) and submit it to complete the signup identity-verification step.
- * Assumes the "Check your email" step is on screen.
+ * Assumes the "Verify your email" step (t("verifyEmailTitle")) is on screen.
  */
 export async function completeSignupOtp(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
   const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
   expect(code).toMatch(/^\d{6}$/);
-  // The OTP input auto-submits the moment the 6th digit lands, so filling the
-  // code triggers verification directly. Do NOT click "Verify Email" — the
-  // click would race the in-flight request (button flips to a disabled
-  // "Verifying…" state) and either time out or double-fire the submission.
-  await page.locator('input[maxLength="6"]').fill(code);
+  // The OTP input carries no maxLength attribute (the page slices to 6 digits
+  // in JS) and does NOT auto-submit on the 6th digit — click the explicit
+  // "Verify & Continue" button (t("verifyContinue")) to submit.
+  await page.getByPlaceholder("000000").fill(code);
+  await page.getByRole("button", { name: "Verify & Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/dashboard/);
 }
 
@@ -564,15 +573,14 @@ export async function fillCopilotThreadUntilScrollable(
         async () => {
           // Assistant messages render with the Bot icon; the message
           // content div has class whitespace-pre-wrap.
-          const count = await panel
-            .locator('.rounded-2xl .whitespace-pre-wrap')
-            .evaluateAll((els) =>
+          const count = await panel.locator(".rounded-2xl .whitespace-pre-wrap").evaluateAll(
+            (els) =>
               els.filter((el) => {
                 const t = el.textContent?.trim() ?? "";
                 // Exclude loading placeholder ("...") and empty bubbles.
                 return t.length > 0 && t !== "...";
               }).length,
-            );
+          );
           return count >= round + 1;
         },
         { timeout: 25_000, message: "copilot never replied" },
@@ -612,10 +620,16 @@ export async function registerFreshUser(
   await page.waitForLoadState("networkidle");
   await fillRegistrationForm(page, email, { name: options.name });
 
-  // Skip the inline email-OTP step so the account stays unverified.
-  await expect(page.getByText("Verify your email")).toBeVisible();
-  await page.getByText(/Skip for now/i).click();
-
+  // The OTP step has no "Skip for now" button in the current UI, but the
+  // register API sets the session cookie at signup, so navigating straight to
+  // the dashboard preserves the unverified-account contract (the flows that
+  // call this helper exercise the unverified state themselves). The OTP view
+  // appearing is the signal that the signup actually succeeded. Scoped to
+  // the heading ROLE: plain getByText would also match the Next.js route
+  // announcer ([id="__next-route-announcer__"], role=alert), which can carry
+  // the same string after a navigation — strict-mode bomb.
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  await page.goto("/en/dashboard");
   await expect(page).toHaveURL(/\/en\/dashboard/);
   return email;
 }

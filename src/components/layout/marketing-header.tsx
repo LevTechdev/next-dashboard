@@ -17,12 +17,20 @@ import {
   MoonIcon,
   MessageSquareIcon,
 } from "lucide-animated";
-import { LayoutDashboard, BarChart3Icon, EarthIcon, LayoutGridIcon, CircleDollarSignIcon, UsersIcon, ShieldIcon, ZapIcon, GlobeIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  EarthIcon,
+  LayoutGridIcon,
+  CircleDollarSignIcon,
+  UsersIcon,
+  ShieldIcon,
+  ZapIcon,
+  GlobeIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RadialGlowButton } from "@/components/ui/radial-glow-button";
 import { useAuth } from "@/hooks/use-auth";
-import { TransitionLink } from "@/components/transition-link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
@@ -36,7 +44,7 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [prevLocale, setPrevLocale] = useState(locale);
   const { user, isAuthenticated, isLoading } = useAuth();
-  
+
   const initials =
     user?.name
       ?.split(" ")
@@ -76,32 +84,32 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
 
   const megaMenuItems = [
     {
-      title: "Analytics",
-      desc: "Real-time metrics and reporting",
+      titleKey: "megaAnalyticsTitle",
+      descKey: "megaAnalyticsDesc",
       icon: BarChart3Icon,
       href: "/features#analytics",
       color: "text-blue-500",
       bg: "bg-blue-500/10",
     },
     {
-      title: "Security",
-      desc: "Enterprise-grade protection",
+      titleKey: "megaSecurityTitle",
+      descKey: "megaSecurityDesc",
       icon: ShieldIcon,
       href: "/features#security",
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
     },
     {
-      title: "Automation",
-      desc: "Smart workflows and triggers",
+      titleKey: "megaAutomationTitle",
+      descKey: "megaAutomationDesc",
       icon: ZapIcon,
       href: "/features#automation",
       color: "text-amber-500",
       bg: "bg-amber-500/10",
     },
     {
-      title: "Global Scale",
-      desc: "Multi-currency & languages",
+      titleKey: "megaScaleTitle",
+      descKey: "megaScaleDesc",
       icon: GlobeIcon,
       href: "/features#scale",
       color: "text-indigo-500",
@@ -121,36 +129,32 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled 
+        scrolled
           ? "bg-background/80 backdrop-blur-md border-b border-border shadow-sm py-1.5"
-          : "bg-transparent py-3"
+          : "bg-transparent py-3",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-11">
-          {/* Logo */}
-          <TransitionLink
+          {/* Logo — the shared animated BrandLogo (also used on the auth
+              pages and in the footer). Kept in the navbar's top-left slot; the
+              tile still shrinks on scroll and keeps the nav-logo view-
+              transition morph shared with the dashboard sidebar logo. */}
+          <BrandLogo
             href={`/${locale}`}
             viewTransitionName="nav-logo"
-            className="flex items-center gap-2.5 group shrink-0"
-          >
-            <div
-              className={cn(
-                "flex items-center justify-center rounded-lg bg-foreground text-background shadow-lg transition-all duration-300 group-hover:shadow-xl",
-                scrolled ? "w-7 h-7" : "w-8 h-8",
-              )}
-            >
-              <LayoutDashboard className="h-[18px] w-[18px]" />
-            </div>
-            <span
-              className={cn(
-                "font-semibold text-foreground transition-all duration-300",
-                scrolled ? "text-[13px]" : "text-sm",
-              )}
-            >
-              Dashboard
-            </span>
-          </TransitionLink>
+            size="sm"
+            animated
+            className="shrink-0"
+            tileClassName={cn(
+              "shadow-lg transition-all duration-300 group-hover:shadow-xl",
+              scrolled ? "h-7 w-7" : "h-8 w-8",
+            )}
+            wordmarkClassName={cn(
+              "transition-all duration-300",
+              scrolled ? "text-[13px]" : "text-[15px]",
+            )}
+          />
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1 relative">
@@ -167,16 +171,22 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
               >
                 <LayoutGridIcon size={14} className="h-3.5 w-3.5" />
                 {t("navFeatures")}
-                <ChevronRightIcon size={12} className="h-3 w-3 ml-0.5 opacity-50 group-hover:rotate-90 transition-transform duration-200" />
+                <ChevronRightIcon
+                  size={12}
+                  className="h-3 w-3 ml-0.5 opacity-50 group-hover:rotate-90 transition-transform duration-200"
+                />
               </Link>
-              
+
               {/* Mega Menu Dropdown */}
               <div className="absolute top-full left-0 pt-2 w-[480px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 -translate-y-2 group-hover:translate-y-0 z-50">
                 <div className="p-4 bg-background/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl grid grid-cols-2 gap-2">
                   <div className="col-span-2 px-3 pb-2 mb-2 border-b border-border flex justify-between items-center">
                     <span className="text-sm font-semibold">{t("navFeatures")}</span>
-                    <Link href={`/${locale}/features`} className="text-xs text-primary hover:underline flex items-center">
-                      View all <ChevronRightIcon size={10} className="ml-1" />
+                    <Link
+                      href={`/${locale}/features`}
+                      className="text-xs text-primary hover:underline flex items-center"
+                    >
+                      {t("viewAllFeatures")} <ChevronRightIcon size={10} className="ml-1" />
                     </Link>
                   </div>
                   {megaMenuItems.map((item) => {
@@ -191,11 +201,15 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                           <Icon size={16} className={item.color} />
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-foreground mb-0.5">{item.title}</h4>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{item.desc}</p>
+                          <h4 className="text-sm font-medium text-foreground mb-0.5">
+                            {t(item.titleKey)}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {t(item.descKey)}
+                          </p>
                         </div>
                       </Link>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -287,10 +301,16 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 </Link>
               ) : (
                 <>
-                  <Link href={`/${locale}/login`} className="text-sm font-medium text-foreground hover:opacity-70 transition-opacity px-2">
+                  <Link
+                    href={`/${locale}/login`}
+                    className="text-sm font-medium text-foreground hover:opacity-70 transition-opacity px-2"
+                  >
                     {t("signIn")}
                   </Link>
-                  <Link href={`/${locale}/register`} className="inline-flex items-center justify-center text-sm font-medium bg-foreground text-background px-4 py-1.5 rounded-full hover:opacity-90 transition-opacity">
+                  <Link
+                    href={`/${locale}/register`}
+                    className="inline-flex items-center justify-center text-sm font-medium bg-foreground text-background px-4 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                  >
                     {t("signUp")}
                   </Link>
                 </>
@@ -300,6 +320,8 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
               className="lg:hidden p-2 ml-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-all"
             >
               {mobileMenuOpen ? <XIcon size={20} /> : <MenuIcon size={20} />}
@@ -325,7 +347,7 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 <LayoutGridIcon size={16} className="text-primary" />
                 {t("navFeatures")}
               </Link>
-              
+
               {standardNavLinks.map((link) => {
                 const Icon = link.icon;
                 return (

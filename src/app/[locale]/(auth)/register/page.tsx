@@ -5,8 +5,9 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
-import { EyeIcon, EyeOffIcon, SparklesIcon, XIcon } from "lucide-animated";
-import { Loader2, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
+import { EyeIcon, EyeOffIcon, XIcon } from "lucide-animated";
+import { Loader2, Sun, Moon } from "lucide-react";
+import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "next-themes";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 import { toast } from "sonner";
 
@@ -46,17 +48,17 @@ export default function RegisterPage() {
     e.preventDefault();
 
     if (!name || !email || !password) {
-      toast.error("Please fill in all fields");
+      toast.error(t("pleaseFillFields"));
       return;
     }
 
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      toast.error(t("passwordMinLength"));
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(t("passwordMismatch"));
       return;
     }
 
@@ -69,16 +71,16 @@ export default function RegisterPage() {
           setOtpRequired(true);
           setDevOtp(result.devOtp ?? null);
           setOtpError(null);
-          toast.success("Account created! Check your email for the 6-digit code.");
+          toast.success(t("accountCreatedCheckEmail"));
         } else {
-          toast.success("Account created successfully!");
+          toast.success(t("accountCreated"));
           router.push("/en/dashboard");
         }
       } else {
-        toast.error(result.error || "Registration failed");
+        toast.error(result.error || t("errorGeneric"));
       }
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("errorGeneric"));
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +97,7 @@ export default function RegisterPage() {
    */
   const submitOtp = async (code: string) => {
     if (!/^\d{6}$/.test(code)) {
-      setOtpError("Enter the 6-digit code from your email.");
+      setOtpError(t("otpFormatError"));
       return;
     }
     if (otpSubmittingRef.current) return;
@@ -112,23 +114,25 @@ export default function RegisterPage() {
       if (!res.ok) {
         const errCode = data.error;
         if (errCode === "OTP_EXPIRED") {
-          setOtpError("This code has expired. Request a new one below.");
+          setOtpError(t("otpExpired"));
         } else if (errCode === "OTP_TOO_MANY_ATTEMPTS") {
-          setOtpError("Too many incorrect attempts. Request a new code below.");
+          setOtpError(t("otpTooManyAttempts"));
         } else {
           setOtpError(
             data.attemptsLeft
-              ? `Incorrect code. ${data.attemptsLeft} attempt(s) left.`
-              : "Incorrect code. Request a new one.",
+              ? t("otpIncorrectAttempts", { attempts: data.attemptsLeft })
+              : t("otpIncorrect"),
           );
         }
         return;
       }
-      toast.success("Email verified!");
-      router.push("/en/dashboard");
+      toast.success(t("emailVerifiedToast"));
+      // Stay in the registering locale — pushing a hard-coded /en/dashboard
+      // would drop an id/ja user onto the English dashboard.
+      router.push(`/${locale}/dashboard`);
       router.refresh();
     } catch {
-      setOtpError("Something went wrong. Please try again.");
+      setOtpError(t("otpGenericError"));
     } finally {
       otpSubmittingRef.current = false;
       setVerifying(false);
@@ -147,7 +151,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/verify-email/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale: "en" }),
+        body: JSON.stringify({ locale }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -156,21 +160,21 @@ export default function RegisterPage() {
       }
       if (data.devOtp) setDevOtp(data.devOtp);
       startCooldown();
-      toast.success("A new code was sent to your email.");
+      toast.success(t("newCodeSentToast"));
     } catch {
-      setOtpError("Could not resend the code. Please try again.");
+      setOtpError(t("resendFailedGeneric"));
     } finally {
       setVerifying(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#EE5D36] dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {/* Theme Toggle */}
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-900/20 dark:bg-zinc-800/50 backdrop-blur-md border border-white/30 dark:border-zinc-700 text-white hover:bg-white dark:bg-zinc-900/30 dark:hover:bg-zinc-800 transition-all"
+          className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-black/5 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700/80 transition-all"
         >
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
@@ -183,17 +187,19 @@ export default function RegisterPage() {
       >
         {/* LEFT SIDE: Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
-          <SparklesIcon className="h-8 w-8 text-[#EE5D36] mb-8" />
+          <div className="mb-8 flex justify-center">
+            <BrandLogo animated />
+          </div>
 
           {otpRequired ? (
             // --- OTP VERIFICATION VIEW ---
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  Verify your email
+                  {t("verifyEmailTitle")}
                 </h1>
                 <p className="text-gray-500 dark:text-zinc-400 text-sm">
-                  We sent a 6-digit code to{" "}
+                  {t("verifyEmailDesc")}{" "}
                   <span className="font-semibold text-gray-700 dark:text-zinc-300">{email}</span>
                 </p>
               </div>
@@ -201,9 +207,12 @@ export default function RegisterPage() {
               {devOtp && (
                 <div className="rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 p-2.5 text-center">
                   <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1">
-                    Development OTP
+                    {t("developmentOtp")}
                   </p>
-                  <p className="font-mono text-lg font-bold text-gray-800 dark:text-zinc-200 tracking-widest">
+                  <p
+                    data-testid="dev-otp"
+                    className="font-mono text-lg font-bold text-gray-800 dark:text-zinc-200 tracking-widest"
+                  >
                     {devOtp}
                   </p>
                 </div>
@@ -212,7 +221,7 @@ export default function RegisterPage() {
               <form onSubmit={verifyOtp} className="space-y-5">
                 <div>
                   <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Confirmation code
+                    {t("confirmationCode")}
                   </Label>
                   <Input
                     value={otp}
@@ -222,7 +231,7 @@ export default function RegisterPage() {
                     }}
                     placeholder="000000"
                     disabled={verifying}
-                    className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                    className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                   {otpError && (
                     <div className="text-sm text-red-500 mt-2 flex items-center gap-1">
@@ -233,9 +242,9 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   disabled={verifying || otp.length !== 6}
-                  className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold shadow-none"
+                  className="w-full h-11 rounded-xl bg-primary bg-accent-gradient hover:bg-primary/90 transition-colors text-primary-foreground font-semibold shadow-none"
                 >
-                  {verifying ? <Loader2 className="animate-spin" /> : "Verify & Continue"}
+                  {verifying ? <Loader2 className="animate-spin" /> : t("verifyContinue")}
                 </Button>
               </form>
 
@@ -244,11 +253,11 @@ export default function RegisterPage() {
                   variant="ghost"
                   onClick={resendOtp}
                   disabled={cooldownLeft > 0}
-                  className="text-sm text-gray-500 dark:text-zinc-400 hover:text-[#EE5D36]"
+                  className="text-sm text-gray-500 dark:text-zinc-400 hover:text-primary"
                 >
                   {cooldownLeft > 0
-                    ? `Resend code in ${cooldownLeft}s`
-                    : "Didn't receive a code? Resend"}
+                    ? t("resendCodeIn", { seconds: cooldownLeft })
+                    : t("didntReceiveCode")}
                 </Button>
               </div>
             </div>
@@ -256,36 +265,42 @@ export default function RegisterPage() {
             // --- REGISTRATION FORM VIEW ---
             <>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Create Account
+                {t("registerTitle")}
               </h1>
               <p className="text-gray-500 dark:text-zinc-400 text-sm mb-8">
-                Join the community and start building your future.
+                {t("registerSubtitle")}
               </p>
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("fullName")}</Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    {t("fullName")}
+                  </Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t("namePlaceholder")}
                     disabled={isLoading}
-                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("email")}</Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    {t("email")}
+                  </Label>
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     disabled={isLoading}
-                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">{t("password")}</Label>
+                  <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                    {t("password")}
+                  </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
@@ -293,7 +308,7 @@ export default function RegisterPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       disabled={isLoading}
-                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white pr-10"
+                      className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white pr-10"
                     />
                     <button
                       type="button"
@@ -311,7 +326,7 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                    Confirm Password
+                    {t("confirmPasswordLabel")}
                   </Label>
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -319,63 +334,35 @@ export default function RegisterPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     disabled={isLoading}
-                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-[#EE5D36] focus:ring-[#EE5D36]/20 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
+                    className="w-full h-11 rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
                   />
                 </div>
 
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-4 shadow-none"
+                  className="w-full h-11 rounded-xl bg-primary bg-accent-gradient hover:bg-primary/90 transition-colors text-primary-foreground font-semibold mt-4 shadow-none"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" /> : "Sign Up"}
+                  {isLoading ? <Loader2 className="animate-spin" /> : t("signUpButton")}
                 </Button>
               </form>
 
               <p className="text-center text-sm text-gray-500 dark:text-zinc-400 mt-8">
-                {t("haveAccount")} <Link
+                {t("haveAccount")}{" "}
+                <Link
                   href={`/${locale}/login`}
-                  className="text-[#EE5D36] font-semibold hover:underline"
+                  className="text-primary font-semibold hover:underline"
                 >
-                  Log in
+                  {t("login")}
                 </Link>
               </p>
             </>
           )}
         </div>
 
-        {/* RIGHT SIDE: Gradient + Testimonial */}
-        <div className="hidden md:flex w-1/2 p-4">
-          <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-[#FCE1D4] via-[#F3E7C9] to-[#FCE1D4] p-8 flex flex-col justify-end relative overflow-hidden">
-            <div className="bg-white dark:bg-zinc-900/40 backdrop-blur-md border border-white/60 p-8 rounded-3xl shadow-sm">
-              <div className="flex gap-2 mb-6">
-                <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">
-                  Community of designers
-                </span>
-                <span className="bg-white dark:bg-zinc-900/60 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-800 dark:text-zinc-200">
-                  Creative resources
-                </span>
-              </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white leading-snug mb-8">
-                &quot;I was able to reduce the time taken to present high-level designs by 35% using
-                the platform.&quot;
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white text-sm">Sara Bright</p>
-                  <p className="text-gray-600 text-xs mt-0.5 font-medium">Freelancer Designer</p>
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
-                    <ChevronLeft className="h-4 w-4" />
-                  </div>
-                  <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center text-gray-600 shadow-sm cursor-pointer hover:bg-gray-50 dark:bg-zinc-900">
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* RIGHT SIDE: Customer review (i18n) */}
+        <div className="hidden md:flex w-1/2 p-4 pl-0">
+          <AuthTestimonial />
         </div>
       </motion.div>
     </div>

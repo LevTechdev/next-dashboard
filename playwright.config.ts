@@ -4,6 +4,11 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright E2E config for the Next.js dashboard.
  * - Dev server runs on port 3010 (see package.json "dev" script).
  * - Specs live in ./e2e.
+ * - Preferred way to run: `npm run test:e2e:local` — targets a local Postgres
+ *   mirror (provision once with `npm run db:provision:local`), blanks the
+ *   mailer so the dev OTP/reset contract is visible, and sets AI_MOCK=1.
+ *   Bare `npm run test:e2e` instead uses the DATABASE_URL from .env.local.
+ *   See docs/e2e-run.md.
  * - Seeding + shared-DB prep happen ONCE in e2e/global-setup.ts before any
  *   worker starts, so specs must NOT re-seed/repair the shared DB in their
  *   own beforeAll (see global-setup.ts for why).

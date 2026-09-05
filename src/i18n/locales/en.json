@@ -765,7 +765,8 @@
     "channelQris": "QRIS (QR scan)",
     "channelBankTransfer": "Bank Transfer (Virtual Account)",
     "channelCreditCard": "Credit / Debit Card",
-    "checkoutLocalRedirect": "Redirecting to local payment (Midtrans)...",
+    "checkoutLocalPopup": "Opening secure payment window (Midtrans)...",
+    "paymentPending": "Payment is being processed — we'll activate your plan once it's confirmed.",
     "localPaymentsTitle": "Local payment methods",
     "localPaymentsDesc": "Pay via Midtrans using Indonesian payment methods — no international card required.",
     "localPaymentsNote": "Select the payment method during plan checkout on the Plans tab."
@@ -932,6 +933,7 @@
     "compareTitle": "Compare plans",
     "compareSubtitle": "Every plan includes a 14-day free trial. No credit card required.",
     "faqTitle": "Frequently Asked Questions",
+    "faqSubtitle": "Every plan includes a 14-day free trial. No credit card required.",
     "faqQ1": "Can I upgrade or downgrade my plan at any time?",
     "faqA1": "Yes, you can change your plan at any time. When upgrading, you'll be billed the prorated difference. When downgrading, the new rate applies at the start of your next billing cycle.",
     "faqQ2": "Is there a free trial available?",
@@ -1297,75 +1299,6 @@
     "heroWord2": "ready to grow.",
     "heroWord3": "ready to perform."
   },
-  "homePage": {
-    "badge": "Now in Public Beta",
-    "heroPrefix": "Operate with",
-    "word1": "precision.",
-    "word2": "clarity.",
-    "word3": "speed.",
-    "word4": "confidence.",
-    "heroSubtitle": "Stop wrestling with fragmented data. Unite your analytics, orders, and team in a single command center built for modern operators.",
-    "ctaEnter": "Enter Dashboard",
-    "ctaDocs": "View Documentation",
-    "trustBusinesses": "Businesses",
-    "trustCountries": "Countries",
-    "trustUptime": "Uptime",
-    "mOrders": "Orders Processed",
-    "mUsers": "Active Users",
-    "mRevenue": "Revenue Growth",
-    "mResponse": "Avg Response",
-    "partnersLabel": "Trusted by industry-leading teams",
-    "cOrders": "Orders Processed",
-    "cUptime": "Uptime SLA",
-    "cUsers": "Active Users",
-    "cRefresh": "Data Refresh",
-    "cGrowth": "Avg. Growth Rate",
-    "cCustomers": "Total Customers",
-    "featuresBadge": "Platform Capabilities",
-    "featuresTitle": "The architecture of efficiency.",
-    "featuresSubtitle": "Everything required to run a high-volume operation, structured for maximum clarity and real-time responsiveness.",
-    "learnMore": "Learn more",
-    "f1Title": "Real-Time Analytics",
-    "f1Desc": "Monitor your business metrics in real-time with live-updating dashboards. Track revenue, orders, and customer growth as they happen.",
-    "f1Tag": "Analytics",
-    "f2Title": "Multi-Channel Orders",
-    "f2Desc": "Unified order management across 6+ channels including Online Store, Facebook, Instagram, and Shopify.",
-    "f2Tag": "Orders",
-    "f3Title": "Customer Intelligence",
-    "f3Desc": "Deep analytics, segmentation, and behavioral insights to understand your customers better.",
-    "f3Tag": "CRM",
-    "f4Title": "Role-Based Security",
-    "f4Desc": "Granular permission controls with Admin, Manager, and Staff roles. Full audit logging for accountability.",
-    "f4Tag": "Security",
-    "statusLive": "Live",
-    "statusActive": "Active",
-    "connected": "connected",
-    "syncActive": "Real-time sync active",
-    "growthTitle": "Growth Metrics",
-    "gRevenue": "Revenue",
-    "gOrders": "Orders",
-    "gConversion": "Conversion",
-    "gAvgOrder": "Avg. Order",
-    "queueTitle": "Priority Queue",
-    "q1": "Process pending orders",
-    "q2": "Review customer feedback",
-    "q3": "Update inventory levels",
-    "q4": "Generate monthly report",
-    "q5": "Check marketing campaigns",
-    "liveTitle": "Live at a glance.",
-    "liveSubtitle": "Your system status, growth metrics, and priority tasks in a single view — perpetually updated.",
-    "testiBadge": "Customer Stories",
-    "testiTitle": "Trusted by operators.",
-    "testiSubtitle": "See what teams are saying after switching to Dashboard.",
-    "testi1Quote": "Dashboard transformed how we manage our multi-channel operations. The real-time analytics alone saved us hours every day.",
-    "testi1Role": "Operations Director, Pixelcraft",
-    "testi2Quote": "The role-based access and audit logging gave us the security we needed to scale from 5 to 50 team members confidently.",
-    "testi2Role": "CTO, Studio Nine",
-    "ctaTitle": "Ready for scale.",
-    "ctaDesc": "Deploy Dashboard in minutes and instantly upgrade your team's operational capabilities. No complex setup required.",
-    "ctaAccess": "Access Workspace",
-    "ctaSales": "Talk to Sales"
-  },
   "changelogPage": {
     "badge": "Release Notes",
     "heroPrefix": "Product",
@@ -1391,69 +1324,157 @@
     "entries": [
       {
         "version": "2.5.0",
-        "date": "August 15, 2026",
+        "date": "April 14, 2026",
         "tag": "Latest Release",
+        "tagColor": "bg-indigo-500/10 text-indigo-500",
         "items": [
           {
             "type": "feature",
-            "text": "Added comprehensive multi-language support (English & Indonesian)."
+            "text": "Real-time dashboard auto-refresh with Server-Sent Events"
           },
           {
             "type": "feature",
-            "text": "Integrated Midtrans payment gateway alongside Stripe."
+            "text": "Role-based access control with Admin, Manager, and Staff roles"
           },
           {
             "type": "improvement",
-            "text": "Refactored marketing pages to use standard bento-box layouts."
+            "text": "Redesigned analytics charts with interactive tooltips"
           },
           {
             "type": "fix",
-            "text": "Resolved hydration mismatch on the language toggle component."
+            "text": "Fixed pagination issues on order list exceeding 1000 records"
           }
         ]
       },
       {
-        "version": "2.4.1",
-        "date": "July 28, 2026",
-        "tag": "Improvement",
+        "version": "2.4.0",
+        "date": "March 28, 2026",
+        "tag": "Feature Release",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
         "items": [
           {
-            "type": "improvement",
-            "text": "Upgraded to Next.js 15 RC and React 19."
+            "type": "feature",
+            "text": "Multi-channel order management for Facebook, Instagram, and TikTok"
+          },
+          {
+            "type": "feature",
+            "text": "Customer segmentation based on spending patterns"
           },
           {
             "type": "improvement",
-            "text": "Improved animation performance across all dashboard charts."
+            "text": "Optimized database queries for 40% faster order loading"
           },
           {
-            "type": "fix",
-            "text": "Fixed a race condition in the auth middleware."
+            "type": "improvement",
+            "text": "Enhanced CSV export with full UTF-8 support"
           }
         ]
       },
       {
         "version": "2.3.0",
-        "date": "June 10, 2026",
-        "tag": "Feature Release",
+        "date": "March 10, 2026",
+        "tag": "Improvement",
+        "tagColor": "bg-blue-500/10 text-blue-500",
         "items": [
           {
             "type": "feature",
-            "text": "Introduced the new interactive Analytics Dashboard."
-          },
-          {
-            "type": "feature",
-            "text": "Added customizable Date Range Picker for reports."
+            "text": "Discount engine with code generation and tracking"
           },
           {
             "type": "improvement",
-            "text": "Optimized server-side rendering for data-heavy tables."
+            "text": "Re-designed notification system with preference controls"
+          },
+          {
+            "type": "improvement",
+            "text": "Updated audit log with detailed action metadata"
+          },
+          {
+            "type": "fix",
+            "text": "Resolved timezone inconsistency in order timestamps"
+          }
+        ]
+      },
+      {
+        "version": "2.2.0",
+        "date": "February 20, 2026",
+        "tag": "Feature Release",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Bulk order status updates and operations"
+          },
+          {
+            "type": "feature",
+            "text": "Inventory tracking with low-stock alerts"
+          },
+          {
+            "type": "improvement",
+            "text": "Performance improvements on dashboard load times"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed export filename encoding for non-ASCII characters"
+          }
+        ]
+      },
+      {
+        "version": "2.1.0",
+        "date": "February 5, 2026",
+        "tag": "Improvement",
+        "tagColor": "bg-blue-500/10 text-blue-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Sales channel comparison with side-by-side metrics"
+          },
+          {
+            "type": "improvement",
+            "text": "Responsive design improvements for tablet viewports"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed mobile navigation menu overlap on iOS Safari"
+          }
+        ]
+      },
+      {
+        "version": "2.0.0",
+        "date": "January 15, 2026",
+        "tag": "Major Release",
+        "tagColor": "bg-purple-500/10 text-purple-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Complete dashboard redesign with real-time analytics"
+          },
+          {
+            "type": "feature",
+            "text": "Team management with role-based permissions"
+          },
+          {
+            "type": "feature",
+            "text": "REST API with webhook support for custom integrations"
+          },
+          {
+            "type": "feature",
+            "text": "Progressive Web App with offline support"
+          },
+          {
+            "type": "improvement",
+            "text": "Migrated to Next.js 16 with improved performance"
           }
         ]
       }
     ],
     "heroWord1": "Changelog",
     "heroWord2": "Updates",
-    "heroWord3": "Releases"
+    "heroWord3": "Releases",
+    "typeLabels": {
+      "feature": "New Feature",
+      "improvement": "Improvement",
+      "fix": "Bug Fix"
+    }
   },
   "integrationsPage": {
     "heroTag": "Seamless Connections",
@@ -1470,7 +1491,28 @@
     "heroPrefix": "Connect with",
     "heroWord1": "your favorite tools.",
     "heroWord2": "your favorite apps.",
-    "heroWord3": "everything you use."
+    "heroWord3": "everything you use.",
+    "desc": {
+      "stripe": "Process payments, manage subscriptions, and handle invoicing seamlessly.",
+      "shopify": "Sync orders, products, and inventory from your Shopify store in real time.",
+      "sendgrid": "Send transactional emails, notifications, and marketing campaigns at scale.",
+      "slack": "Get real-time alerts, order updates, and team notifications in your channels.",
+      "postgresql": "Connect your existing database for custom analytics and reporting.",
+      "aws": "Deploy and scale your infrastructure with AWS cloud services.",
+      "ga": "Track traffic, user behavior, and conversion metrics alongside your data.",
+      "zapier": "Connect 3,000+ apps and automate workflows without writing code.",
+      "social": "Manage orders and ads from your social commerce channels in one place."
+    },
+    "catPayments": "Payments",
+    "catEcommerce": "E-commerce",
+    "catEmail": "Email",
+    "catCommunication": "Communication",
+    "catData": "Data",
+    "catInfrastructure": "Infrastructure",
+    "catAnalytics": "Analytics",
+    "catAutomation": "Automation",
+    "catSocial": "Social",
+    "connectButton": "Connect"
   },
   "site": {
     "navFeatures": "Features",
@@ -1484,10 +1526,36 @@
     "signIn": "Sign in",
     "signUp": "Sign up",
     "myAccount": "My account",
-    "footerDesc": "A comprehensive business management platform with real-time analytics, order tracking, team collaboration, and everything you need to run your business efficiently.",
+    "footerDesc": "Empowering businesses with reliable, scalable, and innovative solutions to unify their operations.",
     "footerProduct": "Product",
     "footerCompany": "Company",
-    "footerRights": "Dashboard Management System. All rights reserved."
+    "footerRights": "Next Dashboard. All rights reserved.",
+    "megaAnalyticsTitle": "Analytics",
+    "megaAnalyticsDesc": "Real-time metrics and reporting",
+    "megaSecurityTitle": "Security",
+    "megaSecurityDesc": "Enterprise-grade protection",
+    "megaAutomationTitle": "Automation",
+    "megaAutomationDesc": "Smart workflows and triggers",
+    "megaScaleTitle": "Global Scale",
+    "megaScaleDesc": "Multi-currency & languages",
+    "viewAllFeatures": "View all",
+    "footerSolutions": "Solutions",
+    "footerResources": "Resources",
+    "footerLinkBusinessAutomation": "Business Automation",
+    "footerLinkCloudServices": "Cloud Services",
+    "footerLinkAnalytics": "Analytics",
+    "footerLinkDocumentation": "Documentation",
+    "footerLinkAboutUs": "About Us",
+    "footerLinkCareers": "Careers",
+    "footerLegalTerms": "Terms of Service",
+    "footerLegalPrivacy": "Privacy Policy",
+    "footerLegalCookies": "Cookie Settings",
+    "footerLegalAccessibility": "Accessibility",
+    "footerCtaTitle": "Stay ahead with Next Dashboard",
+    "footerCtaDesc": "Join thousands of professionals who trust Next Dashboard for innovative business solutions.",
+    "footerEmailPlaceholder": "Enter your email",
+    "footerSubscribe": "Subscribe Now",
+    "footerPreviewAlt": "Dashboard preview"
   },
   "auth": {
     "login": "Log in",
@@ -1540,7 +1608,48 @@
     "twoFactorAuth": "Two-Factor Auth",
     "twoFactorDescription": "Enter the 6-digit code from your authenticator app to continue.",
     "verificationCode": "Verification Code",
-    "verifyButton": "Verify"
+    "verifyButton": "Verify",
+    "testimonialBadge1": "Community of designers",
+    "testimonialBadge2": "Creative resources",
+    "testimonialQuote": "“I was able to reduce the time taken to present high-level designs by 35% using the platform.”",
+    "testimonialName": "Sara Bright",
+    "testimonialRole": "Freelancer Designer",
+    "enterEmailPassword": "Please enter email and password",
+    "invalidCodeLength": "Please enter a valid 6-digit code",
+    "welcomeBackToast": "Welcome back!",
+    "loginFailed": "Login failed",
+    "invalidCode": "Invalid code",
+    "errorGeneric": "An error occurred",
+    "pleaseFillFields": "Please fill in all fields",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "resetPasswordButton": "Reset Password",
+    "resettingPassword": "Resetting...",
+    "passwordResetSuccess": "Password reset successfully",
+    "registerTitle": "Create Account",
+    "registerSubtitle": "Join the community and start building your future.",
+    "signUpButton": "Sign Up",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailDesc": "We sent a 6-digit code to",
+    "confirmationCode": "Confirmation code",
+    "verifyContinue": "Verify & Continue",
+    "developmentOtp": "Development OTP",
+    "resendCodeIn": "Resend code in {seconds}s",
+    "didntReceiveCode": "Didn't receive a code? Resend",
+    "accountCreatedCheckEmail": "Account created! Check your email for the 6-digit code.",
+    "accountCreated": "Account created successfully!",
+    "emailVerifiedToast": "Email verified!",
+    "newCodeSentToast": "A new code was sent to your email.",
+    "otpFormatError": "Enter the 6-digit code from your email.",
+    "otpExpired": "This code has expired. Request a new one below.",
+    "otpTooManyAttempts": "Too many incorrect attempts. Request a new code below.",
+    "otpIncorrectAttempts": "Incorrect code. {attempts} attempt(s) left.",
+    "otpIncorrect": "Incorrect code. Request a new one.",
+    "otpGenericError": "Something went wrong. Please try again.",
+    "resendFailedGeneric": "Could not resend the code. Please try again."
   },
   "csvImport": {
     "importCsv": "Import CSV",
@@ -1938,142 +2047,160 @@
     "exportCount": "Export ({count} columns)"
   },
   "homepage": {
-    "badge": "Now in Public Beta",
     "heroPrefix": "Your Business,",
-    "word1": "precision.",
-    "word2": "clarity.",
-    "word3": "speed.",
-    "word4": "confidence.",
     "heroSubtitle": "Everything you need to build a modern SaaS: Authentication, Stripe & Midtrans payments, internationalization, dark mode, dashboard, and more. Ready to deploy.",
-    "ctaEnter": "Enter Dashboard",
-    "ctaDocs": "View Documentation",
-    "trustBusinesses": "Businesses",
-    "trustCountries": "Countries",
-    "trustUptime": "Uptime",
-    "mOrders": "Orders Processed",
-    "mUsers": "Active Users",
-    "mRevenue": "Revenue Growth",
-    "mResponse": "Avg Response",
-    "partnersLabel": "Trusted by industry-leading teams",
-    "cOrders": "Orders Processed",
-    "cUptime": "Uptime SLA",
-    "cUsers": "Active Users",
-    "cRefresh": "Data Refresh",
-    "cGrowth": "Avg. Growth Rate",
-    "cCustomers": "Total Customers",
-    "featuresBadge": "Platform Capabilities",
-    "featuresTitle": "Everything you need to scale",
-    "featuresSubtitle": "Stop building the same boilerplate over and over. Get straight to your business logic with our pre-built modules.",
-    "learnMore": "Learn more",
-    "f1Title": "Real-Time Analytics",
-    "f1Desc": "Monitor your business metrics in real-time with live-updating dashboards. Track revenue, orders, and customer growth as they happen.",
-    "f1Tag": "Analytics",
-    "f2Title": "Multi-Channel Orders",
-    "f2Desc": "Unified order management across 6+ channels including Online Store, Facebook, Instagram, and Shopify.",
-    "f2Tag": "Orders",
-    "f3Title": "Customer Intelligence",
-    "f3Desc": "Deep analytics, segmentation, and behavioral insights to understand your customers better.",
-    "f3Tag": "CRM",
-    "f4Title": "Role-Based Security",
-    "f4Desc": "Granular permission controls with Admin, Manager, and Staff roles. Full audit logging for accountability.",
-    "f4Tag": "Security",
-    "statusLive": "Live",
-    "statusActive": "Active",
-    "connected": "connected",
-    "syncActive": "Real-time sync active",
-    "growthTitle": "Growth Metrics",
-    "gRevenue": "Revenue",
-    "gOrders": "Orders",
-    "gConversion": "Conversion",
-    "gAvgOrder": "Avg. Order",
-    "queueTitle": "Priority Queue",
-    "q1": "Process pending orders",
-    "q2": "Review customer feedback",
-    "q3": "Update inventory levels",
-    "q4": "Generate monthly report",
-    "q5": "Check marketing campaigns",
-    "liveTitle": "Live at a glance.",
-    "liveSubtitle": "Your system status, growth metrics, and priority tasks in a single view — perpetually updated.",
-    "testiBadge": "Customer Stories",
-    "testiTitle": "Trusted by operators.",
-    "testiSubtitle": "See what teams are saying after switching to Dashboard.",
-    "testi1Quote": "Dashboard transformed how we manage our multi-channel operations. The real-time analytics alone saved us hours every day.",
-    "testi1Role": "Operations Director, Pixelcraft",
-    "testi2Quote": "The role-based access and audit logging gave us the security we needed to scale from 5 to 50 team members confidently.",
-    "testi2Role": "CTO, Studio Nine",
     "ctaTitle": "Ready for scale.",
     "ctaDesc": "Deploy Dashboard in minutes and instantly upgrade your team's operational capabilities. No complex setup required.",
     "ctaAccess": "Access Workspace",
-    "ctaSales": "Talk to Sales",
     "heroTag": "The Complete Next.js SaaS Starter Kit",
-    "heroTitle": "Your Business, Fully Unified",
-    "ctaPrimary": "Start Building",
-    "ctaSecondary": "View Dashboard",
-    "stats": {
-      "downloads": "10K+",
-      "downloadsLabel": "Developers",
-      "rating": "4.9/5",
-      "ratingLabel": "Reviews",
-      "uptime": "99.9%",
-      "uptimeLabel": "Uptime"
-    },
-    "trustedBy": "TRUSTED BY INNOVATIVE TEAMS WORLDWIDE",
-    "demo": {
-      "revenue": "Total Revenue",
-      "orders": "Total Orders",
-      "customers": "Total Customers",
-      "products": "Total Products"
-    },
-    "demoOrders": {
-      "title": "Recent Orders",
-      "desc": "You received 24 orders today",
-      "customer": "Customer",
-      "status": "Status",
-      "amount": "Amount",
-      "statusCompleted": "Completed",
-      "statusProcessing": "Processing",
-      "statusFailed": "Failed"
-    },
-    "auth": {
-      "title": "Secure Authentication",
-      "desc": "Email/password, social logins, and multi-factor authentication built-in."
-    },
-    "payments": {
-      "title": "Global Payments",
-      "desc": "Accept credit cards via Stripe and local payment methods via Midtrans."
-    },
-    "i18n": {
-      "title": "Internationalization",
-      "desc": "Built-in support for multiple languages with Next-Intl."
-    },
-    "components": {
-      "title": "UI Components",
-      "desc": "Beautiful, accessible components built with Radix UI and Tailwind CSS."
-    },
-    "theme": {
-      "title": "Dark Mode",
-      "desc": "First-class dark mode support with next-themes."
-    },
-    "dashboard": {
-      "title": "Admin Dashboard",
-      "desc": "Comprehensive admin dashboard with charts, tables, and metrics."
-    },
-    "security": {
-      "title": "Enterprise Security",
-      "desc": "Role-based access control, session management, and API route protection."
-    },
-    "performance": {
-      "title": "High Performance",
-      "desc": "Optimized for Core Web Vitals with Next.js App Router and React Server Components."
-    },
-    "socialProof": {
-      "title": "Loved by developers",
-      "subtitle": "See what our community has to say about Next Dashboard.",
-      "seeMore": "Read all reviews"
-    },
     "heroWord1": "Fully Unified.",
     "heroWord2": "Fully Automated.",
-    "heroWord3": "Fully Connected."
+    "heroWord3": "Fully Connected.",
+    "demoOrders": {
+      "title": "Recent Orders"
+    },
+    "security": {
+      "title": "Enterprise Security"
+    },
+    "marquee": {
+      "d0": "Payments & billing",
+      "d1": "Indonesia gateway",
+      "d2": "E-commerce sync",
+      "d3": "Marketplace orders",
+      "d4": "Social commerce",
+      "d5": "AI-powered insights",
+      "d6": "Real-time data",
+      "d7": "Transactional email",
+      "label": "Connect with the tools you already use"
+    },
+    "heroCard": {
+      "chip1": "Analytics",
+      "chip2": "Payments",
+      "chip3": "Security",
+      "chip4": "API",
+      "chip5": "Multi-Channel",
+      "cue": "Scroll",
+      "data": "Data points processed",
+      "liveDemo": "Live Demo",
+      "rating": "Average customer rating",
+      "uptime": "Guaranteed uptime SLA"
+    },
+    "trust": {
+      "b1": "No credit card required",
+      "b2": "Deploy in minutes",
+      "b3": "Multi-tenant ready",
+      "b4": "SOC 2 compliant"
+    },
+    "bento": {
+      "aiBody": "Ask anything about your business in plain language. Powered by GPT-4.",
+      "aiQ1": "What was our best-selling product last month?",
+      "aiQ2": "Show pending orders from Instagram",
+      "aiQ3": "Generate a revenue report for Q3",
+      "aiTitle": "AI Business Assistant",
+      "apiBody": "Full public API v1 with versioned endpoints, API key management, and webhook delivery logs.",
+      "apiTitle": "REST API & Webhooks",
+      "badge": "Platform Features",
+      "catalog": "Catalog",
+      "channelEyebrow": "Sales by Channel",
+      "channelTitle": "Multi-Channel Commerce",
+      "ecoEyebrow": "Ecosystem",
+      "ecoTitle": "Platform Integrations",
+      "gatewayDesc": "Stripe + Midtrans for global and Indonesian markets with automatic currency conversion.",
+      "gatewayTitle": "Dual Payment Gateway",
+      "gwBadgeGlobal": "Global",
+      "gwBadgeIndonesia": "Indonesia",
+      "gwCardDesc": "Cards, Apple Pay, Google Pay",
+      "gwMidDesc": "DANA, GoPay, QRIS, Bank Transfer",
+      "liveLegend": "Live updates every 15s",
+      "monthlyLegend": "Monthly Revenue",
+      "onlineStore": "Online Store",
+      "ordersEyebrow": "Orders",
+      "ordersSuffix": "orders",
+      "revenueEyebrow": "Revenue Overview",
+      "rt1": "SSE streaming",
+      "rt2": "15s auto-poll",
+      "rt3": "Multi-tab sync",
+      "rt4": "Offline detection",
+      "rtBody": "Server-Sent Events push order, inventory, and payment updates to every dashboard tab — no refresh needed.",
+      "rtEyebrow": "Real-Time Infrastructure",
+      "rtTitle": "Live Dashboard Updates",
+      "s1l": "2FA / TOTP",
+      "s1s": "Google Authenticator",
+      "s2l": "WebAuthn",
+      "s2s": "Passkeys & biometrics",
+      "s3l": "SAML SSO",
+      "s3s": "Enterprise IdP",
+      "s4l": "Audit Log",
+      "s4s": "Full event trail",
+      "secBody": "TOTP 2FA, WebAuthn passkeys, SAML SSO, session management, and audit logs.",
+      "sub": "From order management to enterprise security, every tool is built-in and ready to use.",
+      "t1": "Everything You Need",
+      "t2": "to Run Your Business",
+      "topTitle": "Top Products",
+      "viewAll": "View all"
+    },
+    "orderStatus": {
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "processing": "Processing",
+      "shipped": "Shipped"
+    },
+    "why": {
+      "badge": "Why Teams Choose Us",
+      "f1d": "Sync orders from Shopify, Tokopedia, TikTok Shop, Instagram, and Facebook in one unified inbox.",
+      "f1t": "Multi-Channel Order Management",
+      "f2d": "Revenue cohort analysis, geographic breakdowns, conversion funnels, and retention heatmaps.",
+      "f2t": "Advanced Analytics & Reports",
+      "f3d": "Granular RBAC with custom roles, team management, and per-feature permission control.",
+      "f3t": "Role-Based Access Control",
+      "f4d": "Configurable alerts for low stock, order status changes, payment failures, and revenue milestones.",
+      "f4t": "Smart Notifications",
+      "l1": "Orders processed",
+      "l2": "Revenue tracked",
+      "l3": "Avg. response time",
+      "l4": "Uptime SLA",
+      "t1": "Built for Modern",
+      "t2": "Commerce Teams"
+    },
+    "plans": {
+      "badge": "Pricing",
+      "ctaFree": "Get Started Free",
+      "ctaTrial": "Start 14-Day Free Trial",
+      "entContact": "Contact Sales",
+      "entQ": "Need enterprise or custom volumes?",
+      "f1": "Up to 100 orders/month",
+      "f2": "2 sales channels",
+      "f3": "Basic analytics",
+      "f4": "Email support",
+      "f5": "API access (read-only)",
+      "month": "/month",
+      "pf1": "Unlimited orders",
+      "pf2": "All sales channels",
+      "pf3": "Advanced analytics & reports",
+      "pf4": "2FA + SSO + WebAuthn",
+      "pf5": "Stripe & Midtrans payments",
+      "pf6": "AI assistant",
+      "pf7": "API & webhooks (full access)",
+      "pf8": "Priority support",
+      "popular": "Most Popular",
+      "proDesc": "For growing teams who need full power.",
+      "proName": "Pro",
+      "starterDesc": "Perfect for small businesses getting started.",
+      "starterName": "Starter",
+      "sub": "Start free, scale when you need to.",
+      "t1": "Simple, Transparent Pricing"
+    },
+    "stories": {
+      "badge": "Customer Stories",
+      "q1": "We went from manual spreadsheets to real-time dashboards in one afternoon. The multi-channel order management saved us 20+ hours per week.",
+      "q2": "The Stripe + Midtrans dual-payment integration is a game-changer for our Indonesian market. Revenue reconciliation is now fully automated.",
+      "q3": "The 2FA, WebAuthn, and SSO enterprise features gave us SOC 2 compliance out of the box. Our security team was genuinely impressed.",
+      "title": "Trusted by Business Teams"
+    },
+    "final": {
+      "getStarted": "Get Started Free",
+      "signIn": "Sign In"
+    }
   },
   "pricingPage": {
     "heroTag": "Simple Pricing",
@@ -2094,6 +2221,111 @@
     "heroPrefix": "Pricing that",
     "heroWord1": "scales with you.",
     "heroWord2": "fits your budget.",
-    "heroWord3": "grows with you."
+    "heroWord3": "grows with you.",
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "desc": "Perfect for small businesses getting started.",
+        "features": [
+          "Up to 100 orders/month",
+          "Up to 3 team members",
+          "Basic analytics",
+          "Standard exports",
+          "Email support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "desc": "For growing teams who need full power.",
+        "features": [
+          "Up to 1,000 orders/month",
+          "Up to 10 team members",
+          "Advanced real-time analytics",
+          "Priority support",
+          "Multi-channel integrations",
+          "Custom reports",
+          "Role-Based Access Control",
+          "API & Webhooks"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "desc": "Custom solutions for high-volume businesses.",
+        "features": [
+          "Unlimited orders",
+          "Unlimited team members",
+          "Advanced real-time analytics",
+          "24/7 Dedicated support",
+          "Multi-channel integrations",
+          "Custom reports",
+          "Role-Based Access Control",
+          "API & Webhooks",
+          "Custom data exports"
+        ]
+      }
+    },
+    "perMonth": "/month",
+    "compareCols": [
+      "Features",
+      "Starter",
+      "Professional",
+      "Enterprise"
+    ],
+    "compareRows": [
+      [
+        "Monthly Orders",
+        "100",
+        "1,000",
+        "Unlimited"
+      ],
+      [
+        "Team Members",
+        "3",
+        "10",
+        "Unlimited"
+      ],
+      [
+        "Analytics",
+        "Basic",
+        "Advanced",
+        "Advanced"
+      ],
+      [
+        "Support",
+        "Email",
+        "Priority",
+        "24/7 Dedicated"
+      ],
+      [
+        "API Access",
+        "-",
+        "Full",
+        "Full"
+      ],
+      [
+        "Custom Exports",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
+    ],
+    "toastPlanNotFound": "Plan not found. Please try again.",
+    "toastCheckoutFailed": "Checkout failed",
+    "compareTitle": "Compare plans",
+    "compareSubtitle": "Every plan includes a 14-day free trial. No credit card required.",
+    "faqQ1": "Can I upgrade or downgrade my plan at any time?",
+    "faqA1": "Yes, you can change your plan at any time. When upgrading, you'll be billed the prorated difference. When downgrading, the new rate applies at the start of your next billing cycle.",
+    "faqQ2": "Is there a free trial available?",
+    "faqA2": "Yes! All plans come with a 14-day free trial. No credit card required. You can explore all features of your chosen plan during the trial period.",
+    "faqQ3": "What payment methods do you accept?",
+    "faqA3": "We accept all major credit cards, PayPal, and bank transfers for annual plans. All payments are processed securely through Stripe.",
+    "faqQ4": "Can I cancel my subscription?",
+    "faqA4": "Yes, you can cancel anytime. Your access will continue until the end of your current billing period."
   }
 }

@@ -10,70 +10,27 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { FaqAccordion } from "@/components/ui/faq-accordion";
 
 const PLAN_META = [
-  {
-    key: "starter",
-    name: "Starter",
-    desc: "Perfect for small businesses getting started.",
-    popular: false,
-    monthly: 29,
-    yearly: 23,
-    features: [
-      "Up to 100 orders/month",
-      "Up to 3 team members",
-      "Basic analytics",
-      "Standard exports",
-      "Email support",
-    ],
-  },
-  {
-    key: "professional",
-    name: "Professional",
-    desc: "For growing teams who need full power.",
-    popular: true,
-    monthly: 79,
-    yearly: 63,
-    features: [
-      "Up to 1,000 orders/month",
-      "Up to 10 team members",
-      "Advanced real-time analytics",
-      "Priority support",
-      "Multi-channel integrations",
-      "Custom reports",
-      "Role-Based Access Control",
-      "API & Webhooks",
-    ],
-  },
-  {
-    key: "enterprise",
-    name: "Enterprise",
-    desc: "Custom solutions for high-volume businesses.",
-    popular: false,
-    monthly: 199,
-    yearly: 159,
-    features: [
-      "Unlimited orders",
-      "Unlimited team members",
-      "Advanced real-time analytics",
-      "24/7 Dedicated support",
-      "Multi-channel integrations",
-      "Custom reports",
-      "Role-Based Access Control",
-      "API & Webhooks",
-      "Custom data exports",
-    ],
-  },
+  { key: "starter", popular: false, monthly: 29, yearly: 23 },
+  { key: "professional", popular: true, monthly: 79, yearly: 63 },
+  { key: "enterprise", popular: false, monthly: 199, yearly: 159 },
 ];
+
+export type PlanMeta = { name: string; desc: string; features: string[] };
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export default function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
-  const t = useTranslations('pricingPage');
+  const t = useTranslations("pricingPage");
   const { locale } = use(params);
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const planMeta = t.raw("plans") as Record<string, PlanMeta>;
+  const compareCols = t.raw("compareCols") as string[];
+  const compareRows = t.raw("compareRows") as string[][];
 
   const handleSubscribe = async (planKey: string) => {
     if (planKey === "enterprise") {
@@ -85,9 +42,9 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       const plansRes = await fetch("/api/billing/plans");
       const plans = await plansRes.json();
       const plan = plans.find((p: any) => p.name.toLowerCase() === planKey.toLowerCase());
-      
+
       if (!plan) {
-        toast.error("Plan not found. Please try again.");
+        toast.error(t("toastPlanNotFound"));
         return;
       }
 
@@ -106,7 +63,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       if (data.error) throw new Error(data.error);
       if (data.url) window.location.href = data.url;
     } catch (err: any) {
-      toast.error(err.message || "Checkout failed");
+      toast.error(err.message || t("toastCheckoutFailed"));
     } finally {
       setLoadingKey(null);
     }
@@ -132,10 +89,12 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            {t("heroPrefix")}{" "}
-            <br className="hidden sm:block" />
+            {t("heroPrefix")} <br className="hidden sm:block" />
             <span className="text-primary inline-flex">
-              <FlipFadeText words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]} interval={2500} />
+              <FlipFadeText
+                words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                interval={2500}
+              />
             </span>
           </h1>
 
@@ -184,6 +143,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6 items-start">
           {PLAN_META.map((plan, i) => {
+            const meta = planMeta[plan.key];
             const price = isAnnual ? plan.yearly : plan.monthly;
 
             return (
@@ -208,14 +168,14 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   </div>
                 )}
 
-                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                <h3 className="text-xl font-bold mb-2">{meta.name}</h3>
                 <p
                   className={cn(
                     "text-sm mb-6",
                     plan.popular ? "opacity-80" : "text-muted-foreground",
                   )}
                 >
-                  {plan.desc}
+                  {meta.desc}
                 </p>
 
                 <div className="flex items-baseline gap-1 mb-8">
@@ -226,7 +186,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                       plan.popular ? "opacity-80" : "text-muted-foreground",
                     )}
                   >
-                    /month
+                    {t("perMonth")}
                   </span>
                 </div>
 
@@ -238,11 +198,11 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     plan.popular
                       ? "bg-background text-foreground hover:bg-muted"
                       : "bg-foreground text-background hover:opacity-90",
-                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : ""
+                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : "",
                   )}
                 >
                   {loadingKey === plan.key ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {plan.key === "enterprise" ? t('contactSales') : t('getStarted')}
+                  {plan.key === "enterprise" ? t("contactSales") : t("getStarted")}
                 </button>
 
                 <div className="flex-1">
@@ -255,7 +215,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     {t("featuresIncluded")}
                   </p>
                   <ul className="space-y-4">
-                    {plan.features.map((feature, j) => (
+                    {meta.features.map((feature, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm">
                         <Check
                           className={cn(
@@ -278,33 +238,32 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
-            {t("faqTitle")}
+            {t("compareTitle")}
           </h2>
-          <p className="text-muted-foreground text-sm">
-            {t("faqSubtitle")}
-          </p>
+          <p className="text-muted-foreground text-sm">{t("compareSubtitle")}</p>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-border bg-background">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="text-left py-4 px-6 font-semibold text-foreground">Features</th>
-                <th className="text-center py-4 px-6 font-semibold text-foreground">Starter</th>
-                <th className="text-center py-4 px-6 font-semibold text-primary">Professional</th>
-                <th className="text-center py-4 px-6 font-semibold text-foreground">Enterprise</th>
+                {compareCols.map((col, i) => (
+                  <th
+                    key={col}
+                    className={cn(
+                      i === 0 && "text-left",
+                      i !== 0 && "text-center",
+                      "py-4 px-6 font-semibold",
+                      i === 2 ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {[
-                ["Monthly Orders", "100", "1,000", "Unlimited"],
-                ["Team Members", "3", "10", "Unlimited"],
-                ["Analytics", "Basic", "Advanced", "Advanced"],
-                ["Support", "Email", "Priority", "24/7 Dedicated"],
-                ["API Access", "-", "Full", "Full"],
-                ["Custom Exports", "-", "-", "Yes"],
-                ["RBAC", "-", "Yes", "Yes"],
-              ].map((row, i) => (
+              {compareRows.map((row, i) => (
                 <tr key={i} className="hover:bg-muted/30 transition-colors">
                   <td className="py-4 px-6 font-medium text-foreground">{row[0]}</td>
                   {row.slice(1).map((cell, j) => (
@@ -325,6 +284,24 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
+      {/* ──────── FAQ ──────── */}
+      <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
+            {t("faqTitle")}
+          </h2>
+        </div>
+        <FaqAccordion
+          items={[
+            { question: t("faqQ1"), answer: t("faqA1") },
+            { question: t("faqQ2"), answer: t("faqA2") },
+            { question: t("faqQ3"), answer: t("faqA3") },
+            { question: t("faqQ4"), answer: t("faqA4") },
+          ]}
+          title=""
+        />
+      </section>
+
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
@@ -338,12 +315,8 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              {t("ctaTitle")}
-            </h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              {t("ctaDesc")}
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}

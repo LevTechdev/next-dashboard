@@ -101,9 +101,19 @@ test.describe("Audit tenant isolation", () => {
   });
 
   test("the audit-log page renders only the caller workspace's rows", async ({ page }) => {
-    await loginAs(page, fixture.email, fixture.password);
+    // The audit-log PAGE is ADMIN-only (PAGE_ACCESS in src/lib/permissions.ts
+    // — RoleGuard redirects other roles to /dashboard), so the UI leg uses the
+    // seed admin (default workspace): the default workspace's marker must be
+    // visible and tenant B's must not. Tenant B's STAFF view is pinned at the
+    // API level by the request-based tests above, which is where scoping is
+    // actually enforced.
+    await loginAs(page); // seed admin = default workspace
     await page.goto("/en/audit-log");
-    await expect(page.getByText("Tenant B marker", { exact: true })).toBeVisible();
-    await expect(page.getByText("Tenant A marker", { exact: true })).not.toBeVisible();
+    // Narrow to the isolation rows (matches the seeded action/entity/details).
+    await page.getByPlaceholder("Search...").fill("Isolation");
+    await expect(page.getByText("Tenant A marker", { exact: true })).toBeVisible();
+    // If API-level tenant scoping broke, tenant B's rows would leak into the
+    // admin's page render too.
+    await expect(page.getByText("Tenant B marker", { exact: true })).not.toBeVisible();
   });
 });

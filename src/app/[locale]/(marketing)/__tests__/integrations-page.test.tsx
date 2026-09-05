@@ -1,6 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import IntegrationsOverviewPage from "../integrations-overview/page";
+
+vi.mock("framer-motion", async () => {
+  const actual = await vi.importActual("framer-motion");
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    motion: {
+      div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+      span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+      p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
+      h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+      h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+      h3: ({ children, ...props }: any) => <h3 {...props}>{children}</h3>,
+    },
+  };
+});
+
+vi.mock("next-intl", async () => {
+  const mod = await import("@/test-utils/i18n-mock");
+  const en = await import("../../../../i18n/locales/en.json");
+  return mod.createTranslationsMock({ integrationsPage: (en as any).default.integrationsPage });
+});
 
 const params = {
   status: "fulfilled",
@@ -14,13 +37,13 @@ beforeEach(() => {
 
 describe("Integrations Overview Page", () => {
   it("renders the header section", () => {
-    expect(screen.getByText("Integrations")).toBeInTheDocument();
-    expect(screen.getByText("Connect your favorite tools")).toBeInTheDocument();
+    expect(screen.getByText("Seamless Connections")).toBeInTheDocument();
+    expect(screen.getByText("Connect with")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
     expect(
-      screen.getByText(/Sync data, automate workflows, and bring all your business tools together/),
+      screen.getByText(/Next Dashboard comes pre-configured with the industry/),
     ).toBeInTheDocument();
   });
 
@@ -65,9 +88,14 @@ describe("Integrations Overview Page", () => {
     expect(screen.getByText("Social")).toBeInTheDocument();
   });
 
+  it("renders a Connect link on each card", () => {
+    const connectLinks = screen.getAllByText("Connect");
+    expect(connectLinks.length).toBe(9);
+  });
+
   it("renders bottom CTA with accessible link", () => {
-    expect(screen.getByText("Don't see your tool?")).toBeInTheDocument();
-    expect(screen.getByText(/We're constantly adding new integrations/)).toBeInTheDocument();
+    expect(screen.getByText("Build your own integration")).toBeInTheDocument();
+    expect(screen.getByText(/Need something specific/)).toBeInTheDocument();
 
     const apiButton = screen.getByText("View API Docs");
     expect(apiButton).toBeInTheDocument();

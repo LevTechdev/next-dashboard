@@ -56,22 +56,35 @@ Copy the commented vars from `.env` into your environment as needed. Key ones:
 | `NEXT_PUBLIC_APP_URL` | optional | Public origin used for Checkout success/cancel + portal return URLs (defaults to the request origin) |
 | `SAML_SP_ISSUER` | for SSO | SAML Service Provider issuer for the SSO page (defaults to `next-dashboard`) |
 | `AFFILIATE_HEADLESS` | optional | Enables the headless-browser path for affiliate link imports |
+| `EMAIL_TRANSPORT` | optional | Transport override — `auto` (default: SMTP when `SMTP_HOST` is set), `smtp`, or `resend` (force Resend even when SMTP is configured) |
+| `RESEND_FROM` | for Resend | Verified sender for the Resend transport (overrides `EMAIL_FROM`); use `Dashboard <onboarding@resend.dev>` until a domain is verified at resend.com/domains (test sender only delivers to the account owner's email) |
 | `SMTP_HOST` | for email | SMTP server hostname — enables the SMTP transport (preferred; see below) |
 | `SMTP_PORT` | for email | SMTP port (default `587`, or `465` with `SMTP_SECURE=true`) |
 | `SMTP_SECURE` | for email | `true`/`1` for implicit TLS (port 465) |
 | `SMTP_USER` / `SMTP_PASS` | for email | SMTP credentials (omit for open relays) |
 | `RESEND_API_KEY` | for email | Resend API key — fallback transport when no `SMTP_HOST` is set |
 | `EMAIL_FROM` | for email | Verified sender, e.g. `Dashboard <no-reply@yourdomain.com>` (defaults to Resend's test sender) |
+| `MIDTRANS_MERCHANT_ID` | for Midtrans | Midtrans merchant id (e.g. `M746607236`) |
+| `MIDTRANS_SERVER_KEY` | for Midtrans | Midtrans server key — enables the local checkout gateway (`gateway=midtrans`) and validates the notification webhook |
+| `MIDTRANS_CLIENT_KEY` | for Midtrans | Midtrans client key (public) — embedded on the snap.js tag to open the Snap payment popup in-page |
+| `MIDTRANS_SANDBOX_SERVER_KEY` / `MIDTRANS_SANDBOX_CLIENT_KEY` | for Midtrans (sandbox) | `SB-Mid-…` keys used automatically when `MIDTRANS_ENV` isn't `production`, so one env file can hold both key sets and flipping `MIDTRANS_ENV` switches environments without editing keys |
+| `MIDTRANS_ENV` | for Midtrans | `production` for live endpoints; anything else (default) uses `app.sandbox.midtrans.com`. Keys starting `Mid-` are production, `SB-Mid-` are sandbox — keys are resolved per environment (see the sandbox rows) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | optional | OpenTelemetry traces endpoint |
 | `SIEM_WEBHOOK_URL` / `SIEM_WEBHOOK_TOKEN` | optional | Real-time forwarding of security audit events |
 
-**Email transport priority:** `SMTP_HOST` (your own server/relay via nodemailer) → `RESEND_API_KEY` (Resend) → dev console fallback. Every new account is issued a 6-digit email OTP at signup and must verify it from the Security Center; verification and password-reset emails go through this chain.
+**Email transport priority:** `EMAIL_TRANSPORT=auto` (default) → `SMTP_HOST` (your own server/relay via nodemailer) → `RESEND_API_KEY` (Resend) → dev console fallback. Set `EMAIL_TRANSPORT=resend` to force Resend even when SMTP is configured. Outside production, a Resend delivery error (e.g. unverified sender to a non-owner recipient) logs and falls back to the dev console path instead of 500ing. Every new account is issued a 6-digit email OTP at signup and must verify it from the Security Center; verification and password-reset emails go through this chain.
 
 **Email without any mailer configured:** verification links, reset links, and OTP codes are logged to the server console and returned in the API response (dev mode only) — this is what the E2E suite relies on.
 
 **AI Copilot:** `/api/ai/chat` uses Gemini (`GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY`, model `gemini-flash-latest` by default — Google's stable alias for the newest flash line (currently gemini-3.7-flash); the retired 2.x flash models (`gemini-2.0-flash` / `gemini-2.5-flash`) 404, and specific 3.x preview names each have their own free-tier daily quota, so the alias is a safer default; set `GEMINI_MODEL` to override, e.g. `gemini-3-flash-preview`) with OpenAI (`OPENAI_API_KEY`) as a fallback. When no provider key is configured the route falls back to an instant canned mock reply in every non-production environment — local dev, tests, and preview/staging deploys (Vercel `VERCEL_ENV=preview`, or `APP_ENV=staging`); `AI_MOCK=1` forces the mock anywhere, which is how CI keeps E2E runs deterministic without a provider key. Mock replies are flagged with an `X-AI-Mock` response header, and the Copilot panel shows a subtle "dev mode" badge in its header when a reply came from the mock. In real production a missing key returns a 503 with a clear error instead of a generic failure.
 
 **Stripe billing:** the billing page gates Free/Pro/Enterprise plans. The Free plan ($0) switches directly; Pro/Enterprise go through Stripe Checkout (`POST /api/billing/checkout`), and the Stripe Customer Portal is wired for payment methods/invoices/subscription management (`POST /api/billing/portal`). A webhook at `POST /api/billing/webhook` keeps the local subscription/invoice rows in sync (`checkout.session.completed`, `customer.subscription.updated/deleted`). In dev, run `stripe listen --forward-to localhost:3010/api/billing/webhook` and set `STRIPE_WEBHOOK_SECRET` to the printed `whsec_...`. Without `STRIPE_SECRET_KEY` the routes return 503 with a clear error so the page still works (Free plan only).
+
+**Midtrans billing (local payments):** the same `POST /api/billing/checkout` route accepts `gateway=midtrans` (optionally with `channel` = `dana` \| `gopay` \| `qris` \| `bank_transfer` \| `credit_card`) and returns the Snap `token`, `clientKey`, and `snapScriptUrl` (snap.js host resolved from the configured sandbox/production environment) after stashing a `PENDING` subscription with the Midtrans order id. The billing UI loads snap.js with the client key and spends the token through the embedded payment popup — no page redirect — and the hosted redirect `url` stays in the response as a fallback for popup-less clients. Payment results arrive at `POST /api/billing/midtrans/webhook`, which verifies the `sha512` signature key, then activates the plan / creates a PAID invoice on `settlement`/`capture` and marks it INCOMPLETE on `deny`/`cancel`/`expire`. Plan prices stay in USD and are converted to IDR at the rate in `src/lib/midtrans.ts`. Without a server key for the configured environment the route returns 503.
+
+**Midtrans sandbox testing:** grab `SB-Mid-…` server/client keys from the Midtrans dashboard (app.sandbox.midtrans.com), put them in `MIDTRANS_SANDBOX_SERVER_KEY` / `MIDTRANS_SANDBOX_CLIENT_KEY`, and set `MIDTRANS_ENV=sandbox` (or leave it unset) — the Snap token API, embedded popup, and webhook then run against the sandbox with Midtrans' fake payment methods (no real money), while production keys stay in the non-suffixed vars for deploys.
+
+**Demo account for UI walkthroughs / E2E:** run `npm run db:seed` (seeds the admin `nextdashboards@gmail.com / admin123`, 2FA disabled) before the seeded-data specs or before clicking through the billing + Snap popup flow locally — the seed's demo credentials are the ones the login page hints at and the Playwright suite uses.
 
 ## Available Scripts
 
@@ -84,6 +97,8 @@ Copy the commented vars from `.env` into your environment as needed. Key ones:
 | `npm run test:components` | Component tests |
 | `npm run test:api` | API integration tests |
 | `npm run test:all` | All tests (sequential) |
+| `npm run db:provision:local` | One-time: set up the local E2E Postgres mirror (idempotent) |
+| `npm run test:e2e:local` | Playwright E2E against a local Postgres mirror — no Supabase needed (recommended; see [docs/e2e-run.md](docs/e2e-run.md)) |
 | `npm run coverage:all` | All tests with coverage + merged report |
 | `npm run coverage:merge` | Merge existing coverage reports |
 

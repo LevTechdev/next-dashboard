@@ -88,8 +88,7 @@ test.describe("Forgot Password", () => {
     page,
   }) => {
     // Headroom for cold CI containers: register + reset + two logins across
-    // on-demand-compiled routes (the global test timeout is 30s).
-    // on-demand-compiled routes (the global test timeout is 30s).
+    // on-demand-compiled routes.
     // Fresh account (logged in after registration; the auth pages are public,
     // so the leftover session cookie doesn't interfere with the reset steps).
     const email = await registerFreshUser(page);
@@ -111,8 +110,10 @@ test.describe("Forgot Password", () => {
     await expect(resetButton).toBeEnabled();
     await resetButton.click();
 
-    // Success toast + redirect to the login page.
-    await expect(page.getByText("Password reset successfully. Please sign in.")).toBeVisible();
+    // Success toast + redirect to the login page. (The toast reads exactly
+    // "Password reset successfully" — the old "Please sign in." suffix was
+    // dropped when the toast copy was localized.)
+    await expect(page.getByText("Password reset successfully", { exact: false })).toBeVisible();
     await expect(page).toHaveURL(/\/en\/login/);
 
     // 3. The registration session is still valid — clear cookies so the
@@ -122,8 +123,8 @@ test.describe("Forgot Password", () => {
     // 4. The OLD password must now be rejected.
     await page.goto("/en/login");
     await page.locator('input[type="email"]').fill(email);
-    await page.getByPlaceholder("Enter your password").fill(TEST_PASSWORD);
-    await page.getByRole("button", { name: "Sign In", exact: true }).click();
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page.getByText(/invalid|failed|incorrect/i).first()).toBeVisible();
     await expect(page).toHaveURL(/\/en\/login/);
 
@@ -148,9 +149,11 @@ test.describe("Forgot Password", () => {
   test("shows an error on /reset-password without a token", async ({ page }) => {
     await page.goto("/en/reset-password");
 
-    // No token → inline error state + a link back to forgot-password.
-    await expect(page.getByText("Invalid or expired reset link")).toBeVisible();
-    await expect(page.getByText("Forgot Password?")).toBeVisible();
+    // No token → inline error state + a link back to forgot-password. (The
+    // localized copy says "reset token", not "reset link"; the back-link reads
+    // "Forgot your password?", not the old "Forgot Password?" heading copy.)
+    await expect(page.getByText("Invalid or expired reset token")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Forgot your password?" })).toBeVisible();
   });
 
   test("returns the generic sent view for an unknown email without exposing a reset link", async ({

@@ -13,6 +13,12 @@ import { useEffect, useRef, useState } from "react";
 export const RESEND_COOLDOWN_SECONDS = 60;
 export const COOLDOWN_KEY = "email-verify-cooldown-until";
 
+/**
+ * Independent cooldown for forgot-password resets, so requesting a reset link
+ * never blocks (or is blocked by) the email-verification OTP resend.
+ */
+export const FORGOT_PASSWORD_COOLDOWN_KEY = "forgot-password-cooldown-until";
+
 export interface ResendCooldownOptions {
   /** Cooldown length in seconds. Defaults to {@link RESEND_COOLDOWN_SECONDS}. */
   durationSeconds?: number;

@@ -9,14 +9,9 @@ import {
   ShoppingCart,
   Package,
   Shield,
-  LayoutDashboard,
-  CheckCircle,
-  RefreshCw,
-  Zap,
   Globe,
   ArrowRight,
   Sparkles,
-  ChartLine,
   LayoutGridIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,7 +42,7 @@ function BentoCard({
 }
 
 export default function FeaturesPage({ params }: { params: Promise<{ locale: string }> }) {
-  const t = useTranslations('featuresPage');
+  const t = useTranslations("featuresPage");
   const { locale } = use(params);
 
   return (
@@ -70,10 +65,12 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            {t("heroPrefix")}{" "}
-            <br className="hidden sm:block" />
+            {t("heroPrefix")} <br className="hidden sm:block" />
             <span className="text-primary inline-flex">
-              <FlipFadeText words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]} interval={2500} />
+              <FlipFadeText
+                words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                interval={2500}
+              />
             </span>
           </h1>
 
@@ -84,9 +81,15 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
       </section>
 
       {/* ──────── CORE FEATURES ──────── */}
+      {/* The marketing header's Features mega-menu deep-links to
+          /features#analytics|security|automation|scale. Each id sits on the
+          card closest to that menu item's meaning (dashboards/analytics,
+          authentication/security, internationalization/global scale, and the
+          developer API surface), so the links land on real content. */}
       <section className="px-4 sm:px-6 lg:px-12 py-12 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <motion.div
+            id="analytics"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
@@ -96,14 +99,15 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
                 <LayoutGridIcon className="h-5 w-5 text-blue-500" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{t("mainFeatures.dashboard.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("mainFeatures.dashboard.desc")}
-              </p>
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                {t("mainFeatures.dashboard.title")}
+              </h3>
+              <p className="text-sm text-muted-foreground">{t("mainFeatures.dashboard.desc")}</p>
             </BentoCard>
           </motion.div>
 
           <motion.div
+            id="security"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
@@ -113,14 +117,15 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
                 <ShoppingCart className="h-5 w-5 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{t("mainFeatures.auth.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("mainFeatures.auth.desc")}
-              </p>
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                {t("mainFeatures.auth.title")}
+              </h3>
+              <p className="text-sm text-muted-foreground">{t("mainFeatures.auth.desc")}</p>
             </BentoCard>
           </motion.div>
 
           <motion.div
+            id="scale"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
@@ -130,10 +135,10 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4">
                 <BarChart3 className="h-5 w-5 text-purple-500" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{t("mainFeatures.i18n.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("mainFeatures.i18n.desc")}
-              </p>
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                {t("mainFeatures.i18n.title")}
+              </h3>
+              <p className="text-sm text-muted-foreground">{t("mainFeatures.i18n.desc")}</p>
             </BentoCard>
           </motion.div>
 
@@ -148,9 +153,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Package className="h-5 w-5 text-amber-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">{t("grid.items.0.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("grid.items.0.desc")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("grid.items.0.desc")}</p>
             </BentoCard>
           </motion.div>
 
@@ -165,13 +168,12 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Shield className="h-5 w-5 text-rose-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">{t("grid.items.1.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("grid.items.1.desc")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("grid.items.1.desc")}</p>
             </BentoCard>
           </motion.div>
 
           <motion.div
+            id="automation"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
@@ -182,9 +184,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
                 <Globe className="h-5 w-5 text-cyan-500" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">{t("grid.items.2.title")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("grid.items.2.desc")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("grid.items.2.desc")}</p>
             </BentoCard>
           </motion.div>
         </div>
@@ -204,9 +204,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ locale: str
 
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              {t("ctaDesc")}
-            </p>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}

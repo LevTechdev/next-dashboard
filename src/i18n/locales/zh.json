@@ -32,7 +32,10 @@
     "affiliates": "联盟推广",
     "logoutConfirmTitle": "退出登录？",
     "logoutConfirmDesc": "确定要退出您的账户吗？",
-    "sso": "SSO / 企业"
+    "sso": "SSO / 企业",
+    "aiGenerator": "AI 生成器",
+    "projects": "项目",
+    "superAdmin": "超级管理员"
   },
   "dashboard": {
     "title": "仪表盘概览",
@@ -762,7 +765,8 @@
     "channelQris": "QRIS（扫码支付）",
     "channelBankTransfer": "银行转账（虚拟账户）",
     "channelCreditCard": "信用卡／借记卡",
-    "checkoutLocalRedirect": "正在跳转到本地支付（Midtrans）...",
+    "checkoutLocalPopup": "正在打开安全支付窗口（Midtrans）...",
+    "paymentPending": "正在处理付款——确认后将激活您的套餐。",
     "localPaymentsTitle": "本地支付方式",
     "localPaymentsDesc": "通过 Midtrans 使用印尼本地支付方式付款 — 无需国际卡。",
     "localPaymentsNote": "可在套餐页签的结账流程中选择支付方式。"
@@ -1169,141 +1173,65 @@
     "ctaViewPricing": "查看价格"
   },
   "featuresPage": {
-    "badge": "强大能力",
-    "heroPrefix": "助您一臂之力的一切，只为",
-    "word1": "成长。",
-    "word2": "扩展。",
-    "word3": "繁荣。",
-    "word4": "成功。",
-    "heroSubtitle": "从实时分析到团队协作——探索让 Dashboard 成为终极业务管理平台的所有工具。",
-    "groupBadge1": "核心功能",
-    "groupBadge2": "管理",
-    "groupBadge3": "增长",
-    "groupBadge4": "安全",
-    "g1Title": "分析与洞察",
-    "g1Desc": "借助强大的分析和实时仪表盘做出数据驱动的决策。",
-    "g1f1Title": "实时仪表盘",
-    "g1f1Desc": "实时总览您的关键指标，包括收入、订单、客户和产品表现。每 15 秒自动刷新。",
-    "g1f2Title": "收入分析",
-    "g1f2Desc": "交互式收入图表，含月度明细、趋势分析与渠道分布。悬停查看详细提示。",
-    "g1f3Title": "销售报表",
-    "g1f3Desc": "全面的销售报表，含渠道明细、客户汇总与产品表现。",
-    "g1f4Title": "渠道分析",
-    "g1f4Desc": "追踪 6+ 销售渠道表现，包括在线商店、Facebook、Instagram、TikTok 和 Shopify。",
-    "g2Title": "订单与客户管理",
-    "g2Desc": "高效管理订单，建立更牢固的客户关系。",
-    "g2f1Title": "多渠道订单",
-    "g2f1Desc": "在统一界面中查看并管理所有销售渠道的订单。一目了然地追踪状态、付款与发货。",
-    "g2f2Title": "客户档案",
-    "g2f2Desc": "详细客户档案，含订单历史、消费总额与联系方式。",
-    "g2f3Title": "库存追踪",
-    "g2f3Desc": "实时监控全品类库存水平，支持低库存预警。",
-    "g2f4Title": "订单追踪",
-    "g2f4Desc": "以可视化时间线追踪订单从下单到送达的每次状态变更。",
-    "g3Title": "营销与增长",
-    "g3Desc": "借助强大的营销工具与促销功能驱动增长。",
-    "g3f1Title": "活动管理",
-    "g3f1Desc": "创建、追踪并分析跨渠道营销活动。监控绩效指标与 ROI。",
-    "g3f2Title": "折扣引擎",
-    "g3f2Desc": "创建并管理折扣码、促销优惠与季节性定价。",
-    "g3f3Title": "增长分析",
-    "g3f3Desc": "追踪收入、客户、订单与产品的增长指标及百分比变化。",
-    "g3f4Title": "数据导出",
-    "g3f4Desc": "将订单、客户与报表导出为 CSV，完整支持 UTF-8。",
-    "g4Title": "团队与安全",
-    "g4Desc": "与团队高效协作，同时保障数据安全。",
-    "g4f1Title": "基于角色的访问",
-    "g4f1Desc": "细粒度权限，含管理员、经理与员工角色。控制所有模块的访问。",
-    "g4f2Title": "团队管理",
-    "g4f2Desc": "添加团队成员、分配角色并管理访问权限。",
-    "g4f3Title": "实时更新",
-    "g4f3Desc": "Server-Sent Events 向所有已连接客户端即时推送更新。",
-    "g4f4Title": "审计日志",
-    "g4f4Desc": "完整的活动日志，记录系统中的每一项操作。",
-    "perfTitle": "为性能而生",
-    "perfSubtitle": "每个功能都为快速、可靠与直觉而设计。",
-    "perf1Title": "亚秒级响应",
-    "perf1Desc": "数据库查询优化至 50 毫秒以内，页面渲染不超过 100 毫秒。",
-    "perf2Title": "99.9% 可用性保证",
-    "perf2Desc": "分布式基础设施，自动故障转移。零计划停机。",
-    "perf3Title": "实时数据同步",
-    "perf3Desc": "Server-Sent Events 即时向所有客户端推送更新。",
-    "statFeatures": "功能总数",
-    "statIntegrations": "集成",
-    "statUsers": "活跃用户",
-    "statCountries": "国家",
-    "ctaTitle": "准备好开始了吗？",
-    "ctaDesc": "开启 14 天免费试用，无需信用卡。",
-    "ctaButton": "前往仪表盘"
-  },
-  "homePage": {
-    "badge": "公开测试中",
-    "heroPrefix": "运营，更有",
-    "word1": "精准。",
-    "word2": "清晰。",
-    "word3": "速度。",
-    "word4": "信心。",
-    "heroSubtitle": "告别碎片化数据。将分析、订单与团队统一到为现代运营者打造的指挥中心。",
-    "ctaEnter": "进入仪表盘",
-    "ctaDocs": "查看文档",
-    "trustBusinesses": "企业",
-    "trustCountries": "国家",
-    "trustUptime": "可用性",
-    "mOrders": "已处理订单",
-    "mUsers": "活跃用户",
-    "mRevenue": "收入增长",
-    "mResponse": "平均响应",
-    "partnersLabel": "深受行业领先团队信赖",
-    "cOrders": "已处理订单",
-    "cUptime": "可用性 SLA",
-    "cUsers": "活跃用户",
-    "cRefresh": "数据刷新",
-    "cGrowth": "平均增长率",
-    "cCustomers": "客户总数",
-    "featuresBadge": "平台能力",
-    "featuresTitle": "高效的架构。",
-    "featuresSubtitle": "运营高强度业务所需的一切，为极致清晰与实时响应而构建。",
-    "learnMore": "了解更多",
-    "f1Title": "实时分析",
-    "f1Desc": "通过实时更新的仪表盘监控业务指标。收入、订单与客户增长，尽在掌握。",
-    "f1Tag": "分析",
-    "f2Title": "多渠道订单",
-    "f2Desc": "统一管理 6+ 渠道订单，含在线商店、Facebook、Instagram 与 Shopify。",
-    "f2Tag": "订单",
-    "f3Title": "客户洞察",
-    "f3Desc": "深度分析、分群与行为洞察，更好地理解您的客户。",
-    "f3Tag": "CRM",
-    "f4Title": "基于角色的安全",
-    "f4Desc": "管理员、经理、员工角色的细粒度权限控制。完整审计日志，责任可追溯。",
-    "f4Tag": "安全",
-    "statusLive": "在线",
-    "statusActive": "运行中",
-    "connected": "已连接",
-    "syncActive": "实时同步运行中",
-    "growthTitle": "增长指标",
-    "gRevenue": "收入",
-    "gOrders": "订单",
-    "gConversion": "转化率",
-    "gAvgOrder": "平均订单",
-    "queueTitle": "优先队列",
-    "q1": "处理待定订单",
-    "q2": "查看客户反馈",
-    "q3": "更新库存水平",
-    "q4": "生成月度报告",
-    "q5": "检查营销活动",
-    "liveTitle": "一目了然，实时掌握。",
-    "liveSubtitle": "系统状态、增长指标与优先任务尽在一屏——持续更新。",
-    "testiBadge": "客户故事",
-    "testiTitle": "深受运营者信赖。",
-    "testiSubtitle": "看看各团队切换到 Dashboard 后的评价。",
-    "testi1Quote": "Dashboard 彻底改变了我们的多渠道运营方式。仅实时分析就每天为我们节省数小时。",
-    "testi1Role": "运营总监，Pixelcraft",
-    "testi2Quote": "角色权限与审计日志让我们安心地从 5 人扩展到 50 人团队。",
-    "testi2Role": "CTO，Studio Nine",
-    "ctaTitle": "为规模而就绪。",
-    "ctaDesc": "几分钟内部署 Dashboard，立即升级团队的运营能力。无需复杂配置。",
-    "ctaAccess": "进入工作区",
-    "ctaSales": "联系销售"
+    "heroTag": "强大能力",
+    "heroTitle": "你需要的一切，随时扩展",
+    "heroSubtitle": "不要再花数周时间处理样板代码。Next Dashboard 为您提供开箱即用的生产级功能，涵盖身份验证、支付、国际化和稳健的安全保障。",
+    "cta": "立即开始构建",
+    "mainFeatures": {
+      "auth": {
+        "title": "企业级身份验证",
+        "desc": "完整的身份管理，支持传统凭据、魔法链接、社交登录和强制 2FA。基于 NextAuth.js 构建，实现最大程度的安全性与灵活性。"
+      },
+      "payments": {
+        "title": "全球支付处理",
+        "desc": "在全球范围内处理订阅和单次付款。集成 Stripe 支持国际卡，集成 Midtrans 支持东南亚本地支付方式（GoPay、QRIS、虚拟账户）。"
+      },
+      "i18n": {
+        "title": "一流的国际化支持",
+        "desc": "即刻面向全球市场发布。基于 next-intl 的完全本地化路由、日期/时间格式和词典管理。支持 RTL 语言与深度 SEO 优化。"
+      },
+      "dashboard": {
+        "title": "精美的管理后台",
+        "desc": "预构建的响应式管理界面，支持可自定义数据表格、交互式图表、指标卡片和高级筛选。可直接承载您的业务逻辑。"
+      }
+    },
+    "grid": {
+      "title": "更强大的功能",
+      "subtitle": "我们已经考虑周全，您无需操心。",
+      "items": [
+        {
+          "title": "深色模式支持",
+          "desc": "开箱即用的完美深色模式，自动检测系统偏好。"
+        },
+        {
+          "title": "基于角色的访问控制",
+          "desc": "为普通用户、管理员和自定义角色提供细粒度权限。"
+        },
+        {
+          "title": "API 路由",
+          "desc": "安全、限流的 API 端点，可直接用于您的移动应用。"
+        },
+        {
+          "title": "邮件模板",
+          "desc": "使用 React Email 构建的精美响应式事务邮件。"
+        },
+        {
+          "title": "SEO 优化",
+          "desc": "动态站点地图、robots.txt 和优化后的元标签。"
+        },
+        {
+          "title": "类型安全",
+          "desc": "借助 TypeScript、Prisma 和 Zod 实现端到端类型安全。"
+        }
+      ]
+    },
+    "ctaTitle": "准备好更快交付了吗？",
+    "ctaDesc": "加入成千上万正在构建下一代 Web 应用的开发者。",
+    "ctaButton": "立即开始",
+    "heroPrefix": "你需要的一切，",
+    "heroWord1": "随时扩展。",
+    "heroWord2": "随时成长。",
+    "heroWord3": "随时高性能运行。"
   },
   "changelogPage": {
     "badge": "发布说明",
@@ -1326,43 +1254,199 @@
     "subscribeBtn": "订阅",
     "ctaTitle": "准备好开始了吗？",
     "ctaDesc": "加入数千家已在使用 Dashboard 的企业。",
-    "ctaButton": "前往仪表盘"
+    "ctaButton": "前往仪表盘",
+    "entries": [
+      {
+        "version": "2.5.0",
+        "date": "2026年4月14日",
+        "tag": "最新版本",
+        "tagColor": "bg-indigo-500/10 text-indigo-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "通过 Server-Sent Events 实现实时仪表盘自动刷新"
+          },
+          {
+            "type": "feature",
+            "text": "支持管理员、经理和员工角色的基于角色的访问控制"
+          },
+          {
+            "type": "improvement",
+            "text": "重新设计带有交互式提示的分析图表"
+          },
+          {
+            "type": "fix",
+            "text": "修复超过 1000 条记录的订单列表分页问题"
+          }
+        ]
+      },
+      {
+        "version": "2.4.0",
+        "date": "2026年3月28日",
+        "tag": "功能版本",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "支持 Facebook、Instagram 和 TikTok 的多渠道订单管理"
+          },
+          {
+            "type": "feature",
+            "text": "基于消费模式的客户细分"
+          },
+          {
+            "type": "improvement",
+            "text": "优化数据库查询，订单加载速度提升 40%"
+          },
+          {
+            "type": "improvement",
+            "text": "增强的 CSV 导出，全面支持 UTF-8"
+          }
+        ]
+      },
+      {
+        "version": "2.3.0",
+        "date": "2026年3月10日",
+        "tag": "改进",
+        "tagColor": "bg-blue-500/10 text-blue-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "支持代码生成和跟踪的折扣引擎"
+          },
+          {
+            "type": "improvement",
+            "text": "重新设计的通知系统，带偏好设置"
+          },
+          {
+            "type": "improvement",
+            "text": "更新审计日志，包含详细的操作元数据"
+          },
+          {
+            "type": "fix",
+            "text": "解决订单时间戳的时区不一致问题"
+          }
+        ]
+      },
+      {
+        "version": "2.2.0",
+        "date": "2026年2月20日",
+        "tag": "功能版本",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "批量订单状态更新和操作"
+          },
+          {
+            "type": "feature",
+            "text": "带低库存提醒的库存跟踪"
+          },
+          {
+            "type": "improvement",
+            "text": "仪表盘加载时间性能改进"
+          },
+          {
+            "type": "fix",
+            "text": "修复非 ASCII 字符的导出文件名编码"
+          }
+        ]
+      },
+      {
+        "version": "2.1.0",
+        "date": "2026年2月5日",
+        "tag": "改进",
+        "tagColor": "bg-blue-500/10 text-blue-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "并排指标比较销售渠道"
+          },
+          {
+            "type": "improvement",
+            "text": "针对平板设备视口的响应式设计改进"
+          },
+          {
+            "type": "fix",
+            "text": "修复 iOS Safari 上的移动导航菜单重叠"
+          }
+        ]
+      },
+      {
+        "version": "2.0.0",
+        "date": "2026年1月15日",
+        "tag": "重要版本",
+        "tagColor": "bg-purple-500/10 text-purple-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "使用实时分析全面重新设计仪表盘"
+          },
+          {
+            "type": "feature",
+            "text": "带基于角色权限的团队管理"
+          },
+          {
+            "type": "feature",
+            "text": "支持自定义集成的 REST API 和 Webhook"
+          },
+          {
+            "type": "feature",
+            "text": "支持离线使用的渐进式 Web 应用"
+          },
+          {
+            "type": "improvement",
+            "text": "迁移到 Next.js 16，性能提升"
+          }
+        ]
+      }
+    ],
+    "typeLabels": {
+      "feature": "新功能",
+      "improvement": "改进",
+      "fix": "错误修复"
+    },
+    "heroWord1": "更新日志",
+    "heroWord2": "更新",
+    "heroWord3": "发布"
   },
   "integrationsPage": {
-    "badge": "无缝集成",
-    "heroPrefix": "连接您的",
-    "word1": "技术栈。",
-    "word2": "工具。",
-    "word3": "应用。",
-    "word4": "平台。",
-    "heroSubtitle": "无缝连接您已在使用的工具。在支付、电商、通讯与分析平台间同步数据。",
-    "popular": "热门",
-    "connect": "连接",
-    "catBadge": "按类别浏览",
-    "catTitle": "按类别探索",
-    "catSubtitle": "按功能浏览集成，找到您工作流所需。",
-    "featBadge": "集成特性",
-    "featTitle": "为无缝连接而生",
-    "featDesc": "每个集成都以可靠性与开发者体验为先。连接一次，数据自由流动。",
-    "feat1": "实时双向数据同步",
-    "feat2": "OAuth 2.0 安全认证",
-    "feat3": "指数退避自动重试",
-    "feat4": "支持 Webhook 事件驱动更新",
-    "feat5": "速率限制与配额管理",
-    "feat6": "详细同步日志与审计追踪",
-    "statusConnected": "已连接",
-    "statusSyncing": "同步中...",
-    "statusDisconnected": "未连接",
-    "apiTitle": "构建您自己的集成",
-    "apiDesc": "REST API 与 Webhook 让自定义集成变得简单。包含完整文档、SDK 与开发者支持。",
-    "apiButton": "查看 API 文档",
-    "statTotal": "集成总数",
-    "statConnections": "活跃连接",
-    "statRequests": "API 请求/月",
-    "statPlatforms": "平台",
-    "ctaTitle": "今天就开始连接",
-    "ctaDesc": "无需信用卡。从免费套餐开始，最多连接 5 个集成。",
-    "ctaButton": "前往仪表盘"
+    "heroTag": "无缝连接",
+    "heroTitle": "连接您喜爱的工具",
+    "heroSubtitle": "Next Dashboard 预配置了业界最佳工具和平台。零配置即可扩展您的应用能力。",
+    "cta": "浏览文档",
+    "categoriesTitle": "按类别浏览",
+    "categoriesSubtitle": "找到满足您特定需求的完美集成。",
+    "allIntegrations": "全部集成",
+    "popularTag": "热门",
+    "ctaTitle": "构建您自己的集成",
+    "ctaDesc": "需要特定功能？使用我们强大的 API 构建与任何平台的自定义连接。",
+    "ctaButton": "查看 API 文档",
+    "heroPrefix": "连接",
+    "heroWord1": "您喜爱的工具。",
+    "heroWord2": "您喜爱的应用。",
+    "heroWord3": "您使用的一切。",
+    "desc": {
+      "stripe": "无缝处理支付、管理订阅和开具发票。",
+      "shopify": "实时同步 Shopify 店铺的订单、产品和库存。",
+      "sendgrid": "大规模发送事务邮件、通知和营销活动。",
+      "slack": "在您的频道中获取实时提醒、订单更新和团队通知。",
+      "postgresql": "连接现有数据库，进行自定义分析和报表。",
+      "aws": "使用 AWS 云服务部署和扩展您的基础设施。",
+      "ga": "在您自己的数据基础上追踪流量、用户行为和转化指标。",
+      "zapier": "连接 3,000+ 应用，无需编写代码即可自动化工作流程。",
+      "social": "在一个地方管理社交商务渠道的订单和广告。"
+    },
+    "catPayments": "支付",
+    "catEcommerce": "电子商务",
+    "catEmail": "邮件",
+    "catCommunication": "沟通",
+    "catData": "数据",
+    "catInfrastructure": "基础设施",
+    "catAnalytics": "分析",
+    "catAutomation": "自动化",
+    "catSocial": "社交",
+    "connectButton": "连接"
   },
   "site": {
     "navFeatures": "功能",
@@ -1376,10 +1460,36 @@
     "signIn": "登录",
     "signUp": "注册",
     "myAccount": "我的账户",
-    "footerDesc": "一体化业务管理平台，提供实时分析、订单跟踪、团队协作等高效运营业务所需的一切功能。",
+    "footerDesc": "以可靠、可扩展、创新的解决方案赋能企业，统一运营流程。",
     "footerProduct": "产品",
     "footerCompany": "公司",
-    "footerRights": "仪表盘管理系统。保留所有权利。"
+    "footerRights": "Next Dashboard。保留所有权利。",
+    "megaAnalyticsTitle": "分析",
+    "megaAnalyticsDesc": "实时指标和报表",
+    "megaSecurityTitle": "安全",
+    "megaSecurityDesc": "企业级保护",
+    "megaAutomationTitle": "自动化",
+    "megaAutomationDesc": "智能工作流和触发器",
+    "megaScaleTitle": "全球规模",
+    "megaScaleDesc": "多币种与多语言",
+    "viewAllFeatures": "查看全部",
+    "footerSolutions": "解决方案",
+    "footerResources": "资源",
+    "footerLinkBusinessAutomation": "业务自动化",
+    "footerLinkCloudServices": "云服务",
+    "footerLinkAnalytics": "分析",
+    "footerLinkDocumentation": "文档",
+    "footerLinkAboutUs": "关于我们",
+    "footerLinkCareers": "招贤纳士",
+    "footerLegalTerms": "服务条款",
+    "footerLegalPrivacy": "隐私政策",
+    "footerLegalCookies": "Cookie 设置",
+    "footerLegalAccessibility": "无障碍访问",
+    "footerCtaTitle": "使用 Next Dashboard 保持领先",
+    "footerCtaDesc": "加入成千上万信赖 Next Dashboard 创新商业解决方案的专业人士。",
+    "footerEmailPlaceholder": "输入您的邮箱",
+    "footerSubscribe": "立即订阅",
+    "footerPreviewAlt": "仪表盘预览"
   },
   "auth": {
     "login": "登录",
@@ -1404,19 +1514,76 @@
     "creating": "创建中...",
     "verifyAndLogin": "验证并登录",
     "backToLogin": "← 返回登录",
-    "resetPasswordTitle": "Reset Password",
-    "resetPasswordSubtitle": "Enter your new password below",
-    "invalidResetToken": "Invalid or expired reset token",
-    "forgotPasswordTitle": "Forgot your password?",
-    "forgotPasswordSubtitle": "Enter your email and we'll send a reset link",
-    "email": "Email Address",
-    "sendResetLink": "Send Reset Link",
-    "resetLinkSent": "Reset Link Sent",
-    "resetLinkSentDesc": "Check your email for a link to reset your password",
+    "resetPasswordTitle": "重置密码",
+    "resetPasswordSubtitle": "在下方输入您的新密码",
+    "invalidResetToken": "重置令牌无效或已过期",
+    "forgotPasswordTitle": "忘记密码？",
+    "forgotPasswordSubtitle": "输入您的邮箱，我们将发送重置链接",
+    "email": "电子邮件",
+    "sendResetLink": "发送重置链接",
+    "resetLinkSent": "重置链接已发送",
+    "resetLinkSentDesc": "请查收邮件中的密码重置链接",
     "sendingResetLink": "发送重置链接中...",
     "resendResetLink": "重新发送重置链接",
     "resendInSeconds": "{seconds}秒后重发",
-    "resetError": "出了点问题，请重试"
+    "resetError": "出了点问题，请重试",
+    "testimonialBadge1": "设计师社区",
+    "testimonialBadge2": "创意资源",
+    "testimonialQuote": "“使用这个平台，我将展示高质量设计所需的时间缩短了 35%。”",
+    "testimonialName": "萨拉·布赖特",
+    "testimonialRole": "自由职业设计师",
+    "enterEmailPassword": "请输入邮箱和密码",
+    "invalidCodeLength": "请输入有效的6位验证码",
+    "welcomeBackToast": "欢迎回来！",
+    "loginFailed": "登录失败",
+    "invalidCode": "验证码无效",
+    "errorGeneric": "发生错误",
+    "pleaseFillFields": "请填写所有字段",
+    "passwordMinLength": "密码至少需要6个字符",
+    "passwordMismatch": "两次输入的密码不一致",
+    "newPassword": "新密码",
+    "confirmPassword": "确认密码",
+    "passwordTooShort": "密码至少需要8个字符",
+    "resetPasswordButton": "重置密码",
+    "resettingPassword": "重置中...",
+    "passwordResetSuccess": "密码重置成功",
+    "registerTitle": "创建账户",
+    "registerSubtitle": "加入社区，开始构建您的未来。",
+    "signUpButton": "注册",
+    "verifyEmailTitle": "验证您的邮箱",
+    "verifyEmailDesc": "我们已将6位验证码发送至",
+    "confirmationCode": "确认码",
+    "verifyContinue": "验证并继续",
+    "developmentOtp": "开发验证码",
+    "resendCodeIn": "{seconds}秒后重新发送验证码",
+    "didntReceiveCode": "未收到验证码？重新发送",
+    "accountCreatedCheckEmail": "账户已创建！请查收邮件中的6位验证码。",
+    "accountCreated": "账户创建成功！",
+    "emailVerifiedToast": "邮箱已验证！",
+    "newCodeSentToast": "新验证码已发送至您的邮箱。",
+    "otpFormatError": "请输入邮件中的6位验证码。",
+    "otpExpired": "该验证码已过期，请重新获取。",
+    "otpTooManyAttempts": "错误尝试次数过多，请重新获取验证码。",
+    "otpIncorrectAttempts": "验证码错误，还剩{attempts}次机会。",
+    "otpIncorrect": "验证码错误，请重新获取。",
+    "otpGenericError": "出了点问题，请重试。",
+    "resendFailedGeneric": "无法重新发送验证码，请重试。",
+    "password": "密码",
+    "loginButton": "登录",
+    "loginDescription": "登录您的账户以继续探索和利用我们的资源。",
+    "forgotPassword": "忘记密码？",
+    "noAccount": "还没有账户？",
+    "createOne": "创建一个",
+    "twoFactorAuth": "双重身份验证",
+    "twoFactorDescription": "请输入身份验证应用中的6位代码以继续。",
+    "verificationCode": "验证码",
+    "fullName": "全名",
+    "haveAccount": "已有账户？",
+    "createAccount": "创建账户",
+    "createAccountButton": "创建账户",
+    "creatingAccount": "正在创建账户...",
+    "registerDescription": "注册以开始使用 Next Dashboard。",
+    "verifyButton": "验证"
   },
   "csvImport": {
     "importCsv": "导入 CSV",
@@ -1829,6 +1996,7 @@
     "compareTitle": "比较方案",
     "compareSubtitle": "每个方案都包含 14 天免费试用，无需信用卡。",
     "faqTitle": "常见问题",
+    "faqSubtitle": "每个方案均包含14天免费试用。无需信用卡。",
     "faqQ1": "我可以随时升级或降级方案吗？",
     "faqA1": "可以，您可以随时更改方案。升级时按比例收取差额费用；降级时，新费率将在下一个计费周期开始时生效。",
     "faqQ2": "有免费试用吗？",
@@ -1877,5 +2045,287 @@
     "proTeam": "10",
     "enterpriseOrders": "无限制",
     "enterpriseTeam": "无限制"
+  },
+  "homepage": {
+    "heroTag": "完整的 Next.js SaaS 入门套件",
+    "heroPrefix": "您的业务，",
+    "heroWord1": "全面统一。",
+    "heroWord2": "全面自动化。",
+    "heroWord3": "全面互联。",
+    "heroSubtitle": "构建现代 SaaS 所需的一切：认证、Stripe 与 Midtrans 支付、国际化、深色模式、仪表盘等。开箱即用。",
+    "ctaAccess": "进入工作区",
+    "ctaTitle": "为规模而就绪。",
+    "ctaDesc": "几分钟内部署 Dashboard，立即升级团队的运营能力。无需复杂配置。",
+    "demoOrders": {
+      "title": "最近订单"
+    },
+    "security": {
+      "title": "企业级安全"
+    },
+    "marquee": {
+      "label": "连接您的业务已在使用的工具",
+      "d0": "支付与账单",
+      "d1": "印尼支付网关",
+      "d2": "电商同步",
+      "d3": "平台订单",
+      "d4": "社交电商",
+      "d5": "AI 洞察",
+      "d6": "实时数据",
+      "d7": "事务邮件"
+    },
+    "heroCard": {
+      "uptime": "有保障的可用性 SLA",
+      "rating": "客户平均评分",
+      "data": "已处理的数据点",
+      "liveDemo": "在线演示",
+      "cue": "向下滚动",
+      "chip1": "分析",
+      "chip2": "支付",
+      "chip3": "安全",
+      "chip4": "API",
+      "chip5": "多渠道"
+    },
+    "trust": {
+      "b1": "无需信用卡",
+      "b2": "数分钟内部署",
+      "b3": "多租户就绪",
+      "b4": "符合 SOC 2"
+    },
+    "bento": {
+      "badge": "平台功能",
+      "t1": "经营业务所需的",
+      "t2": "一切尽在其中",
+      "sub": "从订单管理到企业级安全，每个工具都已内置、随时可用。",
+      "onlineStore": "在线商店",
+      "revenueEyebrow": "收入概览",
+      "monthlyLegend": "月度收入",
+      "liveLegend": "每 15 秒实时更新",
+      "channelEyebrow": "渠道销售",
+      "channelTitle": "多渠道商务",
+      "ordersEyebrow": "订单",
+      "viewAll": "查看全部",
+      "catalog": "目录",
+      "topTitle": "热销产品",
+      "ordersSuffix": "个订单",
+      "gatewayTitle": "双支付网关",
+      "gatewayDesc": "面向全球及印尼市场的 Stripe + Midtrans，自动进行货币换算。",
+      "gwBadgeGlobal": "全球",
+      "gwBadgeIndonesia": "印尼",
+      "gwCardDesc": "银行卡、Apple Pay、Google Pay",
+      "gwMidDesc": "DANA、GoPay、QRIS、银行转账",
+      "secBody": "TOTP 双重验证、WebAuthn 通行密钥、SAML SSO、会话管理与审计日志。",
+      "s1l": "2FA / TOTP",
+      "s1s": "Google Authenticator",
+      "s2l": "WebAuthn",
+      "s2s": "通行密钥与生物识别",
+      "s3l": "SAML SSO",
+      "s3s": "企业 IdP",
+      "s4l": "审计日志",
+      "s4s": "完整事件轨迹",
+      "aiTitle": "AI 业务助手",
+      "aiBody": "用日常语言询问您的业务。由 GPT-4 提供支持。",
+      "aiQ1": "上个月我们最畅销的产品是什么？",
+      "aiQ2": "显示来自 Instagram 的待处理订单",
+      "aiQ3": "为第三季度生成收入报告",
+      "ecoEyebrow": "生态系统",
+      "ecoTitle": "平台集成",
+      "apiTitle": "REST API 与 Webhook",
+      "apiBody": "完整公开 API v1，支持版本化端点、API 密钥管理与 Webhook 投递日志。",
+      "rtEyebrow": "实时基础设施",
+      "rtTitle": "实时仪表盘更新",
+      "rtBody": "Server-Sent Events 将订单、库存与支付更新推送到每个仪表盘标签页 — 无需刷新。",
+      "rt1": "SSE 流式推送",
+      "rt2": "15 秒自动轮询",
+      "rt3": "多标签页同步",
+      "rt4": "离线检测"
+    },
+    "orderStatus": {
+      "completed": "已完成",
+      "processing": "处理中",
+      "shipped": "已发货",
+      "cancelled": "已取消"
+    },
+    "why": {
+      "badge": "为何选择我们",
+      "t1": "为现代商务团队",
+      "t2": "而打造",
+      "f1t": "多渠道订单管理",
+      "f1d": "将 Shopify、Tokopedia、TikTok Shop、Instagram 与 Facebook 的订单同步到一个统一收件箱。",
+      "f2t": "高级分析与报告",
+      "f2d": "收入队列分析、地区分布、转化漏斗与留存热力图。",
+      "f3t": "基于角色的访问控制",
+      "f3d": "细粒度 RBAC，支持自定义角色、团队管理与按功能授权。",
+      "f4t": "智能通知",
+      "f4d": "针对库存不足、订单状态变更、支付失败与收入里程碑的可配置提醒。",
+      "l1": "已处理订单",
+      "l2": "已追踪收入",
+      "l3": "平均响应时间",
+      "l4": "可用性 SLA"
+    },
+    "plans": {
+      "badge": "价格",
+      "t1": "简单透明的定价",
+      "sub": "免费开始，按需扩展。",
+      "starterName": "入门版",
+      "starterDesc": "适合刚起步的小型企业。",
+      "f1": "每月最多 100 单",
+      "f2": "2 个销售渠道",
+      "f3": "基础分析",
+      "f4": "邮件支持",
+      "f5": "API 访问（只读）",
+      "proName": "专业版",
+      "proDesc": "适合需要全部功能的高速成长团队。",
+      "popular": "最受欢迎",
+      "month": "/月",
+      "pf1": "无限订单",
+      "pf2": "所有销售渠道",
+      "pf3": "高级分析与报告",
+      "pf4": "2FA + SSO + WebAuthn",
+      "pf5": "Stripe 与 Midtrans 支付",
+      "pf6": "AI 助手",
+      "pf7": "API 与 Webhook（完全访问）",
+      "pf8": "优先支持",
+      "ctaFree": "免费开始",
+      "ctaTrial": "开始 14 天免费试用",
+      "entQ": "需要企业版或自定义用量？",
+      "entContact": "联系销售"
+    },
+    "stories": {
+      "badge": "客户故事",
+      "title": "深受业务团队信赖",
+      "q1": "我们仅用一个下午就从手工电子表格切换到了实时仪表盘。多渠道订单管理每周为我们节省 20 多个小时。",
+      "q2": "Stripe + Midtrans 双支付集成改变了我们在印尼市场的格局，收入对账现已完全自动化。",
+      "q3": "2FA、WebAuthn 与 SSO 等企业级功能让我们开箱即得 SOC 2 合规，安全团队印象深刻。"
+    },
+    "final": {
+      "getStarted": "免费开始",
+      "signIn": "登录"
+    }
+  },
+  "pricingPage": {
+    "heroTag": "简单定价",
+    "heroTitle": "随您成长的定价",
+    "heroSubtitle": "免费开始，需要时升级。无隐藏费用或意外收费。",
+    "monthly": "按月",
+    "yearly": "按年",
+    "yearlyDiscount": "节省 20%",
+    "featuresIncluded": "全部包含：",
+    "mostPopular": "最受欢迎",
+    "getStarted": "开始使用",
+    "contactSales": "联系销售",
+    "faqTitle": "常见问题",
+    "faqSubtitle": "您需要了解的关于定价和计费的一切。",
+    "ctaTitle": "准备好开始构建了吗？",
+    "ctaDesc": "加入成千上万使用 Next Dashboard 更快交付的开发者。",
+    "ctaButton": "开始免费试用",
+    "heroPrefix": "定价",
+    "heroWord1": "随您成长。",
+    "heroWord2": "贴合预算。",
+    "heroWord3": "与您共同壮大。",
+    "plans": {
+      "starter": {
+        "name": "入门版",
+        "desc": "适合刚刚起步的小型企业。",
+        "features": [
+          "每月最多 100 个订单",
+          "最多 3 名团队成员",
+          "基础分析",
+          "标准导出",
+          "邮件支持"
+        ]
+      },
+      "professional": {
+        "name": "专业版",
+        "desc": "适合需要全部功能的发展中团队。",
+        "features": [
+          "每月最多 1,000 个订单",
+          "最多 10 名团队成员",
+          "高级实时分析",
+          "优先支持",
+          "多渠道集成",
+          "自定义报表",
+          "基于角色的访问控制",
+          "API 与 Webhook"
+        ]
+      },
+      "enterprise": {
+        "name": "企业版",
+        "desc": "面向高业务量企业的定制解决方案。",
+        "features": [
+          "无限订单",
+          "无限团队成员",
+          "高级实时分析",
+          "24/7 专属支持",
+          "多渠道集成",
+          "自定义报表",
+          "基于角色的访问控制",
+          "API 与 Webhook",
+          "自定义数据导出"
+        ]
+      }
+    },
+    "perMonth": "/月",
+    "compareCols": [
+      "功能",
+      "入门版",
+      "专业版",
+      "企业版"
+    ],
+    "compareRows": [
+      [
+        "每月订单",
+        "100",
+        "1,000",
+        "无限"
+      ],
+      [
+        "团队成员",
+        "3",
+        "10",
+        "无限"
+      ],
+      [
+        "分析",
+        "基础",
+        "高级",
+        "高级"
+      ],
+      [
+        "支持",
+        "邮件",
+        "优先",
+        "24/7 专属"
+      ],
+      [
+        "API 访问",
+        "-",
+        "完整",
+        "完整"
+      ],
+      [
+        "自定义导出",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
+    ],
+    "toastPlanNotFound": "未找到套餐，请重试。",
+    "toastCheckoutFailed": "结账失败",
+    "compareTitle": "比较方案",
+    "compareSubtitle": "每个方案都包含 14 天免费试用，无需信用卡。",
+    "faqQ1": "我可以随时升级或降级方案吗？",
+    "faqA1": "可以，您可以随时更改方案。升级时按比例收取差额费用；降级时，新费率将在下一个计费周期开始时生效。",
+    "faqQ2": "有免费试用吗？",
+    "faqA2": "有！所有方案都附带 14 天免费试用，无需信用卡。试用期间可以体验所选方案的全部功能。",
+    "faqQ3": "你们接受哪些支付方式？",
+    "faqA3": "我们接受所有主流信用卡、PayPal 以及年度方案的银行转账。所有支付均通过 Stripe 安全处理。",
+    "faqQ4": "我可以取消订阅吗？",
+    "faqA4": "可以，您可以随时取消。在当前计费周期结束前，您的访问权限仍然有效。"
   }
 }

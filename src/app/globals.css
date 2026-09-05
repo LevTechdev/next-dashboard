@@ -1258,6 +1258,53 @@ html[data-density="large"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
 }
 
 /* ═══════════════════════════════════════
+   BRAND ACCENT GRADIENTS (follow Settings → Appearance)
+   Gradient versions of --primary, so auth CTAs and hero accent words
+   stay in the custom accent color with depth instead of flat fills.
+   ═══════════════════════════════════════ */
+
+.bg-accent-gradient {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    color-mix(in oklab, hsl(var(--primary)) 68%, #000)
+  );
+}
+
+.bg-accent-gradient:hover {
+  filter: brightness(1.08);
+}
+
+.bg-accent-gradient:active {
+  filter: brightness(0.96);
+}
+
+/* Gradient text in the accent color (hero accent words). Vertical so it stays
+   seamless when bg-clip-text is applied per-letter (animated text splits each
+   glyph into its own paint layer), and reads as a subtle top-down sheen on
+   full words too. */
+.text-accent-gradient {
+  background-image: linear-gradient(
+    180deg,
+    hsl(var(--primary)),
+    color-mix(in oklab, hsl(var(--primary)) 45%, #000)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Auth page side-panel wash — translucent accent gradient. */
+.auth-panel-gradient {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.3),
+    hsl(var(--primary) / 0.06) 45%,
+    hsl(var(--primary) / 0.22)
+  );
+}
+
+/* ═══════════════════════════════════════
    BROWSER AUTOFILL — match the active theme
    Chrome/Safari/Edge paint autofilled inputs with a pale blue/yellow
    background + black text by default. These overrides restyle them so
@@ -1279,7 +1326,6 @@ select:-webkit-autofill:focus {
   background-color: #ffffff;
   transition: background-color 5000s ease-in-out 0s;
 }
-
 .dark input:-webkit-autofill,
 .dark input:-webkit-autofill:hover,
 .dark input:-webkit-autofill:focus,
@@ -1294,4 +1340,117 @@ select:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px #1f2937 inset;
   box-shadow: 0 0 0 1000px #1f2937 inset;
   background-color: #1f2937;
+}
+
+/* ═══════════════════════════════════════
+   LENIS SMOOTH SCROLL
+   https://lenis.darkroom.engineering — recommended base styles.
+   ═══════════════════════════════════════ */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   HOMEPAGE MOTION (3D hero + marquee)
+   ═══════════════════════════════════════ */
+
+/* Infinite integration marquee used under the 3D hero */
+@keyframes hero-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Scroll-down cue dot */
+@keyframes hero-scroll-cue {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+/* Gentle float for hero 3D orbs / DOM chips */
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-marquee] > * {
+    animation: none !important;
+  }
+  [data-hero-scroll-cue] {
+    animation: none !important;
+    opacity: 0;
+  }
+}
+
+/* ═══════════════════════════════════════
+   ANIMATED BRAND LOGO (auth pages)
+   Gentle logo life for entry surfaces: pulsing accent halo behind the tile,
+   slow vertical float, and a soft icon pulse. Reduced-motion users get a
+   static lockup (the motion-reduce:animate-none utilities handle that).
+   ═══════════════════════════════════════ */
+
+@keyframes brand-logo-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes brand-logo-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes brand-logo-icon {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.07);
+    opacity: 0.82;
+  }
 }

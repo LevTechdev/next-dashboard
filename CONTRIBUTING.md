@@ -55,7 +55,9 @@ npm run dev        # → http://localhost:3010
 | `npm run test:components` | Component tests |
 | `npm run test:api` | API integration tests |
 | `npm run test:all` | All tests (sequential) |
-| `npm run test:e2e` | Playwright E2E tests |
+| `npm run test:e2e` | Playwright E2E tests (uses `.env.local` DATABASE_URL) |
+| `npm run test:e2e:local` | Playwright E2E tests against a local Postgres mirror (recommended) |
+| `npm run db:provision:local` | Create/schema the local E2E Postgres mirror (idempotent) |
 | `npm run coverage:all` | All tests with merged coverage report |
 | `npm run storybook` | Storybook dev server (port 6006) |
 | `npm run doctor` | React Doctor diagnostics |
@@ -290,9 +292,16 @@ npm test                        # Unit tests only
 npm run test:components         # Component tests only
 npm run test:api                # API tests only
 npm run test:all                # All tests
-npm run test:e2e                # Playwright E2E tests
+npm run db:provision:local      # One-time: set up the local E2E Postgres mirror (idempotent)
+npm run test:e2e:local          # Playwright E2E against the local mirror (recommended)
+npm run test:e2e                # Playwright E2E against .env.local DATABASE_URL
 npm run coverage:all            # All tests + merged coverage report
 ```
+
+For E2E, prefer `npm run test:e2e:local`: it targets a local Postgres mirror,
+blanks the mailer so the dev OTP/reset contract is visible, and sets
+`AI_MOCK=1` — no Supabase or environment setup needed. Details:
+[`docs/e2e-run.md`](docs/e2e-run.md).
 
 ---
 

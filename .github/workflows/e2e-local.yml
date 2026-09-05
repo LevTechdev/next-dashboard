@@ -1,0 +1,79 @@
+name: E2E (local runner)
+
+# Companion to .github/workflows/e2e.yml: instead of a Postgres service
+# container + bare `npm run test:e2e`, this job exercises the LOCAL runner
+# (scripts/e2e-local.mjs) on every push and pull request (all branches).
+#
+# Why a second E2E job? The local runner self-provisions Postgres via Docker
+# (`npm run db:provision:local` — reuse-or-launch a postgres:16 container,
+# create the `nextdashboard` DB, push the schema) and then runs the suite
+# against it with the mailer blanked (dev-OTP contract) and AI_MOCK=1. That
+# clean-machine Docker branch of the runner is the part that never runs
+# locally when the daemon is down, so CI is where it gets exercised for real.
+# The suite still seeds inside globalSetup, so no explicit seed step is needed.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: e2e-local-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-local:
+    name: Playwright E2E (local runner)
+    runs-on: ubuntu-latest
+    env:
+      # CI-only placeholders — the same values the shared job uses. The local
+      # runner itself supplies DATABASE_URL/DIRECT_URL (local mirror), blanks
+      # the mailer keys, and sets AI_MOCK=1; shell env wins for these.
+      JWT_SECRET: ci-e2e-secret
+      NEXTAUTH_SECRET: ci-e2e-secret
+      NEXTAUTH_URL: http://localhost:3010
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Provision local Postgres (db:provision:local)
+        # Nothing listens on :5432 on a fresh runner, so this is where the
+        # runner's Docker branch (reuse-or-create the next-dashboard-e2e-pg
+        # container → CREATE DATABASE → prisma db push) runs for real.
+        run: npm run db:provision:local
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        # The runner's env (local DATABASE_URL/DIRECT_URL, blanked mailer,
+        # AI_MOCK=1) is inherited by the Playwright-spawned dev server, which
+        # boots on :3010. globalSetup seeds the DB and repairs the audit
+        # chain at suite start.
+        run: npm run test:e2e:local
+      - name: Verify seeded data yields non-zero dashboard stats
+        # Post-suite guard: globalSetup seeds inside the test run, so this
+        # runs after and catches the "empty dashboard despite seeded DB" bug
+        # class (see the same step in e2e-reusable.yml).
+        run: npm run check:seed
+      - name: Verify SecurityEvent hash chain is intact
+        # Post-suite chain-integrity guard, parity with e2e-reusable.yml: the
+        # chain reflects everything the suite just did.
+        run: npm run check:audit-chain
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-local
+          path: playwright-report/
+          retention-days: 14
+      - name: Upload test results
+        # Per-test error-context.md files + traces (on-first-retry).
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-local
+          path: test-results/
+          retention-days: 14

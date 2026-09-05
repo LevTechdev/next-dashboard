@@ -43,6 +43,8 @@ const navLinks = [
 
 import { MarketingHeader } from "@/components/layout/marketing-header";
 import { MarketingFooter } from "@/components/layout/marketing-footer";
+import SmoothScroll from "@/components/home/smooth-scroll";
+import ScrollProgress from "@/components/home/scroll-progress";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -63,16 +65,19 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <UnsupportedBrowserBanner />
       <div className="min-h-screen bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 transition-colors motion-spring">
         <MarketingHeader scrolled={scrolled} />
+        {/* Reading progress — 3D-scroll feedback on every marketing page */}
+        <ScrollProgress />
 
+        {/* Buttery-smooth scrolling via Lenis (GSAP-ticker synced) */}
+        <SmoothScroll>
+          {/* ═══ MAIN CONTENT with animated page transitions ═══ */}
+          <main className="overflow-x-hidden">
+            <PageTransition>{children}</PageTransition>
+          </main>
 
-
-        {/* ═══ MAIN CONTENT with animated page transitions ═══ */}
-        <main className="overflow-x-hidden">
-          <PageTransition>{children}</PageTransition>
-        </main>
-
-        {/* ═══ FOOTER ═══ */}
-        <MarketingFooter />
+          {/* ═══ FOOTER ═══ */}
+          <MarketingFooter />
+        </SmoothScroll>
       </div>
     </ViewTransitionProvider>
   );

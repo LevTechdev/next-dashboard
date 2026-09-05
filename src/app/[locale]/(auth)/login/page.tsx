@@ -1,24 +1,20 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
-import {
-  Sparkles,
-  ChevronLeft,
-  ChevronRight,
-  Fingerprint,
-  Building2,
-  Sun,
-  Moon,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Fingerprint, Building2, Sun, Moon, Eye, EyeOff, Timer } from "lucide-react";
+import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import {
+  FORGOT_PASSWORD_COOLDOWN_KEY,
+  useResendCooldown,
+} from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,6 +23,8 @@ import { useTranslations } from "next-intl";
 
 function LoginForm() {
   const t = useTranslations("auth");
+  const params = useParams();
+  const locale = (params?.locale as string) || "en";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +32,7 @@ function LoginForm() {
   const [totpRequired, setTotpRequired] = useState(false);
   const [view, setView] = useState("login");
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => setMounted(true), []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const [totpCode, setTotpCode] = useState("");
   const [savedEmail, setSavedEmail] = useState("");
@@ -42,12 +40,20 @@ function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/en/dashboard";
+  const redirect = searchParams.get("redirect") || `/${locale}/dashboard`;
+
+  // ── Inline forgot-password state (styled like the 2FA step) ──
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotDevUrl, setForgotDevUrl] = useState<string | null>(null);
+  const { cooldownLeft, startCooldown } = useResendCooldown({
+    storageKey: FORGOT_PASSWORD_COOLDOWN_KEY,
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter email and password");
+      toast.error(t("enterEmailPassword"));
       return;
     }
 
@@ -62,13 +68,13 @@ function LoginForm() {
         return;
       }
       if (result.success) {
-        toast.success("Welcome back!");
+        toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
-        toast.error(result.error || "Login failed");
+        toast.error(result.error || t("loginFailed"));
       }
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("errorGeneric"));
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +84,7 @@ function LoginForm() {
 
   const handleTotpVerification = async (code: string) => {
     if (code.length < 6) {
-      toast.error("Please enter a valid 6-digit code");
+      toast.error(t("invalidCodeLength"));
       return;
     }
     if (totpSubmittingRef.current) return;
@@ -87,16 +93,55 @@ function LoginForm() {
     try {
       const result = await login(savedEmail, savedPassword, code);
       if (result.success) {
-        toast.success("Welcome back!");
+        toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
-        toast.error(result.error || "Invalid code");
+        toast.error(result.error || t("invalidCode"));
       }
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("errorGeneric"));
     } finally {
       totpSubmittingRef.current = false;
       setIsLoading(false);
+    }
+  };
+
+  const goToForgot = () => {
+    setForgotSent(false);
+    setForgotDevUrl(null);
+    setView("forgot");
+  };
+
+  const goToLogin = () => {
+    setForgotSent(false);
+    setForgotDevUrl(null);
+    setView("login");
+  };
+
+  const sendForgotLink = async () => {
+    if (!email) {
+      toast.error(t("email"));
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, locale }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setForgotSent(true);
+        if (data.resetUrl) setForgotDevUrl(data.resetUrl);
+        startCooldown();
+        return;
+      }
+      toast.error(data.error || t("resetError"));
+    } catch {
+      toast.error(t("resetError"));
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -107,11 +152,11 @@ function LoginForm() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#b3f021] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-zinc-900 dark:text-white shadow-sm z-50"
+          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-zinc-900 dark:text-white shadow-sm z-50"
           aria-label="Toggle theme"
         >
           <Sun className="h-5 w-5 hidden dark:block" />
@@ -119,18 +164,19 @@ function LoginForm() {
         </button>
       )}
 
-      <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/20 dark:border-zinc-800 transition-colors">
+      <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/20 dark:border-zinc-800 transition-colors">
         {/* Left Side */}
         <div className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
           <div className="w-full max-w-sm mx-auto">
-            <div className="flex items-center gap-2 text-[#9bd419] dark:text-purple-400 mb-6">
-              <Sparkles className="w-8 h-8 fill-current" />
-              <span className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Next Dashboard</span>
+            <div className="mb-6 flex justify-center">
+              <BrandLogo animated />
             </div>
 
             {totpRequired ? (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">{t("twoFactorAuth")}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                  {t("twoFactorAuth")}
+                </h1>
                 <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
 
                 <form
@@ -149,9 +195,9 @@ function LoginForm() {
                           className={cn(
                             "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
                             totpCode.length === i
-                              ? "border-[#b3f021] dark:border-purple-500 ring-1 ring-[#b3f021] dark:ring-purple-500"
-                              : "border-zinc-200",
-                            totpCode[i] ? "text-zinc-900" : "text-transparent",
+                              ? "border-primary ring-1 ring-primary"
+                              : "border-zinc-200 dark:border-zinc-700",
+                            totpCode[i] ? "text-zinc-900 dark:text-zinc-100" : "text-transparent",
                           )}
                         >
                           {totpCode[i] || ""}
@@ -179,15 +225,17 @@ function LoginForm() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20"
+                    className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
                     disabled={totpCode.length < 6 || isLoading}
                   >
+                    {" "}
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> Verifying...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                        {t("verifying")}
                       </>
                     ) : (
-                      "Verify & Login"
+                      t("verifyAndLogin")
                     )}
                   </Button>
 
@@ -197,7 +245,7 @@ function LoginForm() {
                       setTotpRequired(false);
                       setTotpCode("");
                     }}
-                    className="w-full text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+                    className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                   >
                     ← Back to login
                   </button>
@@ -206,61 +254,114 @@ function LoginForm() {
             ) : view === "forgot" ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>
-                  <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
-                    {t("forgotPasswordTitle")}
+                  <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                    {forgotSent ? t("resetLinkSent") : t("forgotPasswordTitle")}
                   </h1>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    {t("forgotPasswordSubtitle")}
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
+                    {forgotSent ? t("resetLinkSentDesc") : t("forgotPasswordSubtitle")}
                   </p>
                 </div>
 
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    toast.success(t("resetLinkSent"));
-                    setView("login");
-                  }}
-                  className="space-y-5"
-                >
-                  <div>
-                    <Label className="text-zinc-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                      {t("email")}
-                    </Label>
-                    <Input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@dashboard.com"
-                      disabled={isLoading}
-                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-11 rounded-xl bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 transition-colors text-white font-semibold mt-2 shadow-none"
-                  >
-                    {isLoading ? (
-                      <LoaderCircleIcon size={16} className="h-4 w-4 animate-spin" />
-                    ) : (
-                      t("sendResetLink")
-                    )}
-                  </Button>
-                </form>
+                {forgotSent ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-zinc-700 dark:text-zinc-200">
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                      {t("resetLinkSent")}
+                    </div>
 
-                <div className="text-center pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-[#EE5D36] dark:text-zinc-400 dark:hover:text-[#EE5D36] transition-colors"
+                    {forgotDevUrl && (
+                      <a
+                        href={forgotDevUrl}
+                        className="block text-center text-xs text-primary break-all hover:underline"
+                      >
+                        {forgotDevUrl}
+                      </a>
+                    )}
+
+                    <div className="flex items-center justify-center gap-3 text-sm">
+                      {cooldownLeft > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-zinc-400">
+                          <Timer className="h-3.5 w-3.5" />
+                          {t("resendInSeconds", { seconds: cooldownLeft })}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void sendForgotLink()}
+                          disabled={forgotLoading}
+                          className="text-primary font-medium hover:underline transition-colors disabled:opacity-50"
+                        >
+                          {forgotLoading ? t("sendingResetLink") : t("resendResetLink")}
+                        </button>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-11"
+                      onClick={goToLogin}
+                    >
+                      {t("backToLogin")}
+                    </Button>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void sendForgotLink();
+                    }}
+                    className="space-y-5"
                   >
-                    Back to log in
-                  </button>
-                </div>
+                    <div>
+                      <Label className="text-zinc-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                        {t("email")}
+                      </Label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={t("emailPlaceholder")}
+                        disabled={forgotLoading}
+                        autoFocus
+                        required
+                        className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={!email || forgotLoading || cooldownLeft > 0}
+                      className="w-full h-11 rounded-xl text-primary-foreground bg-accent-gradient font-semibold mt-2 shadow-none"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />
+                          {t("sendingResetLink")}
+                        </>
+                      ) : cooldownLeft > 0 ? (
+                        t("resendInSeconds", { seconds: cooldownLeft })
+                      ) : (
+                        t("sendResetLink")
+                      )}
+                    </Button>
+
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={goToLogin}
+                        className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-primary dark:text-zinc-400 transition-colors"
+                      >
+                        {t("backToLogin")}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             ) : (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">{t("welcomeBack")}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                  {t("welcomeBack")}
+                </h1>
                 <p className="text-sm text-zinc-500 mb-8">{t("loginDescription")}</p>
 
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -271,7 +372,7 @@ function LoginForm() {
                       placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl"
+                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl"
                       required
                     />
                   </div>
@@ -279,7 +380,13 @@ function LoginForm() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-zinc-700 dark:text-zinc-300">{t("password")}</Label>
-                      <Link href={`/en/forgot-password`} className="text-sm font-medium text-[#9bd419] dark:text-purple-400 hover:underline">{t("forgotPassword")}</Link>
+                      <button
+                        type="button"
+                        onClick={goToForgot}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {t("forgotPassword")}
+                      </button>
                     </div>
                     <div className="relative">
                       <Input
@@ -287,7 +394,7 @@ function LoginForm() {
                         placeholder={t("passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#b3f021] dark:border-purple-500 focus:ring-[#b3f021] dark:ring-purple-500/20 rounded-xl pr-10"
+                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl pr-10"
                         required
                       />
                       <button
@@ -295,21 +402,28 @@ function LoginForm() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#b3f021] dark:bg-purple-600 hover:bg-[#9cd11b] dark:hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-[#b3f021]/20 dark:shadow-purple-500/20 mt-2"
+                    className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20 mt-2"
                     disabled={!email || !password || isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" /> {t("loggingIn")}
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                        {t("loggingIn")}
                       </>
-                    ) : t("loginButton")}
+                    ) : (
+                      t("loginButton")
+                    )}
                   </Button>
                 </form>
 
@@ -318,7 +432,7 @@ function LoginForm() {
                     <div className="w-full border-t border-zinc-200" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase font-medium">
-                    <span className="bg-white dark:bg-zinc-900 px-3 text-zinc-400">OR</span>
+                    <span className="bg-white dark:bg-zinc-900 px-3 text-zinc-400">{t("or")}</span>
                   </div>
                 </div>
 
@@ -362,7 +476,13 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  {t("noAccount")} <Link href="/en/register" className="text-[#9bd419] dark:text-purple-400 hover:underline">{t("createOne")}</Link>
+                  {t("noAccount")}{" "}
+                  <Link
+                    href={`/${locale}/register`}
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    {t("createOne")}
+                  </Link>
                 </p>
 
                 <p className="mt-2 text-center text-xs text-zinc-400">
@@ -373,43 +493,9 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Right Side Visual */}
+        {/* Right Side Visual — customer review (i18n) */}
         <div className="hidden md:flex md:w-[400px] lg:w-[480px] p-4 pl-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden relative bg-gradient-to-br from-orange-200 via-orange-100 to-amber-100 flex items-end p-6">
-            {/* Soft decorative blur shapes */}
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-400/30 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3" />
-            <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-rose-400/20 rounded-full blur-[60px] -translate-x-1/2" />
-
-            {/* Glass Card */}
-            <div className="relative z-10 w-full backdrop-blur-xl bg-white dark:bg-zinc-900/20 border border-white/40 p-8 rounded-[24px] shadow-2xl">
-              <div className="flex gap-2 mb-6">
-                <span className="px-4 py-1.5 bg-white dark:bg-zinc-900/30 text-zinc-800 text-xs font-semibold rounded-full border border-white/20 shadow-sm backdrop-blur-md">
-                  Community of designers
-                </span>
-                <span className="px-4 py-1.5 bg-white dark:bg-zinc-900/30 text-zinc-800 text-xs font-semibold rounded-full border border-white/20 shadow-sm backdrop-blur-md">
-                  Creative resources
-                </span>
-              </div>
-              <p className="text-zinc-900 dark:text-zinc-100 font-semibold text-lg sm:text-xl mb-8 leading-snug">
-                &quot;I was able to reduce the time taken to present high-level designs by 35% using
-                the platform.&quot;
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-zinc-900 dark:text-zinc-100 font-bold text-sm">Sara Bright</p>
-                  <p className="text-zinc-800/80 dark:text-zinc-300/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-colors">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AuthTestimonial />
         </div>
       </div>
     </div>
@@ -420,8 +506,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#b3f021] dark:bg-purple-600">
-          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-white" />
+        <div className="min-h-screen flex items-center justify-center bg-primary">
+          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-primary-foreground" />
         </div>
       }
     >
