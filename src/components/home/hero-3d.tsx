@@ -267,58 +267,15 @@ export default function Hero3D() {
         new THREE.Color().setHSL(readPrimaryHsl().h / 360, 0.85, dark ? 0.65 : 0.5),
     });
 
-    /** Re-tint every theme-dependent material from the live CSS palette. */
-    const applyTheme = () => {
-      const dark = document.documentElement.classList.contains("dark");
-      for (const { mat, colorFor } of tintable) {
-        mat.color.set(colorFor(dark));
-      }
-      if (renderer && (!running || reducedMotion)) renderOnce();
-    };
-
-    // ── Sizing ────────────────────────────────────────────────────────────
-    const resize = () => {
-      const w = host.clientWidth || 1;
-      const h = host.clientHeight || 1;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h, false);
-      if (!running) renderOnce();
-    };
-    const ro = new ResizeObserver(resize);
-    ro.observe(host);
-
-    // ── Pointer parallax targets ──────────────────────────────────────────
+    let disposed = false;
+    let running = false;
+    let rafId: number | null = null;
     let pointerX = 0;
     let pointerY = 0;
     let targetX = 0;
     let targetY = 0;
-    const onPointer = (e: PointerEvent) => {
-      targetX = (e.clientX / window.innerWidth) * 2 - 1;
-      targetY = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    window.addEventListener("pointermove", onPointer, { passive: true });
-
-    // ── Scroll scrub target ───────────────────────────────────────────────
     let scrollTarget = 0;
-    const st = ScrollTrigger.create({
-      trigger: section ?? host,
-      start: "top top",
-      end: "bottom top",
-      scrub: true,
-      onUpdate: (self) => {
-        scrollTarget = self.progress;
-      },
-      onToggle: (self) => {
-        if (reducedMotion) return;
-        if (self.isActive) start();
-        else stop();
-      },
-    });
 
-    // ── Render loop ───────────────────────────────────────────────────────
-    let running = false;
-    let rafId: number | null = null;
     // Monotonic clock so the world never snaps when the loop restarts.
     const startedAt = performance.now();
 
@@ -379,6 +336,50 @@ export default function Hero3D() {
       rafId = null;
     };
 
+    /** Re-tint every theme-dependent material from the live CSS palette. */
+    const applyTheme = () => {
+      const dark = document.documentElement.classList.contains("dark");
+      for (const { mat, colorFor } of tintable) {
+        mat.color.set(colorFor(dark));
+      }
+      if (renderer && (!running || reducedMotion)) renderOnce();
+    };
+
+    // ── Sizing ────────────────────────────────────────────────────────────
+    const resize = () => {
+      const w = host.clientWidth || 1;
+      const h = host.clientHeight || 1;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+      if (!running) renderOnce();
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(host);
+
+    // ── Pointer parallax targets ──────────────────────────────────────────
+    const onPointer = (e: PointerEvent) => {
+      targetX = (e.clientX / window.innerWidth) * 2 - 1;
+      targetY = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener("pointermove", onPointer, { passive: true });
+
+    // ── Scroll scrub target ───────────────────────────────────────────────
+    const st = ScrollTrigger.create({
+      trigger: section ?? host,
+      start: "top top",
+      end: "bottom top",
+      scrub: true,
+      onUpdate: (self) => {
+        scrollTarget = self.progress;
+      },
+      onToggle: (self) => {
+        if (reducedMotion) return;
+        if (self.isActive) start();
+        else stop();
+      },
+    });
+
     // ── Visibility / tab focus guards ─────────────────────────────────────
     const onVisibility = () => {
       if (document.hidden) stop();
@@ -393,7 +394,6 @@ export default function Hero3D() {
       attributeFilter: ["class", "data-accent"],
     });
 
-    let disposed = false;
     applyTheme();
 
     if (reducedMotion) {

@@ -958,8 +958,8 @@ describe("Billing Invoices [id] Download", () => {
       expect(html).toContain("INV-001");
       expect(html).toContain("Starter");
       expect(html).toContain("INVOICE");
-      expect(html).toContain("Next");
-      expect(html).toContain("Dashboard");
+      expect(html).toContain("LevTech");
+      expect(html).toContain("Unified");
       expect(res.headers.get("content-type")).toContain("text/html");
     });
 

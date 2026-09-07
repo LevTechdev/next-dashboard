@@ -24,12 +24,20 @@ import {
   AlertTriangle,
   ChevronDown,
   Wallet,
+  Landmark,
+  Sliders,
 } from "lucide-react";
+import { TaxNexusEngine } from "@/components/billing/tax-nexus-engine";
+import { QrisPaymentSystem } from "@/components/billing/qris-payment-system";
+import { InvoiceCustomizerDialog } from "@/components/billing/invoice-customizer-dialog";
+import { QrisBrandIcon } from "@/components/ui/brand-icons";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
+import { openSnapPopup } from "@/lib/snap-popup";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import {
@@ -115,12 +123,7 @@ function formatDate(dateStr: string | null) {
 }
 
 function formatCurrencyUSD(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return formatCurrency(amount, undefined, "USD");
 }
 
 function daysRemaining(endDate: string | null): number {
@@ -158,16 +161,7 @@ const channelKey = (channel: string) =>
 
 /** Currency-aware invoice amount (plan prices stay USD; Midtrans invoices are IDR). */
 function formatInvoiceAmount(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currency || "USD"} ${amount}`;
-  }
+  return formatCurrency(amount, undefined, (currency?.toUpperCase() as any) || "USD");
 }
 
 function getPlanFeatures(plan: Plan) {
@@ -199,6 +193,7 @@ function getPlanFeatures(plan: Plan) {
 
 export default function BillingPage() {
   const tbilling = useTranslations("billing");
+  const { currency } = useCurrency();
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
@@ -226,6 +221,14 @@ export default function BillingPage() {
             <CreditCardIcon size={16} className="h-4 w-4" />
             {tbilling("tabPayment")}
           </TabsTrigger>
+          <TabsTrigger value="taxNexus" className="flex items-center gap-2">
+            <Landmark className="h-4 w-4 text-indigo-500" />
+            {tbilling("tabTaxNexus")}
+          </TabsTrigger>
+          <TabsTrigger value="qris" className="flex items-center gap-2">
+            <QrisBrandIcon size={16} className="text-red-600" />
+            {tbilling("tabQris")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -239,6 +242,12 @@ export default function BillingPage() {
         </TabsContent>
         <TabsContent value="payment" className="mt-6">
           <PaymentTab />
+        </TabsContent>
+        <TabsContent value="taxNexus" className="mt-6">
+          <TaxNexusEngine />
+        </TabsContent>
+        <TabsContent value="qris" className="mt-6">
+          <QrisPaymentSystem />
         </TabsContent>
       </Tabs>
     </div>
@@ -618,9 +627,12 @@ function PlansTab() {
     setSwitching(plan.id);
     try {
       if (plan.price > 0) {
-        // Paid plan → hosted checkout. gateway selects the provider: Stripe
-        // (international card) or Midtrans (local payments) with a channel
-        // restriction (DANA / GoPay / QRIS / bank transfer / card).
+        // Paid plan → checkout. gateway selects the provider: Stripe
+        // (international card, hosted redirect) or Midtrans (local payments)
+        // with a channel restriction (DANA / GoPay / QRIS / bank transfer /
+        // card). Midtrans opens the embedded Snap popup from the returned
+        // token + client key; the hosted url is the fallback if the popup
+        // cannot load.
         const res = await fetch("/api/billing/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -633,13 +645,49 @@ function PlansTab() {
         });
         if (res.ok) {
           const data = await res.json();
+          setConfirmPlan(null);
+          if (paymentGateway === "midtrans" && data.token && data.snapScriptUrl) {
+            toast.info(tbilling("checkoutLocalPopup"));
+            try {
+              await openSnapPopup({
+                token: data.token,
+                snapScriptUrl: data.snapScriptUrl,
+                clientKey: data.clientKey,
+                callbacks: {
+                  onSuccess: () => {
+                    toast.success(tbilling("planUpdated"));
+                    fetchData();
+                  },
+                  onPending: () => toast.info(tbilling("paymentPending")),
+                  onError: () => toast.error(tbilling("checkoutError")),
+                  // The payer closed the popup without paying: revert the
+                  // stashed PENDING checkout so the plan UI shows their real
+                  // plan (last paid / Free) instead of a stuck "processing".
+                  onClose: () => {
+                    void fetch("/api/billing/midtrans/abandon", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ orderId: data.orderId }),
+                    })
+                      .catch(() => {})
+                      .finally(() => fetchData());
+                  },
+                },
+              });
+            } catch (err: any) {
+              // The popup could not boot — fall back to the hosted checkout
+              // page so payment is still reachable.
+              if (data.url) {
+                toast.info(tbilling("checkoutRedirect"));
+                window.location.href = data.url;
+                return;
+              }
+              toast.error(err?.message || tbilling("checkoutError"));
+            }
+            return;
+          }
           if (data.url) {
-            setConfirmPlan(null);
-            toast.info(
-              paymentGateway === "midtrans"
-                ? tbilling("checkoutLocalRedirect")
-                : tbilling("checkoutRedirect"),
-            );
+            toast.info(tbilling("checkoutRedirect"));
             window.location.href = data.url;
             return;
           }
@@ -930,6 +978,7 @@ function InvoicesTab() {
   const [invoicesData, setInvoicesData] = useState<InvoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -959,6 +1008,32 @@ function InvoicesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Template Customizer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold">Invoices & Tax Slips</h2>
+          <p className="text-xs text-gray-500">
+            Automated PDF invoices with real Code 128 barcodes, digital QR audit, and instant
+            payment links.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCustomizerOpen(true)}
+          className="gap-2 self-start sm:self-auto border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+        >
+          <Sliders className="h-4 w-4" />
+          Customize Invoice Template
+        </Button>
+      </div>
+
+      <InvoiceCustomizerDialog
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        sampleOrderId={invoices[0]?.id}
+      />
+
       {/* Summary */}
       {invoicesData && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -22,6 +22,10 @@ const publicRoutes = [
   "/integrations-overview",
   "/about",
   "/contact",
+  "/terms",
+  "/privacy",
+  "/cookies",
+  "/accessibility",
 ];
 
 // Content-Security-Policy shipped in Report-Only mode first so it never blocks
@@ -30,10 +34,12 @@ const publicRoutes = [
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data: https:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "connect-src 'self' https:",
+  // snap.js renders the Midtrans payment iframe in-page.
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

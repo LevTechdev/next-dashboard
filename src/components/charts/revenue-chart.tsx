@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 
 interface RevenueData {
   month: string;
@@ -20,12 +20,13 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  const { formatMoney } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-3">
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
       <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-        {formatCurrency(payload[0].value)}
+        {formatMoney(payload[0].value)}
       </p>
     </div>
   );

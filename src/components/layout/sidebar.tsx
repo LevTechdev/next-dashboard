@@ -9,7 +9,6 @@ import { ScrollContainer } from "@/components/ui/scroll-container";
 import {
   LayoutGridIcon,
   SparklesIcon,
-  
   ChartBarIncreasingIcon,
   CartIcon,
   BoxesIcon,
@@ -31,7 +30,7 @@ import {
   SettingsIcon,
   UserIcon,
   PanelLeftOpenIcon,
-  PanelLeftCloseIcon
+  PanelLeftCloseIcon,
 } from "lucide-animated";
 import {
   OnlineStoreIcon,
@@ -39,6 +38,10 @@ import {
   InstagramBrandIcon,
   TikTokBrandIcon,
   ShopifyBrandIcon,
+  ShopeeBrandIcon,
+  TokopediaBrandIcon,
+  WhatsAppBrandIcon,
+  LazadaBrandIcon,
 } from "@/components/ui/brand-icons";
 import { Button } from "@/components/ui/button";
 import { canAccessPage } from "@/lib/permissions";
@@ -50,8 +53,8 @@ function useLocale() {
 
 const navItems = [
   { label: "dashboard", href: "/dashboard", icon: LayoutGridIcon },
-    { label: "aiGenerator", href: "/dashboard/generate", icon: SparklesIcon },
-    { label: "projects", href: "/dashboard/projects", icon: ArchiveIcon },
+  { label: "aiGenerator", href: "/dashboard/generate", icon: SparklesIcon },
+  { label: "projects", href: "/dashboard/projects", icon: ArchiveIcon },
   { label: "analytics", href: "/analytics", icon: ChartBarIncreasingIcon },
   { label: "sales", href: "/sales", icon: CartIcon },
   { label: "orders", href: "/orders", icon: BoxesIcon },
@@ -72,7 +75,7 @@ const insightsItems = [
 ];
 
 const adminItems = [
-    { label: "superAdmin", href: "/admin", icon: ShieldCheckIcon },
+  { label: "superAdmin", href: "/admin", icon: ShieldCheckIcon },
   { label: "roles", href: "/roles", icon: ShieldCheckIcon },
   { label: "integrations", href: "/integrations", icon: EarthIcon },
   { label: "sso", href: "/sso", icon: KeyIcon },
@@ -117,7 +120,31 @@ const channelItems = [
     name: "shopify",
     href: "/sales?channel=shopify",
     icon: ShopifyBrandIcon,
-    color: "text-green-600",
+    color: "text-[#95BF47]",
+  },
+  {
+    name: "shopee",
+    href: "/sales?channel=shopee",
+    icon: ShopeeBrandIcon,
+    color: "text-[#EE4D2D]",
+  },
+  {
+    name: "tokopedia",
+    href: "/sales?channel=tokopedia",
+    icon: TokopediaBrandIcon,
+    color: "text-[#03AC0E]",
+  },
+  {
+    name: "whatsapp",
+    href: "/sales?channel=whatsapp",
+    icon: WhatsAppBrandIcon,
+    color: "text-[#25D366]",
+  },
+  {
+    name: "lazada",
+    href: "/sales?channel=lazada",
+    icon: LazadaBrandIcon,
+    color: "text-indigo-600",
   },
 ];
 
@@ -127,9 +154,10 @@ interface NavSectionProps {
   collapsed: boolean;
   locale: string;
   t: (key: string) => string;
+  onNavigate?: () => void;
 }
 
-function NavSection({ title, items, collapsed, locale, t }: NavSectionProps) {
+function NavSection({ title, items, collapsed, locale, t, onNavigate }: NavSectionProps) {
   const pathname = usePathname();
 
   return (
@@ -148,6 +176,7 @@ function NavSection({ title, items, collapsed, locale, t }: NavSectionProps) {
             <Link
               key={fullHref}
               href={fullHref}
+              onClick={() => onNavigate?.()}
               className={cn(
                 "sidebar-item",
                 isActive
@@ -179,10 +208,14 @@ export function Sidebar({
   collapsed,
   onToggle,
   embedded,
+  onClose,
+  onNavigate,
 }: {
   collapsed: boolean;
   onToggle: () => void;
   embedded?: boolean;
+  onClose?: () => void;
+  onNavigate?: () => void;
 }) {
   const locale = useLocale();
   const pathname = usePathname();
@@ -200,29 +233,61 @@ export function Sidebar({
         embedded ? "w-72" : collapsed ? "w-[72px]" : "w-64",
       )}
     >
-      {/* Logo (shared element — morphs smoothly across pages) */}
-      <TransitionLink
-        href={`/${locale}/dashboard`}
-        viewTransitionName="nav-logo"
-        className="flex items-center gap-3 h-16 px-4 border-b border-gray-200/70 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group"
-      >
-        <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-foreground text-background shadow-lg shrink-0 group-hover:scale-105 transition-transform">
-          <LayoutGridIcon className="h-4 w-4" />
-        </div>
-        {!collapsed && (
-          <div className="flex flex-col">
-            <span className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-              {tApp("name")}
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/15 text-[8px] font-bold text-primary uppercase tracking-wider">
-                Pro
-              </span>
-            </span>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5">
-              {tApp("tagline")}
-            </span>
-          </div>
+      {/* Top Header: Logo + Brand on left, Close button on right (if onClose provided) */}
+      <div
+        className={cn(
+          "flex items-center h-16 border-b border-gray-200/70 dark:border-gray-800/50",
+          collapsed ? "justify-center px-0 w-full" : "justify-between px-4",
         )}
-      </TransitionLink>
+      >
+        <TransitionLink
+          href={`/${locale}/dashboard`}
+          viewTransitionName="nav-logo"
+          onClick={() => onNavigate?.()}
+          className={cn(
+            "flex items-center hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group min-w-0",
+            collapsed ? "justify-center px-0 w-full" : "gap-3 flex-1",
+          )}
+        >
+          <div className="flex items-center justify-center w-8 h-8 rounded-[10px] bg-gradient-to-br from-primary via-primary/95 to-primary/80 text-primary-foreground shadow-md shadow-primary/25 border border-primary/20 shrink-0 group-hover:scale-105 group-hover:shadow-primary/40 transition-all">
+            <LayoutGridIcon size={16} className="h-4 w-4 shrink-0 m-auto" />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 leading-tight">
+                {tApp("name")}
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/15 text-[8px] font-bold text-primary uppercase tracking-wider border border-primary/20">
+                  Pro
+                </span>
+              </span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                {tApp("tagline")}
+              </span>
+            </div>
+          )}
+        </TransitionLink>
+
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 -mr-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0 cursor-pointer"
+            aria-label={tcommon("close") || "Close sidebar"}
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* Navigation */}
       <ScrollContainer className="flex-1 px-3 py-4">
@@ -234,6 +299,7 @@ export function Sidebar({
           collapsed={collapsed}
           locale={locale}
           t={tnav}
+          onNavigate={onNavigate}
         />
         <NavSection
           title="management"
@@ -241,6 +307,7 @@ export function Sidebar({
           collapsed={collapsed}
           locale={locale}
           t={tnav}
+          onNavigate={onNavigate}
         />
         <NavSection
           title="insights"
@@ -248,6 +315,7 @@ export function Sidebar({
           collapsed={collapsed}
           locale={locale}
           t={tnav}
+          onNavigate={onNavigate}
         />
         <NavSection
           title="account"
@@ -255,6 +323,7 @@ export function Sidebar({
           collapsed={collapsed}
           locale={locale}
           t={tnav}
+          onNavigate={onNavigate}
         />
         <NavSection
           title="admin"
@@ -262,6 +331,7 @@ export function Sidebar({
           collapsed={collapsed}
           locale={locale}
           t={tnav}
+          onNavigate={onNavigate}
         />
 
         {/* Sales Channels */}
@@ -277,6 +347,7 @@ export function Sidebar({
                   <Link
                     key={channel.href}
                     href={`/${locale}${channel.href}`}
+                    onClick={() => onNavigate?.()}
                     className={cn(
                       "sidebar-item",
                       pathname === channel.href

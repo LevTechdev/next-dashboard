@@ -704,7 +704,7 @@ function FloatingHeader({
                 "w-full sm:w-44 pl-7 pr-2.5 py-1.5 rounded-lg text-xs border transition-all duration-200",
                 "bg-gray-50 dark:bg-gray-900/80 border-gray-200 dark:border-gray-700/50",
                 "text-gray-900 dark:text-gray-100 placeholder:text-gray-400",
-                "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 dark:focus:border-indigo-500",
+                "focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary",
               )}
             />
           </div>

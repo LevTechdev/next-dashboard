@@ -253,7 +253,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
                         toast.success(t("secretCopied"));
                       }}
                     >
-                      <CopyIcon className="w-3.5 h-3.5 mr-2" /> Copy code
+                      <CopyIcon size={14} className="w-3.5 h-3.5 mr-2" /> Copy code
                     </Button>
                   </div>
                 )}

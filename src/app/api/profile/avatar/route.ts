@@ -30,10 +30,10 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Invalid avatar data" }, { status: 400 });
   }
 
-  // Validate base64 image size (max ~500KB)
+  // Validate base64 image size (max 10MB)
   const sizeInBytes = Buffer.from(avatar.split(",")[1] || avatar, "base64").length;
-  if (sizeInBytes > 500 * 1024) {
-    return NextResponse.json({ error: "Image too large. Max 500KB" }, { status: 400 });
+  if (sizeInBytes > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: "Image too large. Max 10MB" }, { status: 400 });
   }
 
   const user = await prisma.user.update({

@@ -10,7 +10,8 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
+import { SalesChannelIcon } from "@/components/ui/brand-icons";
 
 interface ChannelData {
   name: string;
@@ -30,12 +31,16 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  const { formatMoney } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-3">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <div className="flex items-center gap-2 mb-1.5">
+        <SalesChannelIcon name={label || ""} size={15} />
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{label}</p>
+      </div>
       <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-        {formatCurrency(payload[0].value)}
+        {formatMoney(payload[0].value)}
       </p>
     </div>
   );

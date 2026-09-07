@@ -460,7 +460,7 @@ export default function CustomersPage() {
                     <TableCell className="font-medium">
                       <Link
                         href={`/${locale}/customers/${c.id}`}
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="text-primary hover:underline font-semibold transition-colors"
                       >
                         {c.name}
                       </Link>

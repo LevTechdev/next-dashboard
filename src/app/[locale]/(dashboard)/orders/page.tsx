@@ -14,7 +14,7 @@ import {
   UserIcon,
   DollarSignIcon,
 } from "lucide-animated";
-import { ShoppingBag, Store, BarChart3 } from "lucide-react";
+import { ShoppingBag, Store, BarChart3, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { motion } from "framer-motion";
@@ -48,6 +49,7 @@ export default function OrdersPage() {
   const locale = (params?.locale as string) || "en";
   const torders = useTranslations("orders");
   const tcommon = useTranslations("common");
+  const { formatMoney } = useCurrency();
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -238,7 +240,7 @@ export default function OrdersPage() {
             icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            format: (v: number) => formatCurrency(v),
+            format: (v: number) => formatMoney(v),
           },
           {
             label: torders("pending") || "Pending",
@@ -253,7 +255,7 @@ export default function OrdersPage() {
             icon: BarChart3,
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
-            format: (v: number) => formatCurrency(v),
+            format: (v: number) => formatMoney(v),
           },
         ].map((stat, i) => (
           <motion.div
@@ -328,19 +330,28 @@ export default function OrdersPage() {
                     <TableCell className="font-mono text-sm font-medium">
                       <Link
                         href={`/${locale}/orders/${order.id}`}
-                        className="text-lime-600 dark:text-indigo-400 hover:underline"
+                        className="text-primary hover:underline font-semibold transition-colors"
                       >
                         #{order.orderNumber}
                       </Link>
                     </TableCell>
-                    <TableCell>{order.customer?.name || torders("guest")}</TableCell>
+                    <TableCell>
+                      {order.customer?.id ? (
+                        <Link
+                          href={`/${locale}/customers/${order.customer.id}`}
+                          className="hover:text-primary transition-colors font-medium"
+                        >
+                          {order.customer.name}
+                        </Link>
+                      ) : (
+                        order.customer?.name || torders("guest")
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{order.channel?.name || torders("na")}</Badge>
                     </TableCell>
                     <TableCell>{order.items?.length || 0}</TableCell>
-                    <TableCell className="font-medium">
-                      {formatCurrency(order.grandTotal)}
-                    </TableCell>
+                    <TableCell className="font-medium">{formatMoney(order.grandTotal)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                     </TableCell>
@@ -364,6 +375,14 @@ export default function OrdersPage() {
                           title={torders("viewDetails")}
                         >
                           <EyeIcon size={16} className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(`/api/orders/${order.id}/invoice`, "_blank")}
+                          title="Download Invoice"
+                        >
+                          <FileText size={16} className="h-4 w-4" />
                         </Button>
                         {order.status === "PENDING" && (
                           <Button
@@ -440,151 +459,169 @@ export default function OrdersPage() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              Order #{selectedOrder?.orderNumber}
+              Order{" "}
+              <span className="text-primary font-mono font-bold">
+                #{selectedOrder?.orderNumber}
+              </span>
               <Badge className={getStatusColor(selectedOrder?.status)}>
                 {selectedOrder?.status}
               </Badge>
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="md:w-full md:justify-start">
-                <TabsTrigger value="details">{torders("tabDetails")}</TabsTrigger>
-                <TabsTrigger value="tracking">{torders("tabTracking")}</TabsTrigger>
-                <TabsTrigger value="items">{torders("tabItems")}</TabsTrigger>
-              </TabsList>
+            <>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="md:w-full md:justify-start">
+                  <TabsTrigger value="details">{torders("tabDetails")}</TabsTrigger>
+                  <TabsTrigger value="tracking">{torders("tabTracking")}</TabsTrigger>
+                  <TabsTrigger value="items">{torders("tabItems")}</TabsTrigger>
+                </TabsList>
 
-              {/* Details Tab */}
-              <TabsContent value="details" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <UserIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("orderCustomer")}
-                    </div>
-                    <p className="text-sm font-medium">
-                      {selectedOrder.customer?.name || torders("guest")}
-                    </p>
-                    {selectedOrder.customer?.email && (
-                      <p className="text-xs text-gray-500">{selectedOrder.customer.email}</p>
-                    )}
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <Store className="h-3.5 w-3.5" />
-                      {torders("orderChannel")}
-                    </div>
-                    <p className="text-sm font-medium">
-                      {selectedOrder.channel?.name || torders("na")}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <CreditCardIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("orderPayment")}
-                    </div>
-                    <p className="text-sm font-medium capitalize">
-                      {selectedOrder.paymentMethod?.replace(/_/g, " ").toLowerCase() ||
-                        torders("na")}
-                    </p>
-                    <Badge className={getStatusColor(selectedOrder.paymentStatus)}>
-                      {selectedOrder.paymentStatus}
-                    </Badge>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <ShoppingBag className="h-3.5 w-3.5" />
-                      {torders("orderDate")}
-                    </div>
-                    <p className="text-sm font-medium">{formatDateTime(selectedOrder.createdAt)}</p>
-                  </div>
-                </div>
-
-                {selectedOrder.shippingAddress && (
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <MapPinIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("shippingAddress")}
-                    </div>
-                    <p className="text-sm font-medium">{selectedOrder.shippingAddress}</p>
-                  </div>
-                )}
-
-                {selectedOrder.notes && (
-                  <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
-                    <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                      {torders("notes")}
-                    </p>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                      {selectedOrder.notes}
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Tracking Tab */}
-              <TabsContent value="tracking">
-                <div className="p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-                  <OrderTrackingTimeline
-                    currentStatus={selectedOrder.status}
-                    events={getTrackingEventsFromOrder(selectedOrder)}
-                  />
-                </div>
-              </TabsContent>
-
-              {/* Items Tab */}
-              <TabsContent value="items" className="space-y-4">
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {selectedOrder.items?.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity} × {formatCurrency(item.price)}
-                        </p>
+                {/* Details Tab */}
+                <TabsContent value="details" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <UserIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("orderCustomer")}
                       </div>
-                      <span className="text-sm font-medium">{formatCurrency(item.total)}</span>
+                      <p className="text-sm font-medium">
+                        {selectedOrder.customer?.name || torders("guest")}
+                      </p>
+                      {selectedOrder.customer?.email && (
+                        <p className="text-xs text-gray-500">{selectedOrder.customer.email}</p>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <Store className="h-3.5 w-3.5" />
+                        {torders("orderChannel")}
+                      </div>
+                      <p className="text-sm font-medium">
+                        {selectedOrder.channel?.name || torders("na")}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <CreditCardIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("orderPayment")}
+                      </div>
+                      <p className="text-sm font-medium capitalize">
+                        {selectedOrder.paymentMethod?.replace(/_/g, " ").toLowerCase() ||
+                          torders("na")}
+                      </p>
+                      <Badge className={getStatusColor(selectedOrder.paymentStatus)}>
+                        {selectedOrder.paymentStatus}
+                      </Badge>
+                    </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <ShoppingBag className="h-3.5 w-3.5" />
+                        {torders("orderDate")}
+                      </div>
+                      <p className="text-sm font-medium">
+                        {formatDateTime(selectedOrder.createdAt)}
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="border-t pt-4 space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">{torders("subtotal")}</span>
-                    <span>{formatCurrency(selectedOrder.totalAmount)}</span>
+                  {selectedOrder.shippingAddress && (
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <MapPinIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("shippingAddress")}
+                      </div>
+                      <p className="text-sm font-medium">{selectedOrder.shippingAddress}</p>
+                    </div>
+                  )}
+
+                  {selectedOrder.notes && (
+                    <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                        {torders("notes")}
+                      </p>
+                      <p className="text-sm text-yellow-600 dark:text-yellow-300">
+                        {selectedOrder.notes}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Tracking Tab */}
+                <TabsContent value="tracking">
+                  <div className="p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+                    <OrderTrackingTimeline
+                      currentStatus={selectedOrder.status}
+                      events={getTrackingEventsFromOrder(selectedOrder)}
+                    />
                   </div>
-                  {selectedOrder.shippingAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("shipping")}</span>
-                      <span>{formatCurrency(selectedOrder.shippingAmount)}</span>
-                    </div>
-                  )}
-                  {selectedOrder.discountAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("discount")}</span>
-                      <span className="text-red-500">
-                        -{formatCurrency(selectedOrder.discountAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {selectedOrder.taxAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("tax")}</span>
-                      <span>{formatCurrency(selectedOrder.taxAmount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-base border-t pt-2">
-                    <span>{torders("totalLabel")}</span>
-                    <span>{formatCurrency(selectedOrder.grandTotal)}</span>
+                </TabsContent>
+
+                {/* Items Tab */}
+                <TabsContent value="items" className="space-y-4">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {selectedOrder.items?.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Qty: {item.quantity} × {formatMoney(item.price)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-medium">{formatMoney(item.total)}</span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+
+                  <div className="border-t pt-4 space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{torders("subtotal")}</span>
+                      <span>{formatMoney(selectedOrder.totalAmount)}</span>
+                    </div>
+                    {selectedOrder.shippingAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("shipping")}</span>
+                        <span>{formatMoney(selectedOrder.shippingAmount)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.discountAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("discount")}</span>
+                        <span className="text-red-500">
+                          -{formatMoney(selectedOrder.discountAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.taxAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("tax")}</span>
+                        <span>{formatMoney(selectedOrder.taxAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-base border-t pt-2">
+                      <span>{torders("totalLabel")}</span>
+                      <span>{formatMoney(selectedOrder.grandTotal)}</span>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              <div className="pt-3 mt-3 border-t border-border flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => window.open(`/api/orders/${selectedOrder.id}/invoice`, "_blank")}
+                >
+                  <FileText className="h-4 w-4" />
+                  Download PDF Invoice
+                </Button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

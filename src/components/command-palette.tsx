@@ -1,13 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type ComponentType } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ComponentType } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { SearchIcon, ArrowRightIcon, UsersIcon } from "lucide-animated";
-import { ShoppingBag, Package, Command, Loader2 } from "lucide-react";
+import {
+  SearchIcon,
+  ArrowRightIcon,
+  UsersIcon,
+  LayoutGridIcon,
+  ChartBarIncreasingIcon,
+  CartIcon,
+  BoxesIcon,
+  BoxIcon,
+  ArchiveIcon,
+  ShieldCheckIcon,
+  UsersRoundIcon,
+  CreditCardIcon,
+  SettingsIcon,
+} from "lucide-animated";
+import { ShoppingBag, Package, Command, Loader2, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollContainer } from "@/components/ui/scroll-container";
+import { useAiCopilot } from "@/components/ai/ai-copilot-provider";
 
 // ── Types ──
 
@@ -54,6 +69,130 @@ interface ResultItem {
   href: string;
 }
 
+interface NavMenuItem {
+  id: string;
+  label: string;
+  subtitle: string;
+  href: string;
+  keywords: string[];
+  icon: ComponentType<{ className?: string; size?: number }>;
+  iconBg: string;
+  iconColor: string;
+}
+
+const DASHBOARD_MENUS: NavMenuItem[] = [
+  {
+    id: "nav-dashboard",
+    label: "Dashboard",
+    subtitle: "Real-time metrics, regional telemetry & financial overview",
+    href: "/dashboard",
+    keywords: ["home", "main", "metrics", "stats", "telemetry", "revenue"],
+    icon: LayoutGridIcon,
+    iconBg: "bg-indigo-50 dark:bg-indigo-900/30",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+  },
+  {
+    id: "nav-analytics",
+    label: "Analytics",
+    subtitle: "Conversion funnels, cohort retention & revenue projections",
+    href: "/analytics",
+    keywords: ["funnel", "cohort", "retention", "sankey", "traffic", "growth"],
+    icon: ChartBarIncreasingIcon,
+    iconBg: "bg-blue-50 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+  },
+  {
+    id: "nav-sales",
+    label: "Sales Management",
+    subtitle: "Multi-channel orders, settlement streams & transactions",
+    href: "/sales",
+    keywords: ["sales", "revenue", "channels", "shopee", "tiktok", "instagram", "store"],
+    icon: CartIcon,
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    id: "nav-orders",
+    label: "Orders",
+    subtitle: "Fulfillment workflows, shipments & order management",
+    href: "/orders",
+    keywords: ["orders", "purchase", "invoice", "receipt", "tracking", "status"],
+    icon: BoxesIcon,
+    iconBg: "bg-sky-50 dark:bg-sky-900/30",
+    iconColor: "text-sky-600 dark:text-sky-400",
+  },
+  {
+    id: "nav-customers",
+    label: "Customers",
+    subtitle: "Directory, customer lifetime value & segments",
+    href: "/customers",
+    keywords: ["customers", "users", "clients", "buyers", "profiles", "ltv"],
+    icon: UsersIcon,
+    iconBg: "bg-purple-50 dark:bg-purple-900/30",
+    iconColor: "text-purple-600 dark:text-purple-400",
+  },
+  {
+    id: "nav-products",
+    label: "Products",
+    subtitle: "Catalog inventory, pricing, variants & catalog",
+    href: "/products",
+    keywords: ["products", "items", "inventory", "stock", "sku", "catalog"],
+    icon: BoxIcon,
+    iconBg: "bg-orange-50 dark:bg-orange-900/30",
+    iconColor: "text-orange-600 dark:text-orange-400",
+  },
+  {
+    id: "nav-inventory",
+    label: "Inventory & Logistics",
+    subtitle: "Stock levels, fleet tracking & supplier orders",
+    href: "/inventory",
+    keywords: ["inventory", "fleet", "shipping", "carriers", "stock", "warehouse", "logistics"],
+    icon: ArchiveIcon,
+    iconBg: "bg-amber-50 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    id: "nav-security",
+    label: "Security Center",
+    subtitle: "Fraud risk radar, active sessions & 2FA / Passkeys",
+    href: "/security",
+    keywords: ["security", "fraud", "radar", "sessions", "passkeys", "totp", "audit", "compliance"],
+    icon: ShieldCheckIcon,
+    iconBg: "bg-rose-50 dark:bg-rose-900/30",
+    iconColor: "text-rose-600 dark:text-rose-400",
+  },
+  {
+    id: "nav-team",
+    label: "Team Management",
+    subtitle: "Team members, roles, invitations & permissions",
+    href: "/team",
+    keywords: ["team", "members", "invites", "roles", "rbac", "staff", "admin"],
+    icon: UsersRoundIcon,
+    iconBg: "bg-teal-50 dark:bg-teal-900/30",
+    iconColor: "text-teal-600 dark:text-teal-400",
+  },
+  {
+    id: "nav-billing",
+    label: "Billing & Subscriptions",
+    subtitle: "Invoices, tax nexus, payment methods & plans",
+    href: "/billing",
+    keywords: ["billing", "tax", "nexus", "invoices", "payment", "subscription", "stripe"],
+    icon: CreditCardIcon,
+    iconBg: "bg-violet-50 dark:bg-violet-900/30",
+    iconColor: "text-violet-600 dark:text-violet-400",
+  },
+  {
+    id: "nav-settings",
+    label: "Settings",
+    subtitle: "Workspace preferences, appearance & notifications",
+    href: "/settings",
+    keywords: ["settings", "preferences", "appearance", "dark", "light", "theme", "color"],
+    icon: SettingsIcon,
+    iconBg: "bg-slate-50 dark:bg-slate-800",
+    iconColor: "text-slate-600 dark:text-slate-400",
+  },
+];
+
 // ── Helpers ──
 
 function formatCurrency(n: number): string {
@@ -73,7 +212,6 @@ export function CommandPalette() {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [, setTotalItems] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -122,7 +260,6 @@ export function CommandPalette() {
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) {
       setResults(null);
-      setTotalItems(0);
       return;
     }
     setLoading(true);
@@ -130,8 +267,6 @@ export function CommandPalette() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data: SearchResult = await res.json();
       setResults(data);
-      const count = data.orders.length + data.customers.length + data.products.length;
-      setTotalItems(count);
       setSelectedIndex(0);
     } catch {
       setResults(null);
@@ -146,59 +281,103 @@ export function CommandPalette() {
     debounceRef.current = setTimeout(() => doSearch(value), 250);
   };
 
-  // ── Build flat item list ──
+  const { open: openCopilot } = useAiCopilot();
 
-  const buildItems = (): ResultItem[] => {
-    const items: ResultItem[] = [];
-    if (!results) return items;
+  // ── Build grouped item list ──
 
-    results.orders.forEach((o) =>
-      items.push({
-        id: o.id,
-        label: o.orderNumber,
-        subtitle: `${o.customer?.name || "Guest"} · ${formatCurrency(o.grandTotal)}`,
-        icon: ShoppingBag,
-        iconBg: "bg-blue-50 dark:bg-blue-900/20",
-        iconColor: "text-blue-600 dark:text-blue-400",
-        href: `/${locale}/orders`,
-      }),
-    );
+  const { items, groupRanges } = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const allItems: ResultItem[] = [];
+    const ranges: { label: string; start: number; count: number }[] = [];
 
-    results.customers.forEach((c) =>
-      items.push({
-        id: c.id,
-        label: c.name,
-        subtitle: `${c.email || "No email"} · ${c.city || "N/A"}`,
-        icon: UsersIcon,
-        iconBg: "bg-purple-50 dark:bg-purple-900/20",
-        iconColor: "text-purple-600 dark:text-purple-400",
-        href: `/${locale}/customers`,
-      }),
-    );
+    // Filter dashboard menus
+    const matchingMenus =
+      q.length > 0
+        ? DASHBOARD_MENUS.filter(
+            (m) =>
+              m.label.toLowerCase().includes(q) ||
+              m.keywords.some((k) => k.includes(q)) ||
+              m.subtitle.toLowerCase().includes(q),
+          )
+        : DASHBOARD_MENUS;
 
-    results.products.forEach((p) =>
-      items.push({
-        id: p.id,
-        label: p.name,
-        subtitle: `${p.sku || "No SKU"} · ${formatCurrency(p.price)} · ${p.stock} in stock`,
-        icon: Package,
-        iconBg: "bg-orange-50 dark:bg-orange-900/20",
-        iconColor: "text-orange-600 dark:text-orange-400",
-        href: `/${locale}/products`,
-      }),
-    );
+    // 1. Navigation items (always show on empty query, or when query matches menus)
+    if (matchingMenus.length > 0) {
+      const start = allItems.length;
+      matchingMenus.forEach((m) =>
+        allItems.push({
+          id: m.id,
+          label: m.label,
+          subtitle: m.subtitle,
+          icon: m.icon,
+          iconBg: m.iconBg,
+          iconColor: m.iconColor,
+          href: `/${locale}${m.href}`,
+        }),
+      );
+      ranges.push({ label: "Navigation", start, count: matchingMenus.length });
+    }
 
-    return items;
-  };
+    // 2. Orders from database search
+    if (results?.orders.length) {
+      const start = allItems.length;
+      results.orders.forEach((o) =>
+        allItems.push({
+          id: o.id,
+          label: o.orderNumber,
+          subtitle: `${o.customer?.name || "Guest"} · ${formatCurrency(o.grandTotal)}`,
+          icon: ShoppingBag,
+          iconBg: "bg-blue-50 dark:bg-blue-900/20",
+          iconColor: "text-blue-600 dark:text-blue-400",
+          href: `/${locale}/orders`,
+        }),
+      );
+      ranges.push({ label: "Orders", start, count: results.orders.length });
+    }
 
-  const items = buildItems();
+    // 3. Customers from database search
+    if (results?.customers.length) {
+      const start = allItems.length;
+      results.customers.forEach((c) =>
+        allItems.push({
+          id: c.id,
+          label: c.name,
+          subtitle: `${c.email || "No email"} · ${c.city || "N/A"}`,
+          icon: UsersIcon,
+          iconBg: "bg-purple-50 dark:bg-purple-900/20",
+          iconColor: "text-purple-600 dark:text-purple-400",
+          href: `/${locale}/customers`,
+        }),
+      );
+      ranges.push({ label: "Customers", start, count: results.customers.length });
+    }
+
+    // 4. Products from database search
+    if (results?.products.length) {
+      const start = allItems.length;
+      results.products.forEach((p) =>
+        allItems.push({
+          id: p.id,
+          label: p.name,
+          subtitle: `${p.sku || "No SKU"} · ${formatCurrency(p.price)} · ${p.stock} in stock`,
+          icon: Package,
+          iconBg: "bg-orange-50 dark:bg-orange-900/20",
+          iconColor: "text-orange-600 dark:text-orange-400",
+          href: `/${locale}/products`,
+        }),
+      );
+      ranges.push({ label: "Products", start, count: results.products.length });
+    }
+
+    return { items: allItems, groupRanges: ranges };
+  }, [query, results, locale]);
 
   // ── Keyboard navigation ──
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
+      setSelectedIndex((prev) => Math.min(prev + 1, Math.max(0, items.length - 1)));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((prev) => Math.max(prev - 1, 0));
@@ -210,27 +389,12 @@ export function CommandPalette() {
 
   const navigateTo = (item: ResultItem) => {
     closePalette();
+    if (item.href === "#ai-copilot") {
+      openCopilot();
+      return;
+    }
     router.push(item.href);
   };
-
-  // ── Group result indices for section headers ──
-
-  const groupRanges = (() => {
-    const ranges: { label: string; start: number; count: number }[] = [];
-    let idx = 0;
-    if (results?.orders.length) {
-      ranges.push({ label: "Orders", start: idx, count: results.orders.length });
-      idx += results.orders.length;
-    }
-    if (results?.customers.length) {
-      ranges.push({ label: "Customers", start: idx, count: results.customers.length });
-      idx += results.customers.length;
-    }
-    if (results?.products.length) {
-      ranges.push({ label: "Products", start: idx, count: results.products.length });
-    }
-    return ranges;
-  })();
 
   // ── Render ──
 

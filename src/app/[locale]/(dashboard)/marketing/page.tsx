@@ -259,7 +259,9 @@ export default function MarketingPage() {
                     c.spent > 0 ? (((c.budget - c.spent) / c.spent) * 100).toFixed(0) : "0";
                   return (
                     <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="font-medium text-primary hover:text-primary/80 transition-colors">
+                        {c.name}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{c.type}</Badge>
                       </TableCell>

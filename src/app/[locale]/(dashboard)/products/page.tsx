@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { formatCurrency, cn, shortenName, sanitizeInteger } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -52,6 +53,7 @@ export default function ProductsPage() {
   const { user } = useAuth();
   const tproducts = useTranslations("products");
   const tcommon = useTranslations("common");
+  const { formatMoney } = useCurrency();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -402,7 +404,7 @@ export default function ProductsPage() {
             icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            format: (v: number) => formatCurrency(v),
+            format: (v: number) => formatMoney(v),
           },
           {
             label: tproducts("stock") || "Stock Value",
@@ -410,7 +412,7 @@ export default function ProductsPage() {
             icon: BarChart3,
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
-            format: (v: number) => formatCurrency(v),
+            format: (v: number) => formatMoney(v),
           },
         ].map((stat, i) => (
           <motion.div
@@ -575,7 +577,7 @@ export default function ProductsPage() {
                       <TableCell className="font-medium">
                         <Link
                           href={`/${locale}/products/${p.id}`}
-                          className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="text-primary hover:underline font-semibold transition-colors"
                           title={p.name}
                         >
                           {shortenName(p.name, 48)}
@@ -589,8 +591,8 @@ export default function ProductsPage() {
                         )}
                       </TableCell>
                       <TableCell>{p.category?.name || "-"}</TableCell>
-                      <TableCell>{formatCurrency(p.price)}</TableCell>
-                      <TableCell className="text-gray-500">{formatCurrency(p.costPrice)}</TableCell>
+                      <TableCell>{formatMoney(p.price)}</TableCell>
+                      <TableCell className="text-gray-500">{formatMoney(p.costPrice)}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -678,7 +680,7 @@ export default function ProductsPage() {
                   <p className="text-sm font-medium truncate" title={deleteProduct.name}>
                     {shortenName(deleteProduct.name, 40)}
                   </p>
-                  <p className="text-xs text-gray-500">{formatCurrency(deleteProduct.price)}</p>
+                  <p className="text-xs text-gray-500">{formatMoney(deleteProduct.price)}</p>
                 </div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">

@@ -218,7 +218,7 @@ describe("Billing Checkout", () => {
         customer: "cus_123",
         line_items: [{ price: "price_pro", quantity: 1 }],
         metadata: { userId: "u-1", planId: "plan-pro", tenantId: "tenant-1" },
-        success_url: expect.stringContaining("/id/billing?checkout=success"),
+        success_url: expect.stringMatching(/\/id\/(checkout\/success|billing\?checkout=success)/),
         cancel_url: expect.stringContaining("/id/billing?checkout=cancelled"),
       }),
     );

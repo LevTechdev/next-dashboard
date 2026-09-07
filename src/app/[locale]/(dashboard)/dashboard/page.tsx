@@ -2,6 +2,7 @@
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
 import { useEffect, type ComponentType } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -21,12 +22,20 @@ import { LinkedPlatformsBadge } from "@/components/linked-platforms-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import {
+  GlobalSalesMap,
+  ConversionRadarWidget,
+  RevenueForecastWidget,
+  PerformanceMarketingEngine,
+} from "@/components/dashboard/widgets";
+import { WebhookEventSimulator } from "@/components/dashboard/webhook-event-simulator";
 import { motion } from "framer-motion";
 
 interface DashboardData {
@@ -182,13 +191,15 @@ function PremiumStatCard({
   isCurrency?: boolean;
   delay?: number;
 }) {
+  const t = useTranslations("dashboard");
+  const { formatMoney, formatCompactMoney, currency } = useCurrency();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="stat-card-premium">
+      <div className="stat-card-premium min-w-0 overflow-hidden">
         <div className="flex items-center justify-between">
           <div
             className={cn(
@@ -201,7 +212,7 @@ function PremiumStatCard({
           </div>
           <div
             className={cn(
-              "flex items-center text-xs font-medium gap-0.5 px-2 py-0.5 rounded-full",
+              "flex items-center text-xs font-medium gap-0.5 px-2 py-0.5 rounded-full shrink-0",
               change >= 0
                 ? "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20"
                 : "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20",
@@ -215,21 +226,26 @@ function PremiumStatCard({
             {Math.abs(change)}%
           </div>
         </div>
-        <div className="mt-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+        <div className="mt-4 min-w-0 overflow-hidden">
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{title}</p>
+          <div
+            className="text-lg sm:text-xl xl:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 truncate tracking-tight"
+            title={isCurrency ? formatMoney(endValue) : String(endValue)}
+          >
             {isCurrency ? (
               <AnimatedCounter
                 end={endValue}
                 duration={1600}
-                formatter={(v) => formatCurrency(v)}
+                formatter={(v) =>
+                  currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : formatMoney(v)
+                }
               />
             ) : (
               <AnimatedCounter end={endValue} duration={1600} />
             )}
-          </p>
+          </div>
         </div>
-        <div className="text-xs text-gray-400 mt-1.5">vs. last month</div>
+        <div className="text-xs text-gray-400 mt-1.5 truncate">{t("vsLastMonth")}</div>
       </div>
     </motion.div>
   );
@@ -279,6 +295,7 @@ export default function DashboardPage() {
   const tdash = useTranslations("dashboard");
   const tcommon = useTranslations("common");
   const { settings: appearance } = useAppearance();
+  const { formatMoney } = useCurrency();
 
   const { data, loading, lastUpdated, isRefreshing, refresh } = useRealtimeData<DashboardData>(
     "/api/dashboard",
@@ -355,7 +372,8 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{tdash("title")}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tdash("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <WebhookEventSimulator />
           <RealtimeIndicator
             lastUpdated={lastUpdated}
             isRefreshing={isRefreshing}
@@ -403,6 +421,18 @@ export default function DashboardPage() {
         {appearance.widgets.quickActions && <QuickActionsGrid locale={locale} />}
       </div>
 
+      {/* ─── CUSTOM WIDGET: Global Live Telemetry & Regional Map ─── */}
+      <GlobalSalesMap />
+
+      {/* ─── CUSTOM WIDGETS: Conversion Funnel & Financial Simulator ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ConversionRadarWidget />
+        <RevenueForecastWidget baseMonthlyRevenue={data.stats.totalRevenue} />
+      </div>
+
+      {/* ─── CUSTOM WIDGET: Performance Marketing & Unit Economics ROAS Engine ─── */}
+      <PerformanceMarketingEngine />
+
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sales by Channel */}
@@ -440,26 +470,46 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-sm"
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-sm min-w-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm shrink-0">
                         <ShoppingCart className="h-4 w-4 text-gray-500" />
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          #{order.orderNumber}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate font-mono">
+                          <Link
+                            href={`/${locale}/orders/${order.id}`}
+                            className="text-primary hover:underline transition-colors"
+                          >
+                            #{order.orderNumber}
+                          </Link>
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {order.customer?.name || "Guest"} • {order.channel?.name || "N/A"}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {order.customer?.id ? (
+                            <Link
+                              href={`/${locale}/customers/${order.customer.id}`}
+                              className="hover:text-primary transition-colors font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              {order.customer.name}
+                            </Link>
+                          ) : (
+                            order.customer?.name || "Guest"
+                          )}{" "}
+                          • {order.channel?.name || "N/A"}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(order.grandTotal)}
+                    <div className="text-right shrink-0 ml-3">
+                      <p
+                        className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
+                        title={formatMoney(order.grandTotal)}
+                      >
+                        {formatMoney(order.grandTotal)}
                       </p>
-                      <p className="text-[10px] text-gray-500">{formatDateTime(order.createdAt)}</p>
+                      <p className="text-[10px] text-gray-500 whitespace-nowrap">
+                        {formatDateTime(order.createdAt)}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
@@ -483,28 +533,31 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.06, duration: 0.3 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-sm"
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-sm min-w-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold shadow-sm shrink-0">
                         {index + 1}
                       </span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {product.name}
                           <LinkedPlatformsBadge
                             productId={product.id}
                             count={product.linkedCount || 0}
-                            className="ml-1.5"
+                            className="ml-1.5 shrink-0 inline-flex"
                           />
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {product.orderCount || 0} sold
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {formatCurrency(product.price)}
+                    <p
+                      className="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0 ml-3 truncate"
+                      title={formatMoney(product.price)}
+                    >
+                      {formatMoney(product.price)}
                     </p>
                   </motion.div>
                 ))}

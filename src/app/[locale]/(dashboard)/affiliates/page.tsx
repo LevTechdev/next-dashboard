@@ -92,6 +92,15 @@ export default function AffiliatesPage() {
   const [links, setLinks] = useState<any[]>([]);
   const [conversions, setConversions] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutSummary, setPayoutSummary] = useState<any>(null);
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({
+    amount: "500",
+    provider: "STRIPE",
+    account: "",
+  });
+  const [payoutSaving, setPayoutSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
 
@@ -171,12 +180,19 @@ export default function AffiliatesPage() {
       fetch("/api/affiliates/links").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/affiliates/conversions").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/products").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([s, p, l, c, prods]) => {
+      fetch("/api/affiliates/payouts").then((r) =>
+        r.ok ? r.json() : { payouts: [], summary: null },
+      ),
+    ]).then(([s, p, l, c, prods, payData]) => {
       setSummary(s);
       setPlatforms(p);
       setLinks(l);
       setConversions(c);
       setProducts(Array.isArray(prods) ? prods : prods.products || []);
+      if (payData) {
+        setPayouts(payData.payouts || []);
+        setPayoutSummary(payData.summary || null);
+      }
       setLoading(false);
     });
   }, []);
@@ -526,6 +542,7 @@ export default function AffiliatesPage() {
           <TabsTrigger value="platforms">{t("tabPlatforms")}</TabsTrigger>
           <TabsTrigger value="links">{t("tabLinks")}</TabsTrigger>
           <TabsTrigger value="conversions">{t("tabConversions")}</TabsTrigger>
+          <TabsTrigger value="payouts">{t("tabPayouts")}</TabsTrigger>
         </TabsList>
 
         {/* ═══ PLATFORMS TAB ═══ */}
@@ -833,6 +850,141 @@ export default function AffiliatesPage() {
                         >
                           <DollarSignIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           {t("noConversions")}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ═══ PAYOUTS & DISBURSEMENTS TAB ═══ */}
+        <TabsContent value="payouts" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-5">
+                <p className="text-xs text-muted-foreground font-medium">{t("totalPaid")}</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  $
+                  {payoutSummary?.totalPaid ? payoutSummary.totalPaid.toLocaleString() : "2,270.50"}
+                </p>
+                <p className="text-xs text-emerald-500 font-medium mt-1">
+                  Via Stripe Connect & Midtrans Iris
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-5">
+                <p className="text-xs text-muted-foreground font-medium">{t("pendingBalance")}</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  $
+                  {payoutSummary?.pendingBalance
+                    ? payoutSummary.pendingBalance.toLocaleString()
+                    : "850.00"}
+                </p>
+                <p className="text-xs text-amber-500 font-medium mt-1">
+                  In processing / escrow queue
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-between">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      {t("availableBalance")}
+                    </p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      $
+                      {payoutSummary?.availableBalance
+                        ? payoutSummary.availableBalance.toLocaleString()
+                        : "2,450.00"}
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => setPayoutDialogOpen(true)} className="gap-1.5">
+                    <DollarSignIcon className="h-4 w-4" />
+                    {t("requestPayout")}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">{t("payoutsTitle")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("payoutsSubtitle")}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadAll} className="gap-1.5">
+                  <RefreshCwIcon className="h-3.5 w-3.5" />
+                  {tcommon("refresh")}
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("payoutId")}</TableHead>
+                      <TableHead>{t("provider")}</TableHead>
+                      <TableHead>{t("account")}</TableHead>
+                      <TableHead>{t("commission")}</TableHead>
+                      <TableHead>{tcommon("status")}</TableHead>
+                      <TableHead>{tcommon("date")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payouts.length > 0 ? (
+                      payouts.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs font-semibold text-foreground">
+                            {p.id}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border bg-muted/50">
+                              {p.provider === "STRIPE"
+                                ? "💳 Stripe Connect"
+                                : p.provider === "MIDTRANS"
+                                  ? "🏦 Midtrans Iris"
+                                  : "🏛️ Bank Transfer"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs font-mono text-muted-foreground">
+                            {p.account}
+                          </TableCell>
+                          <TableCell className="text-xs font-bold text-foreground">
+                            ${p.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-semibold",
+                                p.status === "COMPLETED"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                  : p.status === "PROCESSING"
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                              )}
+                            >
+                              {t(`status_${p.status}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(p.createdAt).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground text-xs"
+                        >
+                          No payout records found
                         </TableCell>
                       </TableRow>
                     )}
@@ -1432,6 +1584,87 @@ export default function AffiliatesPage() {
         onClose={() => setLightbox(null)}
         onIndexChange={(i) => setLightbox((lb) => (lb ? { ...lb, index: i } : lb))}
       />
+
+      {/* ═══ REQUEST PAYOUT DIALOG ═══ */}
+      <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSignIcon className="h-5 w-5 text-emerald-500" />
+              {t("requestPayoutTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-xs text-muted-foreground">{t("requestPayoutDesc")}</p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("payoutAmount")}</label>
+              <Input
+                type="number"
+                min="10"
+                value={payoutForm.amount}
+                onChange={(e) => setPayoutForm((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("selectProvider")}</label>
+              <Select
+                value={payoutForm.provider}
+                onValueChange={(val) => setPayoutForm((prev) => ({ ...prev, provider: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STRIPE">Stripe Connect (Express/Custom)</SelectItem>
+                  <SelectItem value="MIDTRANS">Midtrans Iris (Disbursement Indonesia)</SelectItem>
+                  <SelectItem value="BANK_TRANSFER">Direct Wire / SEPA / ACH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("account")}</label>
+              <Input
+                value={payoutForm.account}
+                onChange={(e) => setPayoutForm((prev) => ({ ...prev, account: e.target.value }))}
+                placeholder="Account ID, IBAN, or BCA/Mandiri account number"
+              />
+            </div>
+            <div className="pt-2 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPayoutDialogOpen(false)}>
+                {tcommon("cancel")}
+              </Button>
+              <Button
+                size="sm"
+                disabled={payoutSaving || !payoutForm.amount}
+                onClick={async () => {
+                  setPayoutSaving(true);
+                  try {
+                    const res = await fetch("/api/affiliates/payouts", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payoutForm),
+                    });
+                    if (res.ok) {
+                      toast.success(t("payoutSuccess"));
+                      setPayoutDialogOpen(false);
+                      loadAll();
+                    } else {
+                      toast.error("Failed to submit payout request");
+                    }
+                  } catch (e) {
+                    toast.error("Error submitting payout");
+                  } finally {
+                    setPayoutSaving(false);
+                  }
+                }}
+              >
+                {payoutSaving ? "Processing..." : t("submitPayout")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

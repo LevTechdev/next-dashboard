@@ -203,12 +203,25 @@ export default function ProfilePage() {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/") && file.type !== "image/svg+xml") {
       toast.error(tprofile("selectImageFile"));
       return;
     }
-    if (file.size > 500 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       toast.error(tprofile("imageTooLarge"));
+      return;
+    }
+
+    // Direct upload for SVG to preserve crisp scalable vector markup
+    if (file.type === "image/svg+xml") {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        if (typeof reader.result === "string") {
+          await handleAvatarCropSave(reader.result);
+        }
+      };
+      reader.onerror = () => toast.error(tprofile("failedReadImage"));
+      reader.readAsDataURL(file);
       return;
     }
 
@@ -535,7 +548,7 @@ export default function ProfilePage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/avif,image/*"
                 className="hidden"
                 onChange={handleAvatarUpload}
               />

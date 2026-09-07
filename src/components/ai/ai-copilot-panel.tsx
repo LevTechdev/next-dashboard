@@ -20,6 +20,23 @@ import {
   RotateCcw,
   ChevronDown,
 } from "lucide-react";
+import { ActionProposalCard } from "@/components/ai/action-proposal-card";
+import type { CopilotActionProposal } from "@/lib/ai/copilot-proposals";
+
+function parseProposalFromContent(content: string): {
+  cleanText: string;
+  proposal: CopilotActionProposal | null;
+} {
+  const match = content.match(/```json:action-proposal\s*([\s\S]*?)\s*```/);
+  if (!match) return { cleanText: content, proposal: null };
+  try {
+    const proposal = JSON.parse(match[1]);
+    const cleanText = content.replace(/```json:action-proposal\s*[\s\S]*?\s*```/, "").trim();
+    return { cleanText, proposal };
+  } catch {
+    return { cleanText: content, proposal: null };
+  }
+}
 
 const suggestedQuestions = [
   { icon: BarChart3, key: "q1" },
@@ -28,6 +45,8 @@ const suggestedQuestions = [
   { icon: UsersIcon, key: "q4" },
   { icon: Package, key: "q5" },
   { icon: Lightbulb, key: "q6" },
+  { icon: SparklesIcon, key: "q7" },
+  { icon: TrendingUpIcon, key: "q8" },
 ] as const;
 
 function SuggestedQuestions({ onSelect }: { onSelect: (query: string) => void }) {
@@ -347,10 +366,18 @@ export function AiCopilotPanel() {
                               : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md",
                           )}
                         >
-                          <div className="whitespace-pre-wrap">
-                            {message.content ||
-                              (isLoading && i === messages.length - 1 ? "..." : "")}
-                          </div>
+                          {(() => {
+                            const raw =
+                              message.content ||
+                              (isLoading && i === messages.length - 1 ? "..." : "");
+                            const { cleanText, proposal } = parseProposalFromContent(raw);
+                            return (
+                              <>
+                                <div className="whitespace-pre-wrap">{cleanText}</div>
+                                {proposal && <ActionProposalCard proposal={proposal} />}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
 

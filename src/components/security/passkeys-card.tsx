@@ -34,9 +34,21 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
   const addPasskey = async () => {
     setAddingPasskey(true);
     try {
+      // WebAuthn only exists in a secure context (HTTPS or localhost) — without
+      // this guard the failure below is a cryptic NotSupportedError.
+      if (
+        typeof window === "undefined" ||
+        !window.isSecureContext ||
+        !navigator.credentials?.create
+      ) {
+        toast.error(t("passkeyUnsupported"));
+        return;
+      }
       const optRes = await fetch("/api/auth/webauthn/register/options", { method: "POST" });
-      if (!optRes.ok) throw new Error("options");
-      const options = await optRes.json();
+      const options = await optRes.json().catch(() => null);
+      if (!optRes.ok || !options) {
+        throw new Error(options?.error || t("passkeyFailed"));
+      }
       const att = await startRegistration({ optionsJSON: options });
       const label =
         typeof navigator !== "undefined" && navigator.platform ? navigator.platform : "Passkey";
@@ -45,11 +57,16 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential: att, deviceName: label }),
       });
-      if (!verifyRes.ok) throw new Error("verify");
+      const verifyBody = await verifyRes.json().catch(() => null);
+      if (!verifyRes.ok) {
+        throw new Error(verifyBody?.error || t("passkeyFailed"));
+      }
       toast.success(t("passkeyAdded"));
       data.refresh();
-    } catch {
-      toast.error(t("passkeyFailed"));
+    } catch (err) {
+      // The user dismissed the browser's passkey prompt — that is not a failure.
+      if (err instanceof DOMException && err.name === "NotAllowedError") return;
+      toast.error(err instanceof Error && err.message ? err.message : t("passkeyFailed"));
     } finally {
       setAddingPasskey(false);
     }

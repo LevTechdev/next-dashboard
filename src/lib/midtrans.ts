@@ -3,14 +3,20 @@ import crypto from "crypto";
 /**
  * Midtrans — local (Indonesia) payment gateway supporting DANA, GoPay, QRIS,
  * bank transfer (VA), and cards. Used for subscription checkout as an
- * alternative to Stripe; the hosted Snap flow returns a redirect_url that the
- * billing UI follows, and payment results arrive via the notification webhook
- * (see /api/billing/midtrans/webhook).
+ * alternative to Stripe. Checkout issues a Snap transaction whose token the
+ * billing UI spends through the embedded snap.js popup (client key); the
+ * hosted redirect_url is kept as a no-JS fallback. Payment results arrive via
+ * the notification webhook (see /api/billing/midtrans/webhook).
  *
  * Env:
- * - MIDTRANS_SERVER_KEY  — required; enables midtransConfigured()
- * - MIDTRANS_ENV         — "production" for the live endpoints, anything else
- *                          (default) uses the sandbox environment
+ * - MIDTRANS_ENV              — "production" for the live endpoints; anything
+ *                               else (default) uses the sandbox environment
+ * - MIDTRANS_SERVER_KEY       — server key for the production environment
+ * - MIDTRANS_CLIENT_KEY       — public client key for the production env
+ * - MIDTRANS_SANDBOX_SERVER_KEY / MIDTRANS_SANDBOX_CLIENT_KEY — used when
+ *   MIDTRANS_ENV is not production, so both key sets can live in one env file
+ *   and flipping MIDTRANS_ENV switches environments without editing keys.
+ *   Falls back to the non-suffixed vars for single-key setups.
  */
 
 /** USD → IDR conversion for plan prices (plans are priced in USD, Midtrans settles IDR). */
@@ -21,8 +27,16 @@ export const MIDTRANS_CHANNELS = ["dana", "gopay", "qris", "bank_transfer", "cre
 
 export type MidtransChannel = (typeof MIDTRANS_CHANNELS)[number];
 
+/** Server key for the configured environment (sandbox keys win in sandbox). */
+export function getMidtransServerKey(): string {
+  if (midtransIsSandbox()) {
+    return process.env.MIDTRANS_SANDBOX_SERVER_KEY ?? process.env.MIDTRANS_SERVER_KEY ?? "";
+  }
+  return process.env.MIDTRANS_SERVER_KEY ?? "";
+}
+
 export function midtransConfigured(): boolean {
-  return Boolean(process.env.MIDTRANS_SERVER_KEY);
+  return Boolean(getMidtransServerKey());
 }
 
 /** Sandbox by default; set MIDTRANS_ENV=production for live keys. */
@@ -32,6 +46,25 @@ export function midtransIsSandbox(): boolean {
 
 export function getMidtransBaseUrl(): string {
   return midtransIsSandbox() ? "https://app.sandbox.midtrans.com" : "https://app.midtrans.com";
+}
+
+/** Public client key for the configured env; safe to ship to the browser. */
+export function getMidtransClientKey(): string {
+  if (midtransIsSandbox()) {
+    return process.env.MIDTRANS_SANDBOX_CLIENT_KEY ?? process.env.MIDTRANS_CLIENT_KEY ?? "";
+  }
+  return process.env.MIDTRANS_CLIENT_KEY ?? "";
+}
+
+/**
+ * snap.js loader URL for the embedded (popup) checkout. The client key must
+ * accompany the script, so both are handed to the browser together after a
+ * transaction token is created.
+ */
+export function getMidtransSnapScriptUrl(): string {
+  return midtransIsSandbox()
+    ? "https://app.sandbox.midtrans.com/snap/snap.js"
+    : "https://app.midtrans.com/snap/snap.js";
 }
 
 export interface MidtransItemDetail {
@@ -57,8 +90,9 @@ export interface SnapTransactionResult {
 }
 
 /**
- * Create a Midtrans Snap (hosted checkout) transaction. Uses Basic auth with
- * the server key; amounts are integers in IDR.
+ * Create a Midtrans Snap transaction (spent via the embedded popup or the
+ * hosted redirect_url). Uses Basic auth with the server key; amounts are
+ * integers in IDR.
  */
 export async function createSnapTransaction({
   orderId,
@@ -68,9 +102,9 @@ export async function createSnapTransaction({
   enabledPayments,
   notificationUrl,
 }: CreateSnapTransactionParams): Promise<SnapTransactionResult> {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+  const serverKey = getMidtransServerKey();
   if (!serverKey) {
-    throw new Error("MIDTRANS_SERVER_KEY is not configured");
+    throw new Error("Midtrans server key is not configured for this environment");
   }
 
   const body: Record<string, unknown> = {
@@ -115,7 +149,7 @@ export function verifyMidtransSignature(input: {
   grossAmount: string;
   signatureKey: string;
 }): boolean {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+  const serverKey = getMidtransServerKey();
   if (!serverKey || !input.signatureKey) return false;
   const expected = crypto
     .createHash("sha512")

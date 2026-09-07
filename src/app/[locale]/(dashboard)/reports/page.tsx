@@ -14,6 +14,8 @@ import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
 import { DataExportButton } from "@/components/data-export-button";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
+import { ScheduledReportsDialog } from "@/components/reports/scheduled-reports-dialog";
+import { ReportsExportMenu } from "@/components/reports/reports-export-menu";
 import { motion } from "framer-motion";
 
 export default function ReportsPage() {
@@ -172,9 +174,11 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold">{treports("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{treports("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <ScheduledReportsDialog />
+          <ReportsExportMenu orders={filteredOrders} stats={stats} />
         </div>
       </div>
 

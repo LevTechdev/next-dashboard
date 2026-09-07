@@ -72,9 +72,11 @@ export default async function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <PWARegister />
-        <OfflineIndicator />
-        <Providers>{children}</Providers>
-        <PWAInstallPrompt />
+        <Providers>
+          <OfflineIndicator />
+          {children}
+          <PWAInstallPrompt />
+        </Providers>
       </body>
     </html>
   );

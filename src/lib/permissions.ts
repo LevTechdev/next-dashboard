@@ -194,3 +194,35 @@ export function filterNavItemsByRole(
 export function getRole(user: { role?: string } | undefined | null): Role | null {
   return (user?.role as Role) || null;
 }
+
+export const GRANULAR_ACTIONS = [
+  "create",
+  "read",
+  "update",
+  "delete",
+  "export",
+  "approve_payout",
+  "manage_billing",
+] as const;
+
+export type GranularAction = (typeof GRANULAR_ACTIONS)[number];
+
+export const GRANULAR_ACTION_DEFAULTS: Record<GranularAction, Role[]> = {
+  read: ["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF", "AUDITOR"],
+  create: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
+  update: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
+  delete: ["SUPER_ADMIN", "ADMIN"],
+  export: ["SUPER_ADMIN", "ADMIN", "MANAGER", "AUDITOR"],
+  approve_payout: ["SUPER_ADMIN", "ADMIN"],
+  manage_billing: ["SUPER_ADMIN", "ADMIN"],
+};
+
+export function canPerformGranularAction(
+  role: Role | undefined | null,
+  action: GranularAction,
+): boolean {
+  if (!role) return false;
+  if (role === "SUPER_ADMIN") return true;
+  if (role === "AUDITOR") return action === "read" || action === "export";
+  return GRANULAR_ACTION_DEFAULTS[action]?.includes(role) ?? false;
+}

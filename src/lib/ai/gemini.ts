@@ -313,10 +313,34 @@ async function consumeRound(
  * stream is returned) so provider/network errors surface as a proper error
  * status instead of an empty 200.
  */
+/**
+ * Free tier models for Google AI Studio (zero billing / credit card required).
+ * In priority order:
+ * 1. gemini-1.5-flash: high stability, 15 RPM free tier
+ * 2. gemini-1.5-flash-8b: high throughput lightweight free model
+ * 3. gemini-2.0-flash: 2.0 generation free tier
+ * 4. gemini-flash-latest: rolling flash alias
+ */
+export const FREE_GEMINI_MODELS = [
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-2.0-flash",
+  "gemini-flash-latest",
+] as const;
+
+/**
+ * Open the Gemini stream and return a ReadableStream that emits the final
+ * answer as plain text. The first HTTP request happens here (before the
+ * stream is returned) so provider/network errors surface as a proper error
+ * status instead of an empty 200.
+ */
 export async function createGeminiReplyStream(
   options: GeminiReplyOptions,
 ): Promise<ReadableStream<Uint8Array>> {
   const { apiKey, model, systemInstruction, messages, tools } = options;
+  const initialModel = model || "gemini-1.5-flash";
+  const candidateModels = [initialModel, ...FREE_GEMINI_MODELS.filter((m) => m !== initialModel)];
+
   const declarations = tools ? buildFunctionDeclarations(tools) : undefined;
 
   let contents = toContents(messages);
@@ -328,27 +352,51 @@ export async function createGeminiReplyStream(
   });
 
   let round = 0;
-  const first = await postGeminiRound(apiKey, model, body(contents));
-  let response = first.response;
-  if (!response.ok) {
-    const errorBody = first.errorBody ?? "";
-    if (response.status === 429) {
-      throw new GeminiRateLimitError(
-        `Gemini API rate limited (429): ${errorBody}`,
-        parseRetryAfterSeconds(errorBody, response.headers.get("Retry-After")),
-      );
+  let activeModel = initialModel;
+  let response: Response | null = null;
+  let lastErrorBody = "";
+  let lastStatus = 0;
+
+  for (const candidate of candidateModels) {
+    const res = await postGeminiRound(apiKey, candidate, body(contents));
+    if (res.response.ok) {
+      activeModel = candidate;
+      response = res.response;
+      break;
     }
-    throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+    lastStatus = res.response.status;
+    lastErrorBody = res.errorBody ?? "";
+    // If model not found (404) or rate limit (429) or high demand (503), try next free model
+    if (lastStatus === 404 || lastStatus === 429 || lastStatus === 503) {
+      continue;
+    }
+    // For 400/401, trying another model won't change invalid key/params
+    response = res.response;
+    break;
   }
 
+  if (!response || !response.ok) {
+    if (lastStatus === 429) {
+      throw new GeminiRateLimitError(
+        `Gemini API rate limited (429): ${lastErrorBody}`,
+        parseRetryAfterSeconds(lastErrorBody, response?.headers.get("Retry-After") ?? null),
+      );
+    }
+    throw new Error(
+      `Gemini API error (${lastStatus || 500}): ${lastErrorBody || "Service unavailable"}`,
+    );
+  }
+
+  const initialResponse: Response = response;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
+      let currentResponse = initialResponse;
       try {
         for (;;) {
-          const functionCalls = await consumeRound(response, controller, encoder, decoder);
+          const functionCalls = await consumeRound(currentResponse, controller, encoder, decoder);
           round += 1;
           if (functionCalls.length === 0 || round >= MAX_ROUNDS) break;
 
@@ -385,8 +433,8 @@ export async function createGeminiReplyStream(
             { role: "user", parts: toolParts },
           ];
 
-          const next = await postGeminiRound(apiKey, model, body(contents));
-          response = next.response;
+          const next = await postGeminiRound(apiKey, activeModel, body(contents));
+          currentResponse = next.response;
           if (!response.ok) {
             const errorBody = next.errorBody ?? "";
             if (response.status === 429) {

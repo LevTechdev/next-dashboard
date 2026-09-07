@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { BellIcon, XIcon, CheckCheckIcon } from "lucide-animated";
 import { BellRing, FlaskConical, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,20 +29,8 @@ const notificationIcons: Record<NotificationType, string> = {
 
 type FilterType = NotificationType | "all";
 
-const typeLabels: Record<string, string> = {
-  all: "All",
-  order: "Orders",
-  customer: "Customers",
-  product: "Products",
-  revenue: "Revenue",
-  inventory: "Stock",
-  discount: "Discounts",
-  campaign: "Campaigns",
-  milestone: "Milestones",
-  alert: "Alerts",
-};
-
 export function NotificationPanel() {
+  const t = useTranslations("notifications");
   const {
     notifications,
     unreadCount,
@@ -54,6 +43,22 @@ export function NotificationPanel() {
   const [filter, setFilter] = useState<FilterType>("all");
   const ref = useRef<HTMLDivElement>(null);
   const filterRowRef = useRef<HTMLDivElement>(null);
+
+  const typeLabels: Record<string, string> = useMemo(
+    () => ({
+      all: t("filterAll"),
+      order: t("typeOrder"),
+      customer: t("typeCustomer"),
+      product: t("typeProduct"),
+      revenue: t("typeRevenue"),
+      inventory: t("typeInventory"),
+      discount: t("typeDiscount"),
+      campaign: t("typeCampaign"),
+      milestone: t("typeMilestone"),
+      alert: t("typeAlert"),
+    }),
+    [t],
+  );
 
   // Keyboard focus can land on a filter pill clipped by the overflow-x row;
   // scroll it into view.
@@ -121,16 +126,16 @@ export function NotificationPanel() {
       </Button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-[400px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[80vh] flex flex-col">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[400px] max-w-[420px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[80vh] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Notifications
+                {t("panelTitle")}
               </h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-medium text-lime-700 dark:text-indigo-400 bg-lime-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded-full">
-                  {unreadCount} new
+                <span className="text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full">
+                  {t("newCount", { count: unreadCount })}
                 </span>
               )}
             </div>
@@ -138,20 +143,20 @@ export function NotificationPanel() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1 text-[10px] text-gray-400 hover:text-lime-600"
+                className="h-7 gap-1 text-[10px] text-gray-400 hover:text-primary transition-colors"
                 onClick={handleSimulateNotification}
-                title="Simulate a test notification"
+                title={t("simulateTooltip")}
               >
                 <FlaskConical className="h-3 w-3" />
-                Test
+                {t("testSimulate")}
               </Button>
               {notifications.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                  className="h-7 w-7 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={markAllRead}
-                  title="Mark all as read"
+                  title={t("markAllRead")}
                 >
                   <CheckCheckIcon size={16} className="h-4 w-4" />
                 </Button>
@@ -159,9 +164,9 @@ export function NotificationPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                className="h-7 w-7 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 onClick={() => setOpen(false)}
-                aria-label="Close notifications"
+                aria-label={t("clearAll")}
               >
                 <XIcon size={16} className="h-4 w-4" />
               </Button>
@@ -183,10 +188,10 @@ export function NotificationPanel() {
               />
               <span className="text-[10px] text-gray-400">
                 {connectionStatus === "connected"
-                  ? "Live"
+                  ? t("connectionLive")
                   : connectionStatus === "connecting"
-                    ? "Connecting..."
-                    : "Disconnected"}
+                    ? t("connectionConnecting")
+                    : t("connectionDisconnected")}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -196,7 +201,7 @@ export function NotificationPanel() {
                 onChange={(e) => setFilter(e.target.value as FilterType)}
                 className="text-[10px] bg-transparent border-none text-gray-500 focus:outline-none cursor-pointer"
               >
-                <option value="all">All</option>
+                <option value="all">{t("filterAll")}</option>
                 {Object.entries(typeLabels)
                   .filter(([k]) => k !== "all")
                   .map(([key, label]) => (
@@ -208,8 +213,7 @@ export function NotificationPanel() {
             </div>
           </div>
 
-          {/* Type filter pills — scrollbar hidden via the real scrollbar-none
-              utility (like the tabs bar); hiding never disables scrolling. */}
+          {/* Type filter pills */}
           <div
             ref={filterRowRef}
             className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none"
@@ -224,27 +228,27 @@ export function NotificationPanel() {
                 "discount",
                 "alert",
               ] as FilterType[]
-            ).map((t) => {
-              const count = unreadByType(t);
+            ).map((ft) => {
+              const count = unreadByType(ft);
               return (
                 <button
-                  key={t}
-                  onClick={() => setFilter(t)}
+                  key={ft}
+                  onClick={() => setFilter(ft)}
                   className={cn(
                     "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all",
-                    filter === t
-                      ? "bg-lime-100 dark:bg-indigo-900/30 text-lime-700 dark:text-indigo-300"
+                    filter === ft
+                      ? "bg-primary/10 text-primary dark:bg-primary/20 font-semibold"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
                   )}
                 >
-                  {t !== "all" && <span>{notificationIcons[t as NotificationType]}</span>}
-                  {typeLabels[t]}
+                  {ft !== "all" && <span>{notificationIcons[ft as NotificationType]}</span>}
+                  {typeLabels[ft]}
                   {count > 0 && (
                     <span
                       className={cn(
                         "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
-                        filter === t
-                          ? "bg-lime-200 dark:bg-indigo-800 text-lime-800 dark:text-indigo-200"
+                        filter === ft
+                          ? "bg-primary/20 text-primary font-bold"
                           : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                       )}
                     >
@@ -261,25 +265,25 @@ export function NotificationPanel() {
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                 <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />
-                <p className="text-sm font-medium">No notifications yet</p>
-                <p className="text-xs mt-1">Real-time updates will appear here</p>
+                <p className="text-sm font-medium">{t("emptyTitle")}</p>
+                <p className="text-xs mt-1">{t("emptyDesc")}</p>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mt-4 text-xs text-lime-600 hover:text-lime-700 gap-1"
+                  className="mt-4 text-xs text-primary hover:text-primary/80 gap-1 font-medium"
                   onClick={handleSimulateNotification}
                 >
                   <FlaskConical className="h-3 w-3" />
-                  Simulate a test notification
+                  {t("simulateTooltip")}
                 </Button>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                 <Filter className="h-8 w-8 mb-2 opacity-30" />
                 <p className="text-sm font-medium">
-                  No {typeLabels[filter]?.toLowerCase() || ""} notifications
+                  {t("emptyFilteredTitle", { type: typeLabels[filter] || "" })}
                 </p>
-                <p className="text-xs mt-1">Try a different filter</p>
+                <p className="text-xs mt-1">{t("emptyFilteredDesc")}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -288,7 +292,7 @@ export function NotificationPanel() {
                     key={n.id}
                     className={cn(
                       "flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
-                      !n.read && "bg-lime-50/50 dark:bg-indigo-900/10",
+                      !n.read && "bg-primary/5 dark:bg-primary/10",
                     )}
                   >
                     <span className="text-lg shrink-0 mt-0.5">
@@ -312,7 +316,7 @@ export function NotificationPanel() {
                       <p className="text-[10px] text-gray-400 mt-1">{formatTimeAgo(n.timestamp)}</p>
                     </div>
                     {!n.read && (
-                      <span className="w-2 h-2 rounded-full bg-lime-500 shrink-0 mt-1.5" />
+                      <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5 animate-pulse" />
                     )}
                   </div>
                 ))}
@@ -326,19 +330,19 @@ export function NotificationPanel() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-1 text-xs text-gray-500 hover:text-gray-700"
+                className="flex-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 onClick={clearNotifications}
               >
-                Clear all
+                {t("clearAll")}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 text-xs text-gray-500 hover:text-lime-700 gap-1"
+                className="flex-shrink-0 text-xs text-primary hover:text-primary/80 gap-1 font-medium"
                 onClick={handleSimulateNotification}
               >
                 <FlaskConical className="h-3 w-3" />
-                Test
+                {t("testSimulate")}
               </Button>
             </div>
           )}
@@ -346,15 +350,15 @@ export function NotificationPanel() {
       )}
     </div>
   );
-}
 
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 10) return "Just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
+  function formatTimeAgo(date: Date): string {
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (seconds < 10) return t("justNow");
+    if (seconds < 60) return t("secondsAgo", { s: seconds });
+    if (seconds < 3600) return t("minutesAgo", { m: Math.floor(seconds / 60) });
+    if (seconds < 86400) return t("hoursAgo", { h: Math.floor(seconds / 3600) });
+    return t("daysAgo", { d: Math.floor(seconds / 86400) });
+  }
 }
 
 function getTestTitle(type: NotificationType): string {

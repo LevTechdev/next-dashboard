@@ -89,8 +89,7 @@ export function DateRangeFilter({
               size="sm"
               className={cn(
                 "gap-1.5 h-8 text-xs",
-                hasFilter &&
-                  "border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20",
+                hasFilter && "border-primary/50 dark:border-primary/50 bg-primary/10",
               )}
               type="button"
             >

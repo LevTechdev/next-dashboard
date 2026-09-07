@@ -1,4 +1,4 @@
-const CACHE_NAME = "dashboard-cache-v3";
+const CACHE_NAME = "dashboard-cache-v4";
 const OFFLINE_PAGE = "/en/login";
 
 // Assets to pre-cache during install
@@ -6,27 +6,23 @@ const PRE_CACHE = ["/", "/en/login", "/en/dashboard", "/manifest.json"];
 
 // Install event - pre-cache essential pages
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE)),
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE)));
   self.skipWaiting();
 });
 
 // Activate event - clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name)),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))),
       ),
-    ),
   );
   self.clients.claim();
 });
 
-// Fetch event - network-first with smart caching
+// Fetch event - network-first with smart offline caching
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -35,12 +31,56 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
-  // Skip API calls — let them pass through for real-time data
-  if (url.pathname.startsWith("/api/")) return;
+  // Smart caching for key dashboard metrics APIs
+  if (url.pathname.startsWith("/api/")) {
+    const isCacheableApi =
+      url.pathname === "/api/dashboard" ||
+      url.pathname === "/api/orders" ||
+      url.pathname === "/api/customers" ||
+      url.pathname.startsWith("/api/analytics/");
+
+    if (isCacheableApi) {
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
+            return response;
+          })
+          .catch(async () => {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+            return new Response(
+              JSON.stringify({
+                error: "Offline mode: viewing offline state",
+                offline: true,
+              }),
+              {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }),
+      );
+      return;
+    }
+    // Skip mutations or sensitive auth APIs
+    return;
+  }
 
   // Skip Next.js build assets — they have hashed filenames
-  if (url.pathname.startsWith("//_next/")) {
-    event.respondWith(fetch(request));
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+        const response = await fetch(request);
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      }),
+    );
     return;
   }
 
@@ -56,7 +96,6 @@ self.addEventListener("fetch", (event) => {
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-          // Offline fallback: return cached login page
           return caches.match(OFFLINE_PAGE);
         }),
     );
@@ -121,9 +160,7 @@ self.addEventListener("push", (event) => {
     data: { url: data.url || "/en/dashboard" },
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title || "Dashboard Update", options),
-  );
+  event.waitUntil(self.registration.showNotification(data.title || "Dashboard Update", options));
 });
 
 // Handle notification clicks — navigate to relevant page

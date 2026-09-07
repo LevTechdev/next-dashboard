@@ -67,24 +67,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 mobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
               )}
             >
-              <div className="flex items-center justify-end h-16 px-4 border-b border-gray-200 dark:border-gray-800">
-                <button
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
-                </button>
-              </div>
-              <Sidebar collapsed={false} onToggle={() => {}} embedded />
+              <Sidebar
+                collapsed={false}
+                onToggle={() => {}}
+                embedded
+                onClose={() => setMobileSidebarOpen(false)}
+                onNavigate={() => setMobileSidebarOpen(false)}
+              />
             </div>
 
             {/* Main Content */}

@@ -23,6 +23,7 @@
     "test:components": "vitest run --config vitest.components.config.ts",
     "test:api": "vitest run --config vitest.api.config.ts",
     "test:e2e": "playwright test",
+    "test:e2e:journey": "playwright test e2e/comprehensive-journey.spec.ts",
     "test:e2e:local": "node scripts/e2e-local.mjs test",
     "db:provision:local": "node scripts/e2e-local.mjs db",
     "dev:local": "node scripts/e2e-local.mjs dev",

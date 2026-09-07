@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { setLocaleCookie } from "@/lib/locale-cookie";
 import {
   XIcon,
   MenuIcon,
@@ -19,7 +18,6 @@ import {
 } from "lucide-animated";
 import {
   BarChart3Icon,
-  EarthIcon,
   LayoutGridIcon,
   CircleDollarSignIcon,
   UsersIcon,
@@ -31,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
@@ -67,18 +66,6 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
       setPrevLocale(locale); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [locale, prevLocale, trackLanguageSwitch]);
-
-  const router = useRouter();
-
-  const switchLocale = (newLocale: string) => {
-    if (newLocale === locale) return;
-    trackLanguageSwitch(locale, newLocale);
-    const newPath = pathname.replace(/^\/[a-z]{2}(?:-\w{2})?/, `/${newLocale}`);
-    localStorage.setItem("dashboard-locale", newLocale);
-    setLocaleCookie(newLocale);
-    router.push(newPath);
-    router.refresh();
-  };
 
   const isLinkActive = (href: string) => pathname.startsWith(`/${locale}${href}`);
 
@@ -238,35 +225,8 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
 
           {/* Right Side: Toggles + CTAs */}
           <div className="flex items-center gap-1 lg:gap-1.5">
-            {/* Language Toggle */}
-            <div className="hidden sm:flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-black/5 dark:bg-white/5 mr-0.5 lg:mr-1">
-              <EarthIcon
-                size={14}
-                className="hidden lg:block h-3.5 w-3.5 text-muted-foreground mr-1"
-              />
-              <button
-                onClick={() => switchLocale("en")}
-                className={cn(
-                  "px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all motion-spring-fast",
-                  locale === "en"
-                    ? "bg-white dark:bg-white/20 text-foreground dark:text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground dark:hover:text-white",
-                )}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => switchLocale("id")}
-                className={cn(
-                  "px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all motion-spring-fast",
-                  locale === "id"
-                    ? "bg-white dark:bg-white/20 text-foreground dark:text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground dark:hover:text-white",
-                )}
-              >
-                ID
-              </button>
-            </div>
+            {/* Language Toggle — globe icon dropdown with all 4 locales */}
+            <LanguageToggle locale={locale} pathname={pathname} />
 
             {/* Theme Toggle */}
             <button

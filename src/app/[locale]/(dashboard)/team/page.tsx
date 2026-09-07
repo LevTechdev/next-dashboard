@@ -40,34 +40,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
 import { DataExportButton } from "@/components/data-export-button";
 
-// Mock invitation data
-const MOCK_INVITATIONS = [
-  {
-    id: "inv-1",
-    email: "alex@example.com",
-    role: "STAFF",
-    sentAt: "2026-08-15",
-    expiresAt: "2026-08-22",
-    status: "pending",
-  },
-  {
-    id: "inv-2",
-    email: "sam@example.com",
-    role: "MANAGER",
-    sentAt: "2026-08-10",
-    expiresAt: "2026-08-17",
-    status: "accepted",
-  },
-  {
-    id: "inv-3",
-    email: "old@example.com",
-    role: "STAFF",
-    sentAt: "2026-07-01",
-    expiresAt: "2026-07-08",
-    status: "expired",
-  },
-];
-
 // Mock activity data
 const MOCK_ACTIVITY = [
   {
@@ -162,7 +134,23 @@ export default function TeamPage() {
     role: "STAFF",
     position: "",
   });
-  const [inviteForm, setInviteForm] = useState({ email: "", role: "STAFF" });
+  const [inviteForm, setInviteForm] = useState({
+    email: "",
+    role: "STAFF",
+    allowedChannels: ["Online Store", "Instagram"] as string[],
+    expiresInDays: 7,
+  });
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [inviteSaving, setInviteSaving] = useState(false);
+  const [editInviteDialogOpen, setEditInviteDialogOpen] = useState(false);
+  const [editInviteSaving, setEditInviteSaving] = useState(false);
+  const [editInviteForm, setEditInviteForm] = useState<{
+    id: string;
+    email: string;
+    role: string;
+    allowedChannels: string[];
+    expiresInDays: number;
+  } | null>(null);
 
   const loadData = () => {
     fetch("/api/team", { cache: "no-store" })
@@ -172,8 +160,16 @@ export default function TeamPage() {
         setLoading(false);
       });
   };
+
+  const loadInvitations = () => {
+    fetch("/api/team/invitations", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { invitations: [] }))
+      .then((data) => setInvitations(data.invitations || []));
+  };
+
   useEffect(() => {
     loadData();
+    loadInvitations();
   }, []);
 
   const filtered = members.filter((m: any) => m.name?.toLowerCase().includes(search.toLowerCase()));
@@ -221,9 +217,97 @@ export default function TeamPage() {
   };
 
   const handleInvite = async () => {
-    toast.success(tteam("inviteSent"));
-    setInviteDialogOpen(false);
-    setInviteForm({ email: "", role: "STAFF" });
+    if (!inviteForm.email || !inviteForm.email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    setInviteSaving(true);
+    try {
+      const res = await fetch("/api/team/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inviteForm),
+      });
+      if (res.ok) {
+        toast.success(tteam("inviteSent"));
+        setInviteDialogOpen(false);
+        setInviteForm({
+          email: "",
+          role: "STAFF",
+          allowedChannels: ["Online Store", "Instagram"],
+          expiresInDays: 7,
+        });
+        loadInvitations();
+      } else {
+        toast.error("Failed to send invitation");
+      }
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setInviteSaving(false);
+    }
+  };
+
+  const handleOpenEditInvite = (inv: any) => {
+    setEditInviteForm({
+      id: inv.id,
+      email: inv.email,
+      role: inv.role,
+      allowedChannels: Array.isArray(inv.allowedChannels) ? [...inv.allowedChannels] : [],
+      expiresInDays: 7,
+    });
+    setEditInviteDialogOpen(true);
+  };
+
+  const handleSaveEditInvite = async () => {
+    if (!editInviteForm) return;
+    setEditInviteSaving(true);
+    try {
+      const res = await fetch("/api/team/invitations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editInviteForm.id,
+          role: editInviteForm.role,
+          allowedChannels: editInviteForm.allowedChannels,
+          expiresInDays: editInviteForm.expiresInDays,
+        }),
+      });
+      if (res.ok) {
+        toast.success(tteam("inviteUpdated"));
+        setEditInviteDialogOpen(false);
+        setEditInviteForm(null);
+        loadInvitations();
+      } else {
+        toast.error(tcommon("error"));
+      }
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setEditInviteSaving(false);
+    }
+  };
+
+  const handleRevokeInvite = async (id: string) => {
+    const ok = await confirm({
+      title: tteam("revokeInviteTitle"),
+      description: tteam("revokeInviteConfirm"),
+      confirmLabel: tteam("removeBtn"),
+      destructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/team/invitations?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(tteam("inviteRevoked"));
+        loadInvitations();
+      } else {
+        toast.error(tcommon("error"));
+      }
+    } catch {
+      toast.error(tcommon("error"));
+    }
   };
 
   return (
@@ -329,54 +413,242 @@ export default function TeamPage() {
 
       {/* Invite Dialog */}
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{tteam("inviteMember")}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <Input
-              placeholder={tteam("inviteEmail")}
-              type="email"
-              value={inviteForm.email}
-              onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-            />
-            <Select
-              value={inviteForm.role}
-              onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}
+          <div className="space-y-4 pt-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Email Address</label>
+              <Input
+                placeholder="colleague@company.com"
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Workspace Role</label>
+              <Select
+                value={inviteForm.role}
+                onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={tteam("inviteRole")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OWNER">{tteam("roleOwner")}</SelectItem>
+                  <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
+                  <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
+                  <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
+                  <SelectItem value="VIEWER">{tteam("roleViewer")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 pt-1 border-t border-border/50">
+              <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>{tteam("salesChannelAccess")}</span>
+                <span className="text-[10px] text-muted-foreground font-normal">
+                  {tteam("orderManagementScope")}
+                </span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 bg-muted/40 p-2.5 rounded-lg border border-border/60">
+                {["Online Store", "Instagram", "TikTok Shop", "Shopify", "Facebook"].map((ch) => {
+                  const checked = inviteForm.allowedChannels.includes(ch);
+                  return (
+                    <label
+                      key={ch}
+                      className="flex items-center gap-2 text-xs text-foreground cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setInviteForm((prev) => ({
+                              ...prev,
+                              allowedChannels: [...prev.allowedChannels, ch],
+                            }));
+                          } else {
+                            setInviteForm((prev) => ({
+                              ...prev,
+                              allowedChannels: prev.allowedChannels.filter((c) => c !== ch),
+                            }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
+                      />
+                      <span>{ch}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                {tteam("invitationExpiry")}
+              </label>
+              <Select
+                value={String(inviteForm.expiresInDays)}
+                onValueChange={(v) =>
+                  setInviteForm({ ...inviteForm, expiresInDays: parseInt(v, 10) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">24 Hours (High Security)</SelectItem>
+                  <SelectItem value="7">7 Days (Standard)</SelectItem>
+                  <SelectItem value="30">30 Days (Extended)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={handleInvite}
+              disabled={inviteSaving || !inviteForm.email}
+              className="w-full"
             >
-              <SelectTrigger>
-                <SelectValue placeholder={tteam("inviteRole")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="SUPER_ADMIN">{tteam("superAdmin")}</SelectItem>
-                <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
-                <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
-                <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleInvite} className="w-full">
-              {tteam("inviteMember")}
+              {inviteSaving ? "Sending Invitation..." : tteam("inviteMember")}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Invitation Dialog */}
+      <Dialog open={editInviteDialogOpen} onOpenChange={setEditInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tteam("editInvitation")}</DialogTitle>
+            <p className="text-xs text-muted-foreground">{tteam("editInvitationDesc")}</p>
+          </DialogHeader>
+          {editInviteForm && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  {tteam("inviteEmail")}
+                </label>
+                <Input
+                  value={editInviteForm.email}
+                  disabled
+                  className="bg-muted/50 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  {tteam("inviteRole")}
+                </label>
+                <Select
+                  value={editInviteForm.role}
+                  onValueChange={(v) => setEditInviteForm({ ...editInviteForm, role: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
+                    <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
+                    <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
+                    <SelectItem value="VIEWER">{tteam("roleViewer")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 pt-1 border-t border-border/50">
+                <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                  <span>{tteam("salesChannelAccess")}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {tteam("orderManagementScope")}
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-2 bg-muted/40 p-2.5 rounded-lg border border-border/60">
+                  {["Online Store", "Instagram", "TikTok Shop", "Shopify", "Facebook"].map((ch) => {
+                    const checked = editInviteForm.allowedChannels.includes(ch);
+                    return (
+                      <label
+                        key={ch}
+                        className="flex items-center gap-2 text-xs text-foreground cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditInviteForm((prev) =>
+                                prev
+                                  ? { ...prev, allowedChannels: [...prev.allowedChannels, ch] }
+                                  : null,
+                              );
+                            } else {
+                              setEditInviteForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      allowedChannels: prev.allowedChannels.filter((c) => c !== ch),
+                                    }
+                                  : null,
+                              );
+                            }
+                          }}
+                          className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
+                        />
+                        <span>{ch}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  {tteam("invitationExpiry")}
+                </label>
+                <Select
+                  value={String(editInviteForm.expiresInDays)}
+                  onValueChange={(v) =>
+                    setEditInviteForm({ ...editInviteForm, expiresInDays: parseInt(v, 10) })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">24 Hours (High Security)</SelectItem>
+                    <SelectItem value="7">7 Days (Standard)</SelectItem>
+                    <SelectItem value="30">30 Days (Extended)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={handleSaveEditInvite} disabled={editInviteSaving} className="w-full">
+                {editInviteSaving ? "Saving..." : tteam("saveInvitation")}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
       <Tabs defaultValue="members" className="space-y-4">
         <TabsList>
           <TabsTrigger value="members" className="gap-1.5">
-            <UsersRoundIcon className="h-3.5 w-3.5" />
+            <UsersRoundIcon size={14} className="h-3.5 w-3.5" />
             {tteam("memberList")}
           </TabsTrigger>
           <TabsTrigger value="invitations" className="gap-1.5">
-            <Mail className="h-3.5 w-3.5" />
+            <Mail size={14} className="h-3.5 w-3.5" />
             {tteam("invitations")}
           </TabsTrigger>
           <TabsTrigger value="activity" className="gap-1.5">
-            <ClockIcon className="h-3.5 w-3.5" />
+            <ClockIcon size={14} className="h-3.5 w-3.5" />
             {tteam("activity")}
           </TabsTrigger>
           <TabsTrigger value="permissions" className="gap-1.5">
-            <ShieldCheckIcon className="h-3.5 w-3.5" />
+            <ShieldCheckIcon size={14} className="h-3.5 w-3.5" />
             {tteam("permissions")}
           </TabsTrigger>
         </TabsList>
@@ -456,7 +728,7 @@ export default function TeamPage() {
                                 setDialogOpen(true);
                               }}
                             >
-                              <Edit2 className="h-3.5 w-3.5 mr-1" />
+                              <Edit2 size={14} className="h-3.5 w-3.5 mr-1" />
                               {tteam("editBtn")}
                             </Button>
                           )}
@@ -467,7 +739,7 @@ export default function TeamPage() {
                               onClick={() => handleDelete(m.id)}
                               className="text-red-500"
                             >
-                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              <Trash2 size={14} className="h-3.5 w-3.5 mr-1" />
                               {tteam("removeBtn")}
                             </Button>
                           )}
@@ -497,7 +769,7 @@ export default function TeamPage() {
               <CardDescription>{tteam("invitationsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
-              {MOCK_INVITATIONS.length === 0 ? (
+              {invitations.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-8">{tteam("noInvitations")}</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -506,19 +778,40 @@ export default function TeamPage() {
                       <TableRow>
                         <TableHead>{tteam("email")}</TableHead>
                         <TableHead>{tteam("role")}</TableHead>
+                        <TableHead>{tteam("channelAccess")}</TableHead>
                         <TableHead>{tteam("inviteExpires")}</TableHead>
                         <TableHead>{tcommon("status")}</TableHead>
                         <TableHead className="text-right">{tcommon("actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {MOCK_INVITATIONS.map((inv) => (
+                      {invitations.map((inv) => (
                         <TableRow key={inv.id}>
                           <TableCell className="text-sm font-medium">{inv.email}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(inv.role)}>{inv.role}</Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-gray-500">{inv.expiresAt}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {inv.allowedChannels && inv.allowedChannels.length > 0 ? (
+                                inv.allowedChannels.map((ch: string) => (
+                                  <span
+                                    key={ch}
+                                    className="inline-flex text-[10px] px-1.5 py-0.5 rounded bg-muted font-medium text-foreground border border-border/50"
+                                  >
+                                    {ch}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  {tteam("allChannels")}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-gray-500">
+                            {new Date(inv.expiresAt).toLocaleDateString()}
+                          </TableCell>
                           <TableCell>
                             <Badge
                               variant={
@@ -538,15 +831,26 @@ export default function TeamPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             {inv.status === "pending" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500"
-                                onClick={() => toast.success(tteam("inviteRevoked"))}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                {tteam("removeBtn")}
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  onClick={() => handleOpenEditInvite(inv)}
+                                >
+                                  <Edit2 size={14} className="h-3.5 w-3.5 mr-1 text-sky-500" />
+                                  {tteam("editInviteBtn")}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  onClick={() => handleRevokeInvite(inv.id)}
+                                >
+                                  <Trash2 size={14} className="h-3.5 w-3.5 mr-1" />
+                                  {tteam("removeBtn")}
+                                </Button>
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
@@ -618,7 +922,7 @@ export default function TeamPage() {
                         {["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
                           <TableCell key={r} className="text-center">
                             {row.roles[r as keyof typeof row.roles] ? (
-                              <Check className="h-4 w-4 text-emerald-500 mx-auto" />
+                              <Check size={16} className="h-4 w-4 text-emerald-500 mx-auto" />
                             ) : (
                               <span className="text-gray-300 dark:text-gray-600">—</span>
                             )}

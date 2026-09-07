@@ -23,7 +23,11 @@ import {
   FlaskConical,
   SquareTerminal,
   ChevronDown,
+  MessageSquare,
+  Network,
 } from "lucide-react";
+import { ChatAlertsHub } from "@/components/integrations/chat-alerts-hub";
+import { InboundWebhookSync } from "@/components/integrations/inbound-webhook-sync";
 import { cn } from "@/lib/utils";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -123,7 +127,11 @@ function getEventLabel(value: string, t: (key: string) => string) {
           .join(""),
       )
       .join("");
-  return t(key);
+  const label = t(key);
+  // Fall back to the raw event name instead of the raw key path when a locale
+  // is missing the entry (next-intl returns the key itself and logs
+  // MISSING_MESSAGE in that case).
+  return label === key ? value : label;
 }
 
 function getGroupLabel(label: string, t: (key: string) => string) {
@@ -165,6 +173,14 @@ export default function IntegrationsPage() {
             <ClockIcon size={16} className="h-4 w-4" />
             {t("tabDeliveries")}
           </TabsTrigger>
+          <TabsTrigger value="chat-alerts" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            {t("tabChatAlerts")}
+          </TabsTrigger>
+          <TabsTrigger value="omnichannel" className="flex items-center gap-2">
+            <Network className="h-4 w-4 text-primary" />
+            {t("tabOmnichannel")}
+          </TabsTrigger>
           <TabsTrigger value="playground" className="flex items-center gap-2">
             <FlaskConical className="h-4 w-4" />
             {t("tabPlayground")}
@@ -179,6 +195,12 @@ export default function IntegrationsPage() {
         </TabsContent>
         <TabsContent value="deliveries" className="mt-6">
           <DeliveriesTab />
+        </TabsContent>
+        <TabsContent value="chat-alerts" className="mt-6">
+          <ChatAlertsHub />
+        </TabsContent>
+        <TabsContent value="omnichannel" className="mt-6">
+          <InboundWebhookSync />
         </TabsContent>
         <TabsContent value="playground" className="mt-6">
           <PlaygroundTab />
@@ -409,9 +431,20 @@ function ApiKeysTab() {
                       <Badge variant="info">{key.permissions}</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                        {key.prefix}
-                      </code>
+                      <span className="inline-flex items-center gap-1">
+                        <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                          {key.prefix}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleCopyKey(key.prefix)}
+                          title={tc("copy")}
+                        >
+                          <CopyIcon size={14} className="h-3.5 w-3.5 text-gray-400" />
+                        </Button>
+                      </span>
                       {key.lastUsedAt && (
                         <span>
                           {t("lastUsed")} {formatDate(key.lastUsedAt)}
@@ -435,9 +468,9 @@ function ApiKeysTab() {
                       title={key.status === "ACTIVE" ? t("revokeKey") : t("reactivateKey")}
                     >
                       {key.status === "ACTIVE" ? (
-                        <PowerOff className="h-4 w-4 text-amber-500" />
+                        <PowerOff size={16} className="h-4 w-4 text-amber-500" />
                       ) : (
-                        <Power className="h-4 w-4 text-green-500" />
+                        <Power size={16} className="h-4 w-4 text-green-500" />
                       )}
                     </Button>
                     <Button
@@ -446,7 +479,7 @@ function ApiKeysTab() {
                       onClick={() => handleDelete(key.id)}
                       title={t("deleteKey")}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 size={16} className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
                 </div>
@@ -921,9 +954,9 @@ function WebhooksTab() {
                       title={ep.status === "ACTIVE" ? t("pauseWebhook") : t("activateWebhook")}
                     >
                       {ep.status === "ACTIVE" ? (
-                        <PowerOff className="h-4 w-4 text-amber-500" />
+                        <PowerOff size={16} className="h-4 w-4 text-amber-500" />
                       ) : (
-                        <Power className="h-4 w-4 text-green-500" />
+                        <Power size={16} className="h-4 w-4 text-green-500" />
                       )}
                     </Button>
                     <Button
@@ -932,7 +965,7 @@ function WebhooksTab() {
                       onClick={() => openEdit(ep)}
                       title={t("editWebhook")}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil size={16} className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
@@ -940,7 +973,7 @@ function WebhooksTab() {
                       onClick={() => handleDelete(ep.id)}
                       title={t("deleteWebhook")}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 size={16} className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
                 </div>
@@ -1003,7 +1036,7 @@ function WebhooksTab() {
                       <input
                         type="checkbox"
                         id={`group-${group.label}`}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-gray-300 text-primary focus:ring-ring"
                         checked={group.events.every((e) => formEvents.includes(e))}
                         onChange={() => selectAllInGroup(group.events)}
                       />
@@ -1024,7 +1057,7 @@ function WebhooksTab() {
                             type="checkbox"
                             checked={formEvents.includes(event)}
                             onChange={() => toggleEvent(event)}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="rounded border-gray-300 text-primary focus:ring-ring"
                           />
                           <span className="text-sm text-gray-600 dark:text-gray-400">
                             {getEventLabel(event, t)}

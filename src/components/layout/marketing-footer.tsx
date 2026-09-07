@@ -1,10 +1,17 @@
 "use client";
 
-import { Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import {
+  FacebookBrandIcon,
+  InstagramBrandIcon,
+  TikTokBrandIcon,
+  ShopifyBrandIcon,
+  LinkedInBrandIcon,
+  YouTubeBrandIcon,
+} from "@/components/ui/brand-icons";
 
 export function MarketingFooter() {
   const params = useParams();
@@ -40,17 +47,22 @@ export function MarketingFooter() {
   ];
 
   const legalLinks = [
-    "footerLegalTerms",
-    "footerLegalPrivacy",
-    "footerLegalCookies",
-    "footerLegalAccessibility",
+    { labelKey: "footerLegalTerms", href: `/${locale}/terms` },
+    { labelKey: "footerLegalPrivacy", href: `/${locale}/privacy` },
+    { labelKey: "footerLegalCookies", href: `/${locale}/cookies` },
+    { labelKey: "footerLegalAccessibility", href: `/${locale}/accessibility` },
   ];
 
+  // Official brand glyphs (src/components/ui/brand-icons.tsx) — the same set
+  // the sidebar's sales channels use, so the footer matches the platform's
+  // commerce-tool identity (Facebook, Instagram, TikTok, Shopify, LinkedIn, YT).
   const socialIcons = [
-    { icon: <Instagram className="h-5 w-5" />, href: "#" },
-    { icon: <Twitter className="h-5 w-5" />, href: "#" },
-    { icon: <Linkedin className="h-5 w-5" />, href: "#" },
-    { icon: <Youtube className="h-5 w-5" />, href: "#" },
+    { icon: <FacebookBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "Facebook" },
+    { icon: <InstagramBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "Instagram" },
+    { icon: <TikTokBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "TikTok" },
+    { icon: <ShopifyBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "Shopify" },
+    { icon: <LinkedInBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "LinkedIn" },
+    { icon: <YouTubeBrandIcon size={20} className="h-5 w-5" />, href: "#", label: "YouTube" },
   ];
 
   return (
@@ -102,6 +114,8 @@ export function MarketingFooter() {
               <a
                 key={i}
                 href={item.href}
+                aria-label={item.label}
+                title={item.label}
                 className="bg-white dark:bg-zinc-900 border border-border hover:bg-zinc-100 dark:hover:bg-zinc-800 flex h-10 w-10 items-center justify-center rounded-full transition-colors text-zinc-600 dark:text-zinc-400"
               >
                 {item.icon}
@@ -137,14 +151,14 @@ export function MarketingFooter() {
             &copy; {new Date().getFullYear()} {t("footerRights")}
           </p>
           <div className="flex flex-wrap justify-center gap-6">
-            {legalLinks.map((text) => (
-              <a
-                key={text}
-                href="#"
+            {legalLinks.map((link) => (
+              <Link
+                key={link.labelKey}
+                href={link.href}
                 className="text-muted-foreground hover:text-foreground transition-colors text-sm"
               >
-                {t(text)}
-              </a>
+                {t(link.labelKey)}
+              </Link>
             ))}
           </div>
         </div>

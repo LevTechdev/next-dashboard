@@ -3,7 +3,18 @@
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import { BellIcon, CheckCheckIcon, XIcon, RefreshCwIcon } from "lucide-animated";
-import { BellRing, Trash2, Mail, Loader2, AlertTriangle, Filter, Save, Inbox } from "lucide-react";
+import {
+  BellRing,
+  Trash2,
+  Mail,
+  Loader2,
+  AlertTriangle,
+  Filter,
+  Save,
+  Inbox,
+  MessageSquare,
+} from "lucide-react";
+import { ChatAlertsHub } from "@/components/integrations/chat-alerts-hub";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -127,6 +138,10 @@ export default function NotificationsPage() {
             <Mail className="h-4 w-4" />
             {tnotif("tabEmail")}
           </TabsTrigger>
+          <TabsTrigger value="chat-alerts" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            {tnotif("tabChatAlerts")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inbox" className="mt-6">
@@ -137,6 +152,9 @@ export default function NotificationsPage() {
         </TabsContent>
         <TabsContent value="email" className="mt-6">
           <EmailPrefsTab />
+        </TabsContent>
+        <TabsContent value="chat-alerts" className="mt-6">
+          <ChatAlertsHub />
         </TabsContent>
       </Tabs>
     </div>
@@ -365,7 +383,7 @@ function InboxTab() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">{tnotif("filterAllTypes")}</option>
               {NOTIFICATION_TYPES.map((t) => (
@@ -379,7 +397,7 @@ function InboxTab() {
           <select
             value={filterRead}
             onChange={(e) => setFilterRead(e.target.value)}
-            className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="all">{tnotif("filterAllStatus")}</option>
             <option value="unread">{tnotif("filterUnread")}</option>
@@ -476,7 +494,7 @@ function InboxTab() {
                   type="checkbox"
                   checked={selectedIds.size === notifications.length && notifications.length > 0}
                   onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-gray-300 text-primary focus:ring-ring"
                 />
                 <span className="text-xs text-gray-500">{tnotif("selectAll")}</span>
               </div>
@@ -487,8 +505,8 @@ function InboxTab() {
                   className={cn(
                     "transition-all duration-150",
                     !n.read &&
-                      "border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10",
-                    selectedIds.has(n.id) && "ring-2 ring-indigo-400",
+                      "border-primary/25 dark:border-primary/25 bg-primary/5 dark:bg-primary/10",
+                    selectedIds.has(n.id) && "ring-2 ring-primary/60",
                   )}
                 >
                   <CardContent className="p-4">
@@ -498,7 +516,7 @@ function InboxTab() {
                           type="checkbox"
                           checked={selectedIds.has(n.id)}
                           onChange={() => toggleSelect(n.id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-gray-300 text-primary focus:ring-ring"
                         />
                       </div>
                       <span className="text-lg shrink-0 pt-0.5">{TYPE_ICONS[n.type] || "🔔"}</span>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { RefreshCwIcon, TrendingUpIcon, DollarSignIcon } from "lucide-animated";
 import { ShoppingCart, Store, Filter, ShoppingBag, Percent } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,6 +29,7 @@ import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { DataExportButton } from "@/components/data-export-button";
+import { SalesChannelIcon, SalesChannelBadge } from "@/components/ui/brand-icons";
 
 // Maps salesChannels util slugs to sales namespace keys (brand names keep their English form)
 const CHANNEL_KEYS: Record<string, string> = {
@@ -37,9 +39,14 @@ const CHANNEL_KEYS: Record<string, string> = {
   instagram: "instagram",
   tiktok: "tiktok",
   shopify: "shopify",
+  shopee: "shopee",
+  tokopedia: "tokopedia",
+  whatsapp: "whatsapp",
+  lazada: "lazada",
 };
 
 export default function SalesPage() {
+  const locale = useLocale();
   const tsales = useTranslations("sales");
   const tcommon = useTranslations("common");
   const tstatus = useTranslations("status");
@@ -140,6 +147,24 @@ export default function SalesPage() {
       </div>
     );
 
+  const translateStatus = (s?: string) => {
+    if (!s) return tcommon("na");
+    const key = s.toLowerCase();
+    const known = [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "paid",
+      "unpaid",
+      "refunded",
+      "failed",
+      "completed",
+    ];
+    return known.includes(key) ? tstatus(key as any) : s;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -170,8 +195,8 @@ export default function SalesPage() {
                 key: (o: any) => o.channel?.name || tcommon("na"),
                 header: tsales("channel"),
               },
-              { key: "status", header: tsales("status") },
-              { key: "paymentStatus", header: tsales("payment") },
+              { key: "status", header: tsales("orderStatus") },
+              { key: "paymentStatus", header: tsales("paymentStatus") },
               { key: (o: any) => o.grandTotal, header: tsales("amount") },
               {
                 key: (o: any) => new Date(o.createdAt).toLocaleDateString(),
@@ -212,10 +237,10 @@ export default function SalesPage() {
         ))}
       </div>
 
-      {/* Filters */}
+      {/* Orders Table */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-wrap items-center gap-3">
+        <CardHeader className="p-4 sm:p-6 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-gray-400" />
               <Select
@@ -230,11 +255,18 @@ export default function SalesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{tsales("allChannels")}</SelectItem>
-                  {salesChannels.map((ch) => (
-                    <SelectItem key={ch.slug} value={ch.slug}>
-                      {tsales(CHANNEL_KEYS[ch.slug] ?? ch.name)}
-                    </SelectItem>
-                  ))}
+                  {salesChannels.map((ch) => {
+                    const key = CHANNEL_KEYS[ch.slug];
+                    const label = key ? tsales(key) : ch.name;
+                    return (
+                      <SelectItem key={ch.id} value={ch.id}>
+                        <div className="flex items-center gap-2">
+                          <SalesChannelIcon name={ch.slug} size={14} />
+                          <span>{label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -270,8 +302,8 @@ export default function SalesPage() {
                   <TableHead>{tsales("orderList")}</TableHead>
                   <TableHead>{tsales("customer")}</TableHead>
                   <TableHead>{tsales("channel")}</TableHead>
-                  <TableHead>{tsales("status")}</TableHead>
-                  <TableHead>{tcommon("status")}</TableHead>
+                  <TableHead>{tsales("orderStatus")}</TableHead>
+                  <TableHead>{tsales("paymentStatus")}</TableHead>
                   <TableHead>{tsales("amount")}</TableHead>
                   <TableHead>{tsales("date")}</TableHead>
                 </TableRow>
@@ -279,19 +311,39 @@ export default function SalesPage() {
               <TableBody>
                 {paginated.map((order: any) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-mono text-sm font-medium">
-                      #{order.orderNumber}
+                    <TableCell className="font-mono text-sm font-semibold">
+                      <Link
+                        href={`/${locale}/orders/${order.id}`}
+                        className="text-primary hover:underline transition-colors"
+                      >
+                        #{order.orderNumber}
+                      </Link>
                     </TableCell>
-                    <TableCell>{order.customer?.name || tsales("guest")}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{order.channel?.name || tcommon("na")}</Badge>
+                      {order.customer?.id ? (
+                        <Link
+                          href={`/${locale}/customers/${order.customer.id}`}
+                          className="hover:text-primary transition-colors font-medium"
+                        >
+                          {order.customer.name}
+                        </Link>
+                      ) : (
+                        order.customer?.name || tsales("guest")
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                      <SalesChannelBadge
+                        channel={order.channel?.slug || order.channel?.name || tcommon("na")}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>
+                        {translateStatus(order.status)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.paymentStatus)}>
-                        {order.paymentStatus}
+                        {translateStatus(order.paymentStatus)}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">

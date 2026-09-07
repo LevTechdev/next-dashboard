@@ -45,6 +45,7 @@ import { MarketingHeader } from "@/components/layout/marketing-header";
 import { MarketingFooter } from "@/components/layout/marketing-footer";
 import SmoothScroll from "@/components/home/smooth-scroll";
 import ScrollProgress from "@/components/home/scroll-progress";
+import { BackToTop } from "@/components/ui/back-to-top";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -78,6 +79,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           {/* ═══ FOOTER ═══ */}
           <MarketingFooter />
         </SmoothScroll>
+
+        {/* ═══ Back to Top floating button ═══ */}
+        <BackToTop />
       </div>
     </ViewTransitionProvider>
   );

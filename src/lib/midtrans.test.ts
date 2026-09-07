@@ -3,6 +3,9 @@ import {
   midtransConfigured,
   midtransIsSandbox,
   getMidtransBaseUrl,
+  getMidtransServerKey,
+  getMidtransClientKey,
+  getMidtransSnapScriptUrl,
   createSnapTransaction,
   verifyMidtransSignature,
   MIDTRANS_CHANNELS,
@@ -10,6 +13,9 @@ import {
 
 beforeEach(() => {
   delete process.env.MIDTRANS_SERVER_KEY;
+  delete process.env.MIDTRANS_CLIENT_KEY;
+  delete process.env.MIDTRANS_SANDBOX_SERVER_KEY;
+  delete process.env.MIDTRANS_SANDBOX_CLIENT_KEY;
   delete process.env.MIDTRANS_ENV;
   vi.stubGlobal("fetch", undefined);
 });
@@ -36,6 +42,54 @@ describe("midtrans environment", () => {
     process.env.MIDTRANS_ENV = "production";
     expect(midtransIsSandbox()).toBe(false);
     expect(getMidtransBaseUrl()).toBe("https://app.midtrans.com");
+  });
+});
+
+describe("environment key resolution", () => {
+  it("uses the sandbox keys when MIDTRANS_ENV is not production", () => {
+    process.env.MIDTRANS_SANDBOX_SERVER_KEY = "SB-Mid-server-sandbox";
+    process.env.MIDTRANS_SANDBOX_CLIENT_KEY = "SB-Mid-client-sandbox";
+    process.env.MIDTRANS_SERVER_KEY = "Mid-server-prod";
+    process.env.MIDTRANS_CLIENT_KEY = "Mid-client-prod";
+    expect(getMidtransServerKey()).toBe("SB-Mid-server-sandbox");
+    expect(getMidtransClientKey()).toBe("SB-Mid-client-sandbox");
+  });
+
+  it("falls back to the shared vars when no sandbox keys are set", () => {
+    process.env.MIDTRANS_SERVER_KEY = "SB-Mid-server-test-key";
+    process.env.MIDTRANS_CLIENT_KEY = "SB-Mid-client-test-key";
+    expect(getMidtransServerKey()).toBe("SB-Mid-server-test-key");
+    expect(getMidtransClientKey()).toBe("SB-Mid-client-test-key");
+  });
+
+  it("uses the production keys (never sandbox) when MIDTRANS_ENV=production", () => {
+    process.env.MIDTRANS_ENV = "production";
+    process.env.MIDTRANS_SANDBOX_SERVER_KEY = "SB-Mid-server-sandbox";
+    process.env.MIDTRANS_SANDBOX_CLIENT_KEY = "SB-Mid-client-sandbox";
+    process.env.MIDTRANS_SERVER_KEY = "Mid-server-prod";
+    process.env.MIDTRANS_CLIENT_KEY = "Mid-client-prod";
+    expect(getMidtransServerKey()).toBe("Mid-server-prod");
+    expect(getMidtransClientKey()).toBe("Mid-client-prod");
+  });
+});
+
+describe("snap popup config", () => {
+  it("exposes an empty client key when no client key is configured", () => {
+    expect(getMidtransClientKey()).toBe("");
+  });
+
+  it("returns the client key from the environment", () => {
+    process.env.MIDTRANS_CLIENT_KEY = "SB-Mid-client-abc";
+    expect(getMidtransClientKey()).toBe("SB-Mid-client-abc");
+  });
+
+  it("points snap.js at the sandbox host by default", () => {
+    expect(getMidtransSnapScriptUrl()).toBe("https://app.sandbox.midtrans.com/snap/snap.js");
+  });
+
+  it("points snap.js at the production host when MIDTRANS_ENV=production", () => {
+    process.env.MIDTRANS_ENV = "production";
+    expect(getMidtransSnapScriptUrl()).toBe("https://app.midtrans.com/snap/snap.js");
   });
 });
 
@@ -109,10 +163,10 @@ describe("createSnapTransaction", () => {
     ).rejects.toThrow(/Midtrans Snap error 401/);
   });
 
-  it("throws when the server key is missing", async () => {
+  it("throws when no server key is configured for the environment", async () => {
     await expect(
       createSnapTransaction({ orderId: "MT-1", grossAmountIdr: 1000, items: [] }),
-    ).rejects.toThrow(/MIDTRANS_SERVER_KEY is not configured/);
+    ).rejects.toThrow(/server key is not configured/);
   });
 });
 

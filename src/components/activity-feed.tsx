@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ClockIcon,
   BellIcon,
@@ -155,6 +156,7 @@ function formatTimeAgo(date: Date): string {
 // ── Component ──
 
 export function ActivityFeed({ className }: { className?: string }) {
+  const t = useTranslations("dashboard");
   const params = useParams();
   const locale = (params?.locale as string) || "en";
   const { notifications: realtimeNotifications, connectionStatus } = useRealtime();
@@ -322,7 +324,7 @@ export function ActivityFeed({ className }: { className?: string }) {
             </div>
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                Activity Feed
+                {t("activityFeedTitle")}
                 {newCount > 0 && (
                   <motion.span
                     initial={{ scale: 0.5, opacity: 0 }}
@@ -330,11 +332,12 @@ export function ActivityFeed({ className }: { className?: string }) {
                     exit={{ scale: 0.5, opacity: 0 }}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold"
                   >
-                    <SparklesIcon size={10} className="h-2.5 w-2.5" />+{newCount} new
+                    <SparklesIcon size={10} className="h-2.5 w-2.5" />
+                    {t("activityFeedNew", { count: newCount })}
                   </motion.span>
                 )}
               </CardTitle>
-              <CardDescription>Real-time system activity stream</CardDescription>
+              <CardDescription>{t("activityFeedDesc")}</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -367,7 +370,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               href={`/${locale}/notifications`}
               className="inline-flex items-center gap-1 text-[10px] text-indigo-500 hover:text-indigo-600 hover:underline px-1.5 py-0.5 rounded"
             >
-              View all
+              {t("activityFeedViewAll")}
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
           </div>
@@ -591,8 +594,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                         variant="outline"
                         className={cn(
                           "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
-                          isNewItem &&
-                            "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400",
+                          isNewItem && "border-primary/50 dark:border-primary/50 text-primary",
                         )}
                       >
                         {item.type}

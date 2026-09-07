@@ -13,6 +13,8 @@ import { TotpCard } from "@/components/security/totp-card";
 import { PasskeysCard } from "@/components/security/passkeys-card";
 import { BackupCodesCard } from "@/components/security/backup-codes-card";
 import { EmailVerificationCard } from "@/components/security/email-verification-card";
+import { Soc2ComplianceCard } from "@/components/security/soc2-compliance-card";
+import { FraudPreventionCard } from "@/components/security/fraud-prevention-card";
 import {
   computeSecurityScore,
   isSuspiciousEventType,
@@ -252,7 +254,7 @@ export function SecurityCenter() {
           icon={
             <FingerprintIcon
               size={18}
-              className="h-[18px] w-[18px] text-lime-600 dark:text-indigo-600"
+              className="h-[18px] w-[18px] text-lime-600 dark:text-green-400"
             />
           }
           label={t("statPasskeys")}
@@ -272,6 +274,12 @@ export function SecurityCenter() {
           tone="bg-amber-50 dark:bg-amber-900/20"
         />
       </div>
+
+      {/* SOC 2 & ISO 27001 Compliance Center */}
+      <Soc2ComplianceCard />
+
+      {/* Autonomous Fraud Prevention & Risk Radar */}
+      <FraudPreventionCard />
 
       {/* Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">

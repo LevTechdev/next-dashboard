@@ -20,7 +20,7 @@ interface ProductImageManagerProps {
   canEdit: boolean;
 }
 
-const MAX_UPLOAD_BYTES = 800 * 1024; // 800KB per uploaded image (stored as data URL)
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB per uploaded image (stored as data URL)
 
 /** Build the ordered image list with the cover image first. */
 function buildList(cover: string | null, images: string[]): string[] {
@@ -252,7 +252,7 @@ export function ProductImageManager({
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/avif,image/*"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];

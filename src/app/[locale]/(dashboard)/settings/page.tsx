@@ -60,6 +60,7 @@ import { useTheme } from "next-themes";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
+import { WhiteLabelBranding } from "@/components/settings/white-label-branding";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -78,11 +79,11 @@ export default function SettingsPage() {
 
   // -- Notifications --
   const [notifPrefs, setNotifPrefs] = useState<any>(null);
-  
+
   useEffect(() => {
     fetch("/api/profile/notifications")
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (!d.error) setNotifPrefs(d);
       });
   }, []);
@@ -539,6 +540,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* White-Labeling & Custom Branding */}
+        <WhiteLabelBranding />
+
         {/* Accent Color */}
         <Card>
           <CardHeader>
@@ -783,7 +787,12 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("emailNotificationsDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={notifPrefs?.emailOnAlert ?? true} onChange={(e) => updateNotifPref({ emailOnAlert: e.target.checked })} className="sr-only peer" />
+                <input
+                  type="checkbox"
+                  checked={notifPrefs?.emailOnAlert ?? true}
+                  onChange={(e) => updateNotifPref({ emailOnAlert: e.target.checked })}
+                  className="sr-only peer"
+                />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -793,7 +802,12 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("orderUpdatesDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={notifPrefs?.emailOnOrder ?? true} onChange={(e) => updateNotifPref({ emailOnOrder: e.target.checked })} className="sr-only peer" />
+                <input
+                  type="checkbox"
+                  checked={notifPrefs?.emailOnOrder ?? true}
+                  onChange={(e) => updateNotifPref({ emailOnOrder: e.target.checked })}
+                  className="sr-only peer"
+                />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -803,7 +817,12 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("marketingAlertsDesc")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={notifPrefs?.emailOnCampaign ?? false} onChange={(e) => updateNotifPref({ emailOnCampaign: e.target.checked })} className="sr-only peer" />
+                <input
+                  type="checkbox"
+                  checked={notifPrefs?.emailOnCampaign ?? false}
+                  onChange={(e) => updateNotifPref({ emailOnCampaign: e.target.checked })}
+                  className="sr-only peer"
+                />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -837,7 +856,7 @@ export default function SettingsPage() {
                     setBudgetThreshold(v);
                     updateNotifPref({ campaignBudgetPercent: v });
                   }}
-                  className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-indigo-600"
+                  className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-primary"
                 />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 px-1">
@@ -931,8 +950,8 @@ export default function SettingsPage() {
                   className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-                      <Key className="h-4 w-4 text-indigo-600" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                      <Key className="h-4 w-4 text-primary" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -1298,7 +1317,7 @@ export default function SettingsPage() {
                             className={cn(
                               "px-2.5 py-1 rounded-full text-xs font-medium border transition-all",
                               selected
-                                ? "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
+                                ? "bg-primary/10 border-primary/40 text-primary"
                                 : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300",
                             )}
                           >
