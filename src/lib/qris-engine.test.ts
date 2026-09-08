@@ -14,13 +14,19 @@ describe("QRIS Engine & Checksum", () => {
     expect(formatTLV("53", "360")).toBe("5303360");
   });
 
-  it("generates a valid EMVCo / ASPI dynamic QRIS payload", () => {
+  it("generates a valid EMVCo / ASPI dynamic QRIS payload with Tag 26 and Tag 51", () => {
     const payload = generateQrisPayload({
       amount: 75000,
       invoiceNumber: "INV-2026-TEST",
+      nmid: "ID1020030040050",
     });
 
     expect(payload.startsWith("000201")).toBe(true);
+    expect(payload).toContain("26"); // Acquirer info tag
+    expect(payload).toContain("936000140000000001"); // ASPI National Acquirer Switch PAN
+    expect(payload).toContain("51"); // ASPI Domestic Central Repository tag
+    expect(payload).toContain("ID.CO.QRIS.WWW"); // ASPI Reverse Domain
+    expect(payload).toContain("ID1020030040050"); // NMID
     expect(payload).toContain("5303360"); // Currency IDR
     expect(payload).toContain("540575000"); // Amount 75000
     expect(payload).toContain("5802ID"); // Country ID
@@ -76,6 +82,20 @@ describe("QRIS Ledger & Payout Workflow", () => {
     expect(disb.fee).toBe(2500);
     expect(disb.netAmount).toBe(97500);
     expect(qrisLedger.getState().availableBalance).toBe(initial.availableBalance - amount);
+  });
+
+  it("handles string formatted amounts correctly (e.g. 500.000)", () => {
+    const initial = qrisLedger.getState();
+    const disb = qrisLedger.withdraw({
+      method: "dana",
+      destinationName: "Test String Amount",
+      destinationAccount: "081299990000",
+      amount: "50.000",
+    });
+
+    expect(disb.grossAmount).toBe(50000);
+    expect(disb.netAmount).toBe(50000);
+    expect(qrisLedger.getState().availableBalance).toBe(initial.availableBalance - 50000);
   });
 
   it("rejects withdrawals exceeding available balance", () => {

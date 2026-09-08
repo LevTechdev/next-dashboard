@@ -84,8 +84,9 @@ export default function OrderQrisCheckoutPage() {
     setQrisString(payload);
 
     QRCode.toDataURL(payload, {
-      margin: 1,
-      width: 240,
+      margin: 2,
+      width: 280,
+      errorCorrectionLevel: "H",
       color: {
         dark: "#09090b",
         light: "#ffffff",

@@ -480,25 +480,39 @@ export function FunnelConversionIntelligence() {
                 <CardDescription className="text-xs">{t("sankeySubHeader")}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 overflow-x-auto">
-                {/* Interactive link hover status bar */}
-                {hoveredLink && (
-                  <div className="mb-3 px-3.5 py-2 rounded-lg bg-slate-900/95 dark:bg-slate-800/95 text-white text-xs flex flex-wrap items-center justify-between gap-2 shadow-md border border-slate-700/80 animate-in fade-in duration-150">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sky-400">{hoveredLink.source}</span>
-                      <ArrowRight className="h-3 w-3 text-slate-400" />
-                      <span className="font-semibold text-slate-100">{hoveredLink.target}</span>
+                {/* Interactive link hover status bar with fixed height to prevent layout shifts & jitter */}
+                <div className="h-10 mb-3 flex items-center">
+                  {hoveredLink ? (
+                    <div className="w-full px-3.5 py-2 rounded-lg bg-slate-900/95 dark:bg-slate-800/95 text-white text-xs flex flex-wrap items-center justify-between gap-2 shadow-md border border-slate-700/80 animate-in fade-in duration-100">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sky-400">{hoveredLink.source}</span>
+                        <ArrowRight className="h-3 w-3 text-slate-400" />
+                        <span className="font-semibold text-slate-100">{hoveredLink.target}</span>
+                      </div>
+                      <div className="flex items-center gap-3 font-mono text-[11px]">
+                        <span>
+                          {t("sankeyFlowTooltipVolume")}:{" "}
+                          <strong className="text-white">
+                            {hoveredLink.value.toLocaleString()}
+                          </strong>
+                        </span>
+                        {hoveredLink.rate !== undefined && (
+                          <span className="text-emerald-400 font-bold">({hoveredLink.rate}%)</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 font-mono text-[11px]">
-                      <span>
-                        {t("sankeyFlowTooltipVolume")}:{" "}
-                        <strong className="text-white">{hoveredLink.value.toLocaleString()}</strong>
+                  ) : (
+                    <div className="w-full px-3.5 py-2 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Share2 className="h-3.5 w-3.5 text-sky-500/70" />
+                        {t("sankeyHoverInstruction")}
                       </span>
-                      {hoveredLink.rate !== undefined && (
-                        <span className="text-emerald-400 font-bold">({hoveredLink.rate}%)</span>
-                      )}
+                      <span className="text-[11px] font-mono opacity-70">
+                        {t("sankeyHoverHint")}
+                      </span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <div className="min-w-[760px]">
                   {(() => {

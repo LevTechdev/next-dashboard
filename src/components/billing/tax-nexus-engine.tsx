@@ -113,7 +113,7 @@ export function TaxNexusEngine() {
             <div className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 mt-2 font-mono">
               {activeNexusCount}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Active tax remittance obligations</p>
+            <p className="text-[11px] text-slate-500 mt-1">{t("kpiActiveSub")}</p>
           </CardContent>
         </Card>
 
@@ -130,7 +130,7 @@ export function TaxNexusEngine() {
             <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 mt-2 font-mono">
               {approachingCount}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Exceeding 75% of statutory threshold</p>
+            <p className="text-[11px] text-slate-500 mt-1">{t("kpiApproachingSub")}</p>
           </CardContent>
         </Card>
 
@@ -150,7 +150,7 @@ export function TaxNexusEngine() {
             >
               {formatMoney(89400)}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Current quarter tax reserve</p>
+            <p className="text-[11px] text-slate-500 mt-1">{t("kpiLiabilitySub")}</p>
           </CardContent>
         </Card>
 
@@ -167,7 +167,7 @@ export function TaxNexusEngine() {
             <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2 font-mono">
               {jurisdictions.length}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Automated economic nexus radar</p>
+            <p className="text-[11px] text-slate-500 mt-1">{t("kpiMonitoredSub")}</p>
           </CardContent>
         </Card>
       </div>
@@ -378,14 +378,10 @@ export function TaxNexusEngine() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="DIGITAL_SAAS">Cloud SaaS / Digital Services</SelectItem>
-                        <SelectItem value="PHYSICAL_GOODS">
-                          Physical Hardware / Merchandise
-                        </SelectItem>
-                        <SelectItem value="CONSULTING">
-                          Professional Advisory & Implementation
-                        </SelectItem>
-                        <SelectItem value="B2B_EXEMPT">B2B Cross-Border Reverse Charge</SelectItem>
+                        <SelectItem value="DIGITAL_SAAS">{t("catDigitalSaas")}</SelectItem>
+                        <SelectItem value="PHYSICAL_GOODS">{t("catPhysicalGoods")}</SelectItem>
+                        <SelectItem value="CONSULTING">{t("catConsulting")}</SelectItem>
+                        <SelectItem value="B2B_EXEMPT">{t("catB2bExempt")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -500,12 +496,16 @@ export function TaxNexusEngine() {
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-border/60 text-slate-500">
                     <tr>
-                      <th className="py-2.5 px-3 text-left font-medium">Quarter / Period</th>
-                      <th className="py-2.5 px-3 text-left font-medium">Gross Taxable Sales</th>
-                      <th className="py-2.5 px-3 text-left font-medium">Tax Collected</th>
-                      <th className="py-2.5 px-3 text-left font-medium">Jurisdictions</th>
-                      <th className="py-2.5 px-3 text-left font-medium">Filing Deadline</th>
-                      <th className="py-2.5 px-3 text-right font-medium">Remittance Status</th>
+                      <th className="py-2.5 px-3 text-left font-medium">{t("quarterPeriodCol")}</th>
+                      <th className="py-2.5 px-3 text-left font-medium">{t("grossTaxableCol")}</th>
+                      <th className="py-2.5 px-3 text-left font-medium">{t("taxCollectedCol")}</th>
+                      <th className="py-2.5 px-3 text-left font-medium">{t("jurisdictionsCol")}</th>
+                      <th className="py-2.5 px-3 text-left font-medium">
+                        {t("filingDeadlineCol")}
+                      </th>
+                      <th className="py-2.5 px-3 text-right font-medium">
+                        {t("remittanceStatusCol")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -530,7 +530,7 @@ export function TaxNexusEngine() {
                         </td>
 
                         <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-400">
-                          {filing.jurisdictionCount} tax authorities
+                          {t("taxAuthorities", { count: filing.jurisdictionCount })}
                         </td>
 
                         <td className="py-3 px-3 font-mono text-slate-700 dark:text-slate-300">
@@ -547,7 +547,9 @@ export function TaxNexusEngine() {
                                 : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-400",
                             )}
                           >
-                            {filing.status === "REMITTED" ? "PAID & REMITTED" : "READY TO FILE"}
+                            {filing.status === "REMITTED"
+                              ? t("statusPaidRemitted")
+                              : t("statusReadyToFile")}
                           </Badge>
                         </td>
                       </tr>

@@ -26,11 +26,12 @@ import {
   Wallet,
   Landmark,
   Sliders,
+  Building2,
 } from "lucide-react";
 import { TaxNexusEngine } from "@/components/billing/tax-nexus-engine";
 import { QrisPaymentSystem } from "@/components/billing/qris-payment-system";
 import { InvoiceCustomizerDialog } from "@/components/billing/invoice-customizer-dialog";
-import { QrisBrandIcon } from "@/components/ui/brand-icons";
+import { QrisBrandIcon, DanaBrandIcon } from "@/components/ui/brand-icons";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1343,18 +1344,52 @@ function PaymentTab() {
           <CardDescription>{tbilling("localPaymentsDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {PAYMENT_CHANNELS.map((ch) => (
-              <div
-                key={ch}
-                className="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300"
-              >
-                <Wallet className="h-4 w-4 text-indigo-500 shrink-0" />
-                {tbilling(channelKey(ch))}
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {PAYMENT_CHANNELS.map((ch) => {
+              const renderIcon = () => {
+                switch (ch) {
+                  case "dana":
+                    return <DanaBrandIcon size={18} />;
+                  case "qris":
+                    return <QrisBrandIcon size={18} className="text-primary" />;
+                  case "gopay":
+                    return <Wallet className="h-4 w-4 text-primary" />;
+                  case "bank_transfer":
+                    return <Building2 className="h-4 w-4 text-primary" />;
+                  case "credit_card":
+                    return <CreditCardIcon size={16} className="text-primary" />;
+                  default:
+                    return <Wallet className="h-4 w-4 text-primary" />;
+                }
+              };
+
+              return (
+                <div
+                  key={ch}
+                  className="flex items-center gap-3 rounded-lg border border-border/70 bg-card hover:border-primary/40 hover:bg-accent/30 transition-all p-3 text-sm group"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 group-hover:bg-primary/15 transition-colors shrink-0">
+                    {renderIcon()}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs text-foreground">
+                      {tbilling(channelKey(ch))}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {ch === "qris"
+                        ? "Instant QRIS ASPI"
+                        : ch === "bank_transfer"
+                          ? "Virtual Account BI-FAST"
+                          : ch === "dana" || ch === "gopay"
+                            ? "E-Wallet Direct Debit"
+                            : "Visa / Mastercard 3DS"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <p className="text-xs text-gray-400 mt-3">{tbilling("localPaymentsNote")}</p>
+          <p className="text-xs text-muted-foreground mt-3">{tbilling("localPaymentsNote")}</p>
         </CardContent>
       </Card>
     </div>

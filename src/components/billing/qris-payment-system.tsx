@@ -80,6 +80,7 @@ import type { QrisTransaction, WithdrawalDisbursement, WithdrawalMethod } from "
 
 export function QrisPaymentSystem() {
   const t = useTranslations("billing");
+  const tqris = useTranslations("qris");
   const tcommon = useTranslations("common");
 
   // Ledger state
@@ -141,8 +142,18 @@ export function QrisPaymentSystem() {
           setPendingBalance(data.pendingBalance);
           setTotalWithdrawn(data.totalWithdrawn);
           setTotalInbound(data.totalInbound);
-          setTransactions(data.transactions || []);
+          const txs = data.transactions || [];
+          setTransactions(txs);
           setDisbursements(data.disbursements || []);
+
+          setCurrentTx((prev) => {
+            if (prev) {
+              const matching = txs.find((t: QrisTransaction) => t.id === prev.id);
+              return matching || prev;
+            }
+            const pending = txs.find((t: QrisTransaction) => t.status === "PENDING");
+            return pending || txs[0] || null;
+          });
         }
       }
     } catch (e) {
@@ -271,7 +282,10 @@ export function QrisPaymentSystem() {
             });
 
             toast.success(
-              `⚡ Payment Verified! Rp ${payload.transaction.amount.toLocaleString("id-ID")} received via ${payload.transaction.sourceBank}`,
+              tqris("paymentVerifiedToast", {
+                amt: payload.transaction.amount.toLocaleString("id-ID"),
+                bank: payload.transaction.sourceBank,
+              }),
             );
           }
         } catch {
@@ -305,10 +319,11 @@ export function QrisPaymentSystem() {
   useEffect(() => {
     if (currentTx?.qrisPayload) {
       QRCode.toDataURL(currentTx.qrisPayload, {
-        width: 300,
-        margin: 1,
+        width: 360,
+        margin: 2,
+        errorCorrectionLevel: "H",
         color: {
-          dark: "#0F172A",
+          dark: "#09090b",
           light: "#FFFFFF",
         },
       })
@@ -349,10 +364,10 @@ export function QrisPaymentSystem() {
 
   // Initialize first QR code on mount
   useEffect(() => {
-    if (!currentTx && !generatingQr) {
+    if (!currentTx && !generatingQr && !loading && transactions.length === 0) {
       handleGenerateQris(150000);
     }
-  }, []);
+  }, [currentTx, generatingQr, loading, transactions.length]);
 
   // Handle Simulate Bank Payment
   const handleSimulatePayment = async () => {
@@ -388,7 +403,7 @@ export function QrisPaymentSystem() {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     setWithdrawError("");
-    const amt = Number(withdrawAmount);
+    const amt = Number(withdrawAmount.toString().replace(/[^0-9]/g, ""));
 
     if (!amt || amt <= 0) {
       setWithdrawError("Please enter a valid withdrawal amount");
@@ -457,70 +472,63 @@ export function QrisPaymentSystem() {
   return (
     <div className="space-y-6">
       {/* Top Banner / Hero Overview */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 p-6 text-white shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl border border-red-500/30 bg-card p-6 text-card-foreground shadow-sm">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <QrisBrandIcon size={14} className="text-white" />
-              <span>Stand-Alone QRIS & Direct Bank Payout Engine</span>
-              <span className="rounded bg-emerald-400 px-1.5 py-0.2 text-[10px] font-bold text-gray-900">
-                Independent (No Midtrans)
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary">
+              <QrisBrandIcon size={14} className="text-primary" />
+              <span>{tqris("heroBadge")}</span>
+              <span className="rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
+                {tqris("heroBadgeSub")}
               </span>
             </div>
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-              QRIS Instant Payment & Multi-Channel Income Settlement
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl text-foreground">
+              {tqris("heroTitle")}
             </h2>
-            <p className="max-w-2xl text-sm text-red-100">
-              Receive real-money payments from 30+ Indonesian banks & e-wallets (BCA, Mandiri, BRI,
-              BNI, DANA, GoPay, OVO). Withdraw your store earnings directly to DANA, Bank Transfer,
-              Visa/Mastercard OCT, Alipay, or LinkAja with instant real-time ledger clearance.
-            </p>
+            <p className="max-w-2xl text-sm text-muted-foreground">{tqris("heroDesc")}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsBankDirectoryOpen(true)}
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+              className="cursor-pointer"
             >
-              <Landmark className="mr-1.5 h-3.5 w-3.5" />
-              Direktori Bank (4 Wilayah)
+              <Landmark className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              {tqris("bankDirectoryBtn")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsStandeeOpen(true)}
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+              className="cursor-pointer"
             >
-              <Printer className="mr-1.5 h-3.5 w-3.5" />
-              Counter Standee (A5/A6)
+              <Printer className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              {tqris("standeeBtn")}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchLedger}
               disabled={refreshing}
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+              className="cursor-pointer"
             >
               <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", refreshing && "animate-spin")} />
-              Sync Ledger
+              {tqris("syncLedgerBtn")}
             </Button>
             <Button
               onClick={() => {
                 setWithdrawError("");
                 setIsWithdrawOpen(true);
               }}
-              className="bg-white text-red-700 shadow-md hover:bg-red-50 font-semibold"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs cursor-pointer"
             >
-              <ArrowDownRight className="mr-1.5 h-4 w-4 text-red-600" />
-              Withdraw Incomes
+              <ArrowDownRight className="mr-1.5 h-4 w-4" />
+              {tqris("withdrawBtn")}
             </Button>
           </div>
         </div>
-
-        {/* Decorative background glow */}
-        <div className="absolute -right-10 -bottom-10 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
       </div>
 
       {/* Balance & Ledger KPI Cards */}
@@ -530,7 +538,7 @@ export function QrisPaymentSystem() {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Available Income
+                {tqris("availableIncome")}
               </span>
               <div className="rounded-lg bg-emerald-100 dark:bg-emerald-950/50 p-2 text-emerald-600">
                 <Wallet className="h-4 w-4" />
@@ -543,7 +551,7 @@ export function QrisPaymentSystem() {
             </div>
             <p className="mt-1 flex items-center text-xs text-emerald-600 font-medium">
               <CheckCircle2 className="mr-1 h-3 w-3" />
-              Ready for immediate payout
+              {tqris("readyPayout")}
             </p>
           </CardContent>
         </Card>
@@ -553,7 +561,7 @@ export function QrisPaymentSystem() {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Pending Settlement
+                {tqris("pendingSettlement")}
               </span>
               <div className="rounded-lg bg-amber-100 dark:bg-amber-950/50 p-2 text-amber-600">
                 <Clock className="h-4 w-4" />
@@ -566,7 +574,7 @@ export function QrisPaymentSystem() {
             </div>
             <p className="mt-1 flex items-center text-xs text-amber-600 font-medium">
               <Clock className="mr-1 h-3 w-3" />
-              Unpaid customer dynamic QR
+              {tqris("unpaidDynamicQr")}
             </p>
           </CardContent>
         </Card>
@@ -576,7 +584,7 @@ export function QrisPaymentSystem() {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total Inbound QRIS
+                {tqris("totalInbound")}
               </span>
               <div className="rounded-lg bg-blue-100 dark:bg-blue-950/50 p-2 text-blue-600">
                 <ArrowUpRight className="h-4 w-4" />
@@ -587,18 +595,18 @@ export function QrisPaymentSystem() {
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {formatCurrency(totalInbound, "IDR")}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Lifetime sales via QRIS</p>
+            <p className="mt-1 text-xs text-muted-foreground">{tqris("lifetimeSales")}</p>
           </CardContent>
         </Card>
 
         {/* Total Withdrawn */}
-        <Card className="border-l-4 border-l-purple-500 shadow-sm">
+        <Card className="border-l-4 border-l-primary shadow-sm">
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total Withdrawn
+                {tqris("totalWithdrawn")}
               </span>
-              <div className="rounded-lg bg-purple-100 dark:bg-purple-950/50 p-2 text-purple-600">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
                 <ArrowDownRight className="h-4 w-4" />
               </div>
             </div>
@@ -607,7 +615,7 @@ export function QrisPaymentSystem() {
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {formatCurrency(totalWithdrawn, "IDR")}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Disbursed to Bank & DANA</p>
+            <p className="mt-1 text-xs text-muted-foreground">{tqris("lifetimePayouts")}</p>
           </CardContent>
         </Card>
       </div>
@@ -909,11 +917,11 @@ export function QrisPaymentSystem() {
           <TabsList>
             <TabsTrigger value="inbound" className="gap-2">
               <ArrowUpRight className="h-4 w-4 text-emerald-600" />
-              Inbound Payments ({transactions.length})
+              {tqris("tabInbound")} ({transactions.length})
             </TabsTrigger>
             <TabsTrigger value="disbursements" className="gap-2">
               <ArrowDownRight className="h-4 w-4 text-purple-600" />
-              Income Withdrawals ({disbursements.length})
+              {tqris("tabDisbursements")} ({disbursements.length})
             </TabsTrigger>
           </TabsList>
 
@@ -944,13 +952,13 @@ export function QrisPaymentSystem() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Source Provider</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>RRN</TableHead>
-                      <TableHead>Date / Time</TableHead>
+                      <TableHead>{tqris("colInvoice")}</TableHead>
+                      <TableHead>{tqris("colCustomer")}</TableHead>
+                      <TableHead>{tqris("colProvider")}</TableHead>
+                      <TableHead>{tqris("colAmount")}</TableHead>
+                      <TableHead>{tqris("colStatus")}</TableHead>
+                      <TableHead>{tqris("colRrn")}</TableHead>
+                      <TableHead>{tqris("colDateTime")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -962,7 +970,18 @@ export function QrisPaymentSystem() {
                       </TableRow>
                     ) : (
                       transactions.map((tx) => (
-                        <TableRow key={tx.id}>
+                        <TableRow
+                          key={tx.id}
+                          className={cn(
+                            "cursor-pointer hover:bg-muted/50 transition-colors",
+                            currentTx?.id === tx.id &&
+                              "bg-primary/5 font-semibold border-l-2 border-l-primary",
+                          )}
+                          onClick={() => {
+                            setCurrentTx(tx);
+                            toast.info(tqris("loadedToTerminal", { inv: tx.invoiceNumber }));
+                          }}
+                        >
                           <TableCell className="font-mono text-xs font-semibold">
                             {tx.invoiceNumber}
                           </TableCell>

@@ -114,12 +114,20 @@ export function generateQrisPayload(params: {
   // Tag 01: Point of Initiation Method (12 = Dynamic, 11 = Static)
   payload += formatTLV("01", "12");
 
-  // Tag 26: Merchant Account Information (NMID, Sub-tag 00 GUI, Sub-tag 01 NMID, Sub-tag 02 Criteria)
-  const tag26_00 = formatTLV("00", "ID.CO.QRIS.WWW");
-  const tag26_01 = formatTLV("01", nmid);
-  const tag26_02 = formatTLV("02", "UMI"); // Usaha Mikro / SME
-  const tag26Value = tag26_00 + tag26_01 + tag26_02;
-  payload += formatTLV("26", tag26Value);
+  // Tag 26: Merchant Account Information - Acquirer Domain
+  // Subtag 00: Reverse Domain / GUI, Subtag 01: 18-digit National PAN, Subtag 02: Merchant ID, Subtag 03: Criteria
+  const tag26_00 = formatTLV("00", "IDS.CO.QRIS.WWW");
+  const tag26_01 = formatTLV("01", "936000140000000001"); // 18-digit ASPI Acquirer Switch PAN (BCA/BI-FAST)
+  const tag26_02 = formatTLV("02", nmid);
+  const tag26_03 = formatTLV("03", "UMI"); // Usaha Mikro (SME)
+  payload += formatTLV("26", tag26_00 + tag26_01 + tag26_02 + tag26_03);
+
+  // Tag 51: ASPI Domestic Central Repository (Required by BCA, Mandiri, BRI, BNI & E-Wallets)
+  // Subtag 00: Globally Unique Identifier, Subtag 02: NMID, Subtag 03: Criteria
+  const tag51_00 = formatTLV("00", "ID.CO.QRIS.WWW");
+  const tag51_02 = formatTLV("02", nmid);
+  const tag51_03 = formatTLV("03", "UMI");
+  payload += formatTLV("51", tag51_00 + tag51_02 + tag51_03);
 
   // Tag 52: Merchant Category Code (5411 = Grocery / Retail)
   payload += formatTLV("52", "5411");
@@ -142,10 +150,10 @@ export function generateQrisPayload(params: {
   // Tag 61: Postal Code
   payload += formatTLV("61", postalCode);
 
-  // Tag 62: Additional Data Field Template (Invoice number, reference)
+  // Tag 62: Additional Data Field Template (Invoice number, reference, terminal)
   const tag62_01 = formatTLV("01", invoiceNumber.slice(0, 25));
   const tag62_05 = formatTLV("05", invoiceNumber.slice(-8));
-  const tag62_07 = formatTLV("07", "POS01");
+  const tag62_07 = formatTLV("07", "A01");
   payload += formatTLV("62", tag62_01 + tag62_05 + tag62_07);
 
   // Tag 63: CRC checksum placeholder
@@ -321,7 +329,7 @@ class QrisLedger {
     method: WithdrawalMethod;
     destinationName: string;
     destinationAccount: string;
-    amount: number;
+    amount: number | string;
     bankCode?: string;
     cardType?: "visa" | "mastercard";
     notes?: string;
@@ -329,8 +337,13 @@ class QrisLedger {
     const { method, destinationName, destinationAccount, amount, bankCode, cardType, notes } =
       params;
 
-    if (amount <= 0) throw new Error("Withdrawal amount must be greater than zero");
-    if (amount > this.availableBalance) {
+    const numericAmount =
+      typeof amount === "string" ? Number(String(amount).replace(/[^0-9]/g, "")) : Number(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      throw new Error("Withdrawal amount must be greater than zero");
+    }
+    if (numericAmount > this.availableBalance) {
       throw new Error(
         `Insufficient balance. Available: Rp ${this.availableBalance.toLocaleString("id-ID")}`,
       );
@@ -342,7 +355,7 @@ class QrisLedger {
     if (method === "card_oct") fee = 5000;
     if (method === "alipay") fee = 3500;
 
-    const netAmount = amount - fee;
+    const netAmount = numericAmount - fee;
     if (netAmount <= 0)
       throw new Error("Net withdrawal amount must be greater than zero after fees");
 
@@ -380,7 +393,7 @@ class QrisLedger {
       destinationAccount,
       bankCode,
       cardType,
-      grossAmount: amount,
+      grossAmount: numericAmount,
       fee,
       netAmount,
       status: "COMPLETED",
@@ -392,8 +405,8 @@ class QrisLedger {
       destinationAmount,
     };
 
-    this.availableBalance -= amount;
-    this.totalWithdrawn += amount;
+    this.availableBalance -= numericAmount;
+    this.totalWithdrawn += numericAmount;
     this.disbursements.unshift(disbursement);
 
     qrisEmitter.emit("withdrawal_completed", {
