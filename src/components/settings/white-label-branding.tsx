@@ -15,6 +15,7 @@ import {
   Loader2,
   FileText,
   Building,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,19 +23,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAppearance } from "@/hooks/use-appearance";
 
 const THEME_PRESETS = [
-  { name: "Indigo Core", hex: "#4f46e5", bg: "bg-indigo-600" },
-  { name: "Emerald Growth", hex: "#059669", bg: "bg-emerald-600" },
-  { name: "Vivid Rose", hex: "#e11d48", bg: "bg-rose-600" },
-  { name: "Warm Amber", hex: "#d97706", bg: "bg-amber-600" },
-  { name: "Royal Violet", hex: "#7c3aed", bg: "bg-purple-600" },
-  { name: "Ocean Cyan", hex: "#0284c7", bg: "bg-sky-600" },
+  { key: "presetIndigo", hex: "#4f46e5", bg: "bg-indigo-600" },
+  { key: "presetEmerald", hex: "#059669", bg: "bg-emerald-600" },
+  { key: "presetRose", hex: "#e11d48", bg: "bg-rose-600" },
+  { key: "presetAmber", hex: "#d97706", bg: "bg-amber-600" },
+  { key: "presetViolet", hex: "#7c3aed", bg: "bg-purple-600" },
+  { key: "presetSky", hex: "#0284c7", bg: "bg-sky-600" },
 ];
 
 export function WhiteLabelBranding() {
   const t = useTranslations("branding");
   const tcommon = useTranslations("common");
+  const { settings: appearanceSettings } = useAppearance();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,11 +141,30 @@ export function WhiteLabelBranding() {
     document.documentElement.style.setProperty("--primary", hex);
   };
 
+  const ACCENT_HEX_MAP: Record<string, string> = {
+    default: "#0ea5e9",
+    green: "#059669",
+    indigo: "#4f46e5",
+    rose: "#e11d48",
+    amber: "#d97706",
+  };
+
+  const handleSyncDashboardTheme = () => {
+    let activeHex = "#0ea5e9";
+    if (appearanceSettings?.accent === "custom" && appearanceSettings.customColor) {
+      activeHex = appearanceSettings.customColor;
+    } else if (appearanceSettings?.accent && ACCENT_HEX_MAP[appearanceSettings.accent]) {
+      activeHex = ACCENT_HEX_MAP[appearanceSettings.accent];
+    }
+    handleSelectColor(activeHex);
+    toast.success(t("syncWithTheme"));
+  };
+
   if (loading) {
     return (
-      <Card>
+      <Card className="border-gray-200 dark:border-gray-800">
         <CardContent className="p-8 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -152,7 +174,7 @@ export function WhiteLabelBranding() {
     <Card className="border-gray-200 dark:border-gray-800">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Palette className="h-5 w-5" />
           </div>
           <div>
@@ -168,7 +190,7 @@ export function WhiteLabelBranding() {
           <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/40 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-indigo-500" />
+                <Globe className="h-4 w-4 text-primary" />
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   {t("customDomain")}
                 </span>
@@ -195,7 +217,7 @@ export function WhiteLabelBranding() {
                 <Input
                   value={branding.customDomain}
                   onChange={(e) => setBranding({ ...branding, customDomain: e.target.value })}
-                  placeholder="dashboard.yourbrand.com"
+                  placeholder={t("customDomainPlaceholder")}
                   className="font-mono text-xs"
                 />
               </div>
@@ -204,7 +226,7 @@ export function WhiteLabelBranding() {
                 variant="outline"
                 onClick={handleVerifyDomain}
                 disabled={verifying}
-                className="shrink-0 gap-1.5 text-xs font-semibold"
+                className="shrink-0 gap-1.5 text-xs font-semibold h-9 px-3.5"
               >
                 {verifying && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {t("verifyDns")}
@@ -213,22 +235,22 @@ export function WhiteLabelBranding() {
 
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-xs">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">CNAME:</span>
-                <code className="font-mono text-indigo-600 dark:text-indigo-400">
-                  {branding.cnameTarget}
-                </code>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  {t("cnameLabel")}
+                </span>
+                <code className="font-mono text-primary font-semibold">{branding.cnameTarget}</code>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleCopyCname}
-                className="h-7 px-2 text-xs gap-1"
+                className="h-8 px-2.5 text-xs gap-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 {copied ? (
-                  <Check className="h-3 w-3 text-emerald-500" />
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
-                  <Copy className="h-3 w-3" />
+                  <Copy className="h-3.5 w-3.5 text-gray-500" />
                 )}
                 <span>{copied ? t("copied") : t("copy")}</span>
               </Button>
@@ -244,7 +266,7 @@ export function WhiteLabelBranding() {
               <Input
                 value={branding.brandName}
                 onChange={(e) => setBranding({ ...branding, brandName: e.target.value })}
-                placeholder="e.g. Apex Global"
+                placeholder={t("brandNamePlaceholder")}
               />
             </div>
 
@@ -256,7 +278,7 @@ export function WhiteLabelBranding() {
                 <Input
                   value={branding.logoUrl}
                   onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
-                  placeholder="https://yourbrand.com/logo.svg"
+                  placeholder={t("logoUrlPlaceholder")}
                   className="text-xs font-mono"
                 />
                 <div className="h-9 w-9 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center bg-gray-50 dark:bg-gray-900 shrink-0">
@@ -267,11 +289,25 @@ export function WhiteLabelBranding() {
           </div>
 
           {/* Theme Color Accents */}
-          <div>
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              {t("themeColorAccent")}
-            </label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                {t("themeColorAccent")}
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleSyncDashboardTheme}
+                className="h-7 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 gap-1.5"
+                title={t("syncWithTheme")}
+              >
+                <RefreshCw className="h-3 w-3" />
+                <span>{t("syncWithTheme")}</span>
+              </Button>
+            </div>
+
             <div className="flex flex-wrap gap-2.5 items-center">
               {THEME_PRESETS.map((p) => {
                 const isSelected = branding.primaryColor.toLowerCase() === p.hex.toLowerCase();
@@ -283,23 +319,26 @@ export function WhiteLabelBranding() {
                     className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all",
                       isSelected
-                        ? "border-gray-900 dark:border-white shadow-sm ring-1 ring-gray-900 dark:ring-white"
-                        : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary text-primary font-semibold"
+                        : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300",
                     )}
                   >
                     <span className={cn("h-3 w-3 rounded-full shrink-0", p.bg)} />
-                    <span>{p.name}</span>
+                    <span>{t(p.key as any)}</span>
                   </button>
                 );
               })}
 
-              <div className="flex items-center gap-1.5 ml-auto">
-                <span className="text-xs text-gray-400">Custom:</span>
+              <div className="flex items-center gap-2 ml-auto p-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium pl-1">
+                  {t("customColor")}
+                </span>
                 <input
                   type="color"
                   value={branding.primaryColor}
                   onChange={(e) => handleSelectColor(e.target.value)}
-                  className="h-8 w-8 rounded border border-gray-200 cursor-pointer bg-transparent"
+                  className="h-7 w-7 rounded border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent"
+                  aria-label={t("customColor")}
                 />
               </div>
             </div>
@@ -308,7 +347,7 @@ export function WhiteLabelBranding() {
           {/* Invoice & Email Templates Customization */}
           <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-gray-100">
-              <FileText className="h-3.5 w-3.5 text-indigo-500" />
+              <FileText className="h-3.5 w-3.5 text-primary" />
               {t("invoiceNotes")}
             </div>
 
@@ -319,7 +358,7 @@ export function WhiteLabelBranding() {
               <Input
                 value={branding.invoiceHeaderNote}
                 onChange={(e) => setBranding({ ...branding, invoiceHeaderNote: e.target.value })}
-                placeholder="Payment terms, bank details, or thank-you note..."
+                placeholder={t("invoiceHeaderPlaceholder")}
               />
             </div>
 
@@ -330,7 +369,7 @@ export function WhiteLabelBranding() {
               <Input
                 value={branding.invoiceFooterNote}
                 onChange={(e) => setBranding({ ...branding, invoiceFooterNote: e.target.value })}
-                placeholder="Tax ID, legal jurisdiction, and corporate registration..."
+                placeholder={t("invoiceFooterPlaceholder")}
               />
             </div>
           </div>
@@ -339,10 +378,10 @@ export function WhiteLabelBranding() {
             <Button
               type="submit"
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-semibold shadow-sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-semibold shadow-sm h-9 px-4"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t("saveBranding")}
+              {saving ? t("saving") : t("saveBranding")}
             </Button>
           </div>
         </form>

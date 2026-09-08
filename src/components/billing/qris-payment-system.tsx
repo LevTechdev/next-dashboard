@@ -28,6 +28,7 @@ import {
 import { BankCardVisual } from "@/components/ui/bank-card-visual";
 import { EmoneyWalletPass } from "@/components/ui/emoney-wallet-pass";
 import { BankDirectoryDialog } from "@/components/billing/bank-directory-dialog";
+import { PaymentGatewayWebhookSimulator } from "@/components/billing/payment-gateway-webhook-simulator";
 import { identifyAccountInput, AccountDetectionResult } from "@/lib/account-validator";
 import { getBankByCode, IndonesianBank } from "@/lib/indonesian-banks";
 import type { Beneficiary } from "@/lib/beneficiary-store";
@@ -507,6 +508,10 @@ export function QrisPaymentSystem() {
               <Printer className="mr-1.5 h-3.5 w-3.5 text-primary" />
               {tqris("standeeBtn")}
             </Button>
+            <PaymentGatewayWebhookSimulator
+              onSimulationSuccess={fetchLedger}
+              pendingTransactions={transactions}
+            />
             <Button
               variant="outline"
               size="sm"

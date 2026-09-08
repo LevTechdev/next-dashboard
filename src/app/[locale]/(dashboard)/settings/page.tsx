@@ -61,6 +61,7 @@ import { useConfirm } from "@/components/ui/confirm-provider";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
 import { WhiteLabelBranding } from "@/components/settings/white-label-branding";
+import { PaymentGatewayWebhookSimulator } from "@/components/billing/payment-gateway-webhook-simulator";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -927,10 +928,10 @@ export default function SettingsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1.5"
+                className="gap-2 h-9 px-3.5 text-xs font-semibold"
                 onClick={() => setShowCreateKey(true)}
               >
-                <Plus className="h-3.5 w-3.5" /> {tsettings("apiKeyCreate")}
+                <Plus className="h-4 w-4" /> {tsettings("apiKeyCreate")}
               </Button>
             </div>
           </CardHeader>
@@ -969,45 +970,50 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-gray-400">
                       {key.lastUsedAt ? key.lastUsedAt : tsettings("apiKeyNeverUsed")}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                      className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                       onClick={() => handleCopyKey(key)}
                       title="Copy prefix"
+                      aria-label="Copy prefix"
                     >
                       {copiedKeyId === key.id ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        <Check className="h-4 w-4 text-emerald-500" />
                       ) : (
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-4 w-4" />
                       )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "h-7 w-7",
+                        "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
                         key.status === "ACTIVE"
-                          ? "text-orange-500 hover:text-orange-600"
+                          ? "text-amber-500 hover:text-amber-600"
                           : "text-emerald-500 hover:text-emerald-600",
                       )}
                       onClick={() => handleRevokeApiKey(key.id)}
                       title={key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"}
+                      aria-label={
+                        key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"
+                      }
                     >
-                      <RefreshCw className="h-3.5 w-3.5" />
+                      <RefreshCw className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 text-red-400 hover:text-red-600"
+                      className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                       onClick={() => handleDeleteApiKey(key.id)}
                       title={tsettings("apiKeyRevoke")}
+                      aria-label={tsettings("apiKeyRevoke")}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -1027,9 +1033,17 @@ export default function SettingsPage() {
                   <p className="text-xs text-gray-500 mt-0.5">{tsettings("webhooksDesc")}</p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={openCreateWebhook}>
-                <Plus className="h-3.5 w-3.5" /> {tsettings("webhookAdd")}
-              </Button>
+              <div className="flex items-center gap-2">
+                <PaymentGatewayWebhookSimulator onSimulationSuccess={fetchWebhooks} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 h-9 px-3.5 text-xs font-semibold"
+                  onClick={openCreateWebhook}
+                >
+                  <Plus className="h-4 w-4" /> {tsettings("webhookAdd")}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -1051,8 +1065,10 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
-                          wh.status === "ACTIVE" ? "bg-emerald-500" : "bg-gray-300",
+                          "w-2.5 h-2.5 rounded-full shrink-0",
+                          wh.status === "ACTIVE"
+                            ? "bg-emerald-500 shadow-sm"
+                            : "bg-gray-300 dark:bg-gray-600",
                         )}
                       />
                       <div className="min-w-0">
@@ -1067,51 +1083,64 @@ export default function SettingsPage() {
                         <p className="text-xs text-gray-500 font-mono truncate">{wh.url}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 text-blue-500 hover:text-blue-600"
+                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
                         onClick={() => handleTestWebhook(wh.id)}
                         disabled={testingWebhook === wh.id}
                         title={tsettings("webhookTest")}
+                        aria-label={tsettings("webhookTest")}
                       >
-                        <FlaskConical className="h-3.5 w-3.5" />
+                        <FlaskConical className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                        className={cn(
+                          "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+                          wh.status === "ACTIVE"
+                            ? "text-amber-500 hover:text-amber-600"
+                            : "text-emerald-500 hover:text-emerald-600",
+                        )}
                         onClick={() => handleToggleWebhook(wh)}
                         title={
                           wh.status === "ACTIVE"
                             ? tsettings("webhookPaused")
                             : tsettings("webhookActivated")
                         }
+                        aria-label={
+                          wh.status === "ACTIVE"
+                            ? tsettings("webhookPaused")
+                            : tsettings("webhookActivated")
+                        }
                       >
                         {wh.status === "ACTIVE" ? (
-                          <PowerOff className="h-3.5 w-3.5" />
+                          <PowerOff className="h-4 w-4" />
                         ) : (
-                          <Power className="h-3.5 w-3.5" />
+                          <Power className="h-4 w-4" />
                         )}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         onClick={() => openEditWebhook(wh)}
                         title="Edit"
+                        aria-label="Edit webhook"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 text-red-400 hover:text-red-600"
+                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                         onClick={() => handleDeleteWebhook(wh.id)}
                         title="Delete"
+                        aria-label="Delete webhook"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

@@ -27,6 +27,10 @@ import { execSync } from "node:child_process";
  * ~30 admin LOGINs the parallel workers generate before that spec runs.
  */
 export default function globalSetup() {
+  if (process.env.SKIP_SEED === "1") {
+    console.log("⏩ SKIP_SEED=1: Skipping global DB re-seeding.");
+    return;
+  }
   execSync("npm run db:seed", { stdio: "inherit" });
   execSync("npm run repair:audit-chain", { stdio: "inherit" });
 }

@@ -22,7 +22,7 @@ export interface QrisTransaction {
   currency: "IDR";
   customerName: string;
   sourceBank: string;
-  status: "PENDING" | "PAID" | "EXPIRED";
+  status: "PENDING" | "PAID" | "EXPIRED" | "DISPUTED";
   qrisPayload: string;
   createdAt: string;
   paidAt?: string;
@@ -317,6 +317,54 @@ class QrisLedger {
 
     qrisEmitter.emit("payment_confirmed", {
       type: "PAYMENT_CONFIRMED",
+      transaction: tx,
+      availableBalance: this.availableBalance,
+      pendingBalance: this.pendingBalance,
+    });
+
+    return tx;
+  }
+
+  public disputeTransaction(
+    transactionId: string,
+    reason: string = "Customer chargeback dispute",
+  ): QrisTransaction {
+    const tx = this.transactions.find((t) => t.id === transactionId);
+    if (!tx) throw new Error("Transaction not found");
+
+    if (tx.status === "DISPUTED") return tx;
+
+    if (tx.status === "PAID") {
+      this.availableBalance = Math.max(0, this.availableBalance - tx.amount);
+    } else if (tx.status === "PENDING") {
+      this.pendingBalance = Math.max(0, this.pendingBalance - tx.amount);
+    }
+
+    tx.status = "DISPUTED";
+    qrisEmitter.emit("transaction_disputed", {
+      type: "TRANSACTION_DISPUTED",
+      transaction: tx,
+      reason,
+      availableBalance: this.availableBalance,
+      pendingBalance: this.pendingBalance,
+    });
+
+    return tx;
+  }
+
+  public expireTransaction(transactionId: string): QrisTransaction {
+    const tx = this.transactions.find((t) => t.id === transactionId);
+    if (!tx) throw new Error("Transaction not found");
+
+    if (tx.status === "EXPIRED") return tx;
+
+    if (tx.status === "PENDING") {
+      this.pendingBalance = Math.max(0, this.pendingBalance - tx.amount);
+    }
+
+    tx.status = "EXPIRED";
+    qrisEmitter.emit("transaction_expired", {
+      type: "TRANSACTION_EXPIRED",
       transaction: tx,
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
