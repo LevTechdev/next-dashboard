@@ -22,7 +22,15 @@ import {
   Download,
   FileCheck,
   Printer,
+  Landmark,
+  Globe,
 } from "lucide-react";
+import { BankCardVisual } from "@/components/ui/bank-card-visual";
+import { EmoneyWalletPass } from "@/components/ui/emoney-wallet-pass";
+import { BankDirectoryDialog } from "@/components/billing/bank-directory-dialog";
+import { identifyAccountInput, AccountDetectionResult } from "@/lib/account-validator";
+import { getBankByCode, IndonesianBank } from "@/lib/indonesian-banks";
+import type { Beneficiary } from "@/lib/beneficiary-store";
 import { toast } from "sonner";
 import {
   Card,
@@ -113,6 +121,14 @@ export function QrisPaymentSystem() {
   // Standee Modal State
   const [isStandeeOpen, setIsStandeeOpen] = useState<boolean>(false);
 
+  // Indonesian Banking & Beneficiary State
+  const [isBankDirectoryOpen, setIsBankDirectoryOpen] = useState<boolean>(false);
+  const [savedBeneficiaries, setSavedBeneficiaries] = useState<Beneficiary[]>([]);
+  const [inquiryName, setInquiryName] = useState<string>("");
+  const [inquiryVerified, setInquiryVerified] = useState<boolean>(false);
+  const [inquiryLoading, setInquiryLoading] = useState<boolean>(false);
+  const [activeDetection, setActiveDetection] = useState<AccountDetectionResult | null>(null);
+
   // Load ledger state from API
   const fetchLedger = async () => {
     try {
@@ -137,9 +153,87 @@ export function QrisPaymentSystem() {
     }
   };
 
+  // Load saved beneficiaries from API
+  const fetchBeneficiaries = async () => {
+    try {
+      const res = await fetch("/api/billing/beneficiaries");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.beneficiaries)) {
+          setSavedBeneficiaries(data.beneficiaries);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch beneficiaries:", e);
+    }
+  };
+
   useEffect(() => {
     fetchLedger();
+    fetchBeneficiaries();
   }, []);
+
+  // Real-time detection of account/card/phone input & simulated account inquiry
+  useEffect(() => {
+    if (!destAccount.trim()) {
+      setActiveDetection(null);
+      setInquiryName("");
+      setInquiryVerified(false);
+      return;
+    }
+
+    const detection = identifyAccountInput(
+      destAccount,
+      withdrawMethod === "bank_transfer" ? bankCode : undefined,
+    );
+    setActiveDetection(detection);
+
+    // Auto-align card network if user inputs a card in card_oct mode
+    if (withdrawMethod === "card_oct" && detection.type === "bank_card") {
+      if (detection.brand === "mastercard") {
+        setCardType("mastercard");
+      } else if (detection.brand === "visa") {
+        setCardType("visa");
+      }
+    }
+
+    // Debounced real-time account name inquiry
+    const cleanDigits = destAccount.replace(/\D/g, "");
+    if (cleanDigits.length >= 8 || destAccount.includes("@")) {
+      const timer = setTimeout(async () => {
+        try {
+          setInquiryLoading(true);
+          const res = await fetch("/api/billing/beneficiaries/inquiry", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              method: withdrawMethod,
+              account: destAccount,
+              bankCode: withdrawMethod === "bank_transfer" ? bankCode : undefined,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const resName = data.registeredName || data.accountName;
+            if (data.success && resName) {
+              setInquiryName(resName);
+              setInquiryVerified(data.verified ?? false);
+              setDestName((prev) => (!prev || prev === inquiryName ? resName : prev));
+            }
+          }
+        } catch {
+          // ignore error
+        } finally {
+          setInquiryLoading(false);
+        }
+      }, 400);
+
+      return () => clearTimeout(timer);
+    } else {
+      setInquiryName("");
+      setInquiryVerified(false);
+    }
+  }, [destAccount, withdrawMethod, bankCode, inquiryName]);
 
   // Real-time SSE Stream Auto-sensing for POS Terminal & Ledger
   useEffect(() => {
@@ -384,6 +478,15 @@ export function QrisPaymentSystem() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsBankDirectoryOpen(true)}
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+            >
+              <Landmark className="mr-1.5 h-3.5 w-3.5" />
+              Direktori Bank (4 Wilayah)
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -1036,6 +1139,57 @@ export function QrisPaymentSystem() {
               </span>
             </div>
 
+            {/* Quick Beneficiary Selection (1-Click Fill) */}
+            {savedBeneficiaries.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Penerima Tersimpan (1-Click Fill)
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {savedBeneficiaries.length} kontak
+                  </span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
+                  {savedBeneficiaries.map((b) => {
+                    const providerLabel =
+                      b.bankName ||
+                      (b.cardType ? b.cardType.toUpperCase() : b.channel.toUpperCase());
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => {
+                          setWithdrawMethod(b.channel as WithdrawalMethod);
+                          setDestAccount(b.accountNumber);
+                          setDestName(b.accountName);
+                          if (b.bankCode) setBankCode(b.bankCode);
+                          if (b.cardType === "visa" || b.cardType === "mastercard") {
+                            setCardType(b.cardType);
+                          }
+                          setInquiryVerified(b.verified);
+                          toast.success(`Dipilih: ${b.accountName} (${providerLabel})`);
+                        }}
+                        className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/70 hover:border-primary/50 bg-muted/30 hover:bg-primary/5 text-left transition-colors"
+                      >
+                        <div className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                          {b.accountName.charAt(0)}
+                        </div>
+                        <div className="text-[11px] leading-tight">
+                          <div className="font-semibold text-foreground truncate max-w-[110px]">
+                            {b.accountName}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[110px]">
+                            {providerLabel} • {b.accountNumber.slice(-4)}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Channel Selection */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -1087,6 +1241,35 @@ export function QrisPaymentSystem() {
                     required
                   />
                 </div>
+                {activeDetection && activeDetection.type !== "unknown" && (
+                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">
+                        {activeDetection.provider}
+                      </span>
+                      {activeDetection.carrier && (
+                        <span className="text-[10px] text-muted-foreground">
+                          ({activeDetection.carrier})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {inquiryLoading ? (
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Verifikasi...
+                        </span>
+                      ) : inquiryVerified ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          {activeDetection.subText || "Nomor Terdeteksi"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Registered User Name</label>
                   <Input
@@ -1106,6 +1289,14 @@ export function QrisPaymentSystem() {
                     <Building2 className="h-4 w-4" />
                     Indonesian Bank Transfer (BI-FAST Fee: Rp 2,500)
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsBankDirectoryOpen(true)}
+                    className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Globe className="h-3 w-3" />
+                    50+ Bank 4 Wilayah
+                  </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
@@ -1114,13 +1305,24 @@ export function QrisPaymentSystem() {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BCA">BCA (Bank Central Asia)</SelectItem>
-                        <SelectItem value="MANDIRI">Bank Mandiri</SelectItem>
-                        <SelectItem value="BRI">BRI (Bank Rakyat Indonesia)</SelectItem>
-                        <SelectItem value="BNI">BNI (Bank Negara Indonesia)</SelectItem>
-                        <SelectItem value="CIMB">CIMB Niaga</SelectItem>
-                        <SelectItem value="PERMATA">Permata Bank</SelectItem>
+                      <SelectContent className="max-h-60">
+                        {/* If custom or BPD bank selected that is not in defaults, show it */}
+                        {getBankByCode(bankCode) && (
+                          <SelectItem value={bankCode}>
+                            {getBankByCode(bankCode)?.name} ({bankCode})
+                          </SelectItem>
+                        )}
+                        <SelectItem value="BCA">BCA (Bank Central Asia) - 014</SelectItem>
+                        <SelectItem value="MANDIRI">Bank Mandiri - 008</SelectItem>
+                        <SelectItem value="BRI">BRI (Bank Rakyat Indonesia) - 002</SelectItem>
+                        <SelectItem value="BNI">BNI (Bank Negara Indonesia) - 009</SelectItem>
+                        <SelectItem value="BSI">BSI (Bank Syariah Indonesia) - 451</SelectItem>
+                        <SelectItem value="CIMB">CIMB Niaga - 022</SelectItem>
+                        <SelectItem value="PERMATA">Permata Bank - 013</SelectItem>
+                        <SelectItem value="542">Bank Jago - 542</SelectItem>
+                        <SelectItem value="535">SeaBank Indonesia - 535</SelectItem>
+                        <SelectItem value="110">Bank BJB (BPD Jabar) - 110</SelectItem>
+                        <SelectItem value="114">Bank Jatim (BPD Jatim) - 114</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1134,6 +1336,30 @@ export function QrisPaymentSystem() {
                     />
                   </div>
                 </div>
+                {activeDetection && activeDetection.type !== "unknown" && (
+                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">
+                        {activeDetection.provider}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {inquiryLoading ? (
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Cek BI-FAST...
+                        </span>
+                      ) : inquiryVerified ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" /> Rekening Terverifikasi
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          {activeDetection.subText || "Kliring BI-FAST"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Account Holder Name</label>
                   <Input
@@ -1149,7 +1375,7 @@ export function QrisPaymentSystem() {
             {withdrawMethod === "card_oct" && (
               <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                     <CreditCard className="h-4 w-4" />
                     Visa / Mastercard Direct OCT Payout (Fee: Rp 5,000)
                   </div>
@@ -1178,6 +1404,26 @@ export function QrisPaymentSystem() {
                     />
                   </div>
                 </div>
+                {activeDetection && activeDetection.type === "bank_card" && (
+                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">
+                        {activeDetection.provider}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {activeDetection.isValid ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" /> Luhn Checksum Lolos
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                          Format Kartu Belum Lengkap
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Cardholder Full Name</label>
                   <Input
@@ -1219,6 +1465,16 @@ export function QrisPaymentSystem() {
                     required
                   />
                 </div>
+                {activeDetection && activeDetection.type === "alipay" && (
+                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                    <span className="font-semibold text-foreground">
+                      {activeDetection.provider}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      Cross-border Ready
+                    </span>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Account Holder Real Name</label>
                   <Input
@@ -1258,6 +1514,31 @@ export function QrisPaymentSystem() {
                     required
                   />
                 </div>
+                {activeDetection && activeDetection.type !== "unknown" && (
+                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">
+                        {activeDetection.provider}
+                      </span>
+                      {activeDetection.carrier && (
+                        <span className="text-[10px] text-muted-foreground">
+                          ({activeDetection.carrier})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {inquiryVerified ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          {activeDetection.subText || "Nomor Terdeteksi"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Account Holder Name</label>
                   <Input
@@ -1267,6 +1548,60 @@ export function QrisPaymentSystem() {
                     required
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Real-Life Visual Preview (Tactile Bank Card or E-Money Pass) */}
+            {(withdrawMethod === "bank_transfer" || withdrawMethod === "card_oct") && (
+              <div className="pt-1 flex flex-col items-center">
+                <BankCardVisual
+                  cardNumber={
+                    destAccount
+                      ? destAccount
+                          .replace(/\D/g, "")
+                          .replace(/(\d{4})(?=\d)/g, "$1 ")
+                          .trim()
+                      : withdrawMethod === "card_oct"
+                        ? "•••• •••• •••• ••••"
+                        : "•••• ••••••••"
+                  }
+                  cardHolder={destName || "NAMA PEMEGANG REKENING"}
+                  expiry="12/29"
+                  brand={
+                    withdrawMethod === "card_oct"
+                      ? cardType === "mastercard"
+                        ? "mastercard"
+                        : "visa"
+                      : getBankByCode(bankCode)?.supportedNetworks?.[0] || "gpn"
+                  }
+                  tier={withdrawMethod === "card_oct" ? "black_signature" : "gold"}
+                  bankName={
+                    getBankByCode(bankCode)?.name ||
+                    (withdrawMethod === "card_oct"
+                      ? cardType === "visa"
+                        ? "VISA GLOBAL DEBIT"
+                        : "MASTERCARD DIRECT"
+                      : "BANK TRANSFER")
+                  }
+                  isCompact={true}
+                  className="w-full shadow-lg"
+                />
+              </div>
+            )}
+
+            {(withdrawMethod === "dana" ||
+              withdrawMethod === "linkaja" ||
+              withdrawMethod === "alipay") && (
+              <div className="pt-1 flex flex-col items-center">
+                <EmoneyWalletPass
+                  brand={withdrawMethod as any}
+                  accountNumber={destAccount || "08xx-xxxx-xxxx"}
+                  accountName={destName || "NAMA PEMILIK AKUN"}
+                  carrier={activeDetection?.carrier || "Indonesian Mobile Network"}
+                  verified={inquiryVerified}
+                  isCompact={true}
+                  className="w-full shadow-lg"
+                />
               </div>
             )}
 
@@ -1557,6 +1892,17 @@ export function QrisPaymentSystem() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal 4: Indonesian Banking Directory (50+ Banks across 4 Regions) */}
+      <BankDirectoryDialog
+        open={isBankDirectoryOpen}
+        onOpenChange={setIsBankDirectoryOpen}
+        onSelectBank={(bank) => {
+          setBankCode(bank.code);
+          setWithdrawMethod("bank_transfer");
+          setIsWithdrawOpen(true);
+        }}
+      />
     </div>
   );
 }

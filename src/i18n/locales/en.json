@@ -877,7 +877,12 @@
     "localPaymentsDesc": "Pay via Midtrans using Indonesian payment methods — no international card required.",
     "localPaymentsNote": "Select the payment method during plan checkout on the Plans tab.",
     "tabTaxNexus": "Tax Nexus & VAT/GST",
-    "tabQris": "QRIS & Withdraw"
+    "tabQris": "QRIS & Withdraw",
+    "tabBankDirectory": "Bank Directory (4 Regions)",
+    "savedBeneficiaries": "Saved Beneficiaries",
+    "savedBeneficiariesDesc": "1-click fill verified account and payout credentials",
+    "indonesianBanksTitle": "Indonesian Banking Directory",
+    "indonesianBanksDesc": "50+ national, private, regional BPD across 4 regions, and digital banks"
   },
   "integrations": {
     "title": "Integrations",

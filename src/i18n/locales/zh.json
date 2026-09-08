@@ -877,7 +877,12 @@
     "localPaymentsDesc": "通过 Midtrans 使用印尼本地支付方式付款 — 无需国际卡。",
     "localPaymentsNote": "可在套餐页签的结账流程中选择支付方式。",
     "tabTaxNexus": "税务联结与增值税/GST",
-    "tabQris": "QRIS 与提现"
+    "tabQris": "QRIS 与提现",
+    "tabBankDirectory": "印尼银行名录 (四大区域)",
+    "savedBeneficiaries": "已存收款人",
+    "savedBeneficiariesDesc": "一键填入已验证账户和出金凭据",
+    "indonesianBanksTitle": "全印尼银行目录",
+    "indonesianBanksDesc": "涵盖国有、民营、四大区域地方发展银行(BPD)及数字银行50余家"
   },
   "integrations": {
     "title": "集成",

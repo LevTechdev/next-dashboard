@@ -32,6 +32,20 @@
 - **Middleware**: Excludes `/api/`, `/_next/`, `/favicon`, `/icon`, `/apple-icon`, `/manifest.json`, and paths with file extensions
 - **Route groups**: `(marketing)` and `(dashboard)` within `[locale]`
 
+### Anti-AI Slop & Dynamic Theme Architecture (STRICT DESIGN STANDARD)
+- **Banned Visual & Copy Patterns**:
+  - **No Generic Pill Gradients**: Never use cliché AI-slop gradients like `bg-gradient-to-r from-indigo-500 to-purple-600` or random neon borders.
+  - **No Hardcoded Static Colors**: Strictly ban hardcoded `indigo-600`, `indigo-500`, `violet-600`, `purple-600` on custom feature surfaces.
+  - **No AI Clichés or Gimmicks**: Ban unnecessary sparkle emojis (`✨`), floating glow blobs, and robotic marketing buzzwords ("revolutionary multi-channel synergy", "empower your ecosystem").
+  - **No Untranslated Strings**: Never hardcode English text or raw placeholders.
+- **Mandatory Dynamic Theme Adaptation**:
+  - Every new feature, card, dialog, table, badge, and input must dynamically bind to the user's custom appearance color configured in **Settings -> Appearance**.
+  - Always use standard design tokens: `text-primary`, `bg-primary`, `border-primary`, `ring-primary`, `focus:ring-primary`, and `bg-primary/10` / `border-primary/20` for tinted highlights.
+  - When the user selects Emerald, Amber, Violet, Rose, Cyan, or a custom HEX code, all payment terminals, standees, bank cards, and modals must instantaneously reflect their brand identity.
+- **Natural Language Microcopy**:
+  - Use concise, direct, human-grade language ("Tarik Saldo", "Verifikasi Rekening", "Rekening Terdaftar", "Bank Tujuan").
+
+
 ### Manifest & PWA
 - `manifest.ts` generates manifest at `/manifest.webmanifest`
 - Icons generated via `icon.tsx` (32×32) and `apple-icon.tsx` (180×180) using `next/og` ImageResponse
@@ -126,6 +140,28 @@
    - **Navbar Dropdown Auto-Scroll & Body Lock Bug Fix**: Resolved body scroll locking and viewport jumping when opening/closing navbar dropdown menus (Profile, Language, Currency, Theme) by defaulting Radix UI `DropdownMenu` to `modal={false}` and preventing focus scroll via `e.preventDefault()` on `onCloseAutoFocus`.
    - **Navbar Telemetry Badge i18n Localization**: Fully localized `RealtimeConnectionBadge` in `src/components/layout/header.tsx` across `en`, `id`, `ja`, and `zh` under the `telemetry` namespace.
    - **Legal Compliance & Changelog Automation**: Release v2.6.0 added to `src/app/[locale]/(marketing)/changelog/page.tsx` across all 4 locales. Terms of Service (`/terms`) and Privacy Policy (`/privacy`) updated with section 7 covering QRIS transaction standards, FX conversion terms, telemetry data streams, and encrypted media storage.
+9. **🏦 Indonesian Banking Directory (4 Regions), Real Beneficiary Tracking & Tactile Card/Wallet Design System**:
+   - **Comprehensive Indonesian Banking Directory** (`src/lib/indonesian-banks.ts`): Complete registry of 50+ Indonesian banks categorized into 4 core banking regions/sectors:
+     1. *BUMN / Himbara*: Mandiri (008), BRI (002), BNI (009), BTN (200), BSI (451).
+     2. *Bank Swasta Nasional*: BCA (014), CIMB Niaga (022), Danamon (011), Permata (013), Panin (019), OCBC NISP (028), Maybank (016), Mega (426), Sinarmas (153), BTPN / Jenius (213), BCA Syariah (536), Muamalat (147), etc.
+     3. *BPD Across 4 Geographic Macro-Regions*:
+        - Region 1 (Sumatera): Bank Nagari (118), Sumut (117), Riau Kepri (119), Sumsel Babel (120), Aceh Syariah (116), Lampung (121), Bengkulu (133), Jambi (115).
+        - Region 2 (Jawa & Bali): Bank BJB (110), DKI (111), Jateng (113), Jatim (114), BPD DIY (112), BPD Bali (129).
+        - Region 3 (Kalimantan & Sulawesi): Bank Kalbar (123), Kaltimtara (124), Kalsel (122), Kalteng (125), Sulselbar (126), SulutGo (127), Sulteng (134), Sultra (135).
+        - Region 4 (Indonesia Timur: Nusa Tenggara, Maluku, Papua): Bank NTB Syariah (128), NTT (130), Maluku Malut (131), Papua (132).
+     4. *Bank Digital & Neobanks*: Bank Jago (542), SeaBank (535), Allo Bank (567), Blu by BCA Digital (501), Line Bank (484), Bank Neo Commerce / BNC (490), Krom Bank (459), Superbank (562).
+   - **Real User & Beneficiary Tracking Engine** (`src/lib/account-validator.ts`, `src/lib/beneficiary-store.ts`, `/api/billing/beneficiaries`):
+     - Automatic number pattern detection: phone numbers (`08...`) detect telco carrier (Telkomsel, Indosat, XL, etc.) and auto-route to DANA, GoPay, OVO, LinkAja, or ShopeePay.
+     - 16-digit card input undergoes BIN detection and Luhn algorithm validation for Visa, Mastercard, GPN, and JCB.
+     - Real-time simulated account name inquiry resolver (`/api/billing/beneficiaries/inquiry`) matching Bank Indonesia SNAP / BI-FAST inquiry standard.
+     - Persistent beneficiary store (`data/beneficiaries.json`) with in-memory caching and 1-click payout repeat.
+   - **Tactile Physical Card Visual Component** (`src/components/ui/bank-card-visual.tsx`):
+     - Authentic micro-circuit gold EMV contact chip SVG, dual contactless NFC radio wave glyph, embossed 16-digit card number with realistic metallic drop shadow, holographic security badge, issuer bank watermark, and card tier indicator (Classic, Gold, Platinum, Black Signature, GPN Nasional).
+     - Dynamically adapts to user's selected appearance accent color (`--primary`, `border-primary/40`).
+   - **Digital E-Money Wallet Pass Component** (`src/components/ui/emoney-wallet-pass.tsx`):
+     - Authentic smartphone mobile pass styling with official e-wallet glyphs (DANA, OVO, GoPay, LinkAja, ShopeePay, Alipay), verified recipient badge, formatted phone number, and account tier pill.
+   - **Searchable Bank Directory Browser** (`src/components/billing/bank-directory-dialog.tsx`):
+     - Interactive modal embedded into the billing withdrawal terminal allowing instant search by name or 3-digit clearing code across all 4 regions with 1-click selection.
 
 ## 3. Hooks
 

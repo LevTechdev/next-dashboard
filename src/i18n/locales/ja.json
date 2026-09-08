@@ -877,7 +877,12 @@
     "localPaymentsDesc": "Midtrans を利用したインドネシアの決済方法で支払えます — 国際カードは不要です。",
     "localPaymentsNote": "プランタブのチェックアウト時に決済方法を選択できます。",
     "tabTaxNexus": "税務ネクサス＆VAT/GST",
-    "tabQris": "QRIS・出金"
+    "tabQris": "QRIS・出金",
+    "tabBankDirectory": "インドネシア銀行名鑑 (4地域)",
+    "savedBeneficiaries": "保存された受取人",
+    "savedBeneficiariesDesc": "ワンクリックで確認済み口座と出金情報を自動入力",
+    "indonesianBanksTitle": "インドネシア全土銀行名鑑",
+    "indonesianBanksDesc": "国有・民間・4大地域BPD・デジタル銀行など50行以上を網羅"
   },
   "integrations": {
     "title": "連携",

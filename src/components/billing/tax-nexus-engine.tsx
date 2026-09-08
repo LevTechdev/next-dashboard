@@ -12,7 +12,6 @@ import {
   Building,
   Globe,
   Clock,
-  Sparkles,
   ArrowRight,
   CheckCircle2,
   DollarSign,
@@ -141,12 +140,12 @@ export function TaxNexusEngine() {
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                 {t("estimatedLiability")}
               </span>
-              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Receipt className="h-4 w-4" />
               </div>
             </div>
             <div
-              className="text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 mt-2 font-mono"
+              className="text-2xl font-bold tracking-tight text-primary mt-2 font-mono"
               title={formatMoney(89400)}
             >
               {formatMoney(89400)}
@@ -179,7 +178,7 @@ export function TaxNexusEngine() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Landmark className="h-5 w-5 text-indigo-500" />
+                <Landmark className="h-5 w-5 text-primary" />
                 {t("title")}
               </CardTitle>
               <CardDescription className="text-xs">{t("subtitle")}</CardDescription>
@@ -312,7 +311,7 @@ export function TaxNexusEngine() {
                         <span className="text-slate-400 block text-[10px]">
                           {t("daysRemaining")}
                         </span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                        <span className="font-bold text-primary font-mono">
                           {j.daysRemainingToFiling} days
                         </span>
                       </div>
@@ -330,7 +329,7 @@ export function TaxNexusEngine() {
               <div className="lg:col-span-6 p-4 sm:p-5 rounded-xl border border-border/80 bg-slate-50/70 dark:bg-slate-900/60 space-y-4">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Calculator className="h-4 w-4 text-indigo-500" />
+                    <Calculator className="h-4 w-4 text-primary" />
                     {t("simTitle")}
                   </h4>
                   <p className="text-[11px] text-slate-500">{t("simDesc")}</p>
@@ -406,26 +405,26 @@ export function TaxNexusEngine() {
                   <Button
                     size="sm"
                     onClick={handleSimulateTax}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer h-8 text-xs mt-2"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer h-8 text-xs mt-2"
                   >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    <Calculator className="h-3.5 w-3.5 mr-1.5" />
                     {t("calculateBtn")}
                   </Button>
                 </div>
               </div>
 
               {/* Calculation Result Preview Card */}
-              <div className="lg:col-span-6 p-4 sm:p-5 rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-50/40 via-background to-sky-50/30 dark:from-indigo-950/30 dark:via-background dark:to-sky-950/20 space-y-4">
+              <div className="lg:col-span-6 p-4 sm:p-5 rounded-xl border border-primary/30 bg-card space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-border/60">
                   <div className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-indigo-500" />
+                    <Receipt className="h-5 w-5 text-primary" />
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                       {t("simResult")}
                     </h4>
                   </div>
                   <Badge
                     variant="outline"
-                    className="font-mono text-xs text-indigo-600 border-indigo-400"
+                    className="font-mono text-xs text-primary border-primary/40"
                   >
                     {simResult.taxLabel}
                   </Badge>
@@ -441,7 +440,7 @@ export function TaxNexusEngine() {
 
                   <div className="flex justify-between py-1 border-b border-border/40">
                     <span className="text-slate-500">{t("taxRate")}:</span>
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="font-mono font-bold text-primary">
                       {simResult.taxRatePercent}%
                     </span>
                   </div>

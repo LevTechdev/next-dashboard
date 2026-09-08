@@ -118,7 +118,7 @@ export function InvoiceCustomizerDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
               <Sliders size={20} />
             </div>
             <div>
@@ -172,7 +172,7 @@ export function InvoiceCustomizerDialog({
                     onClick={() => setConfig({ ...config, accentColor: color })}
                     className={`h-7 w-7 rounded-full transition-transform border-2 ${
                       config.accentColor === color
-                        ? "scale-110 border-gray-900 dark:border-white ring-2 ring-indigo-400"
+                        ? "scale-110 border-gray-900 dark:border-white ring-2 ring-primary"
                         : "border-transparent hover:scale-105"
                     }`}
                     style={{ backgroundColor: color }}
@@ -196,7 +196,7 @@ export function InvoiceCustomizerDialog({
                 value={config.notes}
                 onChange={(e) => setConfig({ ...config, notes: e.target.value })}
                 rows={3}
-                className="w-full mt-1 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full mt-1 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent p-2.5 outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Official computerized tax invoice..."
               />
             </div>
@@ -211,7 +211,7 @@ export function InvoiceCustomizerDialog({
                     type="checkbox"
                     checked={config.showBarcode}
                     onChange={(e) => setConfig({ ...config, showBarcode: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                   />
                   <BarcodeIcon className="h-4 w-4 text-gray-600" />
                   Code 128 Barcode
@@ -222,7 +222,7 @@ export function InvoiceCustomizerDialog({
                     type="checkbox"
                     checked={config.showQr}
                     onChange={(e) => setConfig({ ...config, showQr: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                   />
                   <QrCode className="h-4 w-4 text-gray-600" />
                   Verification QR

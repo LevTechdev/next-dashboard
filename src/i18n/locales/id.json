@@ -877,7 +877,12 @@
     "localPaymentsDesc": "Bayar melalui Midtrans menggunakan metode pembayaran Indonesia — tanpa kartu internasional.",
     "localPaymentsNote": "Pilih metode pembayaran saat checkout paket di tab Paket.",
     "tabTaxNexus": "Nexus Pajak & PPN/GST",
-    "tabQris": "QRIS & Tarik Saldo"
+    "tabQris": "QRIS & Tarik Saldo",
+    "tabBankDirectory": "Direktori Bank (4 Wilayah)",
+    "savedBeneficiaries": "Penerima Tersimpan",
+    "savedBeneficiariesDesc": "Isi otomatis 1-klik rekening dan kredensial penarikan terverifikasi",
+    "indonesianBanksTitle": "Direktori Bank Seluruh Indonesia",
+    "indonesianBanksDesc": "50+ bank BUMN, swasta, BPD 4 wilayah, dan bank digital"
   },
   "integrations": {
     "title": "Integrasi",

@@ -45,3 +45,14 @@ Next.js 16 (App Router, React 19) multi-tenant commercial analytics, billing, an
 ### 6. Multi-Currency Engine
 - Supported currencies: USD ($), IDR (Rp), JPY (¥), EUR (€), SGD (S$), CNY (¥).
 - Defined in `src/lib/currency.ts` with real-time conversion helper `convertAmount`.
+
+### 7. Strict Anti-AI-Slop & Dynamic Theme Protocol
+- No generic pill gradients (`from-indigo-500 to-purple-600`), no static hardcoded indigo/violet colors on custom surfaces.
+- All cards, badges, buttons, borders, and rings must dynamically link to `--primary` design tokens (`text-primary`, `bg-primary`, `border-primary`, `ring-primary`).
+- Natural language microcopy only — no robotic filler or unlocalized strings.
+
+### 8. Indonesian Banking Directory & Beneficiary Tracking
+- `src/lib/indonesian-banks.ts`: 50+ banks classified into 4 regions/categories (Himbara BUMN, Swasta Nasional, BPD 4 Macro-Regions, Digital Neobanks).
+- `src/lib/account-validator.ts`: Real-time phone carrier detection (DANA, OVO, GoPay, LinkAja) and card BIN/Luhn check (Visa, Mastercard, GPN, JCB).
+- `src/components/ui/bank-card-visual.tsx` & `src/components/ui/emoney-wallet-pass.tsx`: Tactile EMV physical card and mobile wallet pass design system.
+
