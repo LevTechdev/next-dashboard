@@ -268,7 +268,7 @@ describe("filterNavItemsByRole()", () => {
   const allItems = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/analytics", label: "Analytics" },
-    { href: "/team", label: "Team" },
+    { href: "/settings/team", label: "Team" },
     { href: "/settings", label: "Settings" },
     { href: "/orders", label: "Orders" },
   ];
@@ -287,7 +287,7 @@ describe("filterNavItemsByRole()", () => {
     expect(result.map((i) => i.href)).toEqual([
       "/dashboard",
       "/analytics",
-      "/team",
+      "/settings/team",
       "/settings",
       "/orders",
     ]);

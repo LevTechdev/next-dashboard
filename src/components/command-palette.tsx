@@ -239,7 +239,7 @@ const QUICK_ACTIONS: QuickActionItem[] = [
     iconColor: "text-teal-600 dark:text-teal-400",
     keywords: ["invite", "team", "member", "add", "staff"],
     action: "navigate",
-    href: "/team?action=invite",
+    href: "/settings/team?action=invite",
   },
   {
     id: "qa-toggle-theme",
