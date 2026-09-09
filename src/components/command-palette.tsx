@@ -166,7 +166,7 @@ const DASHBOARD_MENUS: NavMenuItem[] = [
     id: "nav-team",
     label: "Team Management",
     subtitle: "Team members, roles, invitations & permissions",
-    href: "/team",
+    href: "/settings/team",
     keywords: ["team", "members", "invites", "roles", "rbac", "staff", "admin"],
     icon: UsersRoundIcon,
     iconBg: "bg-teal-50 dark:bg-teal-900/30",

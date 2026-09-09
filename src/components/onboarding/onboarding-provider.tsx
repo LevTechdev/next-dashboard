@@ -34,7 +34,7 @@ const DISMISS_KEY = "onboarding-dismissed";
 const DEFAULT_STEPS: OnboardingStep[] = [
   { id: "add-product", labelKey: "stepAddProduct", descKey: "stepAddProductDesc", href: "/products", completed: false },
   { id: "create-order", labelKey: "stepCreateOrder", descKey: "stepCreateOrderDesc", href: "/orders", completed: false },
-  { id: "invite-member", labelKey: "stepInviteMember", descKey: "stepInviteMemberDesc", href: "/team", completed: false },
+  { id: "invite-member", labelKey: "stepInviteMember", descKey: "stepInviteMemberDesc", href: "/settings/team", completed: false },
   { id: "configure-notifications", labelKey: "stepConfigNotifs", descKey: "stepConfigNotifsDesc", href: "/notifications", completed: false },
   { id: "customize-appearance", labelKey: "stepCustomize", descKey: "stepCustomizeDesc", href: "/settings", completed: false },
 ];
