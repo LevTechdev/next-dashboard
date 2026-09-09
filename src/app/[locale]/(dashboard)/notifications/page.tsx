@@ -628,6 +628,8 @@ function Toggle({
 
 // ─── Alert Rules Tab ────────────────────────────────────────────────────────
 
+import { requestPushPermission } from "@/lib/push-notifications";
+
 function AlertRulesTab() {
   const tnotif = useTranslations("notifications");
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
@@ -636,6 +638,7 @@ function AlertRulesTab() {
   const [localLowStock, setLocalLowStock] = useState(10);
   const [localPendingThreshold, setLocalPendingThreshold] = useState(5);
   const [localBudgetPercent, setLocalBudgetPercent] = useState(80);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -653,10 +656,57 @@ function AlertRulesTab() {
       .catch(() => {
         if (!cancelled) setLoading(false);
       });
+
+    // Check existing push subscription
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          if (sub && !cancelled) setPushEnabled(true);
+        });
+      });
+    }
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleTogglePush = async (enabled: boolean) => {
+    if (enabled) {
+      const sub = await requestPushPermission();
+      if (sub) {
+        const res = await fetch("/api/notifications/push-subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: JSON.parse(sub) }),
+        });
+        if (res.ok) {
+          setPushEnabled(true);
+          toast.success(tnotif("pushEnabledToast") || "Push notifications enabled");
+        } else {
+          toast.error(tnotif("pushFailedToast") || "Failed to enable push notifications");
+        }
+      } else {
+        toast.error(tnotif("pushDeniedToast") || "Push permission denied or not supported");
+      }
+    } else {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await fetch("/api/notifications/push-subscribe", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          });
+        }
+      }
+      setPushEnabled(false);
+      toast.success(tnotif("pushDisabledToast") || "Push notifications disabled");
+    }
+  };
+
 
   const updatePref = async (field: string, value: boolean | number) => {
     const res = await fetch("/api/notifications/preferences", {
@@ -689,6 +739,24 @@ function AlertRulesTab() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Browser Push Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{tnotif("pushNotificationsTitle") || "Browser Push Notifications"}</CardTitle>
+          <CardDescription>
+            {tnotif("pushNotificationsDesc") || "Receive notifications directly in your browser."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Toggle
+            checked={pushEnabled}
+            onChange={handleTogglePush}
+            label={tnotif("enablePushLabel") || "Enable Push Notifications"}
+            description={tnotif("enablePushDesc") || "Allow the dashboard to send you web push notifications."}
+          />
+        </CardContent>
+      </Card>
+
       {/* In-App Notification Toggles */}
       <Card>
         <CardHeader>

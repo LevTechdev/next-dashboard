@@ -86,7 +86,7 @@ export function InvoiceCustomizerDialog({
         const svg = generateBarcodeSvg("ORD-2026-8942", {
           height: 36,
           moduleWidth: 1.4,
-          color: "#18181b",
+          color: "#000000",
           showText: true,
           fontSize: 10,
         });
@@ -294,21 +294,25 @@ export function InvoiceCustomizerDialog({
 
               {/* Badges preview container: Barcode & QR Verification */}
               {(config.showBarcode || config.showQr) && (
-                <div className="my-3 p-3 bg-white dark:bg-zinc-900 rounded-lg border border-border flex items-center justify-between gap-2 shadow-inner">
+                <div className="my-3 p-3 bg-muted/40 rounded-lg border border-border flex items-center justify-between gap-3 shadow-inner">
                   {config.showBarcode && previewBarcodeSvg && (
-                    <div
-                      dangerouslySetInnerHTML={{ __html: previewBarcodeSvg }}
-                      className="max-w-[160px] overflow-hidden"
-                    />
+                    <div className="bg-white p-2.5 rounded-md border border-zinc-200 shadow-2xs max-w-[170px] overflow-hidden flex items-center justify-center">
+                      <div
+                        dangerouslySetInnerHTML={{ __html: previewBarcodeSvg }}
+                        className="w-full flex justify-center text-zinc-950"
+                      />
+                    </div>
                   )}
                   {config.showQr && previewQrDataUrl && (
-                    <div className="flex flex-col items-center shrink-0 border-l border-border pl-2">
-                      <img
-                        src={previewQrDataUrl}
-                        alt="QR Verification"
-                        className="w-12 h-12 object-contain rounded"
-                      />
-                      <span className="text-[7px] font-mono text-muted-foreground mt-0.5 uppercase tracking-wider">
+                    <div className="flex flex-col items-center shrink-0 border-l border-border pl-3">
+                      <div className="bg-white p-1 rounded-md border border-zinc-200 shadow-2xs">
+                        <img
+                          src={previewQrDataUrl}
+                          alt="QR Verification"
+                          className="w-12 h-12 object-contain rounded"
+                        />
+                      </div>
+                      <span className="text-[7px] font-mono text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
                         {t("qrVerifiedLabel")}
                       </span>
                     </div>

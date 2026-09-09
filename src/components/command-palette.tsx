@@ -17,7 +17,8 @@ import {
   CreditCardIcon,
   SettingsIcon,
 } from "lucide-animated";
-import { ShoppingBag, Package, Command, Loader2, Sparkles } from "lucide-react";
+import { ShoppingBag, Package, Command, Loader2, Sparkles, PlusCircle, Palette, Download } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -193,6 +194,88 @@ const DASHBOARD_MENUS: NavMenuItem[] = [
   },
 ];
 
+interface QuickActionItem {
+  id: string;
+  label: string;
+  subtitle: string;
+  icon: ComponentType<{ className?: string; size?: number }>;
+  iconBg: string;
+  iconColor: string;
+  keywords: string[];
+  action: "navigate" | "inline";
+  href?: string;
+  inlineAction?: string;
+}
+
+const QUICK_ACTIONS: QuickActionItem[] = [
+  {
+    id: "qa-create-product",
+    label: "Create Product",
+    subtitle: "Add a new product to your catalog",
+    icon: PlusCircle,
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    keywords: ["create", "add", "new", "product"],
+    action: "navigate",
+    href: "/products?action=create",
+  },
+  {
+    id: "qa-create-order",
+    label: "Create Order",
+    subtitle: "Start a new order manually",
+    icon: CartIcon,
+    iconBg: "bg-blue-50 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    keywords: ["create", "add", "new", "order"],
+    action: "navigate",
+    href: "/orders?action=create",
+  },
+  {
+    id: "qa-invite-member",
+    label: "Invite Team Member",
+    subtitle: "Send an invitation to join your workspace",
+    icon: UsersRoundIcon,
+    iconBg: "bg-teal-50 dark:bg-teal-900/30",
+    iconColor: "text-teal-600 dark:text-teal-400",
+    keywords: ["invite", "team", "member", "add", "staff"],
+    action: "navigate",
+    href: "/team?action=invite",
+  },
+  {
+    id: "qa-toggle-theme",
+    label: "Toggle Theme",
+    subtitle: "Switch between light, dark, and system theme",
+    icon: Palette,
+    iconBg: "bg-violet-50 dark:bg-violet-900/30",
+    iconColor: "text-violet-600 dark:text-violet-400",
+    keywords: ["theme", "dark", "light", "mode", "appearance", "color"],
+    action: "inline",
+    inlineAction: "toggle-theme",
+  },
+  {
+    id: "qa-ai-copilot",
+    label: "Open AI Copilot",
+    subtitle: "Ask AI to help with tasks and analysis",
+    icon: Sparkles,
+    iconBg: "bg-amber-50 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    keywords: ["ai", "copilot", "assistant", "help", "chat"],
+    action: "inline",
+    inlineAction: "open-copilot",
+  },
+  {
+    id: "qa-install-app",
+    label: "Install App",
+    subtitle: "Install this dashboard as a desktop/mobile app",
+    icon: Download,
+    iconBg: "bg-pink-50 dark:bg-pink-900/30",
+    iconColor: "text-pink-600 dark:text-pink-400",
+    keywords: ["install", "pwa", "app", "download", "desktop"],
+    action: "inline",
+    inlineAction: "install-pwa",
+  },
+];
+
 // ── Helpers ──
 
 function formatCurrency(n: number): string {
@@ -282,6 +365,7 @@ export function CommandPalette() {
   };
 
   const { open: openCopilot } = useAiCopilot();
+  const { theme, setTheme } = useTheme();
 
   // ── Build grouped item list ──
 
@@ -316,6 +400,32 @@ export function CommandPalette() {
         }),
       );
       ranges.push({ label: "Navigation", start, count: matchingMenus.length });
+    }
+
+    // 1.5 Quick Actions
+    const matchingActions = q.length > 0
+      ? QUICK_ACTIONS.filter(
+          (a) =>
+            a.label.toLowerCase().includes(q) ||
+            a.keywords.some((k) => k.includes(q)) ||
+            a.subtitle.toLowerCase().includes(q),
+        )
+      : QUICK_ACTIONS;
+
+    if (matchingActions.length > 0) {
+      const start = allItems.length;
+      matchingActions.forEach((a) =>
+        allItems.push({
+          id: a.id,
+          label: a.label,
+          subtitle: a.subtitle,
+          icon: a.icon,
+          iconBg: a.iconBg,
+          iconColor: a.iconColor,
+          href: a.action === "navigate" ? `/${locale}${a.href}` : `#${a.inlineAction}`,
+        }),
+      );
+      ranges.push({ label: "Quick Actions", start, count: matchingActions.length });
     }
 
     // 2. Orders from database search
@@ -389,8 +499,17 @@ export function CommandPalette() {
 
   const navigateTo = (item: ResultItem) => {
     closePalette();
-    if (item.href === "#ai-copilot") {
+    if (item.href === "#open-copilot" || item.href === "#ai-copilot") {
       openCopilot();
+      return;
+    }
+    if (item.href === "#toggle-theme") {
+      const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+      setTheme(next);
+      return;
+    }
+    if (item.href === "#install-pwa") {
+      window.dispatchEvent(new Event("open-pwa-install"));
       return;
     }
     router.push(item.href);

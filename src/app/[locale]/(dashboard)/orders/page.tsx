@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
@@ -30,6 +30,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination-bar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Sparkline } from "@/components/ui/sparkline";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
 import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
@@ -49,7 +51,7 @@ export default function OrdersPage() {
   const locale = (params?.locale as string) || "en";
   const torders = useTranslations("orders");
   const tcommon = useTranslations("common");
-  const { formatMoney } = useCurrency();
+  const { formatMoney, formatCompactMoney, currency } = useCurrency();
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -83,6 +85,27 @@ export default function OrdersPage() {
   }, [orders, dateRange]);
 
   // Compute stats from date-filtered orders data
+  
+  const sparkData = useMemo(() => {
+    if (!orders || orders.length === 0) return { orders: [], revenue: [] };
+    
+    // Sort orders by date first (oldest to newest)
+    const sorted = [...orders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
+    const grouped: Record<string, { count: number, rev: number }> = {};
+    sorted.forEach(o => {
+      const d = new Date(o.createdAt).toLocaleDateString();
+      if (!grouped[d]) grouped[d] = { count: 0, rev: 0 };
+      grouped[d].count++;
+      grouped[d].rev += (o.grandTotal || 0);
+    });
+    
+    return {
+      orders: Object.values(grouped).map((g: any) => g.count),
+      revenue: Object.values(grouped).map((g: any) => g.rev)
+    };
+  }, [orders]);
+
   const totalRevenue = dateFiltered.reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
   const pendingCount = dateFiltered.filter((o: any) => o.status === "PENDING").length;
   const avgOrderValue = dateFiltered.length > 0 ? totalRevenue / dateFiltered.length : 0;
@@ -173,12 +196,12 @@ export default function OrdersPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{torders("title")}</h1>
+          <h1 className="text-2xl font-bold truncate">{torders("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{torders("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Button
             variant="ghost"
@@ -232,7 +255,8 @@ export default function OrdersPage() {
             end: orders?.length || 0,
             icon: ShoppingBag,
             color: "text-blue-600 dark:text-blue-400",
-            bg: "bg-blue-50 dark:bg-blue-900/20",
+            bg: "bg-blue-50 dark:bg-blue-900/20", 
+            spark: sparkData.orders,
           },
           {
             label: torders("totalRevenue") || "Total Revenue",
@@ -240,7 +264,8 @@ export default function OrdersPage() {
             icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            format: (v: number) => formatMoney(v),
+            format: (v: number) => (currency === "IDR" && v > 1000000) ? formatCompactMoney(v) : formatMoney(v), 
+            spark: sparkData.revenue,
           },
           {
             label: torders("pending") || "Pending",
@@ -255,7 +280,7 @@ export default function OrdersPage() {
             icon: BarChart3,
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
-            format: (v: number) => formatMoney(v),
+            format: (v: number) => (currency === "IDR" && v > 1000000) ? formatCompactMoney(v) : formatMoney(v),
           },
         ].map((stat, i) => (
           <motion.div
@@ -277,7 +302,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                <p className="text-2xl font-bold truncate text-gray-900 dark:text-gray-100 mt-1">
                   <AnimatedCounter
                     end={stat.end}
                     duration={1400}
@@ -430,9 +455,12 @@ export default function OrdersPage() {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                      <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
-                      {torders("noOrders")}
+                    <TableCell colSpan={9}>
+                      <EmptyState
+                        icon={ShoppingBag}
+                        title={torders("noOrders")}
+                        description={torders("noOrdersDesc")}
+                      />
                     </TableCell>
                   </TableRow>
                 )}
@@ -570,7 +598,7 @@ export default function OrdersPage() {
                             {item.name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Qty: {item.quantity} × {formatMoney(item.price)}
+                            Qty: {item.quantity} Ã— {formatMoney(item.price)}
                           </p>
                         </div>
                         <span className="text-sm font-medium">{formatMoney(item.total)}</span>
@@ -628,3 +656,5 @@ export default function OrdersPage() {
     </motion.div>
   );
 }
+
+

@@ -152,7 +152,7 @@ function LoginForm() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {mounted && (
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

@@ -22,6 +22,7 @@ interface ChannelData {
 interface SalesChannelChartProps {
   data: ChannelData[];
   height?: number;
+  onClick?: (name: string) => void;
 }
 
 interface CustomTooltipProps {
@@ -46,7 +47,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   );
 }
 
-export function SalesChannelChart({ data, height = 300 }: SalesChannelChartProps) {
+export function SalesChannelChart({ data, height = 300, onClick }: SalesChannelChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-gray-400" style={{ height }}>
@@ -94,7 +95,13 @@ export function SalesChannelChart({ data, height = 300 }: SalesChannelChartProps
           content={<CustomTooltip />}
           cursor={{ fill: "currentColor", className: "fill-gray-100 dark:fill-gray-800/50" }}
         />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={32}>
+        <Bar 
+          dataKey="value" 
+          radius={[0, 4, 4, 0]} 
+          maxBarSize={32}
+          onClick={onClick ? (data) => onClick(data.name) : undefined}
+          style={{ cursor: onClick ? "pointer" : "default" }}
+        >
           {data.map((entry, index) => (
             <Cell key={index} fill={entry.color} />
           ))}

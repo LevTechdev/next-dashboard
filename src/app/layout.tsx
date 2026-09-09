@@ -55,11 +55,12 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Dashboard" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Dashboard" />
-        {/* Theme init script — runs before paint to prevent FOUC.
-            Placed here (server-rendered head) so React 19 executes it
-            instead of the client-injected script from next-themes. */}
-        <Script id="theme-init" strategy="beforeInteractive">{`
-          (function(){
+        {/* Theme and Appearance init script — runs synchronously before paint to prevent FOUC.
+            Placed here (server-rendered head) so it executes before styles render. */}
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
             try {
               var t = localStorage.getItem('theme');
               var sys = window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
@@ -67,8 +68,57 @@ export default async function RootLayout({
               document.documentElement.classList.toggle('dark', resolved === 'dark');
               document.documentElement.style.colorScheme = resolved;
             } catch(e){}
-          })();
-        `}</Script>
+            try {
+              var raw = localStorage.getItem('dashboard-appearance');
+              if (raw) {
+                var app = JSON.parse(raw);
+                if (app && app.accent) {
+                  if (app.accent === 'default') {
+                    delete document.documentElement.dataset.accent;
+                  } else if (app.accent === 'custom' && app.customColor) {
+                    document.documentElement.dataset.accent = 'custom';
+                    var hex = app.customColor.replace(/^#/, '');
+                    if (hex.length === 3) hex = hex.split('').map(function(x){return x+x;}).join('');
+                    var r = parseInt(hex.slice(0, 2), 16) / 255;
+                    var g = parseInt(hex.slice(2, 4), 16) / 255;
+                    var b = parseInt(hex.slice(4, 6), 16) / 255;
+                    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+                    var h = 0, s = 0, l = (max + min) / 2;
+                    if (max !== min) {
+                      var d = max - min;
+                      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                      switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                      }
+                      h /= 6;
+                    }
+                    var hsl = Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + Math.round(l * 100) + '%';
+                    document.documentElement.style.setProperty('--primary', hsl);
+                    document.documentElement.style.setProperty('--ring', hsl);
+                    document.documentElement.style.setProperty('--ai-accent', hsl);
+                    var strongL = Math.max(0, Math.round(l * 100) - 12);
+                    document.documentElement.style.setProperty('--ai-accent-strong', Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + strongL + '%');
+                    var softL = Math.min(95, Math.round(l * 100) + 40);
+                    document.documentElement.style.setProperty('--ai-accent-soft', Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + softL + '%');
+                    var soft2L = Math.min(97, Math.round(l * 100) + 45);
+                    document.documentElement.style.setProperty('--ai-accent-soft-2', Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + soft2L + '%');
+                  } else {
+                    document.documentElement.dataset.accent = app.accent;
+                  }
+                }
+                if (app && app.textSize && app.textSize !== 'base') {
+                  document.documentElement.dataset.text = app.textSize;
+                }
+                if (app && app.density && app.density !== 'regular') {
+                  document.documentElement.dataset.density = app.density;
+                }
+              }
+            } catch(e){}
+          })();`,
+          }}
+        />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <PWARegister />

@@ -3,6 +3,21 @@
     "name": "仪表盘",
     "tagline": "业务管理平台"
   },
+  "commandPalette": {
+    "quickActions": "快速操作",
+    "createProduct": "创建产品",
+    "createProductDesc": "向您的目录中添加新产品",
+    "createOrder": "创建订单",
+    "createOrderDesc": "手动开始新订单",
+    "inviteMember": "邀请团队成员",
+    "inviteMemberDesc": "发送邀请以加入您的工作区",
+    "toggleTheme": "切换主题",
+    "toggleThemeDesc": "在亮色、暗色和系统主题之间切换",
+    "openCopilot": "打开 AI Copilot",
+    "openCopilotDesc": "请求 AI 帮助处理任务和分析",
+    "installApp": "安装应用",
+    "installAppDesc": "安装为桌面或移动应用"
+  },
   "nav": {
     "analytics": "分析",
     "dashboard": "仪表盘",
@@ -35,7 +50,33 @@
     "sso": "SSO / 企业",
     "aiGenerator": "AI 生成器",
     "projects": "项目",
-    "superAdmin": "超级管理员"
+    "superAdmin": "超级管理员",
+    "apiDocs": "API Docs"
+  },
+  "apiDocs": {
+    "title": "API Documentation",
+    "subtitle": "Explore and test your API endpoints",
+    "searchPlaceholder": "Search endpoints...",
+    "method": "Method",
+    "path": "Path",
+    "description": "Description",
+    "queryParams": "Query Parameters",
+    "requestBody": "Request Body",
+    "responseExample": "Response Example",
+    "tryIt": "Try It",
+    "send": "Send Request",
+    "response": "Response",
+    "copyCurl": "Copy cURL",
+    "copied": "Copied!",
+    "authRequired": "Authentication Required",
+    "noAuth": "No Authentication",
+    "noEndpoints": "No endpoints found",
+    "noEndpointsDesc": "Try adjusting your search query",
+    "param": "Parameter",
+    "type": "Type",
+    "field": "Field",
+    "allGroups": "All",
+    "endpoints": "endpoints"
   },
   "dashboard": {
     "title": "仪表盘概览",
@@ -195,6 +236,7 @@
     "active": "活跃",
     "inactive": "非活跃",
     "noCustomers": "未找到客户",
+    "noCustomersDesc": "您的客户目录为空。客户将在有订单时自动添加。",
     "namePlaceholder": "姓名",
     "emailPlaceholder": "邮箱",
     "phonePlaceholder": "电话",
@@ -232,6 +274,7 @@
     "lowStock": "库存不足",
     "outOfStock": "缺货",
     "noProducts": "未找到产品",
+    "noProductsDesc": "添加您的第一个产品以开始管理目录",
     "updated": "产品已更新",
     "added": "产品已添加",
     "deleted": "产品已删除",
@@ -321,6 +364,7 @@
     "filterByDate": "按日期筛选",
     "clearFilter": "清除筛选",
     "noDataInRange": "该日期范围内没有数据",
+    "noDataInRangeDesc": "尝试调整日期范围或筛选器以查看数据",
     "revenueByPeriod": "按期间收入",
     "revenueByChannel": "按渠道收入",
     "topCustomers": "主要客户",
@@ -353,6 +397,7 @@
     "payment": "付款",
     "date": "日期",
     "noOrders": "未找到订单",
+    "noOrdersDesc": "客户开始购买后，订单将显示在此处",
     "details": "订单详情",
     "markShipped": "标记已发货",
     "markDelivered": "标记已送达",
@@ -882,7 +927,10 @@
     "savedBeneficiaries": "已存收款人",
     "savedBeneficiariesDesc": "一键填入已验证账户和出金凭据",
     "indonesianBanksTitle": "全印尼银行目录",
-    "indonesianBanksDesc": "涵盖国有、民营、四大区域地方发展银行(BPD)及数字银行50余家"
+    "indonesianBanksDesc": "涵盖国有、民营、四大区域地方发展银行(BPD)及数字银行50余家",
+    "actionsCol": "操作",
+    "processInvoice": "处理",
+    "invoicePaidSuccess": "发票已成功处理并标记为已支付！"
   },
   "integrations": {
     "title": "集成",
@@ -3169,7 +3217,14 @@
     "insufficientBalance": "可用余额不足",
     "savedBeneficiaries": "常用收款人",
     "loadedToTerminal": "已加载 {inv} 至 QRIS 终端",
-    "paymentVerifiedToast": "⚡ 支付已确认！通过 {bank} 收到 Rp {amt}"
+    "paymentVerifiedToast": "⚡ 支付已确认！通过 {bank} 收到 Rp {amt}",
+    "tabPos": "收银POS数字键盘",
+    "tabReconciliation": "结算与MDR",
+    "tabDisputes": "争议中心",
+    "posTitle": "收银POS快捷数字键盘终端",
+    "posSubtitle": "具有实时动态QRIS生成和音频反馈的快速现场结账终端",
+    "settlementTitle": "商户结算对账与多渠道付款",
+    "disputeTitle": "争议与退款解决中心"
   },
   "webhookSimulator": {
     "simulateWebhook": "模拟网关 Webhook",
@@ -3200,5 +3255,23 @@
     "successToast": "Webhook 事件 {event} 已成功分发并完成对账！",
     "errorToast": "Webhook 分发模拟失败: {error}",
     "close": "关闭审查器"
+  },
+  "onboarding": {
+    "title": "欢迎！让我们开始吧",
+    "subtitle": "完成这些步骤以设置您的工作区",
+    "progress": "{percent}% 完成",
+    "dismiss": "关闭",
+    "stepAddProduct": "添加您的第一个产品",
+    "stepAddProductDesc": "在您的目录中创建产品以开始销售",
+    "stepCreateOrder": "创建您的第一个订单",
+    "stepCreateOrderDesc": "处理测试订单以查看工作流程",
+    "stepInviteMember": "邀请团队成员",
+    "stepInviteMemberDesc": "通过发送邀请与您的团队协作",
+    "stepConfigNotifs": "配置通知",
+    "stepConfigNotifsDesc": "设置订单、库存等提醒",
+    "stepCustomize": "自定义外观",
+    "stepCustomizeDesc": "使用自定义颜色和品牌打造您的仪表板",
+    "allDone": "大功告成！",
+    "allDoneDesc": "您已完成所有设置步骤。祝您销售愉快！"
   }
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
@@ -42,7 +42,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PaginationBar } from "@/components/ui/pagination-bar";
-import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Sparkline } from "@/components/ui/sparkline";
+import { formatCurrency, formatCompactCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -167,6 +169,22 @@ export default function CustomersPage() {
   };
 
   // Compute derived stats
+  
+  const sparkData = useMemo(() => {
+    if (!customers || customers.length === 0) return [];
+    
+    const sorted = [...customers].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
+    const grouped: Record<string, number> = {};
+    sorted.forEach(c => {
+      const d = new Date(c.createdAt).toLocaleDateString();
+      if (!grouped[d]) grouped[d] = 0;
+      grouped[d]++;
+    });
+    
+    return Object.values(grouped);
+  }, [customers]);
+
   const totalCustomers = customers?.length || 0;
   const vipCount = (customers || []).filter((c: any) => c.segment === "VIP").length;
   const totalSpent = (customers || []).reduce(
@@ -218,12 +236,12 @@ export default function CustomersPage() {
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{tcustomers("title")}</h1>
+          <h1 className="text-2xl font-bold truncate">{tcustomers("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tcustomers("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             {can(role, "create", "customers") && (
@@ -322,7 +340,7 @@ export default function CustomersPage() {
             icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            format: (v: number) => formatCurrency(v),
+            format: (v: number) => formatCompactCurrency(v),
           },
           {
             label: tcustomers("orders") || "Avg Orders/Customer",
@@ -352,7 +370,7 @@ export default function CustomersPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                <p className="text-2xl font-bold truncate text-gray-900 dark:text-gray-100 mt-1">
                   <AnimatedCounter
                     end={stat.end}
                     duration={1400}
@@ -508,9 +526,12 @@ export default function CustomersPage() {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      <UsersIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      {tcustomers("noCustomers")}
+                    <TableCell colSpan={8}>
+                      <EmptyState
+                        icon={UsersIcon}
+                        title={tcustomers("noCustomers")}
+                        description={tcustomers("noCustomersDesc")}
+                      />
                     </TableCell>
                   </TableRow>
                 )}
@@ -534,3 +555,5 @@ export default function CustomersPage() {
     </motion.div>
   );
 }
+
+

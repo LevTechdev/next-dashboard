@@ -13,6 +13,7 @@ import EmailVerificationBanner from "@/components/email-verification-banner";
 import { AiCopilotProvider, AiCopilotButton, AiCopilotPanel } from "@/components/ai";
 import { ConfirmProvider } from "@/components/ui/confirm-provider";
 import { RoleGuard } from "@/components/auth/role-guard";
+import { OnboardingProvider } from "@/components/onboarding/onboarding-provider";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -43,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               vh-based page is taller than the visible area and the bottom dock
               floats over a gap. dvh tracks the visible height, keeping the
               dock pinned correctly at the bottom. */}
-          <div className="min-h-dvh bg-gray-50 dark:bg-gray-950">
+          <div className="min-h-dvh w-full overflow-x-hidden bg-gray-50 dark:bg-gray-950 flex flex-col">
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
               <Sidebar
@@ -79,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Main Content */}
             <div
               className={cn(
-                "transition-all duration-300",
+                "transition-all duration-300 w-full min-w-0 flex flex-col flex-1",
                 "lg:pl-64",
                 sidebarCollapsed && "lg:pl-[72px]",
                 "pb-16 lg:pb-0",
@@ -90,7 +91,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <main className="p-3 sm:p-4 lg:p-6 pb-24 lg:pb-6">
                 <EmailVerificationBanner />
                 <RoleGuard page={getPageKey(pathname)}>
-                  <PageTransition>{children}</PageTransition>
+                  <OnboardingProvider>
+                    <PageTransition>{children}</PageTransition>
+                  </OnboardingProvider>
                 </RoleGuard>
               </main>
             </div>

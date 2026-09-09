@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
+import React from "react";
 
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   RefreshCwIcon,
   TrendingUpIcon,
@@ -27,7 +28,6 @@ import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
 import { LinkedPlatformsBadge } from "@/components/linked-platforms-badge";
 import { CohortRetentionHeatmap } from "@/components/analytics/cohort-retention-heatmap";
-import { FunnelConversionIntelligence } from "@/components/analytics/funnel-conversion-intelligence";
 
 interface StatData {
   totalRevenue: number;
@@ -65,68 +65,60 @@ interface AnalyticsData {
 }
 
 // Generate mock funnel data from orders
-function generateFunnelData(orders: any[]) {
+function generateFunnelData(orders: any[], activeStages: string[]) {
   const total = orders.length || 1;
   const visitors = Math.round(total * 12.5);
   const addToCart = Math.round(total * 4.2);
   const checkout = Math.round(total * 2.1);
   const purchase = total;
-  return [
-    { stage: "Visitors", count: visitors, rate: 100, color: "bg-blue-500" },
-    {
-      stage: "Add to Cart",
-      count: addToCart,
-      rate: Math.round((addToCart / visitors) * 100),
-      color: "bg-indigo-500",
-    },
-    {
-      stage: "Checkout",
-      count: checkout,
-      rate: Math.round((checkout / visitors) * 100),
-      color: "bg-purple-500",
-    },
-    {
-      stage: "Purchase",
-      count: purchase,
-      rate: Math.round((purchase / visitors) * 100),
-      color: "bg-emerald-500",
-    },
+  
+  const allStages = [
+    { id: "visitors", stage: "Visitors", count: visitors, color: "bg-blue-500" },
+    { id: "add_to_cart", stage: "Add to Cart", count: addToCart, color: "bg-indigo-500" },
+    { id: "checkout", stage: "Checkout", count: checkout, color: "bg-purple-500" },
+    { id: "purchase", stage: "Purchase", count: purchase, color: "bg-emerald-500" },
   ];
+
+  const filtered = allStages.filter(s => activeStages.includes(s.id));
+  const max = filtered.length > 0 ? filtered[0].count : 1;
+
+  return filtered.map(s => ({
+    ...s,
+    rate: Math.round((s.count / max) * 100),
+  }));
 }
 
-// Generate mock geographic data
-function generateGeoData() {
-  const regions: Record<string, number> = {};
-  const countries: Record<string, number> = {};
-  const regionNames = [
-    "North America",
-    "Europe",
-    "Asia Pacific",
-    "Latin America",
-    "Middle East",
-    "Africa",
-  ];
-  const countryNames = [
-    "United States",
-    "United Kingdom",
-    "Germany",
-    "Japan",
-    "Australia",
-    "Canada",
-    "France",
-    "Brazil",
-  ];
+function generateGeoData(orders: any[]) {
+  const regions: Record<string, { count: number; revenue: number }> = {};
+  const countries: Record<string, { count: number; revenue: number }> = {};
 
-  regionNames.forEach((r) => {
-    regions[r] = Math.round(Math.random() * 200 + 50);
-  });
-  countryNames.forEach((c) => {
-    countries[c] = Math.round(Math.random() * 150 + 20);
+  if (!orders || orders.length === 0) {
+    return { regions: [], countries: [] };
+  }
+
+  orders.forEach((o) => {
+    const country = o.shippingAddress?.country || o.customer?.country || "Unknown Country";
+    const city = o.shippingAddress?.city || o.customer?.city || "Unknown City";
+    const revenue = o.grandTotal || 0;
+
+    if (!regions[city]) regions[city] = { count: 0, revenue: 0 };
+    regions[city].count += 1;
+    regions[city].revenue += revenue;
+
+    if (!countries[country]) countries[country] = { count: 0, revenue: 0 };
+    countries[country].count += 1;
+    countries[country].revenue += revenue;
   });
 
   return {
-    regions: Object.entries(regions).sort(([, a], [, b]) => b - a),
-    countries: Object.entries(countries).sort(([, a], [, b]) => b - a),
+    regions: Object.entries(regions)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10),
+    countries: Object.entries(countries)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10),
   };
 }
 
@@ -139,9 +131,15 @@ export default function AnalyticsPage() {
     { interval: 20000 },
   );
   const { data: ordersData } = useRealtimeData<any[]>("/api/orders", { interval: 30000 });
+  const [activeFunnelStages, setActiveFunnelStages] = React.useState<string[]>([
+    "visitors",
+    "add_to_cart",
+    "checkout",
+    "purchase",
+  ]);
 
-  const funnelData = useMemo(() => generateFunnelData(ordersData || []), [ordersData]);
-  const geoData = useMemo(() => generateGeoData(), []);
+  const funnelData = useMemo(() => generateFunnelData(ordersData || [], activeFunnelStages), [ordersData, activeFunnelStages]);
+  const geoData = useMemo(() => generateGeoData(ordersData || []), [ordersData]);
 
   if (loading) {
     return (
@@ -175,12 +173,12 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{tdash("title")}</h1>
+          <h1 className="text-2xl font-bold truncate">{tdash("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tdash("insights")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button
             variant="ghost"
@@ -277,7 +275,7 @@ export default function AnalyticsPage() {
               </div>
               <p className="text-sm text-gray-500 mt-3 truncate">{metric.label}</p>
               <div
-                className="text-lg sm:text-xl xl:text-2xl font-bold mt-1 tabular-nums truncate tracking-tight"
+                className="text-lg sm:text-xl xl:text-2xl font-bold truncate mt-1 tabular-nums truncate tracking-tight"
                 title={
                   metric.formatter
                     ? metric.formatter(metric.endValue)
@@ -334,7 +332,63 @@ export default function AnalyticsPage() {
 
         {/* Conversion Funnel Tab */}
         <TabsContent value="funnel" className="space-y-4">
-          <FunnelConversionIntelligence />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>{tdash("funnel")}</CardTitle>
+                <CardDescription>Conversion tracking across stages</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Custom Goals:</span>
+                {[
+                  { id: "visitors", label: "Viewed Product" },
+                  { id: "add_to_cart", label: "Added to Cart" },
+                  { id: "checkout", label: "Checkout Started" },
+                  { id: "purchase", label: "Purchased" },
+                ].map((stage) => (
+                  <label key={stage.id} className="flex items-center gap-1.5 text-sm cursor-pointer border px-2 py-1 rounded-md bg-white dark:bg-slate-900 shadow-sm">
+                    <input
+                      type="checkbox"
+                      checked={activeFunnelStages.includes(stage.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setActiveFunnelStages((prev) => [...prev, stage.id]);
+                        } else {
+                          setActiveFunnelStages((prev) => prev.filter((id) => id !== stage.id));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    {stage.label}
+                  </label>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {funnelData.length === 0 ? (
+                <div className="text-center text-gray-500 py-10">No stages selected</div>
+              ) : (
+                <div className="space-y-6 max-w-3xl mx-auto py-6">
+                  {funnelData.map((stage, i) => (
+                    <div key={stage.id} className="flex items-center gap-4">
+                      <div className="w-1/4 text-right">
+                        <p className="text-sm font-medium">{stage.stage}</p>
+                        <p className="text-xs text-gray-500">{stage.count} sessions</p>
+                      </div>
+                      <div className="flex-1 flex items-center">
+                        <div
+                          className={cn("h-12 rounded-r-md rounded-l-sm transition-all duration-500 relative flex items-center px-4", stage.color)}
+                          style={{ width: `${stage.rate}%`, minWidth: 'fit-content' }}
+                        >
+                          <span className="text-white font-bold text-sm">{stage.rate}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Cohort Retention Tab */}
@@ -350,16 +404,19 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topRegions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.regions.map(([region, count]) => {
-                  const maxVal = geoData.regions[0][1];
-                  const width = Math.max(10, (count / maxVal) * 100);
+                {geoData.regions.map((region) => {
+                  const maxVal = geoData.regions[0]?.count || 1;
+                  const width = Math.max(10, (region.count / maxVal) * 100);
                   return (
-                    <div key={region} className="space-y-1">
+                    <div key={region.name} className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {region}
+                          {region.name}
                         </span>
-                        <span className="text-xs text-gray-500">{count} orders</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">{region.count} orders</span>
+                          <span className="text-xs font-medium tabular-nums">{formatMoney(region.revenue)}</span>
+                        </div>
                       </div>
                       <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div
@@ -378,26 +435,29 @@ export default function AnalyticsPage() {
                 <CardTitle>{tdash("topCountries")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {geoData.countries.map(([country, count]) => {
-                  const maxVal = geoData.countries[0][1];
-                  const width = Math.max(10, (count / maxVal) * 100);
+                {geoData.countries.map((country) => {
+                  const maxVal = geoData.countries[0]?.count || 1;
+                  const width = Math.max(10, (country.count / maxVal) * 100);
                   const flags: Record<string, string> = {
-                    "United States": "🇺🇸",
-                    "United Kingdom": "🇬🇧",
-                    Germany: "🇩🇪",
-                    Japan: "🇯🇵",
-                    Australia: "🇦🇺",
-                    Canada: "🇨🇦",
-                    France: "🇫🇷",
-                    Brazil: "🇧🇷",
+                    "United States": "ðŸ‡ºðŸ‡¸",
+                    "United Kingdom": "ðŸ‡¬ðŸ‡§",
+                    Germany: "ðŸ‡©ðŸ‡ª",
+                    Japan: "ðŸ‡¯ðŸ‡µ",
+                    Australia: "ðŸ‡¦ðŸ‡º",
+                    Canada: "ðŸ‡¨ðŸ‡¦",
+                    France: "ðŸ‡«ðŸ‡·",
+                    Brazil: "ðŸ‡§ðŸ‡·",
                   };
                   return (
-                    <div key={country} className="space-y-1">
+                    <div key={country.name} className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {flags[country] || ""} {country}
+                          {flags[country.name] || ""} {country.name}
                         </span>
-                        <span className="text-xs text-gray-500">{count} orders</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">{country.count} orders</span>
+                          <span className="text-xs font-medium tabular-nums">{formatMoney(country.revenue)}</span>
+                        </div>
                       </div>
                       <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div
@@ -470,3 +530,5 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
+

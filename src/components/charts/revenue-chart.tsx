@@ -11,6 +11,7 @@ interface RevenueData {
 interface RevenueChartProps {
   data: RevenueData[];
   height?: number;
+  onClick?: (payload: any) => void;
 }
 
 interface CustomTooltipProps {
@@ -32,7 +33,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   );
 }
 
-export function RevenueChart({ data, height = 300 }: RevenueChartProps) {
+export function RevenueChart({ data, height = 300, onClick }: RevenueChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-gray-400" style={{ height }}>
@@ -78,7 +79,14 @@ export function RevenueChart({ data, height = 300 }: RevenueChartProps) {
             <stop offset="100%" stopColor="#818cf8" stopOpacity={0.6} />
           </linearGradient>
         </defs>
-        <Bar dataKey="revenue" fill="url(#revenueGradient)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+        <Bar 
+          dataKey="revenue" 
+          fill="url(#revenueGradient)" 
+          radius={[4, 4, 0, 0]} 
+          maxBarSize={48} 
+          onClick={onClick ? (data) => onClick(data) : undefined} 
+          style={{ cursor: onClick ? "pointer" : "default" }}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

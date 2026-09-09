@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -312,7 +312,7 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{tteam("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tteam("subtitle")}</p>
@@ -924,7 +924,7 @@ export default function TeamPage() {
                             {row.roles[r as keyof typeof row.roles] ? (
                               <Check size={16} className="h-4 w-4 text-emerald-500 mx-auto" />
                             ) : (
-                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                              <span className="text-gray-300 dark:text-gray-600">â€”</span>
                             )}
                           </TableCell>
                         ))}
@@ -940,3 +940,4 @@ export default function TeamPage() {
     </div>
   );
 }
+

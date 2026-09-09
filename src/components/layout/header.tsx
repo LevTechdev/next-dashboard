@@ -212,48 +212,53 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         />
       </div>
       <div className="relative flex items-center justify-between h-full px-3 lg:px-6 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl">
-        {/* Mobile menu + Logo */}
-        <div className="flex items-center gap-1.5 lg:hidden">
-          <button
-            onClick={onMenuClick}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 -ml-2"
-            aria-label="Toggle menu"
-          >
-            <MenuIcon size={20} className="h-5 w-5" animateOnHover={false} />
-          </button>
-          {/* Compact search trigger for phones (<640px) — the pill is hidden there */}
-          <button
-            onClick={openSearch}
-            className="sm:hidden p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            aria-label={tcommon("search")}
-          >
-            <SearchIcon size={18} className="h-[18px] w-[18px]" />
-          </button>
+        {/* Left Side: Mobile Menu + Organization Switcher */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 mr-2 sm:mr-6">
+          {/* Mobile menu + Logo */}
+          <div className="flex items-center gap-1.5 lg:hidden">
+            <button
+              onClick={onMenuClick}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 -ml-2"
+              aria-label="Toggle menu"
+            >
+              <MenuIcon size={20} className="h-5 w-5" animateOnHover={false} />
+            </button>
+            {/* Compact search trigger for phones (<640px) — the pill is hidden there */}
+            <button
+              onClick={openSearch}
+              className="sm:hidden p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label={tcommon("search")}
+            >
+              <SearchIcon size={18} className="h-[18px] w-[18px]" />
+            </button>
+          </div>
+
+          {/* Organization Switcher */}
+          <div className="flex items-center">
+            <OrganizationSwitcher />
+          </div>
         </div>
 
-        {/* Organization Switcher */}
-        <div className="flex items-center">
-          <OrganizationSwitcher />
-        </div>
-
-        {/* Search / Command Palette Trigger */}
-        <div className="flex-1 max-w-[150px] sm:max-w-[190px] md:max-w-[240px] lg:max-w-[280px] hidden sm:block">
-          <button onClick={openSearch} className="relative w-full group">
-            <div className="flex items-center gap-2 sm:gap-3 h-9 px-3 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl cursor-pointer group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-all duration-200 group-hover:shadow-sm">
-              <SearchIcon size={16} className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="flex-1 text-left text-sm text-gray-400 truncate">
-                {tcommon("search")}
-              </span>
-              <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono text-gray-400 shadow-sm shrink-0">
-                <Command className="h-3 w-3" />
-                <span>K</span>
-              </kbd>
-            </div>
-          </button>
+        {/* Center: Search / Command Palette Trigger (Centered with generous spacing) */}
+        <div className="flex-1 flex justify-center items-center px-2 sm:px-6">
+          <div className="w-full max-w-[220px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px] hidden sm:block">
+            <button onClick={openSearch} className="relative w-full group">
+              <div className="flex items-center gap-2 sm:gap-3 h-9 px-3 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl cursor-pointer group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-all duration-200 group-hover:shadow-sm">
+                <SearchIcon size={16} className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="flex-1 text-left text-sm text-gray-400 truncate">
+                  {tcommon("search")}
+                </span>
+                <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono text-gray-400 shadow-sm shrink-0">
+                  <Command className="h-3 w-3" />
+                  <span>K</span>
+                </kbd>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           {/* Real-time Connection Status */}
           <RealtimeConnectionBadge />
 
@@ -312,10 +317,14 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </DropdownMenu>
 
           {/* Currency Switcher */}
-          <CurrencySwitcher />
+          <div className="hidden lg:block">
+            <CurrencySwitcher />
+          </div>
 
           {/* Language Toggle */}
-          <LanguageToggle locale={pathname.split("/")[1] || "en"} pathname={pathname} />
+          <div className="hidden lg:block">
+            <LanguageToggle locale={pathname.split("/")[1] || "en"} pathname={pathname} />
+          </div>
 
           {/* Notifications */}
           <NotificationPanel />

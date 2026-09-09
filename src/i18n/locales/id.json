@@ -3,6 +3,21 @@
     "name": "Dashboard",
     "tagline": "Platform Manajemen Bisnis"
   },
+  "commandPalette": {
+    "quickActions": "Tindakan Cepat",
+    "createProduct": "Buat Produk",
+    "createProductDesc": "Tambahkan produk baru ke katalog Anda",
+    "createOrder": "Buat Pesanan",
+    "createOrderDesc": "Mulai pesanan baru secara manual",
+    "inviteMember": "Undang Anggota Tim",
+    "inviteMemberDesc": "Kirim undangan untuk bergabung dengan ruang kerja Anda",
+    "toggleTheme": "Ganti Tema",
+    "toggleThemeDesc": "Beralih antara tema terang, gelap, dan sistem",
+    "openCopilot": "Buka AI Copilot",
+    "openCopilotDesc": "Minta bantuan AI untuk tugas dan analisis",
+    "installApp": "Instal Aplikasi",
+    "installAppDesc": "Instal aplikasi desktop atau seluler"
+  },
   "nav": {
     "analytics": "Analitik",
     "dashboard": "Dashboard",
@@ -35,7 +50,33 @@
     "sso": "SSO / Perusahaan",
     "aiGenerator": "Generator AI",
     "projects": "Proyek",
-    "superAdmin": "Super Admin"
+    "superAdmin": "Super Admin",
+    "apiDocs": "API Docs"
+  },
+  "apiDocs": {
+    "title": "API Documentation",
+    "subtitle": "Explore and test your API endpoints",
+    "searchPlaceholder": "Search endpoints...",
+    "method": "Method",
+    "path": "Path",
+    "description": "Description",
+    "queryParams": "Query Parameters",
+    "requestBody": "Request Body",
+    "responseExample": "Response Example",
+    "tryIt": "Try It",
+    "send": "Send Request",
+    "response": "Response",
+    "copyCurl": "Copy cURL",
+    "copied": "Copied!",
+    "authRequired": "Authentication Required",
+    "noAuth": "No Authentication",
+    "noEndpoints": "No endpoints found",
+    "noEndpointsDesc": "Try adjusting your search query",
+    "param": "Parameter",
+    "type": "Type",
+    "field": "Field",
+    "allGroups": "All",
+    "endpoints": "endpoints"
   },
   "dashboard": {
     "title": "Ikhtisar Dashboard",
@@ -195,6 +236,7 @@
     "active": "Aktif",
     "inactive": "Nonaktif",
     "noCustomers": "Tidak ada pelanggan",
+    "noCustomersDesc": "Direktori pelanggan Anda kosong. Pelanggan ditambahkan secara otomatis saat pesanan masuk.",
     "namePlaceholder": "Nama",
     "emailPlaceholder": "Email",
     "phonePlaceholder": "Telepon",
@@ -232,6 +274,7 @@
     "lowStock": "Stok Menipis",
     "outOfStock": "Habis",
     "noProducts": "Tidak ada produk",
+    "noProductsDesc": "Tambahkan produk pertama Anda untuk mulai mengelola katalog Anda",
     "updated": "Produk diperbarui",
     "added": "Produk ditambahkan",
     "deleted": "Produk dihapus",
@@ -321,6 +364,7 @@
     "filterByDate": "Filter berdasarkan tanggal",
     "clearFilter": "Hapus filter",
     "noDataInRange": "Tidak ada data dalam rentang tanggal ini",
+    "noDataInRangeDesc": "Coba sesuaikan rentang tanggal atau filter untuk melihat data",
     "revenueByPeriod": "Pendapatan berdasarkan periode",
     "revenueByChannel": "Pendapatan berdasarkan saluran",
     "topCustomers": "Pelanggan teratas",
@@ -353,6 +397,7 @@
     "payment": "Pembayaran",
     "date": "Tanggal",
     "noOrders": "Tidak ada pesanan",
+    "noOrdersDesc": "Pesanan akan muncul di sini setelah pelanggan mulai membeli",
     "details": "Detail Pesanan",
     "markShipped": "Tandai Dikirim",
     "markDelivered": "Tandai Terkirim",
@@ -882,7 +927,10 @@
     "savedBeneficiaries": "Penerima Tersimpan",
     "savedBeneficiariesDesc": "Isi otomatis 1-klik rekening dan kredensial penarikan terverifikasi",
     "indonesianBanksTitle": "Direktori Bank Seluruh Indonesia",
-    "indonesianBanksDesc": "50+ bank BUMN, swasta, BPD 4 wilayah, dan bank digital"
+    "indonesianBanksDesc": "50+ bank BUMN, swasta, BPD 4 wilayah, dan bank digital",
+    "actionsCol": "Tindakan",
+    "processInvoice": "Proses",
+    "invoicePaidSuccess": "Faktur berhasil diproses dan ditandai lunas!"
   },
   "integrations": {
     "title": "Integrasi",
@@ -1209,6 +1257,10 @@
     "readClearedToast": "Notifikasi dibaca dihapus",
     "rulesInAppTitle": "Notifikasi Dalam Aplikasi",
     "rulesInAppDesc": "Pilih acara yang memicu notifikasi dalam aplikasi",
+    "pushNotificationsTitle": "Notifikasi Push Browser",
+    "pushNotificationsDesc": "Terima notifikasi langsung di browser Anda meskipun aplikasi ditutup.",
+    "enablePushLabel": "Aktifkan Notifikasi Push",
+    "enablePushDesc": "Izinkan dasbor untuk mengirimkan peringatan web push kepada Anda.",
     "rulesThresholdsTitle": "Ambang Peringatan",
     "rulesThresholdsDesc": "Konfigurasi kapan peringatan otomatis dipicu",
     "threshStockLabel": "Ambang Stok Menipis",
@@ -3169,7 +3221,14 @@
     "insufficientBalance": "Saldo tersedia tidak mencukupi",
     "savedBeneficiaries": "Penerima Tersimpan",
     "loadedToTerminal": "Memuat {inv} ke Terminal QRIS",
-    "paymentVerifiedToast": "⚡ Pembayaran Terverifikasi! Rp {amt} diterima via {bank}"
+    "paymentVerifiedToast": "⚡ Pembayaran Terverifikasi! Rp {amt} diterima via {bank}",
+    "tabPos": "Numpad POS Kasir",
+    "tabReconciliation": "Rekonsiliasi & MDR",
+    "tabDisputes": "Pusat Sengketa",
+    "posTitle": "Terminal Numpad Cepat POS Kasir",
+    "posSubtitle": "Terminal penagihan cepat walk-in dengan pembuatan QRIS dinamis real-time dan konfirmasi audio",
+    "settlementTitle": "Rekonsiliasi Penyelesaian & Pembayaran Multi-Saluran",
+    "disputeTitle": "Pusat Resolusi Sengketa & Chargeback"
   },
   "webhookSimulator": {
     "simulateWebhook": "Simulasikan Webhook Gateway",
@@ -3200,5 +3259,23 @@
     "successToast": "Event webhook {event} berhasil dikirim & direkonsiliasi!",
     "errorToast": "Simulasi pengiriman webhook gagal: {error}",
     "close": "Tutup Inspektur"
+  },
+  "onboarding": {
+    "title": "Selamat Datang! Mari kita mulai",
+    "subtitle": "Selesaikan langkah-langkah ini untuk menyiapkan ruang kerja Anda",
+    "progress": "{percent}% selesai",
+    "dismiss": "Tutup",
+    "stepAddProduct": "Tambahkan produk pertama Anda",
+    "stepAddProductDesc": "Buat produk di katalog Anda untuk mulai berjualan",
+    "stepCreateOrder": "Buat pesanan pertama Anda",
+    "stepCreateOrderDesc": "Proses pesanan pengujian untuk melihat alur kerja",
+    "stepInviteMember": "Undang anggota tim",
+    "stepInviteMemberDesc": "Berkolaborasi dengan tim Anda dengan mengirim undangan",
+    "stepConfigNotifs": "Konfigurasi notifikasi",
+    "stepConfigNotifsDesc": "Siapkan lansiran untuk pesanan, inventaris, dan lainnya",
+    "stepCustomize": "Sesuaikan penampilan",
+    "stepCustomizeDesc": "Jadikan dasbor milik Anda dengan warna dan merek kustom",
+    "allDone": "Anda sudah siap!",
+    "allDoneDesc": "Anda telah menyelesaikan semua langkah penyiapan. Selamat berjualan!"
   }
 }

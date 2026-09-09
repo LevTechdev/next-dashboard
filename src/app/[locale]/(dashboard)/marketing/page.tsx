@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -139,7 +139,7 @@ export default function MarketingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{tmarketing("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tmarketing("subtitle")}</p>
@@ -327,3 +327,4 @@ export default function MarketingPage() {
     </div>
   );
 }
+

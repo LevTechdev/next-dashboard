@@ -143,7 +143,7 @@ export function OrganizationSwitcher() {
             ) : (
               <Building2 className="h-3.5 w-3.5 text-primary" />
             )}
-            <span className="max-w-[76px] sm:max-w-[120px] md:max-w-[150px] truncate text-gray-800 dark:text-gray-200">
+            <span className="hidden sm:inline-block max-w-[76px] sm:max-w-[120px] md:max-w-[150px] truncate text-gray-800 dark:text-gray-200">
               {activeTenant ? activeTenant.name : t("currentOrganization")}
             </span>
             <ChevronsUpDown className="h-3 w-3 text-gray-400 opacity-70 ml-0.5" />

@@ -181,8 +181,8 @@ export function PaymentGatewayWebhookSimulator({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-2">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
               <Zap className="h-5 w-5" />
@@ -194,7 +194,7 @@ export function PaymentGatewayWebhookSimulator({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <div className="flex-1 overflow-y-auto px-6 py-2 pb-6 space-y-4">
           {/* Form Settings */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {/* Event Type */}

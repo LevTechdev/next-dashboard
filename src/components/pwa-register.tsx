@@ -1,22 +1,37 @@
 "use client";
 
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 export function PWARegister() {
   useEffect(() => {
-    // Skip service worker registration in development to avoid stale chunk caching
-    if (process.env.NODE_ENV === "development") return;
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.log("PWA Service Worker registered:", registration.scope);
-        })
-        .catch((error) => {
-          console.log("PWA Service Worker registration failed:", error);
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              toast("Update Available", {
+                description: "A new version is available. Refresh to update.",
+                action: {
+                  label: "Refresh",
+                  onClick: () => window.location.reload(),
+                },
+                duration: Infinity,
+              });
+            }
+          });
         });
-    }
+      })
+      .catch((err) => {
+        console.warn("SW registration failed:", err);
+      });
   }, []);
 
   return null;

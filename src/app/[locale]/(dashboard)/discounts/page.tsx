@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -147,7 +147,7 @@ export default function DiscountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{tdiscounts("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tdiscounts("subtitle")}</p>
@@ -166,7 +166,7 @@ export default function DiscountsPage() {
                 key: (d: any) => (d.minPurchase > 0 ? d.minPurchase : "-"),
                 header: "Min Purchase",
               },
-              { key: (d: any) => `${d.usedCount}/${d.maxUses || "∞"}`, header: "Used" },
+              { key: (d: any) => `${d.usedCount}/${d.maxUses || "âˆž"}`, header: "Used" },
               { key: (d: any) => new Date(d.endsAt).toLocaleDateString(), header: "Valid Until" },
               {
                 key: (d: any) =>
@@ -320,7 +320,7 @@ export default function DiscountsPage() {
                     </TableCell>
                     <TableCell>{d.minPurchase > 0 ? formatCurrency(d.minPurchase) : "-"}</TableCell>
                     <TableCell>
-                      {d.usedCount}/{d.maxUses || "∞"}
+                      {d.usedCount}/{d.maxUses || "âˆž"}
                     </TableCell>
                     <TableCell className="text-xs">{formatDate(d.endsAt)}</TableCell>
                     <TableCell>
@@ -386,3 +386,4 @@ export default function DiscountsPage() {
     </div>
   );
 }
+

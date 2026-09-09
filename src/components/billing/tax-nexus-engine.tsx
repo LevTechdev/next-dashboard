@@ -103,44 +103,44 @@ export function TaxNexusEngine() {
         <Card className="border-border/70 shadow-xs">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {t("activeNexus")}
               </span>
-              <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <Landmark className="h-4 w-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 mt-2 font-mono">
+            <div className="text-2xl font-bold tracking-tight text-foreground mt-2 font-mono">
               {activeNexusCount}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">{t("kpiActiveSub")}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("kpiActiveSub")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/70 shadow-xs">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {t("approachingNexus")}
               </span>
-              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <AlertTriangle className="h-4 w-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 mt-2 font-mono">
+            <div className="text-2xl font-bold tracking-tight text-foreground mt-2 font-mono">
               {approachingCount}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">{t("kpiApproachingSub")}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("kpiApproachingSub")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/70 shadow-xs">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+              <span className="text-xs text-muted-foreground font-medium truncate">
                 {t("estimatedLiability")}
               </span>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <Receipt className="h-4 w-4" />
               </div>
             </div>
@@ -150,24 +150,24 @@ export function TaxNexusEngine() {
             >
               {formatMoney(89400)}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">{t("kpiLiabilitySub")}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("kpiLiabilitySub")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/70 shadow-xs">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {t("monitoredRegions")}
               </span>
-              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <Globe className="h-4 w-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2 font-mono">
+            <div className="text-2xl font-bold tracking-tight text-foreground mt-2 font-mono">
               {jurisdictions.length}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">{t("kpiMonitoredSub")}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("kpiMonitoredSub")}</p>
           </CardContent>
         </Card>
       </div>

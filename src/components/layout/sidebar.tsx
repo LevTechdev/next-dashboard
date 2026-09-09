@@ -74,15 +74,18 @@ const insightsItems = [
   { label: "auditLog", href: "/audit-log", icon: ClipboardCheckIcon },
 ];
 
+import { Code2 } from "lucide-react";
+
 const adminItems = [
   { label: "superAdmin", href: "/admin", icon: ShieldCheckIcon },
   { label: "roles", href: "/roles", icon: ShieldCheckIcon },
   { label: "integrations", href: "/integrations", icon: EarthIcon },
   { label: "sso", href: "/sso", icon: KeyIcon },
+  { label: "apiDocs", href: "/api-docs", icon: Code2 },
 ];
 
 const settingsItems = [
-  { label: "team", href: "/team", icon: UsersRoundIcon },
+  { label: "team", href: "/settings/team", icon: UsersRoundIcon },
   { label: "billing", href: "/billing", icon: CreditCardIcon },
   { label: "notifications", href: "/notifications", icon: BellIcon },
   { label: "security", href: "/security", icon: LockKeyholeIcon },

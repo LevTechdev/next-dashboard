@@ -3,6 +3,21 @@
     "name": "ダッシュボード",
     "tagline": "ビジネス管理プラットフォーム"
   },
+  "commandPalette": {
+    "quickActions": "クイックアクション",
+    "createProduct": "商品を追加",
+    "createProductDesc": "カタログに新しい商品を追加します",
+    "createOrder": "注文を作成",
+    "createOrderDesc": "手動で新しい注文を作成します",
+    "inviteMember": "チームメンバーを招待",
+    "inviteMemberDesc": "ワークスペースに招待状を送信します",
+    "toggleTheme": "テーマを切り替え",
+    "toggleThemeDesc": "ライト、ダーク、システムテーマを切り替えます",
+    "openCopilot": "AI Copilotを開く",
+    "openCopilotDesc": "AIにタスクと分析を依頼します",
+    "installApp": "アプリをインストール",
+    "installAppDesc": "デスクトップまたはモバイルアプリとしてインストールします"
+  },
   "nav": {
     "analytics": "分析",
     "dashboard": "ダッシュボード",
@@ -35,7 +50,33 @@
     "sso": "SSO / エンタープライズ",
     "aiGenerator": "AI生成",
     "projects": "プロジェクト",
-    "superAdmin": "スーパー管理者"
+    "superAdmin": "スーパー管理者",
+    "apiDocs": "API Docs"
+  },
+  "apiDocs": {
+    "title": "API Documentation",
+    "subtitle": "Explore and test your API endpoints",
+    "searchPlaceholder": "Search endpoints...",
+    "method": "Method",
+    "path": "Path",
+    "description": "Description",
+    "queryParams": "Query Parameters",
+    "requestBody": "Request Body",
+    "responseExample": "Response Example",
+    "tryIt": "Try It",
+    "send": "Send Request",
+    "response": "Response",
+    "copyCurl": "Copy cURL",
+    "copied": "Copied!",
+    "authRequired": "Authentication Required",
+    "noAuth": "No Authentication",
+    "noEndpoints": "No endpoints found",
+    "noEndpointsDesc": "Try adjusting your search query",
+    "param": "Parameter",
+    "type": "Type",
+    "field": "Field",
+    "allGroups": "All",
+    "endpoints": "endpoints"
   },
   "dashboard": {
     "title": "ダッシュボード概要",
@@ -195,6 +236,7 @@
     "active": "アクティブ",
     "inactive": "非アクティブ",
     "noCustomers": "顧客が見つかりません",
+    "noCustomersDesc": "顧客ディレクトリは空です。注文が入ると顧客は自動的に追加されます。",
     "namePlaceholder": "名前",
     "emailPlaceholder": "メール",
     "phonePlaceholder": "電話番号",
@@ -232,6 +274,7 @@
     "lowStock": "在庫わずか",
     "outOfStock": "在庫切れ",
     "noProducts": "商品が見つかりません",
+    "noProductsDesc": "カタログの管理を始めるには最初の商品を追加してください",
     "updated": "商品を更新しました",
     "added": "商品を追加しました",
     "deleted": "商品を削除しました",
@@ -321,6 +364,7 @@
     "filterByDate": "日付でフィルター",
     "clearFilter": "フィルターをクリア",
     "noDataInRange": "この日付範囲にデータがありません",
+    "noDataInRangeDesc": "データを見るには日付範囲やフィルターを調整してください",
     "revenueByPeriod": "期間別収益",
     "revenueByChannel": "チャネル別収益",
     "topCustomers": "トップ顧客",
@@ -353,6 +397,7 @@
     "payment": "支払い",
     "date": "日付",
     "noOrders": "注文が見つかりません",
+    "noOrdersDesc": "顧客が購入を開始すると、ここに注文が表示されます",
     "details": "注文詳細",
     "markShipped": "発送済みにする",
     "markDelivered": "配達済みにする",
@@ -882,7 +927,10 @@
     "savedBeneficiaries": "保存された受取人",
     "savedBeneficiariesDesc": "ワンクリックで確認済み口座と出金情報を自動入力",
     "indonesianBanksTitle": "インドネシア全土銀行名鑑",
-    "indonesianBanksDesc": "国有・民間・4大地域BPD・デジタル銀行など50行以上を網羅"
+    "indonesianBanksDesc": "国有・民間・4大地域BPD・デジタル銀行など50行以上を網羅",
+    "actionsCol": "アクション",
+    "processInvoice": "処理",
+    "invoicePaidSuccess": "請求書が正常に処理され、支払い済みとしてマークされました！"
   },
   "integrations": {
     "title": "連携",
@@ -3169,7 +3217,14 @@
     "insufficientBalance": "利用可能残高が不足しています",
     "savedBeneficiaries": "保存済み受取人",
     "loadedToTerminal": "{inv} をQRIS端末に読み込みました",
-    "paymentVerifiedToast": "⚡ 決済が確認されました！{bank} 経由で Rp {amt} を受領しました"
+    "paymentVerifiedToast": "⚡ 決済が確認されました！{bank} 経由で Rp {amt} を受領しました",
+    "tabPos": "レジPOSテンキー",
+    "tabReconciliation": "精算とMDR",
+    "tabDisputes": "異議申し立てセンター",
+    "posTitle": "レジPOSクイックテンキー端末",
+    "posSubtitle": "リアルタイムの動的QRIS生成と音声フィードバックを備えたウォークイン請求端末",
+    "settlementTitle": "加盟店精算照合およびマルチチャネル支払い",
+    "disputeTitle": "異議申し立ておよびチャージバック解決センター"
   },
   "webhookSimulator": {
     "simulateWebhook": "ゲートウェイWebhookをシミュレート",
@@ -3200,5 +3255,23 @@
     "successToast": "Webhookイベント {event} が正常に配信および照合されました！",
     "errorToast": "Webhook配信シミュレーションが失敗しました: {error}",
     "close": "インスペクターを閉じる"
+  },
+  "onboarding": {
+    "title": "ようこそ！始めましょう",
+    "subtitle": "ワークスペースを設定するためにこれらの手順を完了してください",
+    "progress": "{percent}% 完了",
+    "dismiss": "閉じる",
+    "stepAddProduct": "最初の製品を追加する",
+    "stepAddProductDesc": "販売を開始するためにカタログに製品を作成する",
+    "stepCreateOrder": "最初の注文を作成する",
+    "stepCreateOrderDesc": "ワークフローを確認するためにテスト注文を処理する",
+    "stepInviteMember": "チームメンバーを招待する",
+    "stepInviteMemberDesc": "招待を送信してチームとコラボレーションする",
+    "stepConfigNotifs": "通知を設定する",
+    "stepConfigNotifsDesc": "注文、在庫などのアラートを設定する",
+    "stepCustomize": "外観をカスタマイズする",
+    "stepCustomizeDesc": "カスタムカラーとブランディングでダッシュボードを自分好みにする",
+    "allDone": "準備完了です！",
+    "allDoneDesc": "すべての設定手順を完了しました。販売をお楽しみください！"
   }
 }

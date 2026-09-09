@@ -1,91 +1,73 @@
-const CACHE_NAME = "dashboard-cache-v4";
-const OFFLINE_PAGE = "/en/login";
+const CACHE_NAME = 'next-dashboard-v1';
+const STATIC_ASSETS = [
+  '/offline',
+];
 
-// Assets to pre-cache during install
-const PRE_CACHE = ["/", "/en/login", "/en/dashboard", "/manifest.json"];
-
-// Install event - pre-cache essential pages
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE)));
+// Install: cache the offline page
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+  );
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
-self.addEventListener("activate", (event) => {
+// Activate: clean old caches
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))),
-      ),
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
-// Fetch event - network-first with smart offline caching
-self.addEventListener("fetch", (event) => {
+// Fetch: network-first for navigations, cache-first for static assets
+self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
-
-  // Only handle same-origin GET requests
-  if (request.method !== "GET") return;
-  if (url.origin !== self.location.origin) return;
-
-  // Smart caching for key dashboard metrics APIs
-  if (url.pathname.startsWith("/api/")) {
-    const isCacheableApi =
-      url.pathname === "/api/dashboard" ||
-      url.pathname === "/api/orders" ||
-      url.pathname === "/api/customers" ||
-      url.pathname.startsWith("/api/analytics/");
-
-    if (isCacheableApi) {
-      event.respondWith(
-        fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-            }
-            return response;
-          })
-          .catch(async () => {
-            const cached = await caches.match(request);
-            if (cached) return cached;
-            return new Response(
-              JSON.stringify({
-                error: "Offline mode: viewing offline state",
-                offline: true,
-              }),
-              {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-              },
-            );
-          }),
-      );
-      return;
-    }
-    // Skip mutations or sensitive auth APIs
-    return;
-  }
-
-  // Skip Next.js build assets — they have hashed filenames
-  if (url.pathname.startsWith("/_next/static/")) {
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+  
+  // Navigation requests (page loads)
+  if (request.mode === 'navigate') {
     event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(request);
-        if (cached) return cached;
-        const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      }),
+      fetch(request)
+        .then((response) => {
+          // Cache successful navigation responses
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => {
+          // Return cached version or offline page
+          return caches.match(request).then((cached) => cached || caches.match('/offline'));
+        })
     );
     return;
   }
-
-  // Navigation requests: network-first, offline fallback
-  if (request.mode === "navigate") {
+  
+  // Static assets (JS, CSS, images, fonts)
+  if (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'image' ||
+    request.destination === 'font'
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const fetchPromise = fetch(request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+  
+  // API requests: network-first
+  if (request.url.includes('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -93,90 +75,35 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          return caches.match(OFFLINE_PAGE);
-        }),
+        .catch(() => caches.match(request))
     );
     return;
   }
-
-  // Static assets (CSS, images, fonts): stale-while-revalidate
-  if (
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".jpg") ||
-    url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".woff2") ||
-    url.pathname.endsWith(".woff")
-  ) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(request);
-        const fetchPromise = fetch(request)
-          .then((response) => {
-            if (response.ok) cache.put(request, response.clone());
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached || fetchPromise;
-      }),
-    );
-    return;
-  }
-
-  // Everything else: network-first with cache fallback
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        return response;
-      })
-      .catch(() => caches.match(request)),
-  );
 });
 
 // Handle push notifications
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
-
-  let data;
-  try {
-    data = event.data.json();
-  } catch {
-    data = { title: "Dashboard Update", body: event.data.text() };
-  }
-
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() || {};
+  const title = data.title || 'New Notification';
   const options = {
-    body: data.body || data.description || "",
-    icon: "/icon",
-    badge: "/icon",
-    vibrate: [200, 100, 200],
-    timestamp: Date.now(),
-    data: { url: data.url || "/en/dashboard" },
+    body: data.body || '',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    data: { url: data.url || '/' },
   };
-
-  event.waitUntil(self.registration.showNotification(data.title || "Dashboard Update", options));
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Handle notification clicks — navigate to relevant page
-self.addEventListener("notificationclick", (event) => {
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "/en/dashboard";
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.focus();
-          client.navigate(targetUrl);
-          return;
-        }
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(url) && 'focus' in client) return client.focus();
       }
-      clients.openWindow(targetUrl);
-    }),
+      return self.clients.openWindow(url);
+    })
   );
 });

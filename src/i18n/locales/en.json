@@ -3,6 +3,21 @@
     "name": "Dashboard",
     "tagline": "Business Management Platform"
   },
+  "commandPalette": {
+    "quickActions": "Quick Actions",
+    "createProduct": "Create Product",
+    "createProductDesc": "Add a new product to your catalog",
+    "createOrder": "Create Order",
+    "createOrderDesc": "Start a new order manually",
+    "inviteMember": "Invite Team Member",
+    "inviteMemberDesc": "Send an invitation to join your workspace",
+    "toggleTheme": "Toggle Theme",
+    "toggleThemeDesc": "Switch between light, dark, and system theme",
+    "openCopilot": "Open AI Copilot",
+    "openCopilotDesc": "Ask AI to help with tasks and analysis",
+    "installApp": "Install App",
+    "installAppDesc": "Install as a desktop or mobile app"
+  },
   "nav": {
     "analytics": "Analytics",
     "dashboard": "Dashboard",
@@ -35,7 +50,33 @@
     "sso": "SSO / Enterprise",
     "aiGenerator": "AI Generator",
     "projects": "Projects",
-    "superAdmin": "Super Admin"
+    "superAdmin": "Super Admin",
+    "apiDocs": "API Docs"
+  },
+  "apiDocs": {
+    "title": "API Documentation",
+    "subtitle": "Explore and test your API endpoints",
+    "searchPlaceholder": "Search endpoints...",
+    "method": "Method",
+    "path": "Path",
+    "description": "Description",
+    "queryParams": "Query Parameters",
+    "requestBody": "Request Body",
+    "responseExample": "Response Example",
+    "tryIt": "Try It",
+    "send": "Send Request",
+    "response": "Response",
+    "copyCurl": "Copy cURL",
+    "copied": "Copied!",
+    "authRequired": "Authentication Required",
+    "noAuth": "No Authentication",
+    "noEndpoints": "No endpoints found",
+    "noEndpointsDesc": "Try adjusting your search query",
+    "param": "Parameter",
+    "type": "Type",
+    "field": "Field",
+    "allGroups": "All",
+    "endpoints": "endpoints"
   },
   "dashboard": {
     "title": "Dashboard Overview",
@@ -195,6 +236,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "noCustomers": "No customers found",
+    "noCustomersDesc": "Your customer directory is empty. Customers are added automatically when orders come in.",
     "namePlaceholder": "Name",
     "emailPlaceholder": "Email",
     "phonePlaceholder": "Phone",
@@ -232,6 +274,7 @@
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock",
     "noProducts": "No products found",
+    "noProductsDesc": "Add your first product to start managing your catalog",
     "updated": "Product updated",
     "added": "Product added",
     "deleted": "Product deleted",
@@ -321,6 +364,7 @@
     "filterByDate": "Filter by date",
     "clearFilter": "Clear filter",
     "noDataInRange": "No data in this date range",
+    "noDataInRangeDesc": "Try adjusting the date range or filters to see data",
     "revenueByPeriod": "Revenue by period",
     "revenueByChannel": "Revenue by channel",
     "topCustomers": "Top customers",
@@ -353,6 +397,7 @@
     "payment": "Payment",
     "date": "Date",
     "noOrders": "No orders found",
+    "noOrdersDesc": "Orders will appear here once customers start purchasing",
     "details": "Order Details",
     "markShipped": "Mark as Shipped",
     "markDelivered": "Mark as Delivered",
@@ -882,7 +927,10 @@
     "savedBeneficiaries": "Saved Beneficiaries",
     "savedBeneficiariesDesc": "1-click fill verified account and payout credentials",
     "indonesianBanksTitle": "Indonesian Banking Directory",
-    "indonesianBanksDesc": "50+ national, private, regional BPD across 4 regions, and digital banks"
+    "indonesianBanksDesc": "50+ national, private, regional BPD across 4 regions, and digital banks",
+    "actionsCol": "Actions",
+    "processInvoice": "Process",
+    "invoicePaidSuccess": "Invoice processed and marked as paid!"
   },
   "integrations": {
     "title": "Integrations",
@@ -1209,6 +1257,10 @@
     "readClearedToast": "Read notifications cleared",
     "rulesInAppTitle": "In-App Notifications",
     "rulesInAppDesc": "Choose which events trigger in-app notifications",
+    "pushNotificationsTitle": "Browser Push Notifications",
+    "pushNotificationsDesc": "Receive notifications directly in your browser even when the app is closed.",
+    "enablePushLabel": "Enable Push Notifications",
+    "enablePushDesc": "Allow the dashboard to send you web push alerts.",
     "rulesThresholdsTitle": "Alert Thresholds",
     "rulesThresholdsDesc": "Configure when automated alerts are triggered",
     "threshStockLabel": "Low Stock Threshold",
@@ -3169,7 +3221,14 @@
     "insufficientBalance": "Insufficient available balance",
     "savedBeneficiaries": "Saved Beneficiaries",
     "loadedToTerminal": "Loaded {inv} to QRIS Terminal",
-    "paymentVerifiedToast": "⚡ Payment Verified! Rp {amt} received via {bank}"
+    "paymentVerifiedToast": "⚡ Payment Verified! Rp {amt} received via {bank}",
+    "tabPos": "Cashier POS Numpad",
+    "tabReconciliation": "Settlement & MDR",
+    "tabDisputes": "Dispute Center",
+    "posTitle": "Cashier POS Quick-Numpad Terminal",
+    "posSubtitle": "Rapid walk-in billing terminal with real-time dynamic QRIS generation and audio feedback",
+    "settlementTitle": "Merchant Settlement Reconciliation & Multi-Channel Payouts",
+    "disputeTitle": "Dispute & Chargeback Resolution Center"
   },
   "webhookSimulator": {
     "simulateWebhook": "Simulate Gateway Webhook",
@@ -3200,5 +3259,23 @@
     "successToast": "Webhook event {event} successfully dispatched & reconciled!",
     "errorToast": "Webhook dispatch simulation failed: {error}",
     "close": "Close Inspector"
+  },
+  "onboarding": {
+    "title": "Welcome! Let's get started",
+    "subtitle": "Complete these steps to set up your workspace",
+    "progress": "{percent}% complete",
+    "dismiss": "Dismiss",
+    "stepAddProduct": "Add your first product",
+    "stepAddProductDesc": "Create a product in your catalog to start selling",
+    "stepCreateOrder": "Create your first order",
+    "stepCreateOrderDesc": "Process a test order to see the workflow",
+    "stepInviteMember": "Invite a team member",
+    "stepInviteMemberDesc": "Collaborate with your team by sending an invite",
+    "stepConfigNotifs": "Configure notifications",
+    "stepConfigNotifsDesc": "Set up alerts for orders, inventory, and more",
+    "stepCustomize": "Customize appearance",
+    "stepCustomizeDesc": "Make the dashboard yours with custom colors and branding",
+    "allDone": "You're all set!",
+    "allDoneDesc": "You've completed all the setup steps. Happy selling!"
   }
 }

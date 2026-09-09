@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
@@ -95,7 +95,7 @@ interface InventoryData {
   inStockCount: number;
 }
 
-// ─── Category Breakdown ─────────────────────────────────────────────────────
+// â”€â”€â”€ Category Breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function CategoryBreakdown({
   products,
@@ -160,7 +160,7 @@ function CategoryBreakdown({
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function InventoryPage() {
   const tinventory = useTranslations("inventory");
@@ -396,7 +396,7 @@ export default function InventoryPage() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tinventory("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button
             onClick={() => {
               setPoLineItems([]);
@@ -541,7 +541,7 @@ export default function InventoryPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ─── TAB 1: Stock Overview ─── */}
+        {/* â”€â”€â”€ TAB 1: Stock Overview â”€â”€â”€ */}
         <TabsContent value="stock" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
@@ -640,7 +640,7 @@ export default function InventoryPage() {
           </div>
         </TabsContent>
 
-        {/* ─── TAB 2: Smart Replenishment ─── */}
+        {/* â”€â”€â”€ TAB 2: Smart Replenishment â”€â”€â”€ */}
         <TabsContent value="replenishment" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -781,7 +781,7 @@ export default function InventoryPage() {
           </Card>
         </TabsContent>
 
-        {/* ─── TAB 3: Purchase Orders ─── */}
+        {/* â”€â”€â”€ TAB 3: Purchase Orders â”€â”€â”€ */}
         <TabsContent value="purchaseOrders" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -894,7 +894,7 @@ export default function InventoryPage() {
           </Card>
         </TabsContent>
 
-        {/* ─── TAB 4: Multi-Warehouse Allocation ─── */}
+        {/* â”€â”€â”€ TAB 4: Multi-Warehouse Allocation â”€â”€â”€ */}
         <TabsContent value="warehouses" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {warehouses.map((wh) => (
@@ -910,7 +910,7 @@ export default function InventoryPage() {
                   </div>
                   <CardTitle className="text-sm font-bold mt-2">{wh.name}</CardTitle>
                   <CardDescription className="text-xs">
-                    {wh.city}, {wh.country} • {wh.allocationPercent}% Network Share
+                    {wh.city}, {wh.country} â€¢ {wh.allocationPercent}% Network Share
                   </CardDescription>
                 </CardHeader>
 
@@ -966,13 +966,13 @@ export default function InventoryPage() {
           </div>
         </TabsContent>
 
-        {/* ─── TAB 5: Logistics Fleet & Carrier Tracking ─── */}
+        {/* â”€â”€â”€ TAB 5: Logistics Fleet & Carrier Tracking â”€â”€â”€ */}
         <TabsContent value="logistics" className="space-y-6">
           <LogisticsFleetTracker />
         </TabsContent>
       </Tabs>
 
-      {/* ─── Create Purchase Order Dialog ─── */}
+      {/* â”€â”€â”€ Create Purchase Order Dialog â”€â”€â”€ */}
       <Dialog open={createPoOpen} onOpenChange={setCreatePoOpen}>
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleCreatePoSubmit}>
@@ -1135,3 +1135,4 @@ export default function InventoryPage() {
     </motion.div>
   );
 }
+

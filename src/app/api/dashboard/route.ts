@@ -21,6 +21,8 @@ export async function GET(req: Request) {
       topProducts,
       salesChannels,
       ordersLastYear,
+      customersLastYear,
+      productsLastYear
     ] = await Promise.all([
       prisma.order.aggregate({ where: { tenantId }, _sum: { grandTotal: true } }),
       prisma.order.count({ where: { tenantId } }),
@@ -46,6 +48,16 @@ export async function GET(req: Request) {
         select: { createdAt: true, grandTotal: true },
         orderBy: { createdAt: "asc" },
       }),
+      prisma.customer.findMany({
+        where: { tenantId, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.product.findMany({
+        where: { tenantId, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
 
     // Calculate growth vs previous month
@@ -57,59 +69,73 @@ export async function GET(req: Request) {
     let previousMonthRevenue = 0;
     let currentMonthOrders = 0;
     let previousMonthOrders = 0;
+    let currentMonthCustomers = 0;
+    let previousMonthCustomers = 0;
+    let currentMonthProducts = 0;
+    let previousMonthProducts = 0;
 
-    ordersLastYear.forEach(order => {
-      const d = new Date(order.createdAt);
-      if (d.getFullYear() === currentYear) {
-        if (d.getMonth() === currentMonth) {
-          currentMonthRevenue += order.grandTotal;
-          currentMonthOrders++;
-        } else if (d.getMonth() === currentMonth - 1) {
-          previousMonthRevenue += order.grandTotal;
-          previousMonthOrders++;
+    const processGrowth = (items: any[], currentRef: {val:number}, prevRef: {val:number}, valueFn: (item: any) => number = () => 1) => {
+      items.forEach(item => {
+        const d = new Date(item.createdAt);
+        if (d.getFullYear() === currentYear) {
+          if (d.getMonth() === currentMonth) currentRef.val += valueFn(item);
+          else if (d.getMonth() === currentMonth - 1) prevRef.val += valueFn(item);
+        } else if (currentMonth === 0 && d.getFullYear() === currentYear - 1 && d.getMonth() === 11) {
+          prevRef.val += valueFn(item);
         }
-      } else if (currentMonth === 0 && d.getFullYear() === currentYear - 1 && d.getMonth() === 11) {
-        previousMonthRevenue += order.grandTotal;
-        previousMonthOrders++;
-      }
-    });
+      });
+    };
+
+    let revC = {val:0}, revP = {val:0};
+    let ordC = {val:0}, ordP = {val:0};
+    processGrowth(ordersLastYear, revC, revP, o => o.grandTotal);
+    processGrowth(ordersLastYear, ordC, ordP);
+    
+    let custC = {val:0}, custP = {val:0};
+    processGrowth(customersLastYear, custC, custP);
+    
+    let prodC = {val:0}, prodP = {val:0};
+    processGrowth(productsLastYear, prodC, prodP);
 
     const calculateGrowth = (current: number, previous: number) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return Number((((current - previous) / previous) * 100).toFixed(1));
     };
 
-    const revenueGrowth = calculateGrowth(currentMonthRevenue, previousMonthRevenue);
-    const ordersGrowth = calculateGrowth(currentMonthOrders, previousMonthOrders);
+    const revenueGrowth = calculateGrowth(revC.val, revP.val);
+    const ordersGrowth = calculateGrowth(ordC.val, ordP.val);
+    const customersGrowth = calculateGrowth(custC.val, custP.val);
+    const productsGrowth = calculateGrowth(prodC.val, prodP.val);
 
-    // Calculate monthly revenue in JavaScript (database-agnostic)
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const monthlyMap: Record<string, number> = {};
+    // Calculate monthly data in JavaScript
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    const monthlyRevMap: Record<string, number> = {};
+    const monthlyOrdMap: Record<string, number> = {};
+    const monthlyCustMap: Record<string, number> = {};
+    const monthlyProdMap: Record<string, number> = {};
 
     ordersLastYear.forEach((order) => {
       const month = monthNames[new Date(order.createdAt).getMonth()];
-      monthlyMap[month] = (monthlyMap[month] || 0) + order.grandTotal;
+      monthlyRevMap[month] = (monthlyRevMap[month] || 0) + order.grandTotal;
+      monthlyOrdMap[month] = (monthlyOrdMap[month] || 0) + 1;
+    });
+    
+    customersLastYear.forEach((c) => {
+      const month = monthNames[new Date(c.createdAt).getMonth()];
+      monthlyCustMap[month] = (monthlyCustMap[month] || 0) + 1;
+    });
+    
+    productsLastYear.forEach((p) => {
+      const month = monthNames[new Date(p.createdAt).getMonth()];
+      monthlyProdMap[month] = (monthlyProdMap[month] || 0) + 1;
     });
 
-    const monthlyRevenue = monthNames
-      .filter((m) => monthlyMap[m] !== undefined)
-      .map((month) => ({
-        month,
-        revenue: monthlyMap[month],
-      }));
+    const monthlyRevenue = monthNames.filter(m => monthlyRevMap[m] !== undefined).map(month => ({ month, revenue: monthlyRevMap[month] }));
+    
+    const extractSparkline = (map: Record<string, number>) => {
+      return monthNames.filter(m => map[m] !== undefined).map(m => map[m] || 0).slice(-7);
+    };
 
     const channelSales = await Promise.all(
       salesChannels.map(async (channel) => {
@@ -133,8 +159,8 @@ export async function GET(req: Request) {
         totalProducts,
         revenueGrowth,
         ordersGrowth,
-        customersGrowth: 15.2, // TODO: Pull from actual customer dates if needed
-        productsGrowth: 5.1,
+        customersGrowth,
+        productsGrowth,
       },
       recentOrders: recentOrders.map(withDecryptedCustomer),
       topProducts: topProducts.map((p) => ({
@@ -146,6 +172,11 @@ export async function GET(req: Request) {
       })),
       salesByChannel: channelSales,
       revenueData: monthlyRevenue,
+      sparklines: {
+        orders: extractSparkline(monthlyOrdMap),
+        customers: extractSparkline(monthlyCustMap),
+        products: extractSparkline(monthlyProdMap)
+      }
     });
   } catch (error) {
     console.error("Dashboard API error:", error);

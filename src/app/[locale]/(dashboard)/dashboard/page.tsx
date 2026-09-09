@@ -37,6 +37,8 @@ import {
 } from "@/components/dashboard/widgets";
 import { WebhookEventSimulator } from "@/components/dashboard/webhook-event-simulator";
 import { motion } from "framer-motion";
+import { Sparkline } from "@/components/ui/sparkline";
+import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist";
 
 interface DashboardData {
   stats: {
@@ -52,6 +54,11 @@ interface DashboardData {
   recentOrders: any[];
   topProducts: any[];
   salesByChannel: { name: string; value: number; color: string }[];
+  sparklines?: {
+    orders: number[];
+    customers: number[];
+    products: number[];
+  };
   revenueData: { month: string; revenue: number }[];
 }
 
@@ -181,6 +188,7 @@ function PremiumStatCard({
   bg,
   isCurrency = false,
   delay = 0,
+  sparkData,
 }: {
   title: string;
   endValue: number;
@@ -190,6 +198,7 @@ function PremiumStatCard({
   bg: string;
   isCurrency?: boolean;
   delay?: number;
+  sparkData?: number[];
 }) {
   const t = useTranslations("dashboard");
   const { formatMoney, formatCompactMoney, currency } = useCurrency();
@@ -229,7 +238,7 @@ function PremiumStatCard({
         <div className="mt-4 min-w-0 overflow-hidden">
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{title}</p>
           <div
-            className="text-lg sm:text-xl xl:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 truncate tracking-tight"
+            className="text-lg sm:text-xl xl:text-2xl font-bold truncate text-gray-900 dark:text-gray-100 mt-1 truncate tracking-tight"
             title={isCurrency ? formatMoney(endValue) : String(endValue)}
           >
             {isCurrency ? (
@@ -244,6 +253,17 @@ function PremiumStatCard({
               <AnimatedCounter end={endValue} duration={1600} />
             )}
           </div>
+          {sparkData && sparkData.length > 1 && (
+            <div className="mt-2">
+              <Sparkline
+                data={sparkData}
+                width={120}
+                height={28}
+                strokeColor={change >= 0 ? "#10b981" : "#ef4444"}
+                strokeWidth={1.5}
+              />
+            </div>
+          )}
         </div>
         <div className="text-xs text-gray-400 mt-1.5 truncate">{t("vsLastMonth")}</div>
       </div>
@@ -318,6 +338,8 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
+  const revenueSparkData = data.revenueData?.slice(-7).map((d: any) => d.revenue) || [];
+
   const stats = [
     {
       title: tdash("totalRevenue"),
@@ -327,6 +349,7 @@ export default function DashboardPage() {
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       isCurrency: true,
+      sparkData: revenueSparkData,
     },
     {
       title: tdash("totalOrders"),
@@ -335,6 +358,7 @@ export default function DashboardPage() {
       icon: ShoppingCart,
       color: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-50 dark:bg-blue-900/20",
+      sparkData: data.sparklines?.orders || [],
     },
     {
       title: tdash("totalCustomers"),
@@ -343,6 +367,7 @@ export default function DashboardPage() {
       icon: UsersIcon,
       color: "text-purple-600 dark:text-purple-400",
       bg: "bg-purple-50 dark:bg-purple-900/20",
+      sparkData: data.sparklines?.customers || [],
     },
     {
       title: tdash("totalProducts"),
@@ -351,6 +376,7 @@ export default function DashboardPage() {
       icon: Package,
       color: "text-orange-600 dark:text-orange-400",
       bg: "bg-orange-50 dark:bg-orange-900/20",
+      sparkData: data.sparklines?.products || [],
     },
   ];
 
@@ -366,13 +392,13 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{tdash("title")}</h1>
+          <h1 className="text-2xl font-bold truncate text-gray-900 dark:text-gray-100">{tdash("title")}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tdash("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <WebhookEventSimulator />
           <RealtimeIndicator
             lastUpdated={lastUpdated}
@@ -394,6 +420,8 @@ export default function DashboardPage() {
           </Button>
         </div>
       </motion.div>
+
+      <OnboardingChecklist />
 
       {/* Premium Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

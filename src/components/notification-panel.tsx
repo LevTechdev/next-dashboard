@@ -8,12 +8,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollContainer } from "@/components/ui/scroll-container";
 import { cn } from "@/lib/utils";
 import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
-import {
-  useRealtime,
-  type NotificationType,
-  type RealtimeNotification,
-} from "@/components/realtime-provider";
+import { useRealtime, type NotificationType, type RealtimeNotification } from "@/components/realtime-provider";
 import { Badge } from "@/components/ui/badge";
+import { AnimatePresence, motion } from "framer-motion";
 
 const notificationIcons: Record<NotificationType, string> = {
   order: "🛒",
@@ -118,11 +115,19 @@ export function NotificationPanel() {
         ) : (
           <BellIcon size={20} className="h-5 w-5" />
         )}
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-950">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
+        <AnimatePresence>
+          {unreadCount > 0 && (
+            <motion.span
+              key="badge"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-950"
+            >
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </Button>
 
       {open && (

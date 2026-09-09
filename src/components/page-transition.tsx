@@ -74,7 +74,7 @@ export default function PageTransition({ children, className }: PageTransitionPr
 
       {/* ═══ LOADING OVERLAY — kept mounted with opacity toggle for smooth fade ═══ */}
       <div
-        className={`fixed inset-0 z-[100] flex items-center justify-center bg-zinc-50/80 dark:bg-[#0b0c11]/80 backdrop-blur-sm transition-all duration-200 ease-in-out ${
+        className={`fixed inset-0 z-[20] flex items-center justify-center bg-zinc-50/80 dark:bg-[#0b0c11]/80 backdrop-blur-sm transition-all duration-200 ease-in-out ${
           showOverlay ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         role="progressbar"

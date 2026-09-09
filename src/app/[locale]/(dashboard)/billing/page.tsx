@@ -27,6 +27,7 @@ import {
   Landmark,
   Sliders,
   Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { TaxNexusEngine } from "@/components/billing/tax-nexus-engine";
 import { QrisPaymentSystem } from "@/components/billing/qris-payment-system";
@@ -223,11 +224,11 @@ export default function BillingPage() {
             {tbilling("tabPayment")}
           </TabsTrigger>
           <TabsTrigger value="taxNexus" className="flex items-center gap-2">
-            <Landmark className="h-4 w-4 text-indigo-500" />
+            <Landmark className="h-4 w-4" />
             {tbilling("tabTaxNexus")}
           </TabsTrigger>
           <TabsTrigger value="qris" className="flex items-center gap-2">
-            <QrisBrandIcon size={16} className="text-red-600" />
+            <QrisBrandIcon size={16} />
             {tbilling("tabQris")}
           </TabsTrigger>
         </TabsList>
@@ -596,6 +597,7 @@ function PlansTab() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const [confirmPlan, setConfirmPlan] = useState<Plan | null>(null);
   const [paymentGateway, setPaymentGateway] = useState<"stripe" | "midtrans">("stripe");
@@ -628,65 +630,19 @@ function PlansTab() {
     setSwitching(plan.id);
     try {
       if (plan.price > 0) {
-        // Paid plan → checkout. gateway selects the provider: Stripe
-        // (international card, hosted redirect) or Midtrans (local payments)
-        // with a channel restriction (DANA / GoPay / QRIS / bank transfer /
-        // card). Midtrans opens the embedded Snap popup from the returned
-        // token + client key; the hosted url is the fallback if the popup
-        // cannot load.
+        const amount = isAnnual && plan.yearlyPrice ? plan.yearlyPrice : plan.price;
         const res = await fetch("/api/billing/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             planId: plan.id,
-            locale,
-            gateway: paymentGateway,
-            channel: paymentGateway === "midtrans" ? paymentChannel : undefined,
+            provider: paymentGateway,
+            amount: amount,
           }),
         });
         if (res.ok) {
           const data = await res.json();
           setConfirmPlan(null);
-          if (paymentGateway === "midtrans" && data.token && data.snapScriptUrl) {
-            toast.info(tbilling("checkoutLocalPopup"));
-            try {
-              await openSnapPopup({
-                token: data.token,
-                snapScriptUrl: data.snapScriptUrl,
-                clientKey: data.clientKey,
-                callbacks: {
-                  onSuccess: () => {
-                    toast.success(tbilling("planUpdated"));
-                    fetchData();
-                  },
-                  onPending: () => toast.info(tbilling("paymentPending")),
-                  onError: () => toast.error(tbilling("checkoutError")),
-                  // The payer closed the popup without paying: revert the
-                  // stashed PENDING checkout so the plan UI shows their real
-                  // plan (last paid / Free) instead of a stuck "processing".
-                  onClose: () => {
-                    void fetch("/api/billing/midtrans/abandon", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ orderId: data.orderId }),
-                    })
-                      .catch(() => {})
-                      .finally(() => fetchData());
-                  },
-                },
-              });
-            } catch (err: any) {
-              // The popup could not boot — fall back to the hosted checkout
-              // page so payment is still reachable.
-              if (data.url) {
-                toast.info(tbilling("checkoutRedirect"));
-                window.location.href = data.url;
-                return;
-              }
-              toast.error(err?.message || tbilling("checkoutError"));
-            }
-            return;
-          }
           if (data.url) {
             toast.info(tbilling("checkoutRedirect"));
             window.location.href = data.url;
@@ -729,6 +685,46 @@ function PlansTab() {
 
   return (
     <div className="space-y-8">
+      {/* Monthly / Yearly Billing Cycle Toggle (Matches Pricing Page) */}
+      <div className="flex justify-center pb-2">
+        <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-muted/60 border border-border shadow-xs">
+          <button
+            type="button"
+            onClick={() => setIsAnnual(false)}
+            className={cn(
+              "px-5 py-2 text-sm font-medium rounded-full transition-colors cursor-pointer",
+              !isAnnual
+                ? "bg-foreground text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAnnual(true)}
+            className={cn(
+              "px-5 py-2 text-sm font-medium rounded-full transition-colors inline-flex items-center gap-1.5 cursor-pointer",
+              isAnnual
+                ? "bg-foreground text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Yearly
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                isAnnual
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+              )}
+            >
+              Save 20%
+            </span>
+          </button>
+        </div>
+      </div>
+
       {/* Plan Comparison Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
@@ -776,15 +772,24 @@ function PlansTab() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">{formatCurrencyUSD(plan.price)}</span>
-                    <span className="text-sm text-gray-500">/{plan.interval.toLowerCase()}</span>
+                    <span className="text-3xl font-bold">
+                      {isAnnual
+                        ? formatCurrencyUSD(Math.round(plan.yearlyPrice ? plan.yearlyPrice / 12 : plan.price))
+                        : formatCurrencyUSD(plan.price)}
+                    </span>
+                    <span className="text-sm text-gray-500">/month</span>
                   </div>
-                  {plan.yearlyPrice && (
-                    <p className="text-xs text-gray-400 mt-1">
+                  {isAnnual && plan.yearlyPrice ? (
+                    <p className="text-xs text-muted-foreground mt-1">
                       {formatCurrencyUSD(plan.yearlyPrice)}/year (save{" "}
-                      {Math.round((1 - plan.yearlyPrice / (plan.price * 12)) * 100)}%)
+                      {Math.round((1 - (plan.yearlyPrice / 12) / plan.price) * 100)}%)
                     </p>
-                  )}
+                  ) : plan.yearlyPrice ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Or {formatCurrencyUSD(Math.round(plan.yearlyPrice / 12))}/mo billed yearly (save{" "}
+                      {Math.round((1 - (plan.yearlyPrice / 12) / plan.price) * 100)}%)
+                    </p>
+                  ) : null}
                 </div>
 
                 <Button
@@ -980,6 +985,7 @@ function InvoicesTab() {
   const [loading, setLoading] = useState(true);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -991,6 +997,27 @@ function InvoicesTab() {
       setLoading(false);
     }
   }, []);
+
+  const handleProcessInvoice = async (invoiceId: string) => {
+    try {
+      setProcessingInvoiceId(invoiceId);
+      const res = await fetch(`/api/billing/invoices/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PAID" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to process invoice");
+      }
+      toast.success(tbilling("invoicePaidSuccess"));
+      await fetchInvoices();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to process invoice");
+    } finally {
+      setProcessingInvoiceId(null);
+    }
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -1019,10 +1046,9 @@ function InvoicesTab() {
           </p>
         </div>
         <Button
-          variant="outline"
           size="sm"
           onClick={() => setCustomizerOpen(true)}
-          className="gap-2 self-start sm:self-auto border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+          className="gap-2 self-start sm:self-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs font-semibold cursor-pointer"
         >
           <Sliders className="h-4 w-4" />
           Customize Invoice Template
@@ -1040,10 +1066,10 @@ function InvoicesTab() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 <FileTextIcon
                   size={20}
-                  className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+                  className="h-5 w-5"
                 />
               </div>
               <div>
@@ -1054,8 +1080,8 @@ function InvoicesTab() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <CreditCardIcon size={20} className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <CreditCardIcon size={20} className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("totalPaid")}</p>
@@ -1067,8 +1093,8 @@ function InvoicesTab() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                <ClockIcon size={20} className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <ClockIcon size={20} className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("pending")}</p>
@@ -1115,6 +1141,9 @@ function InvoicesTab() {
                     </th>
                     <th className="text-right py-3 px-2 font-medium text-gray-500">
                       {tbilling("dateCol")}
+                    </th>
+                    <th className="text-right py-3 px-2 font-medium text-gray-500">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -1174,9 +1203,33 @@ function InvoicesTab() {
                               />
                             </span>
                           </td>
+                          <td className="py-3 px-2 text-right">
+                            {inv.status === "PENDING" ? (
+                              <Button
+                                size="sm"
+                                disabled={processingInvoiceId === inv.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProcessInvoice(inv.id);
+                                }}
+                                className="h-7 px-2.5 text-xs gap-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold cursor-pointer shadow-2xs"
+                              >
+                                {processingInvoiceId === inv.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                )}
+                                <span>Process</span>
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-mono">
+                                —
+                              </span>
+                            )}
+                          </td>
                         </tr>
                         <tr className="bg-gray-50 dark:bg-gray-800/30">
-                          <td colSpan={6} className="p-0">
+                          <td colSpan={7} className="p-0">
                             {/* Content-only disclosure: the summary row above is
                                 the trigger (it carries aria-expanded/controls +
                                 keyboard handling), this region provides the
@@ -1208,10 +1261,25 @@ function InvoicesTab() {
                                     Plan: <strong>{inv.plan.name}</strong>
                                   </span>
                                 )}
+                                {inv.status === "PENDING" && (
+                                  <Button
+                                    size="sm"
+                                    disabled={processingInvoiceId === inv.id}
+                                    onClick={() => handleProcessInvoice(inv.id)}
+                                    className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-8 ml-auto cursor-pointer shadow-2xs"
+                                  >
+                                    {processingInvoiceId === inv.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                    )}
+                                    <span>Process Invoice Payment</span>
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="ml-auto"
+                                  className={cn("text-xs", inv.status !== "PENDING" && "ml-auto")}
                                   onClick={() =>
                                     window.open(
                                       `/api/billing/invoices/${inv.id}/download`,

@@ -7,7 +7,8 @@ import { Package, BarChart3, ArrowUpRight, ArrowDownRight, Minus, ShoppingBag } 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency, getStatusColor, cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, formatCompactCurrency, getStatusColor, cn } from "@/lib/utils";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -16,6 +17,7 @@ import { DataExportButton } from "@/components/data-export-button";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { ScheduledReportsDialog } from "@/components/reports/scheduled-reports-dialog";
 import { ReportsExportMenu } from "@/components/reports/reports-export-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { motion } from "framer-motion";
 
 export default function ReportsPage() {
@@ -31,12 +33,21 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("monthly");
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
 
-  // Filter orders by date range
+  // Filter orders by date range and selected channel
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    if (!dateRange.from && !dateRange.to) return orders;
-    return orders.filter((o: any) => {
+    
+    let result = orders;
+    
+    if (selectedChannel) {
+      result = result.filter((o: any) => o.channel?.name === selectedChannel);
+    }
+    
+    if (!dateRange.from && !dateRange.to) return result;
+    
+    return result.filter((o: any) => {
       const d = new Date(o.createdAt);
       if (dateRange.from && d < new Date(dateRange.from)) return false;
       if (dateRange.to) {
@@ -46,7 +57,7 @@ export default function ReportsPage() {
       }
       return true;
     });
-  }, [orders, dateRange]);
+  }, [orders, dateRange, selectedChannel]);
 
   // Filter customers by date range
   const filteredCustomers = useMemo(() => {
@@ -171,7 +182,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{treports("title")}</h1>
+          <h1 className="text-2xl font-bold truncate">{treports("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{treports("subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -206,7 +217,7 @@ export default function ReportsPage() {
                 icon: DollarSignIcon,
                 color: "text-emerald-600 dark:text-emerald-400",
                 bg: "bg-emerald-50 dark:bg-emerald-900/20",
-                format: (v: number) => formatCurrency(v),
+                format: (v: number) => formatCompactCurrency(v),
                 vs: data?.stats?.totalRevenue,
               },
               {
@@ -223,7 +234,7 @@ export default function ReportsPage() {
                 icon: BarChart3,
                 color: "text-purple-600 dark:text-purple-400",
                 bg: "bg-purple-50 dark:bg-purple-900/20",
-                format: (v: number) => formatCurrency(v),
+                format: (v: number) => formatCompactCurrency(v),
                 vs: data?.stats?.totalRevenue / (data?.stats?.totalOrders || 1),
               },
               {
@@ -280,7 +291,7 @@ export default function ReportsPage() {
                         )}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                      <p className="text-2xl font-bold truncate text-gray-900 dark:text-gray-100 mt-1">
                         <AnimatedCounter
                           end={stat.end}
                           duration={1400}
@@ -298,10 +309,21 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{treports("revenueByChannel")}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">{treports("revenueByChannel")}</CardTitle>
+                  {selectedChannel && (
+                    <Badge variant="outline" className="text-xs font-normal cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedChannel(null)}>
+                      Filtered: {selectedChannel} <Minus className="ml-1 h-3 w-3 inline" />
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <SalesChannelChart data={revenueByChannel} height={280} />
+                <SalesChannelChart 
+                  data={revenueByChannel} 
+                  height={280} 
+                  onClick={(name) => setSelectedChannel(name === selectedChannel ? null : name)} 
+                />
               </CardContent>
             </Card>
             <Card>
@@ -390,7 +412,7 @@ export default function ReportsPage() {
               <CardContent className="p-6">
                 <DollarSignIcon size={20} className="h-5 w-5 text-emerald-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
-                <p className="text-2xl font-bold tabular-nums">
+                <p className="text-2xl font-bold truncate tabular-nums">
                   <AnimatedCounter
                     end={stats.totalRevenue}
                     duration={1600}
@@ -403,7 +425,7 @@ export default function ReportsPage() {
               <CardContent className="p-6">
                 <TrendingUpIcon size={20} className="h-5 w-5 text-blue-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("totalOrders")}</p>
-                <p className="text-2xl font-bold tabular-nums">
+                <p className="text-2xl font-bold truncate tabular-nums">
                   <AnimatedCounter end={stats.totalOrders} duration={1400} />
                 </p>
               </CardContent>
@@ -412,7 +434,7 @@ export default function ReportsPage() {
               <CardContent className="p-6">
                 <DollarSignIcon size={20} className="h-5 w-5 text-purple-500 mb-2" />
                 <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
-                <p className="text-2xl font-bold tabular-nums">
+                <p className="text-2xl font-bold truncate tabular-nums">
                   <AnimatedCounter
                     end={stats.avgOrderValue}
                     duration={1600}
@@ -425,7 +447,14 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">{treports("revenueByPeriod")}</CardTitle>
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-base">{treports("revenueByPeriod")}</CardTitle>
+                {dateRange.from && dateRange.to && (
+                  <Badge variant="outline" className="text-xs font-normal cursor-pointer" onClick={() => setDateRange({ from: "", to: "" })}>
+                    Filtered by Date <Minus className="ml-1 h-3 w-3 inline" />
+                  </Badge>
+                )}
+              </div>
               <DataExportButton
                 columns={[
                   { key: "period", header: treports("period") },
@@ -442,11 +471,39 @@ export default function ReportsPage() {
                 <RevenueChart
                   data={revenueByPeriod.map((r) => ({ month: r.period, revenue: r.revenue }))}
                   height={350}
+                  onClick={(payload) => {
+                    if (payload && payload.month) {
+                      const dateStr = payload.month;
+                      if (revenuePeriod === "monthly") {
+                        // dateStr is "YYYY-MM"
+                        const [year, month] = dateStr.split("-");
+                        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+                        setDateRange({
+                          from: `${year}-${month}-01`,
+                          to: `${year}-${month}-${lastDay}`,
+                        });
+                        setRevenuePeriod("daily");
+                      } else if (revenuePeriod === "weekly") {
+                        // dateStr is "YYYY-MM-DD" representing start of week
+                        const d = new Date(dateStr);
+                        const to = new Date(d);
+                        to.setDate(d.getDate() + 6);
+                        setDateRange({
+                          from: dateStr,
+                          to: to.toISOString().split("T")[0],
+                        });
+                        setRevenuePeriod("daily");
+                      }
+                    }
+                  }}
                 />
               ) : (
-                <div className="flex items-center justify-center h-[350px] text-sm text-gray-400">
-                  {treports("noDataInRange")}
-                </div>
+                <EmptyState
+                  icon={BarChart3}
+                  title={treports("noDataInRange")}
+                  description={treports("noDataInRangeDesc")}
+                  className="h-[350px]"
+                />
               )}
             </CardContent>
           </Card>
@@ -460,7 +517,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <DollarSignIcon size={20} className="h-5 w-5 text-emerald-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("totalRevenue")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={stats.totalRevenue}
                       duration={1600}
@@ -473,7 +530,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <TrendingUpIcon size={20} className="h-5 w-5 text-blue-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("totalOrders")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter end={stats.totalOrders} duration={1400} />
                   </p>
                 </CardContent>
@@ -482,7 +539,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <DollarSignIcon size={20} className="h-5 w-5 text-purple-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={stats.avgOrderValue}
                       duration={1600}
@@ -513,12 +570,23 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                {data?.salesByChannel ? treports("revenueByChannel") : treports("totalRevenue")}
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">
+                  {data?.salesByChannel ? treports("revenueByChannel") : treports("totalRevenue")}
+                </CardTitle>
+                {selectedChannel && (
+                  <Badge variant="outline" className="text-xs font-normal cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedChannel(null)}>
+                    Filtered: {selectedChannel} <Minus className="ml-1 h-3 w-3 inline" />
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              <SalesChannelChart data={data?.salesByChannel || revenueByChannel} height={300} />
+              <SalesChannelChart 
+                data={data?.salesByChannel || revenueByChannel} 
+                height={300} 
+                onClick={(name) => setSelectedChannel(name === selectedChannel ? null : name)}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -531,7 +599,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <UsersIcon size={20} className="h-5 w-5 text-blue-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("totalCustomers")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter end={stats.totalCustomers} duration={1400} />
                   </p>
                 </CardContent>
@@ -540,7 +608,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <TrendingUpIcon size={20} className="h-5 w-5 text-green-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("growth")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={data?.stats?.customersGrowth || 0}
                       duration={1200}
@@ -554,7 +622,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <DollarSignIcon size={20} className="h-5 w-5 text-orange-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("avgOrderValue")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={stats.totalRevenue / (stats.totalCustomers || 1)}
                       duration={1600}
@@ -632,7 +700,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <Package className="h-5 w-5 text-indigo-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("totalProducts")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter end={data?.stats?.totalProducts || 0} duration={1400} />
                   </p>
                 </CardContent>
@@ -641,7 +709,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <TrendingUpIcon size={20} className="h-5 w-5 text-cyan-500 mb-2" />
                   <p className="text-sm text-gray-500">Top Product Orders</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={data?.topProducts?.[0]?.orderCount || 0}
                       duration={1400}
@@ -653,7 +721,7 @@ export default function ReportsPage() {
                 <CardContent className="p-6">
                   <DollarSignIcon size={20} className="h-5 w-5 text-rose-500 mb-2" />
                   <p className="text-sm text-gray-500">{treports("avgProductPrice")}</p>
-                  <p className="text-2xl font-bold tabular-nums">
+                  <p className="text-2xl font-bold truncate tabular-nums">
                     <AnimatedCounter
                       end={
                         (data?.topProducts?.reduce((s: number, p: any) => s + p.price, 0) || 0) /

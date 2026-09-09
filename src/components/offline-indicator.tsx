@@ -40,11 +40,20 @@ export function OfflineIndicator() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-2 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-[9999]"
         >
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/90 text-amber-950 font-medium text-xs shadow-lg backdrop-blur-md border border-amber-400/50">
-            <WifiOff className="h-3.5 w-3.5 animate-pulse" />
-            <span>{t("offlineBanner")}</span>
+          <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-amber-500/90 text-amber-950 font-medium text-xs shadow-lg backdrop-blur-md border border-amber-400/50">
+            <div className="flex items-center gap-2">
+              <WifiOff className="h-3.5 w-3.5 animate-pulse" />
+              <span>{t("offlineBanner")}</span>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-1 bg-amber-950/10 hover:bg-amber-950/20 px-2 py-0.5 rounded transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Retry
+            </button>
           </div>
         </motion.div>
       )}

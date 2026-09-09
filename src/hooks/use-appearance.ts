@@ -140,9 +140,14 @@ export function applyAppearance(settings: AppearanceSettings) {
 }
 
 export function saveAppearance(settings: AppearanceSettings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {}
   applyAppearance(settings);
-  window.dispatchEvent(new CustomEvent("appearance-changed"));
+  queueMicrotask(() => {
+    window.dispatchEvent(new CustomEvent("appearance-changed"));
+  });
 }
 
 export function useAppearance() {
@@ -164,7 +169,9 @@ export function useAppearance() {
         ...patch,
         widgets: { ...prev.widgets, ...(patch.widgets ?? {}) },
       };
-      saveAppearance(next);
+      queueMicrotask(() => {
+        saveAppearance(next);
+      });
       return next;
     });
   }, []);
