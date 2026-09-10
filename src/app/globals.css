@@ -1412,6 +1412,9 @@ html.lenis body {
     animation: none !important;
     opacity: 0;
   }
+  [data-hero-float-chip] {
+    animation: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════

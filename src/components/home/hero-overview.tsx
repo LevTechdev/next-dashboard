@@ -30,11 +30,12 @@ interface HeroOverviewProps {
   revealed?: boolean;
 }
 
-/** Progressive-reveal classes: hidden until `shown`, then slide + fade in. */
+/** Progressive-reveal classes: hidden until `shown`, then slide + fade in.
+ *  Also drops pointer events while hidden so invisible controls can't be clicked. */
 function revealClass(shown: boolean) {
   return cn(
     "transition-all duration-700 ease-out will-change-transform motion-reduce:transition-none",
-    shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-7",
+    shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-7 pointer-events-none",
   );
 }
 
@@ -49,8 +50,8 @@ function revealClass(shown: boolean) {
  *    THREE.js renderer, gsap ScrollTrigger, and hero video downloads entirely.
  *  • One memorable anchor: the Signal Strip, a hero-level table of contents
  *    that maps 1:1 to every section below (Preview → Journey → Features →
- *    Pricing). The labels reuse each section's own eyebrow keys, so the TOC
- *    can never drift from the page it indexes.
+ *    Pricing). The labels use the dedicated hero.hub.* keys, so the TOC copy
+ *    can never collide with (or drift from) the sections it indexes.
  *  • One entrance sequence (CSS reveal gated by the cinematic preloader's
  *    `revealed` flag) plus a handful of meaningful hovers. No micro-motion.
  */
@@ -121,11 +122,17 @@ export default function HeroOverview({ locale, t, revealed = true }: HeroOvervie
         <div className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[420px] rounded-full bg-primary/10 blur-[110px]" />
 
         {/* Floating signal chips (decorative; xl+ only) */}
-        <div className="absolute left-[6%] top-[30%] hidden xl:flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-4 py-2 text-xs font-medium text-muted-foreground backdrop-blur shadow-sm animate-[hero-float_7s_ease-in-out_infinite] will-change-transform">
+        <div
+          data-hero-float-chip
+          className="absolute left-[6%] top-[30%] hidden xl:flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-4 py-2 text-xs font-medium text-muted-foreground backdrop-blur shadow-sm animate-[hero-float_7s_ease-in-out_infinite] will-change-transform"
+        >
           <Zap className="h-3.5 w-3.5 text-amber-500" />
           <span>{t("hero.terminal.streaming")}</span>
         </div>
-        <div className="absolute right-[6%] top-[56%] hidden xl:flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-4 py-2 text-xs font-medium text-muted-foreground backdrop-blur shadow-sm animate-[hero-float_9s_ease-in-out_infinite] will-change-transform">
+        <div
+          data-hero-float-chip
+          className="absolute right-[6%] top-[56%] hidden xl:flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-4 py-2 text-xs font-medium text-muted-foreground backdrop-blur shadow-sm animate-[hero-float_9s_ease-in-out_infinite] will-change-transform"
+        >
           <Globe className="h-3.5 w-3.5 text-sky-400" />
           <span>{t("hero.terminal.liveStream")}</span>
         </div>
