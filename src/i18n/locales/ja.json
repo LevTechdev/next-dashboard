@@ -176,7 +176,11 @@
     "activityFeedTitle": "アクティビティフィード",
     "activityFeedDesc": "リアルタイムシステムアクティビティストリーム",
     "activityFeedNew": "+{count} 件の新規",
-    "activityFeedViewAll": "すべて表示"
+    "activityFeedViewAll": "すべて表示",
+    "activityFeedEarlier": "以前のイベント",
+    "activityFeedEarlierTip": "このタブを開く前に発生したイベント",
+    "analyticsTitle": "アナリティクス",
+    "analyticsDesc": "収益トレンド、チャネル別パフォーマンス、顧客コホートをすべての販売チャネルで詳しく分析します。"
   },
   "sales": {
     "title": "売上管理",
@@ -452,7 +456,8 @@
     "processedOn": "処理日時",
     "shippedOn": "発送日時",
     "deliveredOn": "配達日時",
-    "refundedOn": "返金日時"
+    "refundedOn": "返金日時",
+    "invoiceBtn": "請求書"
   },
   "inventory": {
     "title": "在庫管理",
@@ -481,6 +486,8 @@
     "warningRisk": "補充が必要",
     "criticalRisk": "在庫切れ寸前",
     "openPoCapital": "発注資本残高",
+    "activePosBadge": "有効な発注書 {count}件",
+    "valuationBadge": "評価額",
     "createPo": "発注書を作成",
     "stockList": "現在庫一覧",
     "stockListDesc": "リアルタイム在庫数、資産評価額、マージン閾値。",
@@ -1261,7 +1268,11 @@
     "emptyFilteredTitle": "{type} の通知はありません",
     "emptyFilteredDesc": "別のフィルターをお試しください",
     "secondsAgo": "{s}秒前",
-    "minutesAgo": "{m}分前"
+    "minutesAgo": "{m}分前",
+    "pushNotificationsTitle": "ブラウザプッシュ通知",
+    "pushNotificationsDesc": "アプリを閉じていても、ブラウザで直接通知を受け取れます。",
+    "enablePushLabel": "プッシュ通知を有効にする",
+    "enablePushDesc": "ダッシュボードからウェブプッシュ通知を受信できるようにします。"
   },
   "contactPage": {
     "badge": "お問い合わせ",
@@ -2169,7 +2180,15 @@
       "getRevenueData": "収益データ",
       "searchBusiness": "ビジネス検索",
       "getCustomerDetails": "顧客詳細",
-      "getOrderDetails": "注文詳細"
+      "getOrderDetails": "注文詳細",
+      "getTeamMembers": "チームメンバー",
+      "getSecurityOverview": "セキュリティ概要",
+      "getRecentAuditLogs": "監査ログ",
+      "getChartData": "チャートデータ",
+      "forecastRevenue": "売上予測",
+      "getAtRiskVipCustomers": "リスクのあるVIP顧客",
+      "getChannelRoasAnalysis": "チャネル別ROAS分析",
+      "proposeAction": "推奨アクション"
     },
     "clearConversation": "会話をクリア",
     "greeting": "何かお手伝いできますか？",
@@ -2309,6 +2328,67 @@
     "heroWord1": "完全に統合。",
     "heroWord2": "完全に自動化。",
     "heroWord3": "完全に接続。",
+    "hero": {
+      "ariaLabel": "インタラクティブなプラットフォーム概要",
+      "explore": "プラットフォームを探索",
+      "scrollAria": "機能へスクロール",
+      "metrics": {
+        "uptime": "99.98% 稼働率SLA",
+        "rating": "カスタマースコア 4.8/5",
+        "regions": "エッジリージョン 14拠点"
+      },
+      "hub": {
+        "label": "セクションへジャンプ",
+        "preview": "ライブプレビュー",
+        "journey": "製品ジャーニー",
+        "features": "機能ツアー",
+        "pricing": "プランと料金"
+      },
+      "mode": {
+        "active": "有効",
+        "day": "昼のメドウ",
+        "night": "コズミックナイト",
+        "switchDay": "昼のシーンに切り替え",
+        "switchNight": "コズミックナイトシーンに切り替え"
+      },
+      "arcade": {
+        "cta": "シミュレーションへ",
+        "desc": "ハイスコア: 98,420 点。Google Flow ワールドのフィールドアーケードに着想を得ています。",
+        "title": "レトロアーケードマトリクス"
+      },
+      "terminal": {
+        "connected": "● 接続済み",
+        "gmv": "月間GMV",
+        "gmvDelta": "↑ 前月比 +12.5%",
+        "hubs": "アクティブハブ",
+        "hubsDelta": "完全冗長化",
+        "liveStream": "ライブテレメトリ配信",
+        "orders": "アクティブ注文",
+        "ordersDelta": "チェックアウト率 99.8%",
+        "postIt": "付箋: GO PRO!",
+        "streaming": "Supabase + Prisma Edge からライブ配信中",
+        "tabArcade": "アーケード",
+        "tabConsole": "コンソール",
+        "tabPulse": "パルス",
+        "title": "crt-monitor-node.sh",
+        "velocity": "同期速度",
+        "velocityDelta": "エッジレイテンシ",
+        "lines": [
+          "INIT: LevTech 統合エンジン 2.4-flow",
+          "CLUSTER: グローバルリージョン 14拠点 稼働中 (US、EU、AP-ID、SG)",
+          "TELEMETRY: リアルタイムストアノード 1,847 台接続",
+          "REVENUE_PULSE: 月額 $284,750 (前週比 +12.5% 成長)",
+          "SYSTEM_HEALTH: 全システム正常 (SLA 99.98%)"
+        ],
+        "logs": [
+          "SYNC: Stripe & Midtrans webhook 照合完了 [0.12ms]",
+          "EVENT: 注文 #ORD-2849 が QRIS で完了 ($148.50)",
+          "ORBIT: シンガポール衛星ノード同期 OK",
+          "CACHE: エッジキャッシュヒット率 98.4%",
+          "SECURITY: 管理者セッションの 2FA TOTP を検証済み"
+        ]
+      }
+    },
     "heroSubtitle": "モダンなSaaS構築に必要なすべて：認証、Stripe & Midtrans決済、国際化、ダークモード、ダッシュボードなど。すぐにデプロイ可能。",
     "ctaAccess": "ワークスペースへ",
     "ctaTitle": "スケールへの準備は万全。",
@@ -2342,11 +2422,63 @@
       "chip4": "API",
       "chip5": "マルチチャネル"
     },
+    "preloader": {
+      "label": "安全なワークスペースを初期化中",
+      "status": "LevTech Unified Engine を起動中",
+      "skip": "スキップ"
+    },
+    "preview": {
+      "badge": "プロダクトツアー",
+      "cta": "ライブデモを開く",
+      "sub": "注文、売上、顧客、チャネルパフォーマンスをリアルタイムで確認できる、チームが初日から使えるダッシュボードのライブビュー。",
+      "t1": "ビジネス全体をひとつのビューで",
+      "url": "app.nextdashboard.dev/dashboard",
+      "kpiRevenue": "総売上",
+      "kpiOrders": "総注文数",
+      "kpiCustomers": "総顧客数",
+      "kpiProducts": "総商品数"
+    },
     "trust": {
       "b1": "クレジットカード不要",
       "b2": "数分でデプロイ",
       "b3": "マルチテナント対応",
       "b4": "SOC 2準拠"
+    },
+    "story": {
+      "aria": "プロダクトの旅",
+      "badge": "旅の始まり",
+      "cta": "ワークスペースを探索",
+      "sub": "4つのシステムがひとつの星座のように連携します。注文から自動化された成長まで、ビジネスの流れを追いましょう。",
+      "t1": "コスモスから、",
+      "t2": "コントロールルームへ",
+      "c1b": "Shopify、Tokopedia、TikTok、Instagram などすべてのチャネルの注文が、ライブ配信されるひとつの受信箱に集約されます。",
+      "c1e": "軌道ナビゲーション",
+      "c1f1": "統合受信箱",
+      "c1f2": "注文ステータス配信",
+      "c1f3": "エッジキャッシュ",
+      "c1t": "逸れることのない注文",
+      "c2b": "Stripe がグローバルカード、Midtrans が DANA・GoPay・OVO・QRIS を担当。あらゆる通貨・あらゆる決済手段を自動で照合します。",
+      "c2e": "コンステレーション・ゲートウェイ",
+      "c2f1": "グローバル + ローカル決済",
+      "c2f2": "自動為替",
+      "c2f3": "QRIS 対応",
+      "c2t": "あらゆる軌道での決済",
+      "c3b": "売上コホート、チャネル構成、定着ヒートマップが、何年分ものノイズをひとつの明確なビューに凝縮します。",
+      "c3e": "スーパーノヴァ分析",
+      "c3f1": "コホート定着",
+      "c3f2": "チャネル構成",
+      "c3f3": "売上予測",
+      "c3t": "重力のような分析",
+      "c4b": "Webhook、AI コパイロット、スケジュールレポートが、毎日の雑務をバックグラウンドプロセスに変えます。",
+      "c4e": "ニューラル自動化",
+      "c4f1": "AI コパイロット",
+      "c4f2": "Webhook",
+      "c4f3": "スケジュールレポート",
+      "c1live": "{count}件の注文がライブ",
+      "c2live": "{value} をライブ処理中",
+      "c3live": "{count}人の顧客を追跡中",
+      "c4live": "{count}件の商品を自動化",
+      "c4t": "自動で走るワークフロー"
     },
     "bento": {
       "badge": "プラットフォーム機能",
@@ -2430,7 +2562,7 @@
       "f3": "基本アナリティクス",
       "f4": "メールサポート",
       "f5": "APIアクセス（読み取り専用）",
-      "proName": "プロ",
+      "proName": "プロフェッショナル",
       "proDesc": "フルパワーを求める成長チーム向け。",
       "popular": "一番人気",
       "month": "/月",
@@ -2445,14 +2577,32 @@
       "ctaFree": "無料で始める",
       "ctaTrial": "14日間無料トライアルを開始",
       "entQ": "エンタープライズやカスタムボリュームが必要ですか？",
-      "entContact": "営業に問い合わせ"
+      "entContact": "営業に問い合わせ",
+      "compare": "すべての機能を比較",
+      "ef1": "注文無制限",
+      "ef2": "チームメンバー無制限",
+      "ef3": "高度なリアルタイム分析",
+      "ef4": "24時間365日専任サポート",
+      "ef5": "マルチチャネル連携",
+      "ef6": "カスタムレポート",
+      "ef7": "ロールベースアクセス制御",
+      "ef8": "API & Webhook",
+      "ef9": "カスタムデータエクスポート",
+      "entDesc": "大量取引ビジネス向けのカスタムソリューション。",
+      "entName": "エンタープライズ",
+      "monthly": "月払い",
+      "yearly": "年払い",
+      "yearlyDiscount": "20%お得"
     },
     "stories": {
       "badge": "お客様の声",
       "title": "ビジネスチームに信頼されています",
       "q1": "手作業のスプレッドシートからリアルタイムダッシュボードへ、たった半日で移行できました。マルチチャネル注文管理で毎週20時間以上を節約。",
       "q2": "Stripe + Midtrans のデュアル決済統合は、インドネシア市場にとって革新的です。売上照合が完全に自動化されました。",
-      "q3": "2FA、WebAuthn、SSO などのエンタープライズ機能により、SOC 2 準拠をすぐに達成。セキュリティチームも大いに感心していました。"
+      "q3": "2FA、WebAuthn、SSO などのエンタープライズ機能により、SOC 2 準拠をすぐに達成。セキュリティチームも大いに感心していました。",
+      "r1": "CEO、TokoBaju.id",
+      "r2": "成長責任者、NexCommerce",
+      "r3": "CTO、スタートアップアクセラレーター"
     },
     "final": {
       "getStarted": "無料で始める",
@@ -2777,7 +2927,11 @@
     "presetAmber": "ウォーム アンバー",
     "presetViolet": "ロイヤル バイオレット",
     "presetSky": "オーシャン シアン",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "taxId": "納税者番号 / NPWP",
+    "taxIdPlaceholder": "00.000.000.0-000.000",
+    "invoiceAddress": "請求書登録住所",
+    "invoiceAddressPlaceholder": "番地、市区町村、郵便番号、国"
   },
   "tenants": {
     "switchOrganization": "組織の切り替え",
@@ -3136,7 +3290,8 @@
     "heartbeat": "15秒ごとのハートビート",
     "syncedAt": "{time} に同期",
     "syncNow": "今すぐ同期",
-    "syncingToast": "ライブテレメトリストリームを更新中..."
+    "syncingToast": "ライブテレメトリストリームを更新中...",
+    "reconnectDetail": "再接続 {attempt} 回目 — {seconds} 秒後に再試行"
   },
   "invoiceCustomizer": {
     "dialogTitle": "請求書テンプレートとバーコードのカスタマイズ",
@@ -3218,6 +3373,7 @@
     "savedBeneficiaries": "保存済み受取人",
     "loadedToTerminal": "{inv} をQRIS端末に読み込みました",
     "paymentVerifiedToast": "⚡ 決済が確認されました！{bank} 経由で Rp {amt} を受領しました",
+    "withdrawalCompletedToast": "🎉 出金が完了しました — {method} 経由で Rp {amt} を送金しました",
     "tabPos": "レジPOSテンキー",
     "tabReconciliation": "精算とMDR",
     "tabDisputes": "異議申し立てセンター",

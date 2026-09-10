@@ -176,7 +176,11 @@
     "activityFeedTitle": "动态记录",
     "activityFeedDesc": "实时系统活动流",
     "activityFeedNew": "+{count} 条新动态",
-    "activityFeedViewAll": "查看全部"
+    "activityFeedViewAll": "查看全部",
+    "activityFeedEarlier": "更早",
+    "activityFeedEarlierTip": "发生于此标签页打开之前",
+    "analyticsTitle": "数据分析",
+    "analyticsDesc": "深入分析所有销售渠道的收入趋势、渠道表现与客户群组。"
   },
   "sales": {
     "title": "销售管理",
@@ -452,7 +456,8 @@
     "processedOn": "处理于",
     "shippedOn": "发货于",
     "deliveredOn": "送达于",
-    "refundedOn": "退款于"
+    "refundedOn": "退款于",
+    "invoiceBtn": "发票"
   },
   "inventory": {
     "title": "库存管理",
@@ -481,6 +486,8 @@
     "warningRisk": "急需补货",
     "criticalRisk": "库存告急",
     "openPoCapital": "在途采购资金",
+    "activePosBadge": "{count} 个有效采购单",
+    "valuationBadge": "估值",
     "createPo": "创建采购订单",
     "stockList": "当前库存列表",
     "stockListDesc": "实时库存量、估值与利润率警戒线。",
@@ -1261,7 +1268,11 @@
     "emptyFilteredTitle": "暂无 {type} 通知",
     "emptyFilteredDesc": "尝试使用其他筛选器",
     "secondsAgo": "{s}秒前",
-    "minutesAgo": "{m}分钟前"
+    "minutesAgo": "{m}分钟前",
+    "pushNotificationsTitle": "浏览器推送通知",
+    "pushNotificationsDesc": "即使应用已关闭，也能直接在浏览器中接收通知。",
+    "enablePushLabel": "启用推送通知",
+    "enablePushDesc": "允许仪表盘向您发送网页推送提醒。"
   },
   "contactPage": {
     "badge": "联系我们",
@@ -2169,7 +2180,15 @@
       "getRevenueData": "收入数据",
       "searchBusiness": "业务搜索",
       "getCustomerDetails": "客户详情",
-      "getOrderDetails": "订单详情"
+      "getOrderDetails": "订单详情",
+      "getTeamMembers": "团队成员",
+      "getSecurityOverview": "安全概览",
+      "getRecentAuditLogs": "审计日志",
+      "getChartData": "图表数据",
+      "forecastRevenue": "收入预测",
+      "getAtRiskVipCustomers": "有风险的VIP客户",
+      "getChannelRoasAnalysis": "各渠道ROAS分析",
+      "proposeAction": "建议操作"
     },
     "clearConversation": "清空对话",
     "greeting": "有什么可以帮您？",
@@ -2309,6 +2328,67 @@
     "heroWord1": "全面统一。",
     "heroWord2": "全面自动化。",
     "heroWord3": "全面互联。",
+    "hero": {
+      "ariaLabel": "交互式平台概览",
+      "explore": "探索平台",
+      "scrollAria": "滚动查看功能",
+      "metrics": {
+        "uptime": "99.98% 正常运行时间 SLA",
+        "rating": "客户评分 4.8/5",
+        "regions": "14 个边缘区域"
+      },
+      "hub": {
+        "label": "直接跳转到章节",
+        "preview": "实时预览",
+        "journey": "产品之旅",
+        "features": "功能探索",
+        "pricing": "套餐与定价"
+      },
+      "mode": {
+        "active": "已启用",
+        "day": "白昼草甸",
+        "night": "宇宙之夜",
+        "switchDay": "切换到白昼场景",
+        "switchNight": "切换到宇宙之夜场景"
+      },
+      "arcade": {
+        "cta": "进入模拟",
+        "desc": "最高分：98,420 分。灵感来自 Google Flow 世界中的现场街机。",
+        "title": "复古街机矩阵"
+      },
+      "terminal": {
+        "connected": "● 已连接",
+        "gmv": "月度 GMV",
+        "gmvDelta": "↑ 较上月 +12.5%",
+        "hubs": "活跃枢纽",
+        "hubsDelta": "完全冗余",
+        "liveStream": "实时遥测流",
+        "orders": "活跃订单",
+        "ordersDelta": "结算率 99.8%",
+        "postIt": "便签：GO PRO！",
+        "streaming": "正在从 Supabase + Prisma Edge 实时传输",
+        "tabArcade": "街机",
+        "tabConsole": "控制台",
+        "tabPulse": "脉冲",
+        "title": "crt-monitor-node.sh",
+        "velocity": "同步速度",
+        "velocityDelta": "边缘延迟",
+        "lines": [
+          "INIT：LevTech 统一引擎 2.4-flow",
+          "CLUSTER：14 个全球区域已启用（美、欧、AP-ID、SG）",
+          "TELEMETRY：已连接 1,847 个实时商店节点",
+          "REVENUE_PULSE：月收入 $284,750（环比 +12.5%）",
+          "SYSTEM_HEALTH：所有系统正常（SLA 99.98%）"
+        ],
+        "logs": [
+          "SYNC：Stripe 与 Midtrans webhook 已对账 [0.12ms]",
+          "EVENT：订单 #ORD-2849 已通过 QRIS 完成（$148.50）",
+          "ORBIT：新加坡卫星节点同步正常",
+          "CACHE：边缘缓存命中率 98.4%",
+          "SECURITY：已为管理员会话验证 2FA TOTP"
+        ]
+      }
+    },
     "heroSubtitle": "构建现代 SaaS 所需的一切：认证、Stripe 与 Midtrans 支付、国际化、深色模式、仪表盘等。开箱即用。",
     "ctaAccess": "进入工作区",
     "ctaTitle": "为规模而就绪。",
@@ -2342,11 +2422,63 @@
       "chip4": "API",
       "chip5": "多渠道"
     },
+    "preloader": {
+      "label": "正在初始化安全工作区",
+      "status": "正在启动 LevTech 统一引擎",
+      "skip": "跳过"
+    },
+    "preview": {
+      "badge": "产品导览",
+      "cta": "打开实时演示",
+      "sub": "实时查看您的团队从第一天起就能使用的仪表盘——订单、收入、客户和渠道表现一目了然。",
+      "t1": "整个业务，尽在一屏",
+      "url": "app.nextdashboard.dev/dashboard",
+      "kpiRevenue": "总收入",
+      "kpiOrders": "订单总数",
+      "kpiCustomers": "客户总数",
+      "kpiProducts": "商品总数"
+    },
     "trust": {
       "b1": "无需信用卡",
       "b2": "数分钟内部署",
       "b3": "多租户就绪",
       "b4": "符合 SOC 2"
+    },
+    "story": {
+      "aria": "产品旅程",
+      "badge": "旅程",
+      "cta": "探索工作区",
+      "sub": "四大系统如同一座星座协同运作——看看您的业务如何从原始订单走向自动化增长。",
+      "t1": "从宇宙，",
+      "t2": "到控制室",
+      "c1b": "来自所有渠道的每一笔订单——Shopify、Tokopedia、TikTok、Instagram——都汇入统一收件箱，状态实时更新。",
+      "c1e": "轨道导航",
+      "c1f1": "统一收件箱",
+      "c1f2": "订单状态实时推送",
+      "c1f3": "边缘缓存",
+      "c1t": "永不偏离的订单",
+      "c2b": "Stripe 处理全球卡支付，Midtrans 支持 DANA、GoPay、OVO 与 QRIS——每种货币、每条通道都自动对账。",
+      "c2e": "星座支付网关",
+      "c2f1": "全球 + 本地通道",
+      "c2f2": "自动汇率",
+      "c2f3": "QRIS 就绪",
+      "c2t": "任意轨道皆可收款",
+      "c3b": "收入队列、渠道构成与留存热力图，将多年的噪音压缩成一个关键视图。",
+      "c3e": "超新星洞察",
+      "c3f1": "队列留存",
+      "c3f2": "渠道构成",
+      "c3f3": "收入预测",
+      "c3t": "有引力的分析",
+      "c4b": "Webhook、AI 助手与定时报表，把您的日常杂务变成后台流程。",
+      "c4e": "神经自动化",
+      "c4f1": "AI 助手",
+      "c4f2": "Webhook",
+      "c4f3": "定时报表",
+      "c1live": "实时 {count} 个订单",
+      "c2live": "实时处理 {value}",
+      "c3live": "跟踪 {count} 位客户",
+      "c4live": "自动化 {count} 件产品",
+      "c4t": "自行运转的工作流"
     },
     "bento": {
       "badge": "平台功能",
@@ -2445,14 +2577,32 @@
       "ctaFree": "免费开始",
       "ctaTrial": "开始 14 天免费试用",
       "entQ": "需要企业版或自定义用量？",
-      "entContact": "联系销售"
+      "entContact": "联系销售",
+      "compare": "比较所有功能",
+      "ef1": "无限订单",
+      "ef2": "无限团队成员",
+      "ef3": "高级实时分析",
+      "ef4": "24/7 专属支持",
+      "ef5": "多渠道集成",
+      "ef6": "自定义报表",
+      "ef7": "基于角色的访问控制",
+      "ef8": "API 与 Webhook",
+      "ef9": "自定义数据导出",
+      "entDesc": "为高交易量企业提供的定制解决方案。",
+      "entName": "企业版",
+      "monthly": "按月",
+      "yearly": "按年",
+      "yearlyDiscount": "节省 20%"
     },
     "stories": {
       "badge": "客户故事",
       "title": "深受业务团队信赖",
       "q1": "我们仅用一个下午就从手工电子表格切换到了实时仪表盘。多渠道订单管理每周为我们节省 20 多个小时。",
       "q2": "Stripe + Midtrans 双支付集成改变了我们在印尼市场的格局，收入对账现已完全自动化。",
-      "q3": "2FA、WebAuthn 与 SSO 等企业级功能让我们开箱即得 SOC 2 合规，安全团队印象深刻。"
+      "q3": "2FA、WebAuthn 与 SSO 等企业级功能让我们开箱即得 SOC 2 合规，安全团队印象深刻。",
+      "r1": "CEO，TokoBaju.id",
+      "r2": "增长负责人，NexCommerce",
+      "r3": "CTO，创业加速器"
     },
     "final": {
       "getStarted": "免费开始",
@@ -2777,7 +2927,11 @@
     "presetAmber": "温暖琥珀",
     "presetViolet": "皇家紫罗兰",
     "presetSky": "海洋青蓝",
-    "saving": "正在保存..."
+    "saving": "正在保存...",
+    "taxId": "税号 / NPWP",
+    "taxIdPlaceholder": "00.000.000.0-000.000",
+    "invoiceAddress": "发票注册地址",
+    "invoiceAddressPlaceholder": "街道、城市、邮编、国家"
   },
   "tenants": {
     "switchOrganization": "切换工作空间 / 组织",
@@ -3136,7 +3290,8 @@
     "heartbeat": "每 15 秒心跳",
     "syncedAt": "已同步 {time}",
     "syncNow": "立即同步",
-    "syncingToast": "正在刷新实时遥测流..."
+    "syncingToast": "正在刷新实时遥测流...",
+    "reconnectDetail": "第 {attempt} 次重连 — {seconds} 秒后重试"
   },
   "invoiceCustomizer": {
     "dialogTitle": "发票模板与条形码定制",
@@ -3218,6 +3373,7 @@
     "savedBeneficiaries": "常用收款人",
     "loadedToTerminal": "已加载 {inv} 至 QRIS 终端",
     "paymentVerifiedToast": "⚡ 支付已确认！通过 {bank} 收到 Rp {amt}",
+    "withdrawalCompletedToast": "🎉 提现完成 — 已通过 {method} 发送 Rp {amt}",
     "tabPos": "收银POS数字键盘",
     "tabReconciliation": "结算与MDR",
     "tabDisputes": "争议中心",

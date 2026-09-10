@@ -176,7 +176,11 @@
     "activityFeedTitle": "Aktivitas Terbaru",
     "activityFeedDesc": "Aliran aktivitas sistem langsung",
     "activityFeedNew": "+{count} baru",
-    "activityFeedViewAll": "Lihat semua"
+    "activityFeedViewAll": "Lihat semua",
+    "activityFeedEarlier": "Sebelumnya",
+    "activityFeedEarlierTip": "Terjadi sebelum tab ini dibuka",
+    "analyticsTitle": "Analitik",
+    "analyticsDesc": "Telusuri tren pendapatan, kinerja saluran, dan kohort pelanggan di semua kanal penjualan."
   },
   "sales": {
     "title": "Manajemen Penjualan",
@@ -452,7 +456,8 @@
     "processedOn": "Diproses pada",
     "shippedOn": "Dikirim pada",
     "deliveredOn": "Diterima pada",
-    "refundedOn": "Di-refund pada"
+    "refundedOn": "Di-refund pada",
+    "invoiceBtn": "Invoice"
   },
   "inventory": {
     "title": "Manajemen Inventaris",
@@ -481,6 +486,8 @@
     "warningRisk": "Perlu Restock",
     "criticalRisk": "Stok Kritis",
     "openPoCapital": "Modal PO Aktif",
+    "activePosBadge": "{count} PO Aktif",
+    "valuationBadge": "Valuasi",
     "createPo": "Buat Pesanan Pembelian",
     "stockList": "Daftar Stok Saat Ini",
     "stockListDesc": "Tingkat stok langsung, valuasi aset, dan ambang batas margin.",
@@ -2239,7 +2246,15 @@
       "getRevenueData": "Data pendapatan",
       "searchBusiness": "Pencarian bisnis",
       "getCustomerDetails": "Detail pelanggan",
-      "getOrderDetails": "Detail pesanan"
+      "getOrderDetails": "Detail pesanan",
+      "getTeamMembers": "Anggota tim",
+      "getSecurityOverview": "Ikhtisar keamanan",
+      "getRecentAuditLogs": "Log audit",
+      "getChartData": "Data grafik",
+      "forecastRevenue": "Prakiraan pendapatan",
+      "getAtRiskVipCustomers": "Pelanggan VIP berisiko",
+      "getChannelRoasAnalysis": "Analisis ROAS saluran",
+      "proposeAction": "Tindakan yang disarankan"
     },
     "clearConversation": "Bersihkan percakapan",
     "greeting": "Ada yang bisa saya bantu?",
@@ -2317,6 +2332,67 @@
     "heroWord1": "Sepenuhnya Terpadu.",
     "heroWord2": "Sepenuhnya Otomatis.",
     "heroWord3": "Sepenuhnya Terhubung.",
+    "hero": {
+      "ariaLabel": "Ringkasan Platform Interaktif",
+      "explore": "Jelajahi Platform",
+      "scrollAria": "Gulir ke fitur",
+      "metrics": {
+        "uptime": "SLA Uptime 99,98%",
+        "rating": "Skor Pelanggan 4,8/5",
+        "regions": "14 Wilayah Edge"
+      },
+      "hub": {
+        "label": "Langsung menuju bagian",
+        "preview": "Pratinjau Langsung",
+        "journey": "Perjalanan Produk",
+        "features": "Tur Fitur",
+        "pricing": "Paket & Harga"
+      },
+      "mode": {
+        "active": "Aktif",
+        "day": "Padang Rumput Siang",
+        "night": "Malam Kosmik",
+        "switchDay": "Beralih ke Adegan Siang",
+        "switchNight": "Beralih ke Adegan Malam Kosmik"
+      },
+      "arcade": {
+        "cta": "Masuk Simulasi",
+        "desc": "Skor tertinggi: 98.420 poin. Terinspirasi oleh arkade lapangan di dunia Google Flow.",
+        "title": "Matriks Arkade Retro"
+      },
+      "terminal": {
+        "connected": "● TERHUBUNG",
+        "gmv": "GMV Bulanan",
+        "gmvDelta": "↑ +12,5% vs bulan lalu",
+        "hubs": "Hub Aktif",
+        "hubsDelta": "Redundansi penuh",
+        "liveStream": "STREAM TELEMETRI LANGSUNG",
+        "orders": "Pesanan Aktif",
+        "ordersDelta": "Tingkat checkout 99,8%",
+        "postIt": "POST-IT: GO PRO!",
+        "streaming": "Streaming langsung dari Supabase + Prisma Edge",
+        "tabArcade": "Arkade",
+        "tabConsole": "Konsol",
+        "tabPulse": "Detak",
+        "title": "crt-monitor-node.sh",
+        "velocity": "Kecepatan Sinkron",
+        "velocityDelta": "Latensi edge",
+        "lines": [
+          "INIT: Mesin Terpadu LevTech 2.4-flow",
+          "CLUSTER: 14 Wilayah Global Aktif (AS, EU, AP-ID, SG)",
+          "TELEMETRI: 1.847 Node Toko Terhubung Real-time",
+          "DENYUT_PENDAPATAN: $284.750/bln (+12,5% pertumbuhan WoW)",
+          "KESEHATAN_SISTEM: Semua sistem normal (SLA 99,98%)"
+        ],
+        "logs": [
+          "SINKRON: Webhook Stripe & Midtrans direkonsiliasi [0,12ms]",
+          "EVENT: Pesanan #ORD-2849 selesai via QRIS ($148,50)",
+          "ORBIT: Sinkron node satelit Singapura OK",
+          "CACHE: Rasio hit cache edge 98,4%",
+          "KEAMANAN: TOTP 2FA terverifikasi untuk sesi admin"
+        ]
+      }
+    },
     "demoOrders": {
       "title": "Pesanan Terbaru"
     },
@@ -2346,11 +2422,63 @@
       "rating": "Peringkat rata-rata pelanggan",
       "uptime": "SLA uptime terjamin"
     },
+    "preloader": {
+      "label": "Menginisialisasi ruang kerja aman",
+      "status": "Menyalakan LevTech Unified Engine",
+      "skip": "Lewati"
+    },
+    "preview": {
+      "badge": "Tur Produk",
+      "cta": "Buka Demo Langsung",
+      "sub": "Lihat langsung dasbor yang didapat tim Anda sejak hari pertama — pesanan, pendapatan, pelanggan, dan performa kanal secara real time.",
+      "t1": "Seluruh Bisnis Anda dalam Satu Tampilan",
+      "url": "app.nextdashboard.dev/dashboard",
+      "kpiRevenue": "Total Pendapatan",
+      "kpiOrders": "Total Pesanan",
+      "kpiCustomers": "Total Pelanggan",
+      "kpiProducts": "Total Produk"
+    },
     "trust": {
       "b1": "Tanpa kartu kredit",
       "b2": "Deploy dalam hitungan menit",
       "b3": "Siap multi-tenant",
       "b4": "Patuh SOC 2"
+    },
+    "story": {
+      "aria": "Perjalanan produk",
+      "badge": "Perjalanan",
+      "cta": "Jelajahi ruang kerja",
+      "sub": "Empat sistem bekerja seperti satu rasi bintang — lihat bagaimana bisnis Anda bergerak dari pesanan mentah menuju pertumbuhan otomatis.",
+      "t1": "Dari Kosmos,",
+      "t2": "ke Ruang Kendali",
+      "c1b": "Semua pesanan dari semua kanal — Shopify, Tokopedia, TikTok, Instagram — masuk ke satu inbox terpadu dengan status yang diperbarui secara langsung.",
+      "c1e": "Navigasi Orbit",
+      "c1f1": "Inbox terpadu",
+      "c1f2": "Streaming status pesanan",
+      "c1f3": "Caching edge",
+      "c1t": "Pesanan yang tak pernah hilang",
+      "c2b": "Stripe untuk kartu global, Midtrans untuk DANA, GoPay, OVO, dan QRIS — setiap mata uang dan setiap jalur, langsung direkonsiliasi.",
+      "c2e": "Gerbang Konstelasi",
+      "c2f1": "Jalur global + lokal",
+      "c2f2": "Kurs otomatis",
+      "c2f3": "Siap QRIS",
+      "c2t": "Pembayaran di orbit mana pun",
+      "c3b": "Kohor pendapatan, distribusi kanal, dan peta panas retensi mereduksi kebisingan bertahun-tahun menjadi satu tampilan yang menentukan.",
+      "c3e": "Wawasan Supernova",
+      "c3f1": "Retensi kohor",
+      "c3f2": "Komposisi kanal",
+      "c3f3": "Proyeksi pendapatan",
+      "c3t": "Analitik dengan gravitasi",
+      "c4b": "Webhook, AI copilot, dan laporan terjadwal mengubah pekerjaan rutin harian Anda menjadi proses latar belakang.",
+      "c4e": "Otomasi Neural",
+      "c4f1": "AI copilot",
+      "c4f2": "Webhook",
+      "c4f3": "Laporan terjadwal",
+      "c1live": "{count} pesanan live",
+      "c2live": "{value} diproses live",
+      "c3live": "{count} pelanggan terpantau",
+      "c4live": "{count} produk terotomatisasi",
+      "c4t": "Alur kerja yang berjalan sendiri"
     },
     "bento": {
       "aiBody": "Tanyakan apa pun tentang bisnis Anda dalam bahasa sehari-hari. Didukung oleh GPT-4.",
@@ -2445,18 +2573,36 @@
       "pf8": "Dukungan prioritas",
       "popular": "Paling Populer",
       "proDesc": "Untuk tim yang berkembang yang membutuhkan kekuatan penuh.",
-      "proName": "Pro",
+      "proName": "Professional",
       "starterDesc": "Cocok untuk bisnis kecil yang baru memulai.",
       "starterName": "Starter",
       "sub": "Mulai gratis, tingkatkan saat diperlukan.",
-      "t1": "Harga Sederhana dan Transparan"
+      "t1": "Harga Sederhana dan Transparan",
+      "compare": "Bandingkan semua fitur",
+      "ef1": "Pesanan tanpa batas",
+      "ef2": "Anggota tim tanpa batas",
+      "ef3": "Analitik real time tingkat lanjut",
+      "ef4": "Dukungan khusus 24/7",
+      "ef5": "Integrasi multi-kanal",
+      "ef6": "Laporan kustom",
+      "ef7": "Kontrol Akses Berbasis Peran",
+      "ef8": "API & Webhook",
+      "ef9": "Ekspor data kustom",
+      "entDesc": "Solusi kustom untuk bisnis bervolume tinggi.",
+      "entName": "Enterprise",
+      "monthly": "Bulanan",
+      "yearly": "Tahunan",
+      "yearlyDiscount": "Hemat 20%"
     },
     "stories": {
       "badge": "Cerita Pelanggan",
       "q1": "Kami beralih dari spreadsheet manual ke dasbor real time dalam satu sore. Manajemen pesanan multi-kanal menghemat 20+ jam per minggu.",
       "q2": "Integrasi pembayaran ganda Stripe + Midtrans adalah pengubah permainan untuk pasar Indonesia kami. Rekonsiliasi pendapatan kini sepenuhnya otomatis.",
       "q3": "Fitur enterprise 2FA, WebAuthn, dan SSO memberi kami kepatuhan SOC 2 langsung. Tim keamanan kami benar-benar terkesan.",
-      "title": "Dipercaya Tim Bisnis"
+      "title": "Dipercaya Tim Bisnis",
+      "r1": "CEO, TokoBaju.id",
+      "r2": "Kepala Pertumbuhan, NexCommerce",
+      "r3": "CTO, Akselerator Startup"
     },
     "final": {
       "getStarted": "Mulai Gratis",
@@ -2781,7 +2927,11 @@
     "presetAmber": "Warm Amber",
     "presetViolet": "Royal Violet",
     "presetSky": "Ocean Cyan",
-    "saving": "Menyimpan..."
+    "saving": "Menyimpan...",
+    "taxId": "NPWP / Nomor Pajak",
+    "taxIdPlaceholder": "00.000.000.0-000.000",
+    "invoiceAddress": "Alamat Terdaftar Faktur",
+    "invoiceAddressPlaceholder": "Jalan, Kota, Kode Pos, Negara"
   },
   "tenants": {
     "switchOrganization": "Ganti Organisasi",
@@ -3140,7 +3290,8 @@
     "heartbeat": "Detak setiap 15 dtk",
     "syncedAt": "Tersinkron {time}",
     "syncNow": "Sinkronkan",
-    "syncingToast": "Menyegarkan aliran telemetri langsung..."
+    "syncingToast": "Menyegarkan aliran telemetri langsung...",
+    "reconnectDetail": "Percobaan ulang ke-{attempt} — mencoba lagi dalam {seconds} dtk"
   },
   "invoiceCustomizer": {
     "dialogTitle": "Kustomisasi Templat Faktur & Kode Batang",
@@ -3222,6 +3373,7 @@
     "savedBeneficiaries": "Penerima Tersimpan",
     "loadedToTerminal": "Memuat {inv} ke Terminal QRIS",
     "paymentVerifiedToast": "⚡ Pembayaran Terverifikasi! Rp {amt} diterima via {bank}",
+    "withdrawalCompletedToast": "🎉 Penarikan selesai — Rp {amt} terkirim via {method}",
     "tabPos": "Numpad POS Kasir",
     "tabReconciliation": "Rekonsiliasi & MDR",
     "tabDisputes": "Pusat Sengketa",

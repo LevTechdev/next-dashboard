@@ -176,7 +176,11 @@
     "activityFeedTitle": "Activity Feed",
     "activityFeedDesc": "Real-time system activity stream",
     "activityFeedNew": "+{count} new",
-    "activityFeedViewAll": "View all"
+    "activityFeedViewAll": "View all",
+    "activityFeedEarlier": "Earlier",
+    "activityFeedEarlierTip": "Happened before this tab was opened",
+    "analyticsTitle": "Analytics",
+    "analyticsDesc": "Deep-dive into revenue trends, channel performance, and customer cohorts across every sales channel."
   },
   "sales": {
     "title": "Sales Management",
@@ -452,7 +456,8 @@
     "processedOn": "Processed on",
     "shippedOn": "Shipped on",
     "deliveredOn": "Delivered on",
-    "refundedOn": "Refunded on"
+    "refundedOn": "Refunded on",
+    "invoiceBtn": "Invoice"
   },
   "inventory": {
     "title": "Inventory Management",
@@ -481,6 +486,8 @@
     "warningRisk": "Needs Restock",
     "criticalRisk": "Critical Stockout",
     "openPoCapital": "Active PO Capital",
+    "activePosBadge": "{count} Active POs",
+    "valuationBadge": "Valuation",
     "createPo": "Create Purchase Order",
     "stockList": "Current Stock List",
     "stockListDesc": "Live inventory stock levels, valuations, and margin thresholds.",
@@ -2239,7 +2246,15 @@
       "getRevenueData": "Revenue data",
       "searchBusiness": "Business search",
       "getCustomerDetails": "Customer details",
-      "getOrderDetails": "Order details"
+      "getOrderDetails": "Order details",
+      "getTeamMembers": "Team members",
+      "getSecurityOverview": "Security overview",
+      "getRecentAuditLogs": "Audit logs",
+      "getChartData": "Chart data",
+      "forecastRevenue": "Revenue forecast",
+      "getAtRiskVipCustomers": "At-risk VIP customers",
+      "getChannelRoasAnalysis": "Channel ROAS analysis",
+      "proposeAction": "Suggested action"
     },
     "clearConversation": "Clear conversation",
     "greeting": "How can I help you?",
@@ -2317,6 +2332,67 @@
     "heroWord1": "Fully Unified.",
     "heroWord2": "Fully Automated.",
     "heroWord3": "Fully Connected.",
+    "hero": {
+      "ariaLabel": "Interactive Platform Overview",
+      "explore": "Explore Platform",
+      "scrollAria": "Scroll to features",
+      "metrics": {
+        "uptime": "99.98% Uptime SLA",
+        "rating": "4.8/5 Customer Score",
+        "regions": "14 Edge Regions"
+      },
+      "hub": {
+        "label": "Jump straight to a section",
+        "preview": "Live Preview",
+        "journey": "Product Journey",
+        "features": "Feature Tour",
+        "pricing": "Plans & Pricing"
+      },
+      "mode": {
+        "active": "Active",
+        "day": "Daylight Meadow",
+        "night": "Cosmic Night",
+        "switchDay": "Switch to Day Scene",
+        "switchNight": "Switch to Cosmic Night Scene"
+      },
+      "arcade": {
+        "cta": "Enter Simulation",
+        "desc": "High score: 98,420 pts. Inspired by the field arcade in the Google Flow world.",
+        "title": "Retro Arcade Matrix"
+      },
+      "terminal": {
+        "connected": "● CONNECTED",
+        "gmv": "Monthly GMV",
+        "gmvDelta": "↑ +12.5% vs last mo",
+        "hubs": "Active Hubs",
+        "hubsDelta": "Full redundancy",
+        "liveStream": "LIVE TELEMETRY STREAM",
+        "orders": "Active Orders",
+        "ordersDelta": "99.8% checkout rate",
+        "postIt": "POST-IT: GO PRO!",
+        "streaming": "Streaming live from Supabase + Prisma Edge",
+        "tabArcade": "Arcade",
+        "tabConsole": "Console",
+        "tabPulse": "Pulse",
+        "title": "crt-monitor-node.sh",
+        "velocity": "Sync Velocity",
+        "velocityDelta": "Edge latency",
+        "lines": [
+          "INIT: LevTech Unified Engine 2.4-flow",
+          "CLUSTER: 14 Global Regions Active (US, EU, AP-ID, SG)",
+          "TELEMETRY: 1,847 Real-time Store Nodes Connected",
+          "REVENUE_PULSE: $284,750 /mo (+12.5% WoW growth)",
+          "SYSTEM_HEALTH: All systems nominal (99.98% SLA)"
+        ],
+        "logs": [
+          "SYNC: Stripe & Midtrans webhooks reconciled [0.12ms]",
+          "EVENT: Order #ORD-2849 completed via QRIS ($148.50)",
+          "ORBIT: Satellite node Singapore sync OK",
+          "CACHE: Edge cache hit ratio 98.4%",
+          "SECURITY: 2FA TOTP verified for admin session"
+        ]
+      }
+    },
     "demoOrders": {
       "title": "Recent Orders"
     },
@@ -2346,11 +2422,63 @@
       "rating": "Average customer rating",
       "uptime": "Guaranteed uptime SLA"
     },
+    "preloader": {
+      "label": "Initializing secure workspace",
+      "status": "Booting LevTech Unified Engine",
+      "skip": "Skip"
+    },
+    "preview": {
+      "badge": "Product Tour",
+      "cta": "Open Live Demo",
+      "sub": "A live look at the dashboard your team gets from day one — orders, revenue, customers, and channel performance in real time.",
+      "t1": "Your Entire Business, in One View",
+      "url": "app.nextdashboard.dev/dashboard",
+      "kpiRevenue": "Total Revenue",
+      "kpiOrders": "Total Orders",
+      "kpiCustomers": "Total Customers",
+      "kpiProducts": "Total Products"
+    },
     "trust": {
       "b1": "No credit card required",
       "b2": "Deploy in minutes",
       "b3": "Multi-tenant ready",
       "b4": "SOC 2 compliant"
+    },
+    "story": {
+      "aria": "Product journey",
+      "badge": "The Journey",
+      "cta": "Explore the workspace",
+      "sub": "Four systems working as one constellation — see how your business moves from raw orders to automated growth.",
+      "t1": "From Cosmos,",
+      "t2": "to Control Room",
+      "c1b": "Every order from every channel — Shopify, Tokopedia, TikTok, Instagram — lands in one unified inbox with live status streaming.",
+      "c1e": "Orbit Navigation",
+      "c1f1": "Unified inbox",
+      "c1f2": "Live order streaming",
+      "c1f3": "Edge caching",
+      "c1t": "Orders that never drift",
+      "c2b": "Stripe for global cards, Midtrans for DANA, GoPay, OVO, and QRIS — every currency and every rail, auto-reconciled.",
+      "c2e": "Constellation Gateways",
+      "c2f1": "Global + local rails",
+      "c2f2": "Automatic FX",
+      "c2f3": "QRIS ready",
+      "c2t": "Payments in any orbit",
+      "c3b": "Revenue cohorts, channel distribution, and retention heatmaps collapse years of noise into one decisive view.",
+      "c3e": "Supernova Insights",
+      "c3f1": "Cohort retention",
+      "c3f2": "Channel mix",
+      "c3f3": "Revenue forecasts",
+      "c3t": "Analytics with gravity",
+      "c4b": "Webhooks, AI copilot, and scheduled reports turn your daily busywork into background processes.",
+      "c4e": "Neural Automation",
+      "c4f1": "AI copilot",
+      "c4f2": "Webhooks",
+      "c4f3": "Scheduled reports",
+      "c1live": "{count} orders live",
+      "c2live": "{value} processed live",
+      "c3live": "{count} customers tracked",
+      "c4live": "{count} products automated",
+      "c4t": "Workflows that run themselves"
     },
     "bento": {
       "aiBody": "Ask anything about your business in plain language. Powered by GPT-4.",
@@ -2445,18 +2573,36 @@
       "pf8": "Priority support",
       "popular": "Most Popular",
       "proDesc": "For growing teams who need full power.",
-      "proName": "Pro",
+      "proName": "Professional",
       "starterDesc": "Perfect for small businesses getting started.",
       "starterName": "Starter",
       "sub": "Start free, scale when you need to.",
-      "t1": "Simple, Transparent Pricing"
+      "t1": "Simple, Transparent Pricing",
+      "compare": "Compare all features",
+      "ef1": "Unlimited orders",
+      "ef2": "Unlimited team members",
+      "ef3": "Advanced real-time analytics",
+      "ef4": "24/7 Dedicated support",
+      "ef5": "Multi-channel integrations",
+      "ef6": "Custom reports",
+      "ef7": "Role-Based Access Control",
+      "ef8": "API & Webhooks",
+      "ef9": "Custom data exports",
+      "entDesc": "Custom solutions for high-volume businesses.",
+      "entName": "Enterprise",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save 20%"
     },
     "stories": {
       "badge": "Customer Stories",
       "q1": "We went from manual spreadsheets to real-time dashboards in one afternoon. The multi-channel order management saved us 20+ hours per week.",
       "q2": "The Stripe + Midtrans dual-payment integration is a game-changer for our Indonesian market. Revenue reconciliation is now fully automated.",
       "q3": "The 2FA, WebAuthn, and SSO enterprise features gave us SOC 2 compliance out of the box. Our security team was genuinely impressed.",
-      "title": "Trusted by Business Teams"
+      "title": "Trusted by Business Teams",
+      "r1": "CEO, TokoBaju.id",
+      "r2": "Head of Growth, NexCommerce",
+      "r3": "CTO, Startup Accelerator"
     },
     "final": {
       "getStarted": "Get Started Free",
@@ -2781,7 +2927,11 @@
     "presetAmber": "Warm Amber",
     "presetViolet": "Royal Violet",
     "presetSky": "Ocean Cyan",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "taxId": "Tax ID / NPWP",
+    "taxIdPlaceholder": "00.000.000.0-000.000",
+    "invoiceAddress": "Invoice Registered Address",
+    "invoiceAddressPlaceholder": "Street, City, Postal Code, Country"
   },
   "tenants": {
     "switchOrganization": "Switch Organization",
@@ -3140,7 +3290,8 @@
     "heartbeat": "Heartbeat every 15s",
     "syncedAt": "Synced {time}",
     "syncNow": "Sync Now",
-    "syncingToast": "Refreshing live telemetry streams..."
+    "syncingToast": "Refreshing live telemetry streams...",
+    "reconnectDetail": "Reconnect attempt {attempt} — retrying in {seconds}s"
   },
   "invoiceCustomizer": {
     "dialogTitle": "Invoice Template & Barcode Customizer",
@@ -3222,6 +3373,7 @@
     "savedBeneficiaries": "Saved Beneficiaries",
     "loadedToTerminal": "Loaded {inv} to QRIS Terminal",
     "paymentVerifiedToast": "⚡ Payment Verified! Rp {amt} received via {bank}",
+    "withdrawalCompletedToast": "🎉 Payout completed — Rp {amt} sent via {method}",
     "tabPos": "Cashier POS Numpad",
     "tabReconciliation": "Settlement & MDR",
     "tabDisputes": "Dispute Center",

@@ -1,11 +1,9 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   ShoppingCart,
@@ -23,19 +21,30 @@ import {
   Layers,
   Key,
   Bell,
-  ChevronRight,
   Star,
   BadgeCheck,
   Sparkles,
   RefreshCw,
   Webhook,
   Bot,
+  Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
-import HeroFlow3D from "@/components/home/hero-flow-3d";
-
-gsap.registerPlugin(ScrollTrigger);
+import HeroOverview from "@/components/home/hero-overview";
+import { ProductStory } from "@/components/home/product-story";
+import { RevenueChart } from "@/components/charts/revenue-chart";
+import {
+  StripeBrandIcon,
+  MidtransBrandIcon,
+  ShopifyBrandIcon,
+  TokopediaBrandIcon,
+  InstagramBrandIcon,
+  OpenAIBrandIcon,
+  SupabaseBrandIcon,
+  ResendBrandIcon,
+  SalesChannelIcon,
+} from "@/components/ui/brand-icons";
 
 // ─── Static demo data that mirrors the actual dashboard API shape ────────────
 
@@ -100,15 +109,30 @@ const DEMO_CHANNELS = [
 const DEMO_MONTHLY = [28, 45, 38, 62, 55, 78, 72, 88, 95, 82, 104, 118];
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
+// Shape the monthly demo series for the real RevenueChart component.
+const REVENUE_DATA = DEMO_MONTHLY.map((v, i) => ({ month: MONTHS[i], revenue: v * 1000 }));
+
 const INTEGRATIONS = [
-  { name: "Stripe", descKey: "marquee.d0", color: "#635BFF", icon: "💳" },
-  { name: "Midtrans", descKey: "marquee.d1", color: "#0084FF", icon: "🏦" },
-  { name: "Shopify", descKey: "marquee.d2", color: "#059669", icon: "🛒" },
-  { name: "Tokopedia", descKey: "marquee.d3", color: "#42B549", icon: "🛍️" },
-  { name: "Instagram", descKey: "marquee.d4", color: "#E1306C", icon: "📸" },
-  { name: "OpenAI", descKey: "marquee.d5", color: "#10A37F", icon: "🤖" },
-  { name: "Supabase", descKey: "marquee.d6", color: "#3ECF8E", icon: "⚡" },
-  { name: "Resend", descKey: "marquee.d7", color: "#000000", icon: "✉️" },
+  { name: "Stripe", descKey: "marquee.d0", color: "#635BFF", Icon: StripeBrandIcon },
+  { name: "Midtrans", descKey: "marquee.d1", color: "#0084FF", Icon: MidtransBrandIcon },
+  { name: "Shopify", descKey: "marquee.d2", color: "#95BF47", Icon: ShopifyBrandIcon },
+  {
+    name: "Tokopedia",
+    descKey: "marquee.d3",
+    color: "#42B549",
+    Icon: TokopediaBrandIcon,
+    lockup: true, // wide official wordmark — rendered without the text label
+  },
+  { name: "Instagram", descKey: "marquee.d4", color: "#E1306C", Icon: InstagramBrandIcon },
+  {
+    name: "OpenAI",
+    descKey: "marquee.d5",
+    color: "#10A37F",
+    Icon: OpenAIBrandIcon,
+    iconScale: 1.35, // the hexagon glyph has whitespace — render it larger to read equally
+  },
+  { name: "Supabase", descKey: "marquee.d6", color: "#3ECF8E", Icon: SupabaseBrandIcon },
+  { name: "Resend", descKey: "marquee.d7", color: "#475569", Icon: ResendBrandIcon },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -121,26 +145,112 @@ const STATUS_COLOR: Record<string, string> = {
 const TESTIMONIALS = [
   {
     name: "Ahmad Rizki",
-    role: "CEO, TokoBaju.id",
-    avatar: "AR",
+    roleKey: "stories.r1",
     quoteKey: "stories.q1",
+    company: "tokopedia",
+    avatar: "AR",
     stars: 5,
+    gradient: "from-rose-500 to-orange-500",
   },
   {
     name: "Jessica Wu",
-    role: "Head of Growth, NexCommerce",
-    avatar: "JW",
+    roleKey: "stories.r2",
     quoteKey: "stories.q2",
-    stars: 5,
+    company: "shopify",
+    avatar: "JW",
+    stars: 4.5,
+    gradient: "from-sky-500 to-violet-500",
   },
   {
     name: "Budi Santoso",
-    role: "CTO, Startup Accelerator",
-    avatar: "BS",
+    roleKey: "stories.r3",
     quoteKey: "stories.q3",
-    stars: 5,
+    company: "instagram",
+    avatar: "BS",
+    stars: 4.8,
+    gradient: "from-emerald-500 to-teal-500",
   },
 ];
+
+// Homepage pricing mirrors the dedicated /pricing plans (Starter / Professional / Enterprise)
+const HOME_PLANS = [
+  {
+    key: "starter",
+    nameKey: "plans.starterName",
+    descKey: "plans.starterDesc",
+    monthly: 29,
+    yearly: 23,
+    popular: false,
+    featureKeys: ["plans.f1", "plans.f2", "plans.f3", "plans.f4", "plans.f5"],
+    ctaKey: "plans.ctaFree",
+  },
+  {
+    key: "professional",
+    nameKey: "plans.proName",
+    descKey: "plans.proDesc",
+    monthly: 79,
+    yearly: 63,
+    popular: true,
+    featureKeys: [
+      "plans.pf1",
+      "plans.pf2",
+      "plans.pf3",
+      "plans.pf4",
+      "plans.pf5",
+      "plans.pf6",
+      "plans.pf7",
+      "plans.pf8",
+    ],
+    ctaKey: "plans.ctaTrial",
+  },
+  {
+    key: "enterprise",
+    nameKey: "plans.entName",
+    descKey: "plans.entDesc",
+    monthly: 199,
+    yearly: 159,
+    popular: false,
+    featureKeys: [
+      "plans.ef1",
+      "plans.ef2",
+      "plans.ef3",
+      "plans.ef4",
+      "plans.ef5",
+      "plans.ef6",
+      "plans.ef7",
+      "plans.ef8",
+      "plans.ef9",
+    ],
+    ctaKey: "plans.entContact",
+  },
+];
+
+// ─── Shared animation choreography (varied entrance patterns) ────────────────
+
+const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
+
+/** Bento tiles rise with a soft scale + de-blur instead of the flat y-only fade. */
+const bentoEntrance = {
+  hidden: { opacity: 0, y: 28, scale: 0.95, filter: "blur(4px)" },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { duration: 0.55, delay: i * 0.05, ease: easeSmooth },
+  }),
+};
+
+/** Testimonial cards fade in with a subtle 3D flip for depth. */
+const testimonialEntrance = {
+  hidden: { opacity: 0, y: 22, rotateX: 8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transition: { duration: 0.6, delay: i * 0.07, ease: easeSmooth },
+  }),
+};
 
 // ─── Animated Counter ────────────────────────────────────────────────────────
 
@@ -183,6 +293,26 @@ function AnimatedStat({
       {formatted}
       {suffix}
     </span>
+  );
+}
+
+// ─── Star Rating (supports half stars) ───────────────────────────────────────
+
+function StarRating({ value }: { value: number }) {
+  return (
+    <div className="flex gap-0.5" aria-label={`${value} / 5`} role="img">
+      {Array.from({ length: 5 }).map((_, i) => {
+        const fill = Math.min(Math.max(value - i, 0), 1);
+        return (
+          <span key={i} className="relative inline-block h-4 w-4">
+            <Star className="h-4 w-4 text-amber-400/20" />
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            </span>
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -238,7 +368,7 @@ function DonutChart({ data }: { data: typeof DEMO_CHANNELS }) {
   );
 }
 
-// ─── Feature Bento Card ──────────────────────────────────────────────────────
+// ─── Feature Bento Card (hover lift + cursor-following glow) ─────────────────
 
 function BentoCard({
   className,
@@ -249,16 +379,371 @@ function BentoCard({
   children: React.ReactNode;
   gradient?: boolean;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [spot, setSpot] = useState({ x: 50, y: 50, visible: false });
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    setSpot({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+      visible: true,
+    });
+  };
+
   return (
     <div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => setSpot((s) => ({ ...s, visible: false }))}
       className={cn(
-        "rounded-2xl border border-border bg-background p-5 overflow-hidden relative group",
+        "group relative rounded-2xl border border-border bg-background p-5 overflow-hidden",
+        "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/40",
         gradient && "bg-gradient-to-br from-primary/5 to-primary/0",
         className,
       )}
     >
-      {children}
+      {/* Radial glow that follows the cursor */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+        style={{
+          opacity: spot.visible ? 1 : 0,
+          background: `radial-gradient(380px circle at ${spot.x}% ${spot.y}%, hsl(var(--primary) / 0.09), transparent 45%)`,
+        }}
+      />
+      <div className="relative z-[1] h-full">{children}</div>
     </div>
+  );
+}
+
+// ─── Browser-framed Dashboard Preview (visual proof under the hero) ──────────
+
+/** Shared browser chrome — traffic lights, URL pill, LIVE badge. */
+function BrowserChrome({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-border bg-muted/30">
+      <div className="flex gap-1.5" aria-hidden>
+        <span className="w-3 h-3 rounded-full bg-red-400/90" />
+        <span className="w-3 h-3 rounded-full bg-amber-400/90" />
+        <span className="w-3 h-3 rounded-full bg-emerald-400/90" />
+      </div>
+      <div className="flex-1 max-w-xl mx-auto flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-background/80 border border-border/70 text-[11px] text-muted-foreground font-mono truncate">
+        <Lock className="h-3 w-3 text-primary shrink-0" />
+        {t("preview.url")}
+      </div>
+      <span
+        className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
+        aria-hidden
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        {t("hero.terminal.connected").replace("● ", "")}
+      </span>
+    </div>
+  );
+}
+
+/** DOM fallback mockup — bento-styled cards + the real RevenueChart. */
+function DashboardPreviewMock({ t }: { t: (key: string) => string }) {
+  const kpis = [
+    { labelKey: "preview.kpiRevenue", value: "$284.7k", delta: "+12.5%" },
+    { labelKey: "preview.kpiOrders", value: "1,847", delta: "+8.3%" },
+    { labelKey: "preview.kpiCustomers", value: "892", delta: "+15.2%" },
+    { labelKey: "preview.kpiProducts", value: "156", delta: "+5.1%" },
+  ];
+
+  return (
+    <div className="rounded-2xl sm:rounded-3xl border border-border bg-background overflow-hidden shadow-[0_30px_90px_-20px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)]">
+      <BrowserChrome t={t} />
+
+      {/* Dashboard body */}
+      <div className="p-4 sm:p-6 space-y-4 bg-background">
+        {/* KPI cards — bento-styled: backgound surface, primary ring on hover */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {kpis.map((kpi) => (
+            <div
+              key={kpi.labelKey}
+              className="rounded-xl border border-border bg-background p-3 sm:p-4 transition-colors hover:border-primary/40"
+            >
+              <p className="text-[10px] text-muted-foreground font-medium truncate">
+                {t(kpi.labelKey)}
+              </p>
+              <p className="text-lg sm:text-2xl font-bold text-foreground mt-1 tracking-tight">
+                {kpi.value}
+              </p>
+              <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                <TrendingUp className="h-3 w-3" /> {kpi.delta}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Real RevenueChart + recent orders */}
+        <div className="grid lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="lg:col-span-3 rounded-xl border border-border bg-background p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">{t("bento.revenueEyebrow")}</p>
+                <p className="text-sm font-bold text-foreground">{t("bento.monthlyLegend")}</p>
+              </div>
+              <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                {t("bento.liveLegend")}
+              </span>
+            </div>
+            <RevenueChart data={REVENUE_DATA} height={170} />
+          </div>
+
+          <div className="lg:col-span-2 rounded-xl border border-border bg-background p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-foreground">{t("demoOrders.title")}</p>
+              <span className="text-[10px] font-semibold text-primary">{t("bento.viewAll")}</span>
+            </div>
+            <div className="space-y-3">
+              {DEMO_ORDERS.slice(0, 3).map((order) => (
+                <div key={order.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                      {order.customer
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold text-foreground truncate">
+                        {order.customer}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground truncate">
+                        {order.id} · {order.channel}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span
+                      className={cn(
+                        "text-[9px] font-semibold px-1.5 py-0.5 rounded-full",
+                        STATUS_COLOR[order.status],
+                      )}
+                    >
+                      {t(`orderStatus.${order.status}`)}
+                    </span>
+                    <p className="text-[10px] font-bold text-foreground mt-0.5">${order.amount}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* API status strip */}
+        <div className="flex items-center justify-between gap-3 px-1 pt-1">
+          <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
+            GET /api/v1/orders → 200 OK · 12ms
+          </span>
+          <span className="text-[10px] text-muted-foreground font-mono">
+            SSE · order.completed · webhook ✓
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Live OG capture of the dashboard — served from /api/og/dashboard. */
+function DashboardOgFrame({ t, onError }: { t: (key: string) => string; onError: () => void }) {
+  return (
+    <div className="rounded-2xl sm:rounded-3xl border border-border bg-background overflow-hidden shadow-[0_30px_90px_-20px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)]">
+      <BrowserChrome t={t} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- the OG capture is a generated PNG served by our own route */}
+      <img
+        src="/api/og/dashboard"
+        alt={t("preview.t1")}
+        width={1200}
+        height={630}
+        onError={onError}
+        className="block h-auto w-full"
+      />
+    </div>
+  );
+}
+
+/** Only mounts its heavy children once the frame nears the viewport. */
+function LazyFrame({
+  children,
+  minHeight = 560,
+}: {
+  children: React.ReactNode;
+  minHeight?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{ minHeight }}>
+      {inView ? (
+        children
+      ) : (
+        <div
+          aria-hidden
+          className="rounded-2xl sm:rounded-3xl border border-border bg-background overflow-hidden"
+        >
+          <div className="h-12 border-b border-border bg-muted/30" />
+          <div className="p-5 space-y-4 animate-pulse">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-20 rounded-xl bg-muted/60" />
+              ))}
+            </div>
+            <div className="h-44 rounded-xl bg-muted/60" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Cinematic Preloader ─────────────────────────────────────────────────────
+
+const PRELOADER_SEEN_KEY = "dashboard-preloader-seen";
+
+function CinematicPreloader({ t, onDone }: { t: (key: string) => string; onDone: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Completing the boot (naturally, via Skip, or reduced-motion) is remembered
+  // so returning visitors land straight on the hero.
+  const markSeen = useCallback(() => {
+    try {
+      window.localStorage.setItem(PRELOADER_SEEN_KEY, "1");
+    } catch {
+      // storage unavailable — just play it again next time
+    }
+  }, []);
+
+  // Jump straight to the end (content never blocked for reduced-motion users).
+  const finish = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setProgress(100);
+    markSeen();
+    onDone();
+  }, [markSeen, onDone]);
+
+  useEffect(() => {
+    const reduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduced) {
+      // Near-instant boot: one tick so the 100% state is announced, then reveal.
+      const fast = setTimeout(finish, 120);
+      return () => clearTimeout(fast);
+    }
+
+    const steps = 30;
+    let value = 0;
+    timerRef.current = setInterval(() => {
+      value += 100 / steps;
+      if (value >= 100) {
+        setProgress(100);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        markSeen();
+        onDone();
+      } else {
+        setProgress(Math.round(value));
+      }
+    }, 60);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [finish, onDone]);
+
+  return (
+    <motion.div
+      exit={{ opacity: 0, scale: 1.04 }}
+      transition={{ duration: 0.55, ease: easeSmooth }}
+      className="fixed inset-0 z-[999] bg-[#0b0c11] text-white flex flex-col items-center justify-center gap-6 px-6"
+      role="status"
+      aria-label={t("preloader.label")}
+    >
+      {/* Skip — lets any visitor (e.g. keyboard users) bypass the boot sequence */}
+      <button
+        onClick={finish}
+        className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-full border border-white/15 bg-white/5 text-xs font-semibold text-white/80 hover:bg-white/15 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+      >
+        {t("preloader.skip")}
+      </button>
+
+      {/* Ambient glow */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-primary/15 blur-[130px] pointer-events-none"
+      />
+
+      {/* Orbit ring + brand mark (spin is disabled under prefers-reduced-motion) */}
+      <div className="relative w-24 h-24" aria-hidden>
+        <div
+          className="absolute inset-0 rounded-full border border-primary/30 border-t-primary animate-spin motion-reduce:animate-none"
+          style={{ animationDuration: "1.6s" }}
+        />
+        <div
+          className="absolute inset-2 rounded-full border border-white/10 border-b-sky-400/60 animate-spin motion-reduce:animate-none"
+          style={{ animationDuration: "2.4s", animationDirection: "reverse" }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-sky-400 flex items-center justify-center shadow-lg shadow-primary/30">
+            <Zap className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center relative">
+        <p className="text-sm font-semibold tracking-wide">{t("preloader.label")}</p>
+        <p className="text-xs text-muted-foreground mt-1.5 font-mono">{t("preloader.status")}</p>
+      </div>
+
+      {/* Progress bar + counter */}
+      <div className="w-56 relative">
+        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full transition-[width] duration-150 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-right text-[11px] font-mono text-muted-foreground mt-2 tabular-nums">
+          {String(progress).padStart(3, "0")}%
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -267,12 +752,41 @@ function BentoCard({
 export default function MarketingPage({ params }: { params: Promise<{ locale: string }> }) {
   const t = useTranslations("homepage");
   const { locale } = use(params);
-  const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
+  const [isAnnual, setIsAnnual] = useState(false);
+
+  // Cinematic boot sequence: the preloader plays on the first visit, then the
+  // hero reveals. Returning visitors (flag already set) go straight to content.
+  const [booted, setBooted] = useState(false);
+  const [ogFailed, setOgFailed] = useState(false);
+  const handleBoot = useCallback(() => setBooted(true), []);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(PRELOADER_SEEN_KEY) === "1") {
+        setBooted(true);
+      }
+    } catch {
+      // storage unavailable — play the sequence
+    }
+  }, []);
+
+  // Gentle float parallax for the dashboard preview frame while scrolling
+  const previewWrapRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: previewWrapRef,
+    offset: ["start end", "end start"],
+  });
+  const previewFloatY = useTransform(scrollYProgress, [0, 1], [44, -44]);
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden">
-      {/* ───────────────────── 3D SCROLLABLE DAY/NIGHT HERO (GOOGLE FLOW) ───────────────────── */}
-      <HeroFlow3D locale={locale} t={t} />
+      {/* ── Cinematic preloader overlay (fades out once booted) ── */}
+      <AnimatePresence>
+        {!booted && <CinematicPreloader t={t} onDone={handleBoot} />}
+      </AnimatePresence>
+
+      {/* ───────────────────── OVERVIEW HERO HUB (SIGNAL STRIP) ───────────────────── */}
+      <HeroOverview locale={locale} t={t} revealed={booted} />
 
       {/* ─── INFINITE INTEGRATION MARQUEE — powered by the tools you use ─── */}
 
@@ -301,10 +815,12 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                     key={`${half}-${intg.name}`}
                     className="flex items-center gap-2.5 whitespace-nowrap rounded-full border border-border/70 bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground backdrop-blur"
                   >
-                    <span aria-hidden="true" className="text-base leading-none">
-                      {intg.icon}
-                    </span>
-                    <span className="text-foreground">{intg.name}</span>
+                    <intg.Icon
+                      size={Math.round(16 * (intg.iconScale ?? 1))}
+                      style={{ color: intg.color }}
+                      className="shrink-0"
+                    />
+                    {!intg.lockup && <span className="text-foreground">{intg.name}</span>}
                     <span className="hidden text-xs text-muted-foreground/80 md:inline">
                       {t(intg.descKey)}
                     </span>
@@ -316,12 +832,77 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
         </div>
       </section>
 
+      {/* ──────── DASHBOARD PRODUCT PREVIEW (browser-framed mockup) ──────── */}
+      <section
+        ref={previewWrapRef}
+        id="preview"
+        className="relative scroll-mt-24 px-4 sm:px-6 lg:px-12 py-16 sm:py-24 max-w-7xl mx-auto"
+      >
+        {/* Ambient glow behind the frame */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[520px] rounded-full bg-primary/10 blur-[120px] pointer-events-none"
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: easeSmooth }}
+          className="text-center mb-12 relative"
+        >
+          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
+            {t("preview.badge")}
+          </p>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
+            {t("preview.t1")}
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("preview.sub")}</p>
+        </motion.div>
+
+        <motion.div style={{ y: previewFloatY }} className="relative will-change-transform">
+          <motion.div
+            initial={{ opacity: 0, y: 56, scale: 0.97 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.85, ease: easeSmooth }}
+          >
+            <LazyFrame minHeight={560}>
+              {ogFailed ? (
+                <DashboardPreviewMock t={t} />
+              ) : (
+                <DashboardOgFrame t={t} onError={() => setOgFailed(true)} />
+              )}
+            </LazyFrame>
+          </motion.div>
+
+          {/* Floating CTA chip */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.35, duration: 0.5, ease: easeSmooth }}
+            className="absolute -bottom-5 left-1/2 -translate-x-1/2"
+          >
+            <Link
+              href={`/${locale}/login`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-foreground text-background dark:bg-white dark:text-zinc-950 text-sm font-semibold shadow-xl hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-300 whitespace-nowrap"
+            >
+              {t("preview.cta")} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ──────── SCROLL-DRIVEN PRODUCT STORY (cosmos → control room) ──────── */}
+      <ProductStory locale={locale} t={t} id="story" />
+
       {/* ──────── BENTO GRID ──────── */}
       <section id="features" className="px-4 sm:px-6 lg:px-12 py-12 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
+          viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="text-center mb-12"
         >
@@ -340,10 +921,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-auto">
           {/* ── Revenue Chart (large, 7 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, ease: easeSmooth }}
+            custom={0}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-7"
           >
             <BentoCard className="h-full min-h-[280px]">
@@ -380,10 +962,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Sales by Channel (5 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.05, ease: easeSmooth }}
+            custom={1}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-5"
           >
             <BentoCard className="h-full min-h-[280px]">
@@ -415,10 +998,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Recent Orders (7 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.1, ease: easeSmooth }}
+            custom={2}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-7"
           >
             <BentoCard className="h-full">
@@ -475,10 +1059,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Top Products (5 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.15, ease: easeSmooth }}
+            custom={3}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-5"
           >
             <BentoCard className="h-full">
@@ -516,10 +1101,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Payment Systems (4 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.2, ease: easeSmooth }}
+            custom={4}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-4"
           >
             <BentoCard className="h-full gradient" gradient>
@@ -546,10 +1132,14 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                     className="flex items-center gap-3 p-2.5 rounded-xl bg-background border border-border"
                   >
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0"
                       style={{ background: gw.color }}
                     >
-                      {gw.name[0]}
+                      {gw.name === "Stripe" ? (
+                        <StripeBrandIcon size={13} className="text-white" />
+                      ) : (
+                        <MidtransBrandIcon size={13} className="text-white" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground">{gw.name}</p>
@@ -566,10 +1156,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── 2FA Security (4 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.25, ease: easeSmooth }}
+            custom={5}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-4"
           >
             <BentoCard className="h-full">
@@ -600,10 +1191,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── AI Assistant (4 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.3, ease: easeSmooth }}
+            custom={6}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-4"
           >
             <BentoCard className="h-full bg-foreground text-background dark:bg-zinc-900 dark:text-zinc-100">
@@ -626,10 +1218,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Integrations (8 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.35, ease: easeSmooth }}
+            custom={7}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-8"
           >
             <BentoCard className="h-full">
@@ -648,10 +1241,20 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                     key={intg.name}
                     className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/50 hover:bg-muted transition group cursor-default"
                   >
-                    <span className="text-xl mb-1.5">{intg.icon}</span>
-                    <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition">
-                      {intg.name}
-                    </p>
+                    {intg.lockup ? (
+                      <intg.Icon size={13} className="mb-1.5" style={{ color: intg.color }} />
+                    ) : (
+                      <intg.Icon
+                        size={Math.round(20 * (intg.iconScale ?? 1))}
+                        className="mb-1.5 group-hover:scale-110 transition-transform"
+                        style={{ color: intg.color }}
+                      />
+                    )}
+                    {!intg.lockup && (
+                      <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition">
+                        {intg.name}
+                      </p>
+                    )}
                     <p className="text-[9px] text-muted-foreground">{t(intg.descKey)}</p>
                   </div>
                 ))}
@@ -661,10 +1264,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── API / Webhooks (4 cols) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.4, ease: easeSmooth }}
+            custom={8}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-4"
           >
             <BentoCard className="h-full">
@@ -690,10 +1294,11 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
           {/* ── Real-time (full width) */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.45, ease: easeSmooth }}
+            custom={9}
+            variants={bentoEntrance}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.15 }}
             className="lg:col-span-12"
           >
             <BentoCard className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -730,7 +1335,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.6, ease: easeSmooth }}
           >
             <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
@@ -764,7 +1369,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.6, ease: easeSmooth }}
             className="grid grid-cols-2 gap-4"
           >
@@ -789,13 +1394,13 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
 
       {/* ──────── PRICING ──────── */}
       <section id="pricing" className="px-4 sm:px-6 lg:px-12 py-20 bg-background">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.6, ease: easeSmooth }}
-            className="text-center mb-12"
+            className="text-center mb-8"
           >
             <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
               {t("plans.badge")}
@@ -806,105 +1411,174 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
             <p className="text-muted-foreground text-lg">{t("plans.sub")}</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Free */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, ease: easeSmooth }}
-              className="rounded-2xl border border-border bg-background p-8 flex flex-col"
-            >
-              <h3 className="text-xl font-bold text-foreground mb-1">{t("plans.starterName")}</h3>
-              <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-bold text-foreground">$0</span>
-                <span className="text-muted-foreground font-medium">{t("plans.month")}</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6 pb-6 border-b border-border">
-                {t("plans.starterDesc")}
-              </p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {["plans.f1", "plans.f2", "plans.f3", "plans.f4", "plans.f5"].map((fk) => (
-                  <li key={fk} className="flex items-center gap-3 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-primary flex-shrink-0" /> {t(fk)}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={`/${locale}/register`}
-                className="w-full py-3 rounded-full border border-border bg-background text-foreground text-sm font-semibold text-center hover:bg-muted transition"
+          {/* Billing toggle */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.5, ease: easeSmooth }}
+            className="flex justify-center mb-10"
+          >
+            <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
+              <button
+                onClick={() => setIsAnnual(false)}
+                className={cn(
+                  "px-5 py-2 text-sm font-medium rounded-full transition-colors cursor-pointer",
+                  !isAnnual
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
               >
-                {t("plans.ctaFree")}
-              </Link>
-            </motion.div>
-
-            {/* Pro */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: 0.05, ease: easeSmooth }}
-              className="rounded-2xl bg-foreground text-background p-8 flex flex-col relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/30 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold mb-3">
-                  <Sparkles className="h-3 w-3" /> {t("plans.popular")}
-                </div>
-                <h3 className="text-xl font-bold mb-1">{t("plans.proName")}</h3>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-bold">$49</span>
-                  <span className="opacity-60 font-medium">{t("plans.month")}</span>
-                </div>
-                <p className="text-sm opacity-70 mb-6 pb-6 border-b border-white/20">
-                  {t("plans.proDesc")}
-                </p>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {[
-                    "plans.pf1",
-                    "plans.pf2",
-                    "plans.pf3",
-                    "plans.pf4",
-                    "plans.pf5",
-                    "plans.pf6",
-                    "plans.pf7",
-                    "plans.pf8",
-                  ].map((fk) => (
-                    <li key={fk} className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-primary flex-shrink-0" /> {t(fk)}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={`/${locale}/register`}
-                  className="w-full py-3 rounded-full bg-white text-gray-900 text-sm font-semibold text-center hover:bg-gray-100 transition block"
+                {t("plans.monthly")}
+              </button>
+              <button
+                onClick={() => setIsAnnual(true)}
+                className={cn(
+                  "px-5 py-2 text-sm font-medium rounded-full transition-colors inline-flex items-center gap-1.5 cursor-pointer",
+                  isAnnual
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t("plans.yearly")}
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                    isAnnual
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  )}
                 >
-                  {t("plans.ctaTrial")}
-                </Link>
-              </div>
-            </motion.div>
+                  {t("plans.yearlyDiscount")}
+                </span>
+              </button>
+            </div>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6 items-stretch">
+            {HOME_PLANS.map((plan, i) => {
+              const price = isAnnual ? plan.yearly : plan.monthly;
+              const ctaHref =
+                plan.key === "enterprise" ? `/${locale}/contact` : `/${locale}/register`;
+
+              return (
+                <motion.div
+                  key={plan.key}
+                  initial={{
+                    opacity: 0,
+                    y: i === 1 ? 28 : 0,
+                    x: i === 0 ? -48 : i === 2 ? 48 : 0,
+                    scale: i === 1 ? 0.95 : 1,
+                  }}
+                  whileInView={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 0.6, ease: easeSmooth }}
+                  className={cn(
+                    "rounded-2xl p-8 flex flex-col relative overflow-hidden border",
+                    plan.popular
+                      ? "bg-foreground text-background border-transparent shadow-2xl shadow-primary/10 md:-my-4"
+                      : "border-border bg-background text-foreground",
+                  )}
+                >
+                  {plan.popular && (
+                    <div className="absolute top-0 right-0 w-52 h-52 bg-primary/30 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+                  )}
+                  <div className="relative z-10 flex flex-col flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold mb-1">{t(plan.nameKey)}</h3>
+                      {plan.popular && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wide mb-1">
+                          <Sparkles className="h-3 w-3" /> {t("plans.popular")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-4xl font-bold tracking-tight">${price}</span>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          plan.popular ? "opacity-60" : "text-muted-foreground",
+                        )}
+                      >
+                        {t("plans.month")}
+                      </span>
+                    </div>
+                    <p
+                      className={cn(
+                        "text-sm mb-6 pb-6 border-b",
+                        plan.popular
+                          ? "opacity-70 border-white/20"
+                          : "text-muted-foreground border-border",
+                      )}
+                    >
+                      {t(plan.descKey)}
+                    </p>
+                    <ul className="space-y-3 mb-8 flex-1">
+                      {plan.featureKeys.map((fk) => (
+                        <li key={fk} className="flex items-center gap-3 text-sm">
+                          <Check
+                            className={cn(
+                              "h-4 w-4 flex-shrink-0",
+                              plan.popular ? "text-primary" : "text-primary",
+                            )}
+                          />
+                          <span>{t(fk)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href={ctaHref}
+                      className={cn(
+                        "w-full py-3 rounded-full text-sm font-semibold text-center transition",
+                        plan.popular
+                          ? "bg-white text-gray-900 hover:bg-gray-100"
+                          : "bg-foreground text-background hover:opacity-90",
+                      )}
+                    >
+                      {t(plan.ctaKey)}
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
-          <div className="mt-6 p-4 rounded-2xl border border-border bg-muted/50 flex items-center justify-between">
-            <p className="text-sm text-foreground font-medium">{t("plans.entQ")}</p>
-            <Link
-              href={`/${locale}/contact`}
-              className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
-            >
-              {t("plans.entContact")} <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.5, ease: easeSmooth }}
+            className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl border border-border bg-muted/50"
+          >
+            <p className="text-sm text-foreground font-medium text-center sm:text-left">
+              {t("plans.entQ")}
+            </p>
+            <div className="flex items-center gap-6 shrink-0">
+              <Link
+                href={`/${locale}/pricing#comparison`}
+                className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+              >
+                {t("plans.compare")} <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href={`/${locale}/contact`}
+                className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                {t("plans.entContact")}
+              </Link>
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ──────── TESTIMONIALS ──────── */}
-      <section className="px-4 sm:px-6 lg:px-12 py-20 max-w-7xl mx-auto">
+      {/* ──────── TESTIMONIALS (auto-scrolling carousel) ──────── */}
+      <section className="py-20 max-w-7xl mx-auto overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
+          viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.6, ease: easeSmooth }}
-          className="text-center mb-12"
+          className="text-center mb-12 px-4"
         >
           <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">
             {t("stories.badge")}
@@ -914,48 +1588,71 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((tm, i) => (
-            <motion.div
-              key={tm.name}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: i * 0.08, ease: easeSmooth }}
-              className="rounded-2xl border border-border bg-background p-6 flex flex-col gap-4"
-            >
-              <div className="flex gap-0.5">
-                {Array.from({ length: tm.stars }).map((_, j) => (
-                  <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed flex-1">
-                &ldquo;{t(tm.quoteKey)}&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                  {tm.avatar}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{tm.name}</p>
-                  <p className="text-xs text-muted-foreground">{tm.role}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+        <div className="relative [perspective:1200px]">
+          <div className="relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]">
+            {/* Two copies of the track → the -50% keyframe loops seamlessly */}
+            <div className="flex w-max gap-6 pr-6 animate-[hero-marquee_46s_linear_infinite] motion-reduce:animate-none hover:[animation-play-state:paused]">
+              {[...TESTIMONIALS, ...TESTIMONIALS].map((tm, i) => (
+                <motion.div
+                  key={`${tm.name}-${i}`}
+                  custom={i}
+                  variants={testimonialEntrance}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.15 }}
+                  className="group relative w-[340px] sm:w-[380px] shrink-0 rounded-2xl border border-border bg-background p-6 flex flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                >
+                  {/* Decorative quote mark */}
+                  <Quote
+                    aria-hidden
+                    className="absolute top-5 right-5 h-9 w-9 text-primary/10 group-hover:text-primary/25 transition-colors"
+                  />
+                  <StarRating value={tm.stars} />
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                    &ldquo;{t(tm.quoteKey)}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3 pt-1 border-t border-border/60">
+                    <div
+                      className={cn(
+                        "w-11 h-11 rounded-full bg-gradient-to-br flex items-center justify-center text-xs font-bold text-white shadow-md ring-2 ring-background shrink-0",
+                        tm.gradient,
+                      )}
+                    >
+                      {tm.avatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{tm.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{t(tm.roleKey)}</p>
+                    </div>
+                    <SalesChannelIcon
+                      name={tm.company}
+                      size={18}
+                      className="opacity-50 group-hover:opacity-100 transition-opacity shrink-0"
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ──────── FOOTER CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-12 max-w-4xl mx-auto text-center">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6, ease: easeSmooth }}
+          initial={{ opacity: 0, y: 28, scale: 0.94 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.7, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 relative overflow-hidden"
         >
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-primary/40 rounded-full blur-3xl pointer-events-none" />
+          {/* Breathing glow behind the CTA */}
+          <motion.div
+            aria-hidden
+            animate={{ opacity: [0.35, 0.7, 0.35], scale: [1, 1.12, 1] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-28 left-1/2 -translate-x-1/2 w-[560px] h-72 bg-primary/40 rounded-full blur-3xl pointer-events-none"
+          />
           <div className="relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">{t("ctaTitle")}</h2>
             <p className="opacity-70 mb-8 text-lg">{t("ctaDesc")}</p>
