@@ -33,4 +33,18 @@ const nextConfig: NextConfig = {
   },
 };
 
+// SEO env guard — every canonical/hreflang/sitemap/robots URL derives from
+// NEXT_PUBLIC_APP_URL (site-config.ts). A production deploy that forgets it
+// would ship localhost:3010 URLs to crawlers, so fail loudly at build time
+// instead of discovering it in Search Console weeks later.
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.NEXT_PUBLIC_APP_URL &&
+  (process.env.RAILWAY_ENVIRONMENT || process.env.VERCEL)
+) {
+  throw new Error(
+    "NEXT_PUBLIC_APP_URL is required in production (sitemap, robots.txt, canonicals and OG URLs derive from it).",
+  );
+}
+
 export default withNextIntl(nextConfig);

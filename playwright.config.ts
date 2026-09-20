@@ -22,6 +22,12 @@ import { defineConfig, devices } from "@playwright/test";
  *   dashboard-tabs-mobile cold-route flake), so the timeout buys headroom
  *   instead of a retry.
  */
+// Port override: when the default 3010 listener is held by an unkillable
+// process from another session (Access denied on taskkill), set E2E_PORT to
+// run the suite against a fresh dev server on another port. The webServer
+// command must stay in sync — it forwards the port to `next dev`.
+const e2ePort = process.env.E2E_PORT ?? "3010";
+
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
@@ -37,7 +43,7 @@ export default defineConfig({
   // loginAs's toHaveURL and the register flow's toBeVisible.
   expect: { timeout: 20_000 },
   use: {
-    baseURL: "http://localhost:3010",
+    baseURL: `http://localhost:${e2ePort}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -48,9 +54,20 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3010",
+    command: process.env.E2E_PORT
+      ? `npx next dev -p ${e2ePort}`
+      : "npm run dev",
+    url: `http://localhost:${e2ePort}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Extra env forwarded to the dev server: GOOGLE_TOKEN_URL / GOOGLE_USERINFO_URL
+    // let the OAuth e2e spec point the callback route's outbound calls at a local
+    // mock server (see e2e/google-oauth-provisioning.spec.ts).
+    env: {
+      ...(process.env.GOOGLE_TOKEN_URL ? { GOOGLE_TOKEN_URL: process.env.GOOGLE_TOKEN_URL } : {}),
+      ...(process.env.GOOGLE_USERINFO_URL
+        ? { GOOGLE_USERINFO_URL: process.env.GOOGLE_USERINFO_URL }
+        : {}),
+    },
   },
 });
