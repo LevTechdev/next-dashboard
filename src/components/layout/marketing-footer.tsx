@@ -13,6 +13,12 @@ import {
   YouTubeBrandIcon,
 } from "@/components/ui/brand-icons";
 
+// Kept on a single line with single-space separators: React normalizes `srcSet`
+// whitespace on the client but not on the server, so a multi-line literal
+// hydrates as a mismatch.
+const FOOTER_PREVIEW_SRCSET =
+  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=320&h=240 320w, https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=640&h=480 640w";
+
 export function MarketingFooter() {
   const params = useParams();
   const locale = params?.locale || "en";
@@ -97,9 +103,7 @@ export function MarketingFooter() {
                 <div className="bg-[#b3f021]/20 dark:bg-purple-500/20 absolute inset-0 rotate-6 rounded-2xl" />
                 <img
                   src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=640&h=480"
-                  srcSet="
-                    https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=320&h=240 320w,
-                    https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=640&h=480 640w"
+                  srcSet={FOOTER_PREVIEW_SRCSET}
                   sizes="(min-width: 1024px) 320px, (min-width: 768px) 40vw, 0px"
                   alt={t("footerPreviewAlt")}
                   className="relative w-40 lg:w-80 max-w-full h-auto rounded-2xl object-cover shadow-2xl border border-border/50"
