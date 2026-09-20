@@ -101,11 +101,7 @@ const INITIAL_DISPUTES: DisputeCase[] = [
   },
 ];
 
-export function DisputeResolutionCenter({
-  className,
-}: {
-  className?: string;
-}) {
+export function DisputeResolutionCenter({ className }: { className?: string }) {
   const [disputes, setDisputes] = useState<DisputeCase[]>(INITIAL_DISPUTES);
   const [selectedDispute, setSelectedDispute] = useState<DisputeCase | null>(null);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
@@ -144,8 +140,8 @@ export function DisputeResolutionCenter({
                 status: "UNDER_REVIEW",
                 evidenceSubmittedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
               }
-            : d
-        )
+            : d,
+        ),
       );
       setSubmittingEvidence(false);
       setEvidenceModalOpen(false);
@@ -163,8 +159,8 @@ export function DisputeResolutionCenter({
               ...d,
               status: "RESOLVED_LOST",
             }
-          : d
-      )
+          : d,
+      ),
     );
     toast.info("Dispute Accepted & Refund Released", {
       description: "Held escrow funds released back to customer account.",
@@ -186,7 +182,8 @@ export function DisputeResolutionCenter({
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage customer payment claims, upload fulfillment proof, and protect merchant escrow funds
+            Manage customer payment claims, upload fulfillment proof, and protect merchant escrow
+            funds
           </p>
         </div>
       </div>
@@ -226,9 +223,7 @@ export function DisputeResolutionCenter({
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground font-mono">
-              {needsResponseCount}
-            </div>
+            <div className="text-2xl font-bold text-foreground font-mono">{needsResponseCount}</div>
             <p className="mt-1 text-xs text-primary font-medium flex items-center gap-1">
               <Clock className="h-3 w-3" />
               SLA deadline approaching
@@ -248,12 +243,8 @@ export function DisputeResolutionCenter({
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground font-mono">
-              {underReviewCount}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Awaiting acquiring bank verdict
-            </p>
+            <div className="text-2xl font-bold text-foreground font-mono">{underReviewCount}</div>
+            <p className="mt-1 text-xs text-muted-foreground">Awaiting acquiring bank verdict</p>
           </CardContent>
         </Card>
 
@@ -269,12 +260,8 @@ export function DisputeResolutionCenter({
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="text-2xl font-bold text-foreground font-mono">
-              {wonCount}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Evidence validated successfully
-            </p>
+            <div className="text-2xl font-bold text-foreground font-mono">{wonCount}</div>
+            <p className="mt-1 text-xs text-muted-foreground">Evidence validated successfully</p>
           </CardContent>
         </Card>
       </div>
@@ -284,7 +271,9 @@ export function DisputeResolutionCenter({
         <CardHeader className="p-4 pb-3 border-b border-border/60">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base font-bold">Dispute Queue & Arbitration Ledger</CardTitle>
+              <CardTitle className="text-base font-bold">
+                Dispute Queue & Arbitration Ledger
+              </CardTitle>
               <CardDescription>
                 Active customer claim tickets under ASPI dispute settlement guidelines
               </CardDescription>
@@ -313,7 +302,9 @@ export function DisputeResolutionCenter({
                   <TableRow key={dispute.id} className="hover:bg-muted/40 transition-colors">
                     <TableCell className="font-mono text-xs font-semibold">
                       <div>{dispute.disputeNumber}</div>
-                      <div className="text-[10px] text-muted-foreground">{dispute.invoiceNumber}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {dispute.invoiceNumber}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs">
                       <div className="font-medium text-foreground">{dispute.customerName}</div>
@@ -340,22 +331,34 @@ export function DisputeResolutionCenter({
                     </TableCell>
                     <TableCell className="text-xs">
                       {dispute.status === "NEEDS_RESPONSE" && (
-                        <Badge variant="outline" className="text-[10px] text-primary border-primary/30 gap-1 font-semibold">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-primary border-primary/30 gap-1 font-semibold"
+                        >
                           <AlertTriangle className="h-2.5 w-2.5" /> Action Required
                         </Badge>
                       )}
                       {dispute.status === "UNDER_REVIEW" && (
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border gap-1 font-medium">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-muted-foreground border-border gap-1 font-medium"
+                        >
                           <Clock className="h-2.5 w-2.5" /> Under Review
                         </Badge>
                       )}
                       {dispute.status === "RESOLVED_WON" && (
-                        <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 gap-1 font-medium">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 gap-1 font-medium"
+                        >
                           <CheckCircle2 className="h-2.5 w-2.5" /> Case Won
                         </Badge>
                       )}
                       {dispute.status === "RESOLVED_LOST" && (
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border gap-1 font-medium">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-muted-foreground border-border gap-1 font-medium"
+                        >
                           <XCircle className="h-2.5 w-2.5" /> Accepted / Refunded
                         </Badge>
                       )}
@@ -382,14 +385,11 @@ export function DisputeResolutionCenter({
                         </div>
                       )}
                       {dispute.status === "UNDER_REVIEW" && (
-                        <span className="text-[10px] text-muted-foreground">
-                          Evidence on file
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">Evidence on file</span>
                       )}
-                      {(dispute.status === "RESOLVED_WON" || dispute.status === "RESOLVED_LOST") && (
-                        <span className="text-[10px] text-muted-foreground font-mono">
-                          Closed
-                        </span>
+                      {(dispute.status === "RESOLVED_WON" ||
+                        dispute.status === "RESOLVED_LOST") && (
+                        <span className="text-[10px] text-muted-foreground font-mono">Closed</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -414,7 +414,8 @@ export function DisputeResolutionCenter({
                     Submit Dispute Evidence: {selectedDispute.disputeNumber}
                   </DialogTitle>
                   <DialogDescription className="text-xs">
-                    Disputed Amount: Rp {selectedDispute.amount.toLocaleString("id-ID")} • {selectedDispute.customerName}
+                    Disputed Amount: Rp {selectedDispute.amount.toLocaleString("id-ID")} •{" "}
+                    {selectedDispute.customerName}
                   </DialogDescription>
                 </div>
               </div>
@@ -447,7 +448,9 @@ export function DisputeResolutionCenter({
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 p-2 rounded-md border border-border/70 bg-background text-xs">
                     <FileCheck2 className="h-4 w-4 text-primary shrink-0" />
-                    <span className="font-medium text-foreground">Official Computerized Tax Invoice</span>
+                    <span className="font-medium text-foreground">
+                      Official Computerized Tax Invoice
+                    </span>
                     <Badge variant="outline" className="ml-auto text-[9px] font-mono">
                       {selectedDispute.invoiceNumber}.pdf
                     </Badge>
@@ -455,7 +458,9 @@ export function DisputeResolutionCenter({
 
                   <div className="flex items-center gap-2 p-2 rounded-md border border-border/70 bg-background text-xs">
                     <FileCheck2 className="h-4 w-4 text-primary shrink-0" />
-                    <span className="font-medium text-foreground">ASPI EMVCo Clearing Audit Trail</span>
+                    <span className="font-medium text-foreground">
+                      ASPI EMVCo Clearing Audit Trail
+                    </span>
                     <Badge variant="outline" className="ml-auto text-[9px] font-mono">
                       RRN: {selectedDispute.rrn}
                     </Badge>

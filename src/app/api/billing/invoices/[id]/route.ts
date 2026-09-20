@@ -4,10 +4,7 @@ import { requirePermission, requireAuth } from "@/lib/api-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { response } = await requirePermission("update", "billing", req);
   if (response) return response;
 

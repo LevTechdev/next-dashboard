@@ -104,7 +104,7 @@ describe("Commerce Features Suite", () => {
     it("renders settlement reconciliation table and KPI cards", () => {
       render(<MerchantSettlementReconciliation />);
       expect(
-        screen.getByText("Merchant Settlement Reconciliation & Multi-Channel Payouts")
+        screen.getByText("Merchant Settlement Reconciliation & Multi-Channel Payouts"),
       ).toBeInTheDocument();
       expect(screen.getByText("Gross Inbound Volume")).toBeInTheDocument();
       expect(screen.getByText("BI QRIS MDR Withheld")).toBeInTheDocument();
@@ -132,9 +132,7 @@ describe("Commerce Features Suite", () => {
   describe("Dispute & Chargeback Resolution Center", () => {
     it("renders dispute queue and held escrow balance KPI", () => {
       render(<DisputeResolutionCenter />);
-      expect(
-        screen.getByText("Dispute & Chargeback Resolution Center")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Dispute & Chargeback Resolution Center")).toBeInTheDocument();
       expect(screen.getByText("Escrow Funds Held")).toBeInTheDocument();
       expect(screen.getAllByText("Action Required").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Under Bank Review")).toBeInTheDocument();
@@ -178,7 +176,10 @@ describe("Commerce Features Suite", () => {
 
       // Ensure no duplicate key warning was logged
       const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter((call) =>
-        call.some((arg) => typeof arg === "string" && arg.includes("Encountered two children with the same key"))
+        call.some(
+          (arg) =>
+            typeof arg === "string" && arg.includes("Encountered two children with the same key"),
+        ),
       );
       expect(duplicateKeyWarnings).toHaveLength(0);
       consoleErrorSpy.mockRestore();
@@ -196,7 +197,10 @@ describe("Commerce Features Suite", () => {
 
       // Verify no duplicate key error
       const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter((call) =>
-        call.some((arg) => typeof arg === "string" && arg.includes("Encountered two children with the same key"))
+        call.some(
+          (arg) =>
+            typeof arg === "string" && arg.includes("Encountered two children with the same key"),
+        ),
       );
       expect(duplicateKeyWarnings).toHaveLength(0);
       consoleErrorSpy.mockRestore();

@@ -120,9 +120,7 @@ export default function ContactPage({ params }: { params: Promise<{ locale: stri
           <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <Check size={32} className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            {t("sentTitle")}
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">{t("sentTitle")}</h1>
           <p className="text-muted-foreground max-w-md mx-auto mb-8">{t("sentDesc")}</p>
           <Link
             href={`/${locale}`}
@@ -194,9 +192,7 @@ export default function ContactPage({ params }: { params: Promise<{ locale: stri
             className="lg:col-span-3"
           >
             <div className="rounded-2xl border border-border bg-background p-8 relative overflow-hidden group">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {t("formTitle")}
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground mb-2">{t("formTitle")}</h2>
               <p className="text-sm text-muted-foreground mb-8">{t("formSubtitle")}</p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -231,9 +227,7 @@ export default function ContactPage({ params }: { params: Promise<{ locale: stri
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {t("labelSubject")}
-                  </label>
+                  <label className="text-sm font-medium text-foreground">{t("labelSubject")}</label>
                   <Input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
@@ -302,9 +296,7 @@ export default function ContactPage({ params }: { params: Promise<{ locale: stri
                     <p className="text-sm font-bold text-foreground">
                       {info.valueKey ? t(info.valueKey) : info.value}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t(info.subKey)}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{t(info.subKey)}</p>
                   </div>
                 </div>
               );
@@ -336,23 +328,23 @@ export default function ContactPage({ params }: { params: Promise<{ locale: stri
           </motion.div>
         </div>
       </section>
-      
+
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <LayoutDashboard className="h-10 w-10 mx-auto mb-6 opacity-80 text-background" />
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              {t("ctaDesc")}
-            </p>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}

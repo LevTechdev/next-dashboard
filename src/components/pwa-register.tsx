@@ -10,7 +10,6 @@ export function PWARegister() {
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {
-
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
           if (!newWorker) return;

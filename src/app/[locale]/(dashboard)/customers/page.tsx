@@ -169,19 +169,21 @@ export default function CustomersPage() {
   };
 
   // Compute derived stats
-  
+
   const sparkData = useMemo(() => {
     if (!customers || customers.length === 0) return [];
-    
-    const sorted = [...customers].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    
+
+    const sorted = [...customers].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+
     const grouped: Record<string, number> = {};
-    sorted.forEach(c => {
+    sorted.forEach((c) => {
       const d = new Date(c.createdAt).toLocaleDateString();
       if (!grouped[d]) grouped[d] = 0;
       grouped[d]++;
     });
-    
+
     return Object.values(grouped);
   }, [customers]);
 
@@ -555,5 +557,3 @@ export default function CustomersPage() {
     </motion.div>
   );
 }
-
-

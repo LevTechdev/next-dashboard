@@ -67,7 +67,12 @@ export function Sparkline({
         strokeLinejoin="round"
       />
       {/* End dot */}
-      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={2} fill={strokeColor} />
+      <circle
+        cx={points[points.length - 1].x}
+        cy={points[points.length - 1].y}
+        r={2}
+        fill={strokeColor}
+      />
     </svg>
   );
 }

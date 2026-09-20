@@ -103,9 +103,7 @@ export function TaxNexusEngine() {
         <Card className="border-border/70 shadow-xs">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-medium">
-                {t("activeNexus")}
-              </span>
+              <span className="text-xs text-muted-foreground font-medium">{t("activeNexus")}</span>
               <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <Landmark className="h-4 w-4" />
               </div>

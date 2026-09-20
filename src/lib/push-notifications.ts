@@ -1,5 +1,9 @@
 export async function requestPushPermission(): Promise<string | null> {
-  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+  if (
+    !("Notification" in window) ||
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window)
+  ) {
     console.error("Push not supported");
     return null;
   }
@@ -14,7 +18,10 @@ export async function requestPushPermission(): Promise<string | null> {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlB64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "BE_FAKE_KEY_FOR_TESTING_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789"),
+      applicationServerKey: urlB64ToUint8Array(
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+          "BE_FAKE_KEY_FOR_TESTING_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789",
+      ),
     });
 
     return JSON.stringify(subscription);

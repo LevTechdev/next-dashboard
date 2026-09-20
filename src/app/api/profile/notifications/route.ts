@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     user = await prisma.user.findFirst({
       where: { role: "ADMIN" },
       orderBy: { createdAt: "asc" },
-      select: { id: true }
+      select: { id: true },
     });
   }
 
@@ -45,7 +45,7 @@ export async function PUT(req: Request) {
     user = await prisma.user.findFirst({
       where: { role: "ADMIN" },
       orderBy: { createdAt: "asc" },
-      select: { id: true }
+      select: { id: true },
     });
   }
 
@@ -59,7 +59,7 @@ export async function PUT(req: Request) {
     where: { userId: user.id },
     create: {
       userId: user.id,
-      ...body
+      ...body,
     },
     update: body,
   });
