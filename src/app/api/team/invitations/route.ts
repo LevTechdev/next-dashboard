@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/api-guard";
 import { sendEmail } from "@/lib/email";
+import { prisma } from "@/lib/db";
+import { getTierFeaturesForUser } from "@/lib/plan-tiers";
 import crypto from "crypto";
 
 // In-memory persistent invitations store for workspace team members
@@ -76,6 +78,34 @@ export async function POST(req: Request) {
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email address is required" }, { status: 400 });
+    }
+
+    // Team-seat quota: pending invitations + existing members + accepted seats
+    // all consume a seat. Inviting beyond the plan limit is a 402 with
+    // machine-readable upgrade hints (same contract as the orders/API-key
+    // gates) so the UI can deep-link into Billing → Plans.
+    const tenantId = (session?.user as { tenantId?: string | null })?.tenantId || null;
+    const features = await getTierFeaturesForUser(session!.user.id);
+    if (features.maxTeamMembers !== null) {
+      const membersUsed = tenantId
+        ? await prisma.user.count({ where: { tenantId } })
+        : await prisma.user.count({ where: { id: session!.user.id } });
+      // Outstanding pending invitations consume a seat too — otherwise N
+      // invites in review would silently over-book the plan.
+      const pendingInvites = invitationsStore.filter((inv) => inv.status === "pending").length;
+      const seatsTaken = membersUsed + pendingInvites;
+      if (seatsTaken >= features.maxTeamMembers) {
+        return new Response(
+          JSON.stringify({
+            error: "plan_limit_reached",
+            limit: "teamMembers",
+            max: features.maxTeamMembers,
+            used: seatsTaken,
+            requiredTier: "PRO",
+          }),
+          { status: 402, headers: { "content-type": "application/json" } },
+        );
+      }
     }
 
     const token = crypto.randomBytes(24).toString("hex");

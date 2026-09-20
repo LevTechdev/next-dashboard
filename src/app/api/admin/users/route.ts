@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { normalizeRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
 
-  if (session.user.role !== "ADMIN" && session.user.role !== "SUPERADMIN") {
+  if (normalizeRole(session.user.role) !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -53,7 +54,7 @@ export async function DELETE(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
 
-  if (session.user.role !== "ADMIN" && session.user.role !== "SUPERADMIN") {
+  if (normalizeRole(session.user.role) !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -70,10 +71,56 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
     }
 
-    await prisma.activityLog.deleteMany({ where: { userId } });
-    await prisma.auditLog.deleteMany({ where: { userId } });
-    await prisma.order.updateMany({ where: { userId }, data: { userId: null } });
-    await prisma.user.delete({ where: { id: userId } });
+    // Load the target first so guards can reason about its role/tenant.
+    const target = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, tenantId: true, isActive: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Never hard-delete an ADMIN account: admin deletion cascades
+    // Subscription/Session/etc. (onDelete: Cascade) and unassigns orders —
+    // doing it to the LAST active admin of a tenant permanently locks the
+    // organization out of admin surfaces. Deactivate instead (revokes the
+    // login immediately via every session check) and keep the account
+    // recoverable. Non-admin users delete normally.
+    const targetRole = normalizeRole(target.role);
+    if (targetRole === "ADMIN") {
+      const otherAdmins = await prisma.user.count({
+        where: {
+          tenantId: target.tenantId,
+          id: { not: userId },
+          isActive: true,
+          role: { in: ["ADMIN", "SUPERADMIN"] },
+        },
+      });
+      if (otherAdmins === 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { isActive: false },
+        });
+        return NextResponse.json({
+          success: true,
+          deactivated: true,
+          message:
+            "This is the last admin account — it was deactivated instead of deleted to keep the workspace recoverable.",
+        });
+      }
+    }
+
+    // Transactional teardown: every FK either cascades from User or carries
+    // onDelete: SetNull — except ActivityLog/Order (no onDelete → Prisma's
+    // default RESTRICT), which must be detached explicitly first. AuditLog
+    // rows are kept (they carry userName snapshots; compliance trails must
+    // survive account deletion) and their dangling userId is nulled.
+    await prisma.$transaction([
+      prisma.activityLog.updateMany({ where: { userId }, data: { userId: null } }),
+      prisma.order.updateMany({ where: { userId }, data: { userId: null } }),
+      prisma.auditLog.updateMany({ where: { userId }, data: { userId: null } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
 
     return NextResponse.json({ success: true, message: "User deleted successfully" });
   } catch (error) {

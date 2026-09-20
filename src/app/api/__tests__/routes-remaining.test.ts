@@ -319,7 +319,15 @@ describe("Dashboard API (public, no auth)", () => {
     expect(body.recentOrders).toHaveLength(1);
     expect(body.topProducts).toHaveLength(1);
     expect(body.salesByChannel).toHaveLength(1);
-    expect(body.revenueData).toHaveLength(1);
+    // All 12 trailing months are returned (empty months revenue 0) so the
+    // chart never collapses to fewer bars. The mock order's createdAt
+    // (2024-06-01) predates the trailing window, so every bucket is 0 —
+    // the shape (12 buckets, present months) is the contract.
+    expect(body.revenueData).toHaveLength(12);
+    expect(body.revenueData.every((m: { revenue: number }) => m.revenue === 0)).toBe(true);
+    expect(body.revenueData.every((m: { date: string }) => /^\d{4}-\d{2}-15$/.test(m.date))).toBe(
+      true,
+    );
   });
 
   it("returns fallback empty data on error", async () => {
@@ -447,7 +455,8 @@ describe("Profile API (auth-protected)", () => {
     });
 
     it("returns 404 when user not found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      // Session resolution tries the token id, then its email: both must miss.
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
       const res = await profileRoutes.GET(mockRequest());
       expect(res.status).toBe(404);
     });
@@ -492,7 +501,8 @@ describe("Profile API (auth-protected)", () => {
     });
 
     it("returns 404 when user not found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      // Same two-step resolution as GET — a miss on both is a real 404.
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
       const res = await profileRoutes.DELETE(mockRequest({ password: "pw" }));
       expect(res.status).toBe(404);
     });
@@ -505,14 +515,16 @@ describe("Profile API (auth-protected)", () => {
 
     it("returns 400 when no password provided for non-admin", async () => {
       mockGetSession.mockResolvedValue(authenticatedSession({ role: "STAFF" }));
-      // Override findUnique to return a user with STAFF role (matches the session)
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      // Both lookups resolve to the same staff row: the first identifies the
+      // session user, the second is the row the delete would target.
+      const staffUser = {
         id: "user-1",
         name: "Staff User",
         email: "staff@test.com",
         role: "STAFF",
         password: "$2a$10$hashed",
-      });
+      };
+      mockPrisma.user.findUnique.mockResolvedValueOnce(staffUser).mockResolvedValueOnce(staffUser);
       const res = await profileRoutes.DELETE(mockRequest({}));
       expect(res.status).toBe(400);
     });
@@ -602,13 +614,14 @@ describe("Profile Avatar API (auth-protected)", () => {
     });
 
     it("returns 400 when image too large", async () => {
-      // Build a base64 string > 500KB decoded:
-      // Base64: n chars → n * 3/4 bytes. Need > 512,000 bytes → > 682,667 chars.
-      const large = "data:image/png;base64," + "A".repeat(700_000);
+      // Build a base64 string > 10MB decoded:
+      // Base64: n chars → n * 3/4 bytes. Need > 10 * 1024 * 1024 bytes →
+      // > 13,981,014 chars; 14M chars decodes to ~10.5MB.
+      const large = "data:image/png;base64," + "A".repeat(14_000_000);
       const res = await avatarRoutes.PUT(mockRequest({ avatar: large }));
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toContain("500KB");
+      expect(body.error).toContain("10MB");
     });
 
     it("updates avatar when valid", async () => {

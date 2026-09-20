@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/api-guard";
+import { assertTierFeature, tierUpgradeResponse, TierUpgradeRequiredError } from "@/lib/plan-tiers";
+import { normalizeRole } from "@/lib/permissions";
 import {
   computeCohortRetention,
   computeLtvCacCurve,
@@ -9,7 +12,23 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Analytics is a PRO+ feature — REGULAR tier gets a 402 upgrade challenge.
+  // Workspace admins (ADMIN, incl. legacy SUPER_ADMIN via normalizeRole) are
+  // exempt: they administer the workspace regardless of the plan row that
+  // fronts it, so cohort retention stays accessible to them on every plan.
+  const { session, response } = await requireAuth(req);
+  if (response) return response;
+  const isAdmin = normalizeRole(session!.user.role) === "ADMIN";
+  if (!isAdmin) {
+    try {
+      await assertTierFeature(session!.user.id, "analytics");
+    } catch (e) {
+      if (e instanceof TierUpgradeRequiredError) return tierUpgradeResponse(e);
+      throw e;
+    }
+  }
+
   try {
     // 1. Fetch active customers with their basic stats
     const customers = await prisma.customer.findMany({

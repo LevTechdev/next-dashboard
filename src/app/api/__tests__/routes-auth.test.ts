@@ -45,6 +45,7 @@ const {
   mockBuildSaml,
   mockVerifyOtp,
   mockIsOtpExpired,
+  mockResolveSessionUserId,
 } = vi.hoisted(() => {
   const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
@@ -96,6 +97,7 @@ const {
       }),
       tenant: deepModel({
         findUnique: vi.fn().mockResolvedValue({ id: "tenant-1", slug: "default" }),
+        create: vi.fn().mockResolvedValue({ id: "tenant-new-1" }),
       }),
       activityLog: deepModel({}),
       securityEvent: deepModel({}),
@@ -108,6 +110,29 @@ const {
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       }),
       auditLog: deepModel({}),
+      // Tier system: register/SAML provisioning reads (and creates) the
+      // user's Starter subscription through @/lib/plan-tiers and
+      // @/lib/provisioning.
+      subscription: deepModel({
+        findFirst: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "sub-1" }),
+      }),
+      plan: deepModel({
+        findUnique: vi.fn().mockResolvedValue({
+          id: "plan-starter",
+          name: "Starter",
+          price: 0,
+          maxOrders: 100,
+          maxTeamMembers: 3,
+          hasAnalytics: false,
+          hasReports: false,
+          hasMultiChannel: false,
+          hasApiAccess: false,
+          hasRoleBasedAccess: false,
+          supportLevel: "email",
+        }),
+      }),
       $transaction: vi
         .fn()
         .mockImplementation((fns: any[]) =>
@@ -206,6 +231,7 @@ const {
     }),
     mockVerifyOtp: vi.fn().mockReturnValue(false),
     mockIsOtpExpired: vi.fn().mockReturnValue(false),
+    mockResolveSessionUserId: vi.fn().mockResolvedValue("user-1"),
   };
 });
 
@@ -300,6 +326,15 @@ vi.mock("@/lib/tenancy", () => ({
 vi.mock("@/lib/api-guard", () => ({
   requireAuth: mockRequireAuth,
   requirePermission: vi.fn().mockResolvedValue({ role: "ADMIN", response: null }),
+}));
+
+// Resolve the session at this boundary so route tests queue exactly the prisma
+// calls the ROUTE makes — not also the hidden lookups inside the real resolver
+// (id → email), whose count shifts the sequential mockResolvedValueOnce queue
+// and silently poisons every test queued after it. The resolver's own contract
+// is covered by its dedicated tests.
+vi.mock("@/lib/session-user", () => ({
+  resolveSessionUserId: mockResolveSessionUserId,
 }));
 
 vi.mock("qrcode", () => ({ default: mockQrCode }));
@@ -668,11 +703,18 @@ describe("Register", () => {
       expect(body.devOtp).toBe("123456");
     });
 
-    it("uses default tenant when found", async () => {
+    it("provisions a fresh personal workspace per signup (clean dashboard)", async () => {
       await registerRoutes.POST(post({ name: "Admin", email: "a@test.com", password: "pass123" }));
+      // New users get their OWN empty tenant — never the shared `default`
+      // workspace, whose seed data must not leak into a fresh account.
+      expect(mockPrisma.tenant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: "Admin's Workspace" }),
+        }),
+      );
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ tenantId: "tenant-1" }),
+          data: expect.objectContaining({ tenantId: "tenant-new-1" }),
         }),
       );
     });
@@ -929,16 +971,17 @@ describe("TOTP Verify", () => {
       );
     });
 
-    it("falls back to first ADMIN when user not found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.user.findFirst.mockResolvedValueOnce({ id: "admin-1", email: "admin@test.com" });
+    it("returns 404 when the session resolves no user at all", async () => {
+      mockResolveSessionUserId.mockResolvedValueOnce(null);
       const res = await totpVerifyRoutes.POST(post({ token: "123456", secret: "SECRET" }));
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 404 when no user found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+    it("returns 404 when the resolved id matches no row", async () => {
+      mockResolveSessionUserId.mockResolvedValueOnce("ghost-1");
+      // Deterministic: clearAllMocks does NOT drop leftover once-queues, so
+      // re-assert the default implementation instead of relying on it.
+      mockPrisma.user.findUnique.mockReset().mockResolvedValue(null);
       const res = await totpVerifyRoutes.POST(post({ token: "123456", secret: "SECRET" }));
       expect(res.status).toBe(404);
     });
@@ -1191,6 +1234,39 @@ describe("Step-Up Authentication", () => {
       mockVerifyTotp.mockReturnValueOnce(false);
       const res = await stepUpRoutes.POST(post({ purpose: "manage_2fa", totpToken: "000000" }));
       expect(res.status).toBe(401);
+    });
+
+    it("returns 428 totpRequired when a stale 2FA user offers only a password (30-day freshness gate)", async () => {
+      // securityEvent.findFirst resolves null → no MFA verification in the
+      // lookback window → staleness → password alone must NOT unlock.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      mockVerifyPassword.mockResolvedValueOnce(true);
+      const res = await stepUpRoutes.POST(
+        post({ purpose: "change_password", password: "correct" }),
+      );
+      expect(res.status).toBe(428);
+      const body = await res.json();
+      expect(body.totpRequired).toBe(true);
+      expect(mockSignStepUpToken).not.toHaveBeenCalled();
+    });
+
+    it("unlocks and records MFA_VERIFIED when the stale user presents a TOTP code", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      const res = await stepUpRoutes.POST(
+        post({ purpose: "change_password", totpToken: "123456" }),
+      );
+      expect(res.status).toBe(200);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "MFA_VERIFIED" }),
+      );
     });
 
     it("accepts all valid purposes", async () => {

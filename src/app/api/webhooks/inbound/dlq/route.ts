@@ -1,20 +1,66 @@
 import { NextResponse } from "next/server";
 import { getDlqEntries, retryDlqEntry, purgeDlqEntry, enqueueDlq } from "@/lib/webhook-dlq-store";
+import { processDueRetries, scheduleRetry, isExhausted } from "@/lib/webhook-retry";
 import { requireAuth } from "@/lib/api-guard";
 import crypto from "crypto";
 import { PLATFORM_SECRETS } from "@/lib/inbound-webhooks";
 
 export const dynamic = "force-dynamic";
 
+/** Sweep throttle — at most one automatic retry sweep per minute per instance. */
+let lastSweepAt = 0;
+const SWEEP_INTERVAL_MS = 60_000;
+
+/**
+ * Re-dispatch a stored DLQ entry to the internal receiver exactly as it
+ * arrived (original headers minus hop-by-hop ones, original payload). Valid
+ * signatures re-ingest successfully; invalid ones fail again by design —
+ * those are permanent failures a human must resolve.
+ */
+async function redispatch(
+  entry: { platform: string; headers: Record<string, string>; payload: unknown },
+  origin: string,
+): Promise<boolean> {
+  const HOP_BY_HOP = new Set(["host", "connection", "content-length", "cookie", "accept-encoding"]);
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  for (const [k, v] of Object.entries(entry.headers || {})) {
+    if (!HOP_BY_HOP.has(k.toLowerCase())) headers[k] = v;
+  }
+  try {
+    const res = await fetch(`${origin}/api/webhooks/inbound/${entry.platform}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(entry.payload),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: Request) {
   const { response } = await requireAuth(req);
   if (response) return response;
+
+  // Opportunistic delivery-health sweep: due RETRYING entries get
+  // re-dispatched before the dashboard reads the queue (throttled).
+  const now = Date.now();
+  if (now - lastSweepAt > SWEEP_INTERVAL_MS) {
+    lastSweepAt = now;
+    try {
+      const origin = new URL(req.url).origin;
+      await processDueRetries((entry) => redispatch(entry, origin));
+    } catch {
+      // Sweep is best-effort — the read must never fail because of it.
+    }
+  }
 
   const entries = getDlqEntries();
   const summary = {
     totalFailed: entries.filter((e) => e.status === "FAILED").length,
     totalRetrying: entries.filter((e) => e.status === "RETRYING").length,
     totalResolved: entries.filter((e) => e.status === "RESOLVED").length,
+    totalExhausted: entries.filter((e) => isExhausted(e)).length,
     totalCount: entries.length,
   };
 
@@ -33,6 +79,47 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, id, platform = "shopify", simulateFailure = false } = body;
+
+    if (action === "replay") {
+      // One-click replay from the Integrations DLQ tab: re-dispatch now and
+      // resolve on success; on failure leave the entry in the RETRYING
+      // rotation with the next backoff (or terminal FAILED when exhausted).
+      if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
+      const scheduled = scheduleRetry(id);
+      if (!scheduled.success || !scheduled.entry) {
+        return NextResponse.json({ ok: false, message: scheduled.message }, { status: 404 });
+      }
+      const origin = new URL(req.url).origin;
+      const ok = await redispatch(scheduled.entry, origin);
+      if (ok) {
+        retryDlqEntry(id);
+      }
+      return NextResponse.json({
+        ok,
+        message: ok
+          ? "Replayed successfully — entry resolved"
+          : "Replay failed again — left in the retry rotation",
+        entry: getDlqEntries().find((e) => e.id === id),
+      });
+    }
+
+    if (action === "discard") {
+      // Alias of purge with clearer semantics for the UI (remove permanently).
+      if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
+      const success = purgeDlqEntry(id);
+      return NextResponse.json({
+        ok: success,
+        message: success ? "Delivery discarded" : "Entry not found",
+      });
+    }
+
+    if (action === "sweep") {
+      // Manual trigger for the automatic retry sweep (used by tests + the
+      // "Process retries now" button).
+      const origin = new URL(req.url).origin;
+      const result = await processDueRetries((entry) => redispatch(entry, origin));
+      return NextResponse.json({ ok: true, ...result });
+    }
 
     if (action === "retry") {
       if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });

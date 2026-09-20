@@ -9,6 +9,7 @@ import {
   STATUS_TIMESTAMP_FIELD,
   type OrderStatus,
 } from "@/lib/order-status";
+import { regenerateDashboardOg } from "@/lib/og-dashboard-server.mjs";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, response } = await requirePermission("read", "orders", req);
@@ -97,5 +98,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     },
   });
 
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json(order);
 }

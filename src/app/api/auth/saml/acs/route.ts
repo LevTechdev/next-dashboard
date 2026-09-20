@@ -6,6 +6,7 @@ import { createSession } from "@/lib/sessions";
 import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
+import { ensureStarterSubscription } from "@/lib/provisioning";
 import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       data: {
         email,
         name: name || email.split("@")[0],
-        role: "STAFF",
+        role: "CLIENT_ENTERPRISE",
         isActive: true,
         tenantId: conn.tenantId,
         password: await hashPassword(randomBytes(24).toString("hex")),
@@ -71,6 +72,10 @@ export async function POST(req: Request) {
   } else if (!user.isActive) {
     return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
   }
+
+  // Tier system: JIT-provisioned SSO users get the same Starter subscription
+  // as email/password signups so plan gating resolves on first login.
+  await ensureStarterSubscription(user.id);
 
   const authUser: AuthUser = {
     id: user.id,

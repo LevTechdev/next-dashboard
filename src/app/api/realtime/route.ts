@@ -6,6 +6,31 @@ import { getTenantId } from "@/lib/tenancy";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+// Ring buffer of the last few dashboard snapshots per tenant, replayed to
+// newly connected SSE clients so a fresh tab immediately shows recent
+// activity instead of waiting for the next 10s tick.
+const SNAPSHOT_BUFFER_MAX = 5;
+const snapshotBuffers = new Map<string, any[]>();
+
+function pushSnapshot(tenantId: string | null, data: any): void {
+  const compact = {
+    timestamp: data.timestamp,
+    stats: data.stats,
+    today: data.today,
+    alerts: data.alerts,
+    expiringDiscounts: data.expiringDiscounts,
+    lowStockProductsList: data.lowStockProductsList,
+    newProductsCount: data.newProductsCount,
+    budgetAlerts: data.budgetAlerts,
+    recentOrders: data.recentOrders,
+  };
+  const key = tenantId || "anonymous";
+  const buffer = snapshotBuffers.get(key) || [];
+  buffer.push(compact);
+  if (buffer.length > SNAPSHOT_BUFFER_MAX) buffer.shift();
+  snapshotBuffers.set(key, buffer);
+}
+
 export async function GET(request: NextRequest) {
   const { session, response } = await requireAuth(request);
   if (response) return response;
@@ -14,8 +39,32 @@ export async function GET(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       let prevSnapshot = "";
+      let closed = false;
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+
+      // Enqueue without ever throwing after the controller is closed. A client
+      // disconnect (or a failed enqueue) flips `closed`, stops the interval and
+      // makes every later tick a no-op — no unhandled "Controller is already
+      // closed" rejections from ticks racing the abort handler.
+      const safeEnqueue = (message: string) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(message));
+        } catch {
+          closed = true;
+          if (intervalId) clearInterval(intervalId);
+        }
+      };
+
+      // Replay recent snapshots first (changed=false so the client treats them
+      // as current state, not new activity — its own refs are primed by them).
+      const buffer = snapshotBuffers.get(tenantId || "anonymous") || [];
+      for (const snapshot of buffer) {
+        safeEnqueue(`data: ${JSON.stringify({ ...snapshot, changed: false, replayed: true })}\n\n`);
+      }
 
       const sendData = async () => {
+        if (closed) return;
         try {
           const data = await fetchDashboardData(tenantId);
           const currentSnapshot = JSON.stringify(data);
@@ -24,22 +73,32 @@ export async function GET(request: NextRequest) {
           if (currentSnapshot !== prevSnapshot) {
             // Only push if data actually changed
             const payload = { ...data, changed };
-            const message = `data: ${JSON.stringify(payload)}\n\n`;
-            controller.enqueue(encoder.encode(message));
+            safeEnqueue(`data: ${JSON.stringify(payload)}\n\n`);
+            // Buffer for late joiners regardless of whether this tick changed
+            // (keeps the replay bounded to real state transitions).
+            if (changed) pushSnapshot(tenantId, data);
           }
           prevSnapshot = currentSnapshot;
         } catch {
-          const message = `data: ${JSON.stringify({ error: "Failed to fetch data", timestamp: new Date().toISOString() })}\n\n`;
-          controller.enqueue(encoder.encode(message));
+          safeEnqueue(
+            `data: ${JSON.stringify({ error: "Failed to fetch data", timestamp: new Date().toISOString() })}\n\n`,
+          );
         }
       };
 
-      await sendData();
-      const intervalId = setInterval(sendData, 10000);
+      void sendData();
+      intervalId = setInterval(() => {
+        void sendData();
+      }, 10000);
 
       request.signal.addEventListener("abort", () => {
-        clearInterval(intervalId);
-        controller.close();
+        closed = true;
+        if (intervalId) clearInterval(intervalId);
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
       });
     },
   });

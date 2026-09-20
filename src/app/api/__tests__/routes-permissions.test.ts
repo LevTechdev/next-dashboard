@@ -60,6 +60,12 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
             role: "ADMIN",
           }),
           delete: vi.fn().mockResolvedValue({ id: "user-1" }),
+          // Route verifies the member exists before deleting.
+          findUnique: vi.fn().mockResolvedValue({
+            id: "user-1",
+            name: "Alice",
+            email: "alice@test.com",
+          }),
         }),
 
         order: model({
@@ -150,6 +156,16 @@ const { mockRequirePermission, mockRequireAuth, mockGetSession, mockHash, mockPr
             name: "Online Store",
             slug: "online-store",
           }),
+        }),
+
+        // Tier system: orders POST reads the plan cap via plan-tiers.
+        subscription: model({
+          findFirst: vi.fn().mockResolvedValue(null),
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockResolvedValue({ id: "sub-1" }),
+        }),
+        plan: model({
+          findUnique: vi.fn().mockResolvedValue(null),
         }),
 
         activityLog: model({
@@ -324,6 +340,12 @@ describe("Team API (read/create/update/delete — ADMIN only)", () => {
 
     it("DELETE deletes a user", async () => {
       mockRequirePermission.mockResolvedValue(permissionGranted());
+      // Route now verifies the member exists (and logs the deletion) first.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        name: "Alice",
+        email: "alice@test.com",
+      });
       const res = await teamRoutes.DELETE(mockRequest({ id: "user-1" }));
       expect(res.status).toBe(200);
       expect(mockPrisma.user.delete).toHaveBeenCalledWith({

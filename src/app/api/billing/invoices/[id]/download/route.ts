@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-guard";
 import QRCode from "qrcode";
+import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
+import { parseInvoiceSnapshot } from "@/lib/invoice-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -38,8 +40,48 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     color: { dark: "#18181b", light: "#ffffff" },
   });
 
-  const fmtMoney = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: invoice.currency }).format(n);
+  // Presentation currency: ?currency=USD|IDR|JPY|EUR|SGD|CNY overrides the
+  // invoice's stored currency. Invoice amounts are stored in the plan's base
+  // (USD), so a chosen display currency converts the amount before formatting;
+  // the stored currency keeps rendering untouched when no override is passed.
+  // Immutable issue-time snapshot: when present, the PDF renders the exact
+  // plan/amounts frozen at creation instead of re-reading the (mutable) plan
+  // row — price changes and FX refreshes never rewrite billing history.
+  const snapshot = parseInvoiceSnapshot(invoice.snapshotJson);
+
+  const { searchParams } = new URL(req.url);
+  const requested = (
+    searchParams.get("currency") ||
+    snapshot?.currency ||
+    invoice.currency ||
+    "USD"
+  ).toUpperCase();
+  const displayCode: SupportedCurrencyCode = (
+    requested in CURRENCIES ? requested : "USD"
+  ) as SupportedCurrencyCode;
+  const displayCfg = CURRENCIES[displayCode];
+  // Amounts: the snapshot (or the invoice row) stores the billed amount in
+  // its own currency. Convert only when the display currency differs from
+  // the issue currency AND the issue currency is the USD base.
+  const issueAmount = snapshot?.amount ?? invoice.amount;
+  const issueCurrency = (snapshot?.currency || invoice.currency || "USD").toUpperCase();
+  const sourceIsBase = issueCurrency === "USD";
+  const amountInDisplay =
+    displayCode === issueCurrency
+      ? issueAmount
+      : sourceIsBase
+        ? issueAmount * displayCfg.rate
+        : issueAmount;
+  const fmtMoney = (n: number) => {
+    const formatted =
+      displayCfg.decimals === 0
+        ? Math.round(n).toLocaleString("en-US")
+        : n.toLocaleString("en-US", {
+            minimumFractionDigits: displayCfg.decimals,
+            maximumFractionDigits: displayCfg.decimals,
+          });
+    return `${displayCfg.symbol}${formatted}`;
+  };
   const fmtDate = (d: Date | string | null) =>
     d
       ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
@@ -51,11 +93,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const isPaid = invoice.status === "PAID";
   const statusColor = isPaid ? "#059669" : invoice.status === "OVERDUE" ? "#dc2626" : "#d97706";
 
-  const subtotal = invoice.amount * 0.89;
-  const tax = invoice.amount - subtotal;
+  const subtotal = amountInDisplay * 0.89;
+  const tax = amountInDisplay - subtotal;
 
-  const planName = invoice.plan?.name || "Professional Plan";
-  const planInterval = (invoice.plan?.interval || "MONTHLY").toUpperCase();
+  const planName = snapshot?.plan.name || invoice.plan?.name || "Professional Plan";
+  const planInterval = (
+    snapshot?.plan.interval ||
+    invoice.plan?.interval ||
+    "MONTHLY"
+  ).toUpperCase();
   const paymentMethod = invoice.paymentMethod
     ? invoice.paymentMethod.replace(/_/g, " ")
     : "Stripe Recurring Billing";
@@ -117,6 +163,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       <div>Issued: ${fmtDate(invoice.createdAt)}</div>
       ${invoice.paidAt ? `<div>Paid: ${fmtDate(invoice.paidAt)}</div>` : ""}
       <div style="margin-top:4px;"><span class="status">${esc(invoice.status)}</span></div>
+      ${snapshot ? `<div style="margin-top:4px;font-size:10px;color:#a1a1aa;">Amounts frozen at issue (${esc(snapshot.currency)})</div>` : ""}
     </div>
   </div>
 
@@ -166,7 +213,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           </div>
         </td>
         <td>${esc(planInterval)}</td>
-        <td style="font-weight: 600;">${fmtMoney(invoice.amount)}</td>
+        <td style="font-weight: 600;">${fmtMoney(amountInDisplay)}</td>
       </tr>
     </tbody>
   </table>
@@ -174,7 +221,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   <div class="totals">
     <div class="row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>
     <div class="row"><span>VAT / PPN (11%)</span><span>${fmtMoney(tax)}</span></div>
-    <div class="row grand"><span>Total Due / Paid</span><span>${fmtMoney(invoice.amount)}</span></div>
+    <div class="row grand"><span>Total Due / Paid</span><span>${fmtMoney(amountInDisplay)}</span></div>
   </div>
 
   <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e4e4e7; padding-top: 20px;">

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
 import { getTenantId, sameTenant } from "@/lib/tenancy";
+import { writeDeletionAudit } from "@/lib/activity-audit";
 
 export async function GET(req: Request) {
   const { session, response } = await requireAuth(req);
@@ -75,11 +76,24 @@ export async function DELETE(req: Request) {
   const tenantId = getTenantId(session!);
 
   const { id } = await req.json();
-  const existing = await prisma.discount.findUnique({ where: { id }, select: { tenantId: true } });
+  const existing = await prisma.discount.findUnique({
+    where: { id },
+    select: { tenantId: true, code: true, name: true },
+  });
   if (!sameTenant(tenantId, existing)) {
     return NextResponse.json({ error: "Discount not found" }, { status: 404 });
   }
 
   await prisma.discount.delete({ where: { id } });
+
+  await writeDeletionAudit({
+    session: session!,
+    action: "DELETE_DISCOUNT",
+    entity: "Discount",
+    entityId: id,
+    details: `Discount "${existing?.code ?? id}"${existing?.name ? ` (${existing.name})` : ""} deleted`,
+    req,
+  });
+
   return NextResponse.json({ success: true });
 }

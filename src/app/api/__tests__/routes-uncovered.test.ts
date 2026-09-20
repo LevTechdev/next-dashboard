@@ -736,7 +736,9 @@ describe("Billing Plans (public, no auth guard)", () => {
     await billingPlansRoutes.GET();
     expect(mockPrisma.plan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { isActive: true },
+        // Legacy "Free"/"Pro" rows are excluded so the duplicate Pro plan
+        // can never resurface in Billing.
+        where: { isActive: true, name: { notIn: ["Free", "Pro"] } },
       }),
     );
   });

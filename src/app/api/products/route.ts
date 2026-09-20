@@ -2,6 +2,9 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/api-guard";
 import { getTenantId, tenantWhere, sameTenant } from "@/lib/tenancy";
+import { regenerateDashboardOg } from "@/lib/og-dashboard-server.mjs";
+import { buildMonthlyTrend } from "@/lib/trend-series";
+import { captureValuationSnapshot, getValuationTrend } from "@/lib/inventory-snapshot-store";
 
 export async function GET(req: Request) {
   const { session, response } = await requirePermission("read", "products", req);
@@ -13,15 +16,51 @@ export async function GET(req: Request) {
   const includeCategories = searchParams.get("includeCategories");
 
   if (includeCategories === "true") {
-    const [products, categories] = await Promise.all([
+    const includeValue = searchParams.get("includeValue") === "true";
+    const [products, categories, productDates, itemActivity] = await Promise.all([
       prisma.product.findMany({
         where: scope,
         orderBy: { createdAt: "desc" },
         include: { category: true, _count: { select: { orderItems: true, affiliateLinks: true } } },
       }),
       prisma.productCategory.findMany({ where: scope, orderBy: { name: "asc" } }),
+      prisma.product.findMany({
+        where: scope,
+        select: { createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.orderItem.findMany({
+        where: { order: { is: scope } },
+        select: { quantity: true, total: true, order: { select: { createdAt: true } } },
+      }),
     ]);
-    return NextResponse.json({ products, categories });
+
+    // Real monthly series for the summary-card sparklines: products created,
+    // units sold, and sales value — bucketed over the trailing 12 months.
+    const activity = itemActivity.map((i) => ({
+      createdAt: i.order.createdAt,
+      quantity: i.quantity,
+      total: i.total,
+    }));
+    const trends = {
+      products: buildMonthlyTrend(productDates),
+      units: buildMonthlyTrend(activity, (i) => i.quantity),
+      value: buildMonthlyTrend(activity, (i) => i.total),
+    };
+
+    const body: Record<string, unknown> = { products, categories, trends };
+    if (includeValue) {
+      const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+      body.totalValue = totalValue;
+      body.lowStockCount = products.filter((p) => p.stock > 0 && p.stock < 10).length;
+      body.outOfStockCount = products.filter((p) => p.stock <= 0).length;
+      body.inStockCount = products.filter((p) => p.stock >= 10).length;
+
+      // Daily stock×cost snapshot — the Valuation card's own real trend.
+      await captureValuationSnapshot(totalValue);
+      body.trends = { ...trends, valuation: await getValuationTrend() };
+    }
+    return NextResponse.json(body);
   }
 
   const products = await prisma.product.findMany({
@@ -51,6 +90,7 @@ export async function POST(req: Request) {
       tenantId,
     },
   });
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json(product);
 }
 
@@ -81,6 +121,7 @@ export async function PUT(req: Request) {
       isActive: body.isActive,
     },
   });
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json(product);
 }
 
@@ -96,5 +137,6 @@ export async function DELETE(req: Request) {
   }
 
   await prisma.product.delete({ where: { id } });
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json({ success: true });
 }

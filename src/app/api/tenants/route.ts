@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
+import { normalizeRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,15 @@ export async function GET(req: Request) {
     const { session, response } = await requireAuth(req);
     if (response) return response;
 
+    // Tenancy fix: tenants are NOT global directory data. Only the platform
+    // ADMIN may enumerate every organization — every other role sees exactly
+    // the tenant they belong to (the switcher still renders one row, but can
+    // never discover or pivot into another org's dashboard).
+    const role = normalizeRole(session!.user.role);
+    const isAdmin = role === "ADMIN";
+
     const tenants = await prisma.tenant.findMany({
+      where: isAdmin ? undefined : { id: session!.user.tenantId ?? "__none__" },
       select: {
         id: true,
         name: true,
@@ -47,6 +56,15 @@ export async function POST(req: Request) {
   try {
     const { session, response } = await requireAuth(req);
     if (response) return response;
+
+    // Only ADMIN may create organizations — a workspace member provisioning
+    // arbitrary tenants would silently expand the platform surface.
+    if (normalizeRole(session!.user.role) !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only administrators can create organizations" },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json();
     const { name, slug } = body;

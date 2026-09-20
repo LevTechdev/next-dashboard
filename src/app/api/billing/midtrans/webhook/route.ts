@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { midtransConfigured, verifyMidtransSignature } from "@/lib/midtrans";
 
 export const runtime = "nodejs";
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
   // is reconciled instead of being orphaned. Acknowledge otherwise.
   const ledger = await prisma.invoice.findFirst({
     where: { invoiceNumber: `INV-${orderId}` },
+    include: { plan: true },
   });
   if (!subscription) {
     if (ledger && ledger.userId && ledger.planId && ledger.status !== "PAID") {
@@ -100,6 +102,24 @@ export async function POST(req: Request) {
             paidAt: now,
             paymentMethod: body.payment_type ?? "midtrans",
             amount: Number(grossAmount) || ledger.amount,
+          },
+        });
+
+        // Late-settled checkout: the checkout route already wrote a snapshot
+        // with the planned amount. Re-freeze it so the PDF renders the amount
+        // actually paid (Midtrans may round/fee-adjust gross_amount).
+        const { buildInvoiceSnapshot } = await import("@/lib/invoice-snapshot");
+        await prisma.invoice.update({
+          where: { id: ledger.id },
+          data: {
+            snapshotJson: buildInvoiceSnapshot({
+              plan: ledger.plan,
+              amount: Number(grossAmount) || ledger.amount,
+              currency: ledger.currency || "IDR",
+              description: ledger.description,
+              periodStart: ledger.periodStart,
+              periodEnd: ledger.periodEnd,
+            }),
           },
         });
 
@@ -164,6 +184,14 @@ export async function POST(req: Request) {
           periodEnd,
           paidAt: now,
           paymentMethod: body.payment_type ?? "midtrans",
+          snapshotJson: buildInvoiceSnapshot({
+            plan: subscription.plan ?? null,
+            amount,
+            currency: "IDR",
+            description: `${subscription.plan?.name ?? "Plan"} - Midtrans ${status}`,
+            periodStart: now,
+            periodEnd,
+          }),
         },
       });
     }

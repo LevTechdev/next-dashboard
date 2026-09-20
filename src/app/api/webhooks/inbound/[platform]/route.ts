@@ -152,6 +152,9 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
       headers: Object.fromEntries(req.headers.entries()),
       payload,
       errorMessage: err?.message || "Internal database ingestion error",
+      // DB failures are transient — the delivery-health scheduler will
+      // re-dispatch with exponential backoff automatically.
+      transient: true,
     });
 
     return NextResponse.json(

@@ -12,32 +12,26 @@ import { POST as postSwitchTenant } from "@/app/api/tenants/switch/route";
 import { GET as getBranding, PUT as putBranding } from "@/app/api/tenant/branding/route";
 import { POST as postDomainVerify } from "@/app/api/tenant/domain-verify/route";
 
-// Mock api-guard
+// Mock api-guard — `authState.user` is mutable so individual tests can pose
+// as different roles (e.g. a non-admin attempting a cross-tenant switch).
+const authState = vi.hoisted(() => ({
+  user: {
+    id: "user-admin-1",
+    sub: "user-admin-1",
+    name: "Admin User",
+    email: "admin@dashboard.com",
+    role: "ADMIN",
+    tenantId: "tenant-1",
+  },
+}));
+
 vi.mock("@/lib/api-guard", () => ({
   requireAuth: vi.fn(async () => ({
-    session: {
-      user: {
-        id: "user-admin-1",
-        sub: "user-admin-1",
-        name: "Admin User",
-        email: "admin@dashboard.com",
-        role: "ADMIN",
-        tenantId: "tenant-1",
-      },
-    },
+    session: { user: authState.user },
     response: null,
   })),
   requirePermission: vi.fn(async () => ({
-    session: {
-      user: {
-        id: "user-admin-1",
-        sub: "user-admin-1",
-        name: "Admin User",
-        email: "admin@dashboard.com",
-        role: "ADMIN",
-        tenantId: "tenant-1",
-      },
-    },
+    session: { user: authState.user },
     response: null,
   })),
 }));
@@ -114,6 +108,8 @@ vi.mock("@/lib/db", () => ({
         role: "ADMIN",
         tenantId: data.tenantId,
       })),
+      // Last-admin guard in POST /api/tenants/switch — other admins exist.
+      count: vi.fn(async () => 2),
     },
   },
 }));
@@ -244,7 +240,7 @@ describe("Multi-Tenant Branding & Organization Switcher API", () => {
     expect(created.name).toBe("Nebula Labs");
   });
 
-  it("POST /api/tenants/switch switches active organization", async () => {
+  it("POST /api/tenants/switch switches active organization (admin)", async () => {
     const req = new Request("http://localhost:3010/api/tenants/switch", {
       method: "POST",
       body: JSON.stringify({ tenantId: "tenant-2" }),
@@ -254,6 +250,24 @@ describe("Multi-Tenant Branding & Organization Switcher API", () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.activeTenant.id).toBe("tenant-2");
+  });
+
+  it("POST /api/tenants/switch blocks switching to a non-member tenant (403)", async () => {
+    // Pose as a STAFF user of tenant-1 who does NOT belong to tenant-2.
+    const original = { ...authState.user };
+    authState.user = { ...original, id: "user-staff-9", role: "STAFF", tenantId: "tenant-1" };
+    try {
+      const req = new Request("http://localhost:3010/api/tenants/switch", {
+        method: "POST",
+        body: JSON.stringify({ tenantId: "tenant-2" }),
+      });
+      const res = await postSwitchTenant(req);
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data.error).toMatch(/not a member/i);
+    } finally {
+      authState.user = original;
+    }
   });
 
   it("GET & PUT /api/tenant/branding manages white-label settings", async () => {

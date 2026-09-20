@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
+import { writeDeletionAudit } from "@/lib/activity-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,19 @@ export async function POST(req: Request) {
   }
 
   if (action === "delete-all-read") {
-    await prisma.notification.deleteMany({
+    const removed = await prisma.notification.deleteMany({
       where: { userId, read: true },
     });
+
+    await writeDeletionAudit({
+      session,
+      action: "DELETE_READ_NOTIFICATIONS",
+      entity: "Notification",
+      entityId: null,
+      details: `Deleted all read notifications (${removed.count} removed)`,
+      req,
+    });
+
     return NextResponse.json({ success: true, action: "delete-all-read" });
   }
 

@@ -40,6 +40,13 @@ export async function GET(req: Request) {
         },
       },
       _count: { select: { links: true } },
+      // Recent affiliate links for the platform — the UI links to the
+      // storefront base URL and surfaces the newest links per platform.
+      links: {
+        take: 3,
+        orderBy: { createdAt: "desc" },
+        select: { id: true, code: true, isActive: true, product: { select: { name: true } } },
+      },
     },
   });
 

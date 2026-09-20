@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/api-guard";
+import { logSecurityEvent } from "@/lib/security-events";
 import { getTenantId } from "@/lib/tenancy";
 
 export const dynamic = "force-dynamic";
@@ -136,6 +137,20 @@ export async function DELETE(req: Request) {
   const tenantId = await effectiveTenantId(session!);
   if (!tenantId) return NextResponse.json({ error: "No tenant context" }, { status: 400 });
 
+  const existing = await prisma.ssoConnection.findUnique({
+    where: { tenantId },
+    select: { name: true },
+  });
+
   await prisma.ssoConnection.deleteMany({ where: { tenantId } });
+
+  await logSecurityEvent({
+    userId: session!.user.id,
+    type: "SSO_CONNECTION_DELETED",
+    req,
+    metadata: { name: existing?.name ?? null },
+    tenantId,
+  });
+
   return NextResponse.json({ deleted: true });
 }

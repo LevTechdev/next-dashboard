@@ -1,46 +1,83 @@
+import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { getTokenFromRequest, getTokenFromCookie, verifyToken } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-guard";
+import { getTenantId } from "@/lib/tenancy";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+/**
+ * Web Push subscription registry — the missing half of the push stack.
+ *
+ * The client already asks permission and builds a PushSubscription
+ * (lib/push-notifications.ts) and the service worker handles push +
+ * notificationclick events (public/sw.js); the notifications page has been
+ * POSTing here since the Alert Rules tab shipped. These routes persist and
+ * remove the subscription rows; delivery lives in lib/web-push.ts.
+ */
+
+interface PushSubscriptionPayload {
+  endpoint?: string;
+  keys?: { p256dh?: string; auth?: string };
+}
 
 export async function POST(req: Request) {
-  try {
-    const token = getTokenFromRequest(req) ?? getTokenFromCookie(req);
-    const user = token ? verifyToken(token) : null;
-    const session = user ? { user } : null;
-    if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+  const { session, response } = await requireAuth(req);
+  if (response) return response;
+  const userId = session.user.id;
+  const tenantId = getTenantId(session);
 
-    const { subscription } = await req.json();
-    if (!subscription) {
-      return new NextResponse("Missing subscription", { status: 400 });
-    }
-
-    // In a real app, save this to the database linked to the user
-    console.log(`[PUSH] Subscribed user ${session.user.id}`, subscription);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Push subscription error", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+  const body = (await req.json().catch(() => null)) as {
+    subscription?: PushSubscriptionPayload;
+  } | null;
+  const sub = body?.subscription;
+  if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
+    return NextResponse.json(
+      { error: "Invalid subscription — endpoint and keys required" },
+      { status: 400 },
+    );
   }
+
+  const userAgent = req.headers.get("user-agent")?.slice(0, 250) ?? null;
+
+  // Upsert on the unique endpoint: re-subscribing the same browser refreshes
+  // its keys (they rotate on resubscribe) instead of piling rows.
+  const row = await prisma.pushSubscription.upsert({
+    where: { endpoint: sub.endpoint },
+    create: {
+      endpoint: sub.endpoint,
+      p256dh: sub.keys.p256dh,
+      auth: sub.keys.auth,
+      userId,
+      tenantId,
+      userAgent,
+    },
+    update: {
+      p256dh: sub.keys.p256dh,
+      auth: sub.keys.auth,
+      userId,
+      tenantId,
+      userAgent,
+    },
+  });
+
+  return NextResponse.json({ ok: true, id: row.id });
 }
 
 export async function DELETE(req: Request) {
-  try {
-    const token = getTokenFromRequest(req) ?? getTokenFromCookie(req);
-    const user = token ? verifyToken(token) : null;
-    const session = user ? { user } : null;
-    if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+  const { session, response } = await requireAuth(req);
+  if (response) return response;
 
-    const { endpoint } = await req.json();
-    
-    // In a real app, delete this subscription from the database
-    console.log(`[PUSH] Unsubscribed endpoint`, endpoint);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return new NextResponse("Internal Server Error", { status: 500 });
+  const body = (await req.json().catch(() => null)) as { endpoint?: string } | null;
+  if (!body?.endpoint) {
+    return NextResponse.json({ error: "endpoint required" }, { status: 400 });
   }
+
+  // Scope the delete to the caller: a stolen cookie can't prune someone
+  // else's subscriptions.
+  await prisma.pushSubscription.deleteMany({
+    where: { endpoint: body.endpoint, userId: session.user.id },
+  });
+
+  return NextResponse.json({ ok: true });
 }

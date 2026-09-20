@@ -302,7 +302,21 @@ function permissionDenied() {
 }
 
 function permissionGranted(role = "ADMIN") {
-  return { role, response: null };
+  // Mirror the real requirePermission contract: a granted check returns the
+  // authenticated session alongside the role.
+  return {
+    role,
+    session: {
+      user: {
+        id: "user-1",
+        name: "Admin",
+        email: "a@test.com",
+        role,
+        tenantId: "tenant-1",
+      },
+    },
+    response: null,
+  };
 }
 
 beforeEach(() => {

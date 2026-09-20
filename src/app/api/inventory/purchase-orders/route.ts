@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPurchaseOrders, createPurchaseOrder } from "@/lib/purchase-orders-store";
+import { buildMonthlyTrend } from "@/lib/trend-series";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,13 @@ export async function GET(req: Request) {
         receivedCount: orders.filter((o) => o.status === "RECEIVED").length,
         totalIssued,
         totalReceived,
+      },
+      // Monthly issued capital trend for the Open PO Capital card sparkline.
+      trends: {
+        issued: buildMonthlyTrend(
+          orders.filter((o) => o.status === "ISSUED"),
+          (o) => o.totalAmount,
+        ),
       },
     });
   } catch (err) {

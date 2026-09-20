@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-guard";
+import { writeDeletionAudit } from "@/lib/activity-audit";
 import {
   getChatConfig,
   upsertChatChannel,
@@ -61,6 +63,9 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -68,10 +73,20 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing channel id" }, { status: 400 });
     }
 
+    const channel = getChatConfig().channels.find((c) => c.id === id);
     const deleted = deleteChatChannel(id);
     if (!deleted) {
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
+
+    await writeDeletionAudit({
+      session,
+      action: "DELETE_CHAT_ALERT_CHANNEL",
+      entity: "ChatChannel",
+      entityId: id,
+      details: `Chat alert channel "${channel?.name ?? id}" (${channel?.platform ?? "unknown platform"}) deleted`,
+      req,
+    });
 
     return NextResponse.json({ success: true, deletedId: id });
   } catch (error) {

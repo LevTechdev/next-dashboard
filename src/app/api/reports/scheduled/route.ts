@@ -1,36 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAuth, requirePermission } from "@/lib/api-guard";
+import {
+  readReportSchedule,
+  writeReportSchedule,
+  type ReportScheduleConfig,
+} from "@/lib/report-schedule-store";
 
 export const dynamic = "force-dynamic";
 
-export interface ReportScheduleConfig {
-  frequency: "DAILY" | "WEEKLY" | "MONTHLY";
-  recipients: string[];
-  metrics: {
-    gmv: boolean;
-    topProducts: boolean;
-    forecast: boolean;
-    channelBreakdown: boolean;
-  };
-  isActive: boolean;
-  lastSentAt: string | null;
-  timeOfDay: string; // "08:00"
-}
-
-// In-memory persistent schedule store (defaults to active weekly admin digest)
-let activeSchedule: ReportScheduleConfig = {
-  frequency: "WEEKLY",
-  recipients: ["admin@example.com", "stakeholders@example.com"],
-  metrics: {
-    gmv: true,
-    topProducts: true,
-    forecast: true,
-    channelBreakdown: true,
-  },
-  isActive: true,
-  lastSentAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-  timeOfDay: "08:00",
-};
+export type { ReportScheduleConfig };
 
 /**
  * GET /api/reports/scheduled
@@ -43,7 +21,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      schedule: activeSchedule,
+      schedule: readReportSchedule(),
     });
   } catch (error) {
     console.error("GET scheduled reports error:", error);
@@ -71,18 +49,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "At least one recipient email required" }, { status: 400 });
     }
 
-    activeSchedule = {
-      ...activeSchedule,
-      frequency: frequency || activeSchedule.frequency,
-      recipients: recipients || activeSchedule.recipients,
-      metrics: metrics ? { ...activeSchedule.metrics, ...metrics } : activeSchedule.metrics,
-      isActive: isActive !== undefined ? Boolean(isActive) : activeSchedule.isActive,
-      timeOfDay: timeOfDay || activeSchedule.timeOfDay,
+    const current = readReportSchedule();
+    const next: ReportScheduleConfig = {
+      ...current,
+      frequency: frequency || current.frequency,
+      recipients: recipients || current.recipients,
+      metrics: metrics ? { ...current.metrics, ...metrics } : current.metrics,
+      isActive: isActive !== undefined ? Boolean(isActive) : current.isActive,
+      timeOfDay: timeOfDay || current.timeOfDay,
     };
+    writeReportSchedule(next);
 
     return NextResponse.json({
       success: true,
-      schedule: activeSchedule,
+      schedule: next,
       message: "Scheduled report configuration updated",
     });
   } catch (error) {

@@ -5,6 +5,7 @@ import { verifyPassword } from "@/lib/auth";
 import { verifyTotp } from "@/lib/totp";
 import { signStepUpToken, STEP_UP_COOKIE, type StepUpPurpose } from "@/lib/step-up";
 import { logSecurityEvent } from "@/lib/security-events";
+import { isMfaVerificationStale } from "@/lib/mfa-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,21 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // 30-day MFA freshness gate: an enrolled-but-stale 2FA user must re-prove
+  // the second factor right here — password alone no longer unlocks sensitive
+  // actions. The successful TOTP verification below records MFA_VERIFIED,
+  // which resets the freshness window, so the challenge IS the re-verification.
+  let mfaStale = false;
+  if (user.totpEnabled && user.totpSecret) {
+    mfaStale = await isMfaVerificationStale(user.id);
+    if (mfaStale && !totpToken) {
+      return NextResponse.json(
+        { error: "Two-factor re-verification required", totpRequired: true },
+        { status: 428 },
+      );
+    }
   }
 
   // Verify via TOTP if the user has 2FA, else via password.

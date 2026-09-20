@@ -6,6 +6,15 @@ import * as chatAlertsTestRoute from "../integrations/chat-alerts/test/route";
 import { prisma } from "@/lib/db";
 
 // Mock DB
+vi.mock("@/lib/plan-tiers", () => ({
+  // The tier guard is covered by its own tests; the analytics route tests
+  // here assume an unlocked (PRO+) tier.
+  assertTierFeature: vi.fn().mockResolvedValue({ tier: "ENTERPRISE" }),
+  tierUpgradeResponse: vi.fn(),
+  TierUpgradeRequiredError: class TierUpgradeRequiredError extends Error {},
+  getTierFeaturesForUser: vi.fn().mockResolvedValue({ tier: "ENTERPRISE" }),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: vi.fn(),
@@ -14,6 +23,26 @@ vi.mock("@/lib/db", () => ({
     order: { count: vi.fn(), findMany: vi.fn() },
     product: { count: vi.fn() },
   },
+}));
+
+// Channel DELETE now requires a session (and writes a deletion audit entry).
+vi.mock("@/lib/api-guard", () => ({
+  requireAuth: vi.fn().mockResolvedValue({
+    session: {
+      user: {
+        id: "user-1",
+        name: "Admin",
+        email: "a@test.com",
+        role: "ADMIN",
+        tenantId: "tenant-1",
+      },
+    },
+    response: null,
+  }),
+}));
+
+vi.mock("@/lib/activity-audit", () => ({
+  writeDeletionAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("Health API (/api/health)", () => {
@@ -102,7 +131,7 @@ describe("Cohorts Analytics API (/api/analytics/cohorts)", () => {
       },
     ]);
 
-    const res = await cohortsRoute.GET();
+    const res = await cohortsRoute.GET(new Request("http://localhost/api/analytics/cohorts"));
     expect(res.status).toBe(200);
     const json = await res.json();
 

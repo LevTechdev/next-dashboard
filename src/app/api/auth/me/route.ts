@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTokenFromRequest, getTokenFromCookie, verifyToken } from "@/lib/auth";
+import { getTierFeaturesForUser } from "@/lib/plan-tiers";
+import { normalizeRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +41,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Effective subscription tier for feature gating in the UI. Role is
+    // normalized so pre-merge SUPER_ADMIN rows surface as ADMIN everywhere.
+    const tier = await getTierFeaturesForUser(user.id);
+
+    return NextResponse.json({ ...user, role: normalizeRole(user.role) ?? user.role, tier });
   } catch (error) {
     console.error("Auth me error:", error);
     return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
