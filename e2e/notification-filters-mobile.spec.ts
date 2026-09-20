@@ -36,25 +36,27 @@ test.describe("Notification panel filter pills on mobile", () => {
     await page.goto("/en/dashboard");
   });
 
+  /** The standalone bell is hidden below lg — mobile opens the panel via the
+      avatar dropdown's Notifications item (dashboard:open-notifications). */
+  const openBellMobile = async (page: Page) => {
+    await page
+      .locator("[data-sonner-toast]")
+      .first()
+      .waitFor({ state: "detached", timeout: 15_000 })
+      .catch(() => {});
+    const avatar = page.locator(".avatar-brand").first();
+    await avatar.click();
+    const notifItem = page.getByRole("menuitem").filter({ hasText: /Notifications/i });
+    await notifItem.click();
+  };
+
   test("tab focus scrolls the last filter pill into view", async ({ page }) => {
-    // exact: the close button is "Close notifications", which would also match
-    // a substring query.
-    const bell = page.getByRole("button", { name: "Notifications", exact: true });
     const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
     const lastPill = pillRow.locator("button").last();
 
-    // Open the popover. Retry the click until it appears — a click during
-    // hydration is silently dropped; the pill row only renders once open.
-    await expect(bell).toBeVisible();
-    await expect
-      .poll(
-        async () => {
-          await bell.click();
-          return pillRow.isVisible();
-        },
-        { timeout: 15_000 },
-      )
-      .toBe(true);
+    // Open the panel through the avatar dropdown (the bell is lg-only).
+    await openBellMobile(page);
+    await expect(pillRow).toBeVisible({ timeout: 15_000 });
 
     // The strip must actually overflow at this viewport, starting unscrolled.
     const { scrollable, scrollLeft: initialScroll } = await pillRow.evaluate((el) => ({
@@ -64,12 +66,15 @@ test.describe("Notification panel filter pills on mobile", () => {
     expect(scrollable).toBe(true);
     expect(initialScroll).toBe(0);
 
-    // Keyboard path: Tab from the bell until the last pill (Alerts) is
-    // focused, skipping the popover header controls in between.
-    await bell.focus();
-    for (let i = 0; i < 15; i++) {
+    // Keyboard path: start focus on the first pill, then Tab forward until
+    // the last pill (Alerts) is focused — exercising the real Tab order and
+    // the row's useScrollFocusedIntoView contract.
+    const firstPill = pillRow.locator("button").first();
+    await firstPill.focus();
+    await expect(firstPill).toBeFocused();
+    for (let i = 0; i < 10; i++) {
       await page.keyboard.press("Tab");
-      if (await lastPill.evaluate((el) => document.activeElement === el)) break;
+      if (await lastPill.evaluate((el) => document.activeElement === el).catch(() => false)) break;
     }
     await expect(lastPill).toBeFocused();
 
@@ -88,30 +93,23 @@ test.describe("Notification panel filter pills on mobile", () => {
   });
 
   test("close button is keyboard-reachable and Enter closes the popover", async ({ page }) => {
-    // exact: the close button is "Close notifications", which would also match
-    // a substring query.
-    const bell = page.getByRole("button", { name: "Notifications", exact: true });
     const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
     const closeButton = page.getByRole("button", { name: "Close notifications" });
 
-    // Open the popover (same hydration-safe retry as the other test).
-    await expect(bell).toBeVisible();
-    await expect
-      .poll(
-        async () => {
-          await bell.click();
-          return pillRow.isVisible();
-        },
-        { timeout: 15_000 },
-      )
-      .toBe(true);
+    // Open the panel through the avatar dropdown (the bell is lg-only).
+    await openBellMobile(page);
+    await expect(pillRow).toBeVisible({ timeout: 15_000 });
 
-    // Keyboard path: Tab from the bell until the close (X) button is
-    // focused — it sits after the popover's Test / mark-all-as-read actions.
-    await bell.focus();
-    for (let i = 0; i < 15; i++) {
-      await page.keyboard.press("Tab");
-      if (await closeButton.evaluate((el) => document.activeElement === el)) break;
+    // Keyboard path: start on the first pill, then Shift+Tab backwards —
+    // the header row (Test / mark-all / close X) sits directly above the
+    // pill row, so the X button is a couple of reverse stops away.
+    const firstPill = pillRow.locator("button").first();
+    await firstPill.focus();
+    await expect(firstPill).toBeFocused();
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press("Shift+Tab");
+      if (await closeButton.evaluate((el) => document.activeElement === el).catch(() => false))
+        break;
     }
     await expect(closeButton).toBeFocused();
 
@@ -123,18 +121,9 @@ test.describe("Notification panel filter pills on mobile", () => {
   /** Open the notification popover (hydration-safe retry, shared by the
       hidden-scrollbar tests). */
   const openPanel = async (page: Page) => {
-    const bell = page.getByRole("button", { name: "Notifications", exact: true });
     const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
-    await expect(bell).toBeVisible();
-    await expect
-      .poll(
-        async () => {
-          await bell.click();
-          return pillRow.isVisible();
-        },
-        { timeout: 15_000 },
-      )
-      .toBe(true);
+    await openBellMobile(page);
+    await expect(pillRow).toBeVisible({ timeout: 15_000 });
     return pillRow;
   };
 

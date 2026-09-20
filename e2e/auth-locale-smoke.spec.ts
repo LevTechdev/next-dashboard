@@ -243,6 +243,15 @@ for (const [locale, s] of Object.entries(LOCALES)) {
       await expect(page.getByRole("button", { name: s.dashboard.search })).toBeVisible();
 
       // Header user menu opens with localized items (nav.settings / nav.logout).
+      // The login toast may briefly overlay the header — wait for it to clear
+      // before clicking the avatar (sonner intercepts pointer events).
+      await page
+        .locator("[data-sonner-toast]")
+        .first()
+        .waitFor({ state: "detached", timeout: 15_000 })
+        .catch(() => {
+          /* no toast rendered — nothing to wait out */
+        });
       await page.locator(".avatar-brand").first().click();
       await expect(page.getByRole("menuitem", { name: s.dashboard.settings })).toBeVisible();
       await expect(page.getByRole("menuitem", { name: s.dashboard.logout })).toBeVisible();

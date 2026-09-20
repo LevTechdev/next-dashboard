@@ -16,9 +16,10 @@ test.describe("Settings Ergonomics & Payment Webhook Simulator E2E", () => {
     await expect(page.getByText("White-Labeling & Brand Customization")).toBeVisible();
     await expect(page.getByText("Custom Domain Routing")).toBeVisible();
 
-    // Verify theme presets exist
-    await expect(page.getByRole("button", { name: "Indigo Core" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Emerald Growth" })).toBeVisible();
+    // Verify theme presets exist (exact: the white-label logo library also
+    // has an "Indigo Core" tile whose aria-label contains the same text).
+    await expect(page.getByRole("button", { name: "Indigo Core", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Emerald Growth", exact: true })).toBeVisible();
 
     // Verify Sync with Dashboard Theme button
     await expect(page.getByRole("button", { name: "Sync with Dashboard Theme" })).toBeVisible();
@@ -53,12 +54,17 @@ test.describe("Settings Ergonomics & Payment Webhook Simulator E2E", () => {
   test("opens payment gateway webhook simulator and executes signed simulation", async ({
     page,
   }) => {
-    await page.goto("/en/settings");
+    // The simulator was moved out of settings to the QRIS billing surface
+    // (user-requested settings cleanup) — open the Billing → QRIS tab first.
+    await page.goto("/en/billing");
     await page.waitForLoadState("domcontentloaded");
+    const qrisTab = page.getByRole("tab", { name: /QRIS/i }).first();
+    await expect(qrisTab).toBeVisible({ timeout: 20000 });
+    await qrisTab.click();
 
-    // Click 'Simulate Gateway Webhook' button in Webhooks card
+    // Click 'Simulate Gateway Webhook' button
     const simBtn = page.getByRole("button", { name: /Simulate Gateway Webhook/i }).first();
-    await expect(simBtn).toBeVisible();
+    await expect(simBtn).toBeVisible({ timeout: 20000 });
     await simBtn.click();
 
     // Verify simulator dialog opens

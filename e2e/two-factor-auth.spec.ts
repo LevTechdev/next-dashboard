@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { generateSync } from "otplib";
-import { registerFreshUser, TEST_PASSWORD } from "./helpers";
+import { registerFreshUser, TEST_PASSWORD, waitForLoginThrottleWindow } from "./helpers";
 
 /**
  * Two-Factor Authentication E2E (pw6).
@@ -51,6 +51,10 @@ async function loginWithTotp(page: Page) {
   await page.waitForLoadState("networkidle");
   await page.locator('input[type="email"]').fill(email);
   await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+  // Inherit the suite's login-throttle backoff: back-to-back runs can trip the
+  // 10-attempts/120s limit, and a throttled submit simply bounces back to
+  // /en/login instead of reaching the TOTP step.
+  await waitForLoginThrottleWindow();
   await page.getByRole("button", { name: "Log in", exact: true }).click();
 
   // 2FA prompt replaces the login card (h1 t("auth.twoFactorAuth")).
@@ -80,11 +84,11 @@ test.describe("Two-Factor Authentication", () => {
     // button while the page is still hydrating silently drops the click).
     await expect(page.getByText("Not enabled").first()).toBeVisible();
 
-    // 3. Start 2FA setup: the dialog ("Setup authenticator app") shows the QR
+    // 3. Start 2FA setup: the dialog (t("security.setup2FATitle")) shows the QR
     //    code and the manual secret key.
     await page.getByRole("button", { name: "Set up 2FA" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Setup authenticator app")).toBeVisible();
+    await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
 
     // 4. Capture the secret — the <code> block shows it grouped in 4s and
     //    repeats it raw in an sr-only span; read the sr-only copy so the

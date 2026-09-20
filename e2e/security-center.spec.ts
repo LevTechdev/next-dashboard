@@ -36,9 +36,13 @@ test.describe("Security Center", () => {
       // Score banner
       await expect(page.getByText("Security score")).toBeVisible();
       await expect(page.getByText(/out of 100/)).toBeVisible();
-      // The score message resolves after data loads; accept any of the 4 labels.
+      // The score message resolves after data loads; accept the component-aware
+      // action copy or the all-protections-active confirmation. Anchored to the
+      // sentence-ending period so the hint footer / alert copy never collide.
       await expect(
-        page.getByText(/strongly protected|enable two-factor|stronger protection/i),
+        page.getByText(
+          /^(Enable two-factor|Register a passkey|Generate backup codes|Verify your email address|Re-verify two-factor|All protections are active)/,
+        ),
       ).toBeVisible();
 
       // Stat tiles (labels also appear as section-card titles later in the DOM).
@@ -93,7 +97,7 @@ test.describe("Security Center", () => {
 
       // Regenerate → a confirmation dialog must appear before new codes are shown.
       await page.getByRole("button", { name: "Regenerate", exact: true }).click();
-      const dialog = page.getByRole("dialog");
+      const dialog = page.getByRole("alertdialog");
       await expect(dialog.getByText("Regenerate backup codes?")).toBeVisible();
       // Confirm button uses the shared "Generate codes" label.
       await dialog.getByRole("button", { name: "Generate codes", exact: true }).click();
@@ -124,7 +128,9 @@ test.describe("Security Center", () => {
       // client fetches) before clicking — clicks during hydration are dropped.
       await page.goto("/en/security");
       await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
-      await expect(page.getByText("MFA not verified in 30 days")).toBeVisible();
+      // Post-hydration-only chip (client fetch resolves it) — copy is
+      // t("security.mfaNotVerifiedRecentDays").
+      await expect(page.getByText(/MFA not verified for \d+ days?/)).toBeVisible();
       await expect(page.getByText("Email Not Verified")).toBeVisible();
 
       // Send → dev mode returns the verification link and renders it inline,
@@ -205,8 +211,9 @@ async function generateOrRegenerateCodes(page: Page) {
   const regen = page.getByRole("button", { name: "Regenerate", exact: true });
   if (await regen.isVisible()) {
     // Codes already exist → an "are you sure?" dialog appears; accept it.
+    // The shared confirm() surface is a Base UI AlertDialog → role alertdialog.
     await regen.click();
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("alertdialog");
     await dialog.getByRole("button", { name: "Generate codes", exact: true }).click();
   } else {
     await page.getByRole("button", { name: "Generate codes", exact: true }).click();

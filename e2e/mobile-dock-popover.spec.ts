@@ -2,17 +2,15 @@ import { test, expect } from "@playwright/test";
 import { loginAs } from "./helpers";
 
 /**
- * Mobile dock language popover at a 375px-wide, very short (320px) viewport.
+ * Mobile dock "More" drawer at a 375px-wide, very short (320px) viewport.
  *
- * The dashboard dock's language picker opens a popover ANCHORED ABOVE the dock
- * (`absolute bottom-full`). It used to be `overflow-hidden` with no height
- * cap, so on viewports shorter than ~340px its "Language" header clipped
- * against the top of the screen — cut off with nothing reachable. It now caps
- * itself to the space above the dock (`max-h-[calc(100dvh-5rem)]`) and scrolls
- * with the app's thin bar, so the whole popover stays in view and every
- * language option is reachable.
+ * The drawer was redesigned to match the header profile dropdown (glass
+ * surface, rounded-t-[26px], user card, list rows). It must stay reachable on
+ * very short viewports: the whole drawer fits inside the 320px height budget
+ * (max-h-[85vh] + internal scroll), and every language option is reachable by
+ * scrolling.
  */
-test.describe("Mobile dock language popover", () => {
+test.describe("Mobile dock language drawer", () => {
   test.use({ viewport: { width: 375, height: 320 } });
 
   test("stays in view and all languages reachable by scrolling at a very short viewport", async ({
@@ -21,35 +19,57 @@ test.describe("Mobile dock language popover", () => {
     await loginAs(page);
 
     const dock = page.getByTestId("mobile-dock");
-    await dock.getByRole("button", { name: "Switch language" }).click();
+    await dock.getByRole("button", { name: "More" }).click();
 
-    const popover = page.locator("div.absolute.bottom-full.right-0.mb-3");
-    await expect(popover).toBeVisible();
+    const drawer = page.getByTestId("mobile-dock-drawer");
+    await expect(drawer).toBeVisible();
 
-    // Nothing clips at the top: the popover fits entirely inside the 320px
-    // viewport (pre-fix, its top sat at -13px and the header was cut off).
-    const box = await popover.boundingBox();
-    expect(box, "language popover present").not.toBeNull();
-    expect(box!.y, "popover top inside viewport").toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height, "popover bottom inside viewport").toBeLessThanOrEqual(320 + 1);
+    // The drawer caps itself to 85vh, so on the 320px viewport its top stays
+    // inside the viewport (pre-redesign, an unclipped sheet could overflow).
+    // Poll: the box is measured mid-slide until the entrance tween settles.
+    await expect
+      .poll(
+        async () => {
+          const b = await drawer.boundingBox();
+          if (!b) return false;
+          return b.y >= 0 && b.y + b.height <= 320 + 1;
+        },
+        { timeout: 5_000, message: "drawer settles fully inside the viewport" },
+      )
+      .toBe(true);
 
-    // The previously unreachable header is now in view.
-    await expect(popover.getByText("Language")).toBeVisible();
+    // The localized language section header is in view.
+    await expect(drawer.getByText("Language")).toBeVisible();
 
-    // The popover genuinely scrolls with the thin bar: its content is taller
-    // than the capped height.
-    const dims = await popover.evaluate((el) => ({
+    // The drawer genuinely scrolls: content taller than the capped height.
+    // Polled: under parallel-worker argon2 contention the drawer can be
+    // measured a beat before React finishes rendering the tile grid — but 18
+    // tiles + the language section MUST overflow the 85vh cap once rendered.
+    await expect
+      .poll(
+        async () => {
+          const dims = await drawer.evaluate((el) => ({
+            clientH: el.clientHeight,
+            scrollH: el.scrollHeight,
+          }));
+          return dims.scrollH > dims.clientH;
+        },
+        { timeout: 10_000, message: "drawer content overflows its cap" },
+      )
+      .toBe(true);
+    const overflow = await drawer.evaluate((el) => ({
       clientH: el.clientHeight,
       scrollH: el.scrollHeight,
       overflowY: getComputedStyle(el).overflowY,
     }));
-    expect(dims.scrollH, "popover content overflows its cap").toBeGreaterThan(dims.clientH);
-    expect(dims.overflowY, "popover scrolls").toBe("auto");
+    expect(overflow.overflowY === "auto" || overflow.overflowY === "scroll", "drawer scrolls").toBe(
+      true,
+    );
 
     // Every language option is reachable: scrolling to the bottom brings the
     // last one (日本語) fully into view.
-    const lastLang = popover.getByRole("button", { name: /日本語/ });
-    await popover.evaluate((el) => {
+    const lastLang = drawer.getByRole("button", { name: /日本語/ });
+    await drawer.evaluate((el) => {
       el.scrollTop = el.scrollHeight;
     });
     await expect
@@ -58,7 +78,7 @@ test.describe("Mobile dock language popover", () => {
           const b = await lastLang.boundingBox();
           return b ? b.y >= 0 && b.y + b.height <= 320 + 1 : false;
         },
-        { timeout: 5_000, message: "last language reachable after scrolling the popover" },
+        { timeout: 5_000, message: "last language reachable after scrolling the drawer" },
       )
       .toBe(true);
     await expect(lastLang).toBeVisible();

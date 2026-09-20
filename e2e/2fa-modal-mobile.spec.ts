@@ -13,9 +13,10 @@ import { fillRegistrationForm, logoutViaHeader, TEST_PASSWORD } from "./helpers"
  *      2FA-enabled account the login card swaps inline to the segmented
  *      six-digit TOTP input. The prompt must stay fully inside the 375px
  *      viewport and inside the auth card.
- *   2. The active (first) digit cell carries the app's light-mode primary
- *      border + 1px ring (the lime HSL default; indigo is reserved for dark
- *      mode) — the visible "focus ring" of the segmented input.
+ *   2. The CodeSlots row renders six slots, the empty code leaves the FIRST
+ *      slot active (data-active + visible caret), and the slot fill uses the
+ *      app's light-mode primary (the lime HSL default; indigo is reserved
+ *      for dark mode) — the visible accent of the code input.
  *
  * Needs a real 2FA-enabled account, so it registers a fresh user (completing
  * the email-OTP step via the explicit submit) and enables 2FA from the
@@ -70,7 +71,7 @@ test.describe("2FA prompt at a 375px viewport", () => {
     await page.getByRole("button", { name: "Set up 2FA" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Setup authenticator app")).toBeVisible();
+    await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
     // The <code> block shows the secret grouped in 4s and repeats it raw in an
     // sr-only span; read the sr-only copy so the grouping never leaks in.
     const secretText =
@@ -110,10 +111,10 @@ test.describe("2FA prompt at a 375px viewport", () => {
       375 + 1,
     );
 
-    // The segmented row is the flex wrapper around the 6 digit cells (the
-    // invisible overlay input lives inside it too).
-    const row = page.locator("div.relative.flex.justify-between.gap-2");
-    const digitCells = row.locator("div.aspect-square");
+    // The CodeSlots row is the flex wrapper around the six animated slots
+    // (the visually hidden numeric input lives inside it too).
+    const row = page.locator(".code-slots__row");
+    const digitCells = row.locator(".code-slots__slot");
     await expect(digitCells).toHaveCount(6);
     const rowBox = await row.boundingBox();
     expect(rowBox, "TOTP row should have layout").not.toBeNull();
@@ -122,28 +123,22 @@ test.describe("2FA prompt at a 375px viewport", () => {
       375 + 1,
     );
 
-    // ── Contract 2: primary (lime in light mode) ring on the active cell ─
-    // With an empty code the FIRST cell is the active one
-    // (totpCode.length === 0), styled border-primary + ring-1 ring-primary —
-    // the visible focus ring of the segmented input. Light mode's default
-    // primary is lime HSL(73 100% 44%) → rgb(176, 224, 0); indigo is only
-    // for dark mode. No transition is involved (the classes swap instantly),
-    // so a plain computed-style read is deterministic.
+    // ── Contract 2: the empty code leaves the FIRST slot active ──
+    // CodeSlots marks the caret slot with `data-active` and shows the gliding
+    // caret over it; every other slot stays unmarked. That is the segmented
+    // input's visible "focus" treatment now that the slots are filled shapes
+    // rather than outlined boxes.
     const firstCell = digitCells.first();
-    const cs = await firstCell.evaluate((el) => {
-      const style = getComputedStyle(el);
-      return { borderColor: style.borderColor, boxShadow: style.boxShadow };
-    });
-    expect(cs.borderColor, "active cell border should be the light-mode primary (lime)").toBe(
-      "rgb(176, 224, 0)",
-    );
-    expect(cs.boxShadow, "active cell ring should be the light-mode primary (lime)").toContain(
-      "176, 224, 0",
-    );
-    // The remaining cells stay on the neutral zinc border — proving the ring
-    // is the ACTIVE-cell treatment, not a blanket style.
-    const secondCell = digitCells.nth(1);
-    const cs2 = await secondCell.evaluate((el) => getComputedStyle(el).borderColor);
-    expect(cs2, "inactive cell border stays neutral zinc").not.toBe("rgb(176, 224, 0)");
+    await expect(firstCell).toHaveAttribute("data-active", "");
+    await expect(digitCells.nth(1)).not.toHaveAttribute("data-active", "");
+    await expect(row.locator(".code-slots__caret[data-show]")).toHaveCount(1);
+
+    // The slot fill is the accent (light mode's lime primary — HSL(73 100%
+    // 44%) → rgb(176, 224, 0); indigo is reserved for dark mode), so entering
+    // a digit paints that slot in the app's primary colour.
+    const fillColor = await firstCell
+      .locator(".code-slots__fill")
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(fillColor, "slot fill should be the light-mode primary (lime)").toBe("rgb(176, 224, 0)");
   });
 });

@@ -13,6 +13,63 @@ export const SEED_ADMIN_EMAIL = "nextdashboards@gmail.com";
 export const SEED_ADMIN_PASSWORD = "admin123";
 
 /**
+ * Headroom for fetch-gated renders: dashboard reads go through the remote DB
+ * and queue behind parallel workers' argon2 logins (~10s CPU each), which
+ * blows past the 20s default expect timeout. Use for any wait that gates on a
+ * network fetch resolving — initial data lists, post-action refetches, and
+ * dialog closes that only happen after a POST/PUT/DELETE succeeds.
+ */
+export const FETCH_GATED = { timeout: 45_000 } as const;
+
+/**
+ * Session cache for loginAs: token strings keyed by "email:password". Workers
+ * share module state when the suite runs in the same process, and the goal is
+ * to mint at most one argon2 login per credential per run.
+ */
+const sessionTokens = new Map<string, string>();
+
+// ── Login-throttle awareness ─────────────────────────────────────────────────
+//
+// /api/auth/login limits 10 attempts / 120s per IP (persisted as SecurityEvent
+// rows, so it survives a dev-server restart) and answers 429 with a
+// `Retry-After` header. Back-to-back spec runs legitimately trip it; a
+// throttled response used to surface as a confusing "redirected back to
+// /login" failure. These helpers make the suite wait the window out instead:
+// the header is authoritative when present, and the module-level deadline lets
+// every later call in the same worker back off proactively instead of
+// re-discovering the limit with more attempts.
+
+const THROTTLE_FALLBACK_SECONDS = 30;
+let throttledUntil = 0;
+
+/** Seconds to wait, preferring the response's Retry-After header. */
+function retryAfterSecondsFrom(res: { headers: () => Record<string, string> }): number {
+  const raw = res.headers()["retry-after"];
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : THROTTLE_FALLBACK_SECONDS;
+}
+
+/** Wait out a throttle window (with a small clock-skew buffer). */
+async function waitOutThrottle(seconds: number): Promise<void> {
+  const ms = Math.max(seconds, 1) * 1000 + 500;
+  throttledUntil = Math.max(throttledUntil, Date.now() + ms);
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Public: sleep when a previously-seen 429 window is still open. Specs that
+ * drive the login form themselves (the TOTP flow) should call this right
+ * before submitting so they inherit the backoff.
+ */
+export async function waitForLoginThrottleWindow(): Promise<void> {
+  const remaining = throttledUntil - Date.now();
+  if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+}
+
+/** Predicate for page.waitForResponse — the login POST only. */
+const isLoginResponse = (res: { url: () => string }) => res.url().includes("/api/auth/login");
+
+/**
  * Log in through the /en/login form and wait for the dashboard. Defaults to
  * the seed admin credentials. Only for accounts WITHOUT 2FA (the seed admin
  * has 2FA disabled); the TOTP-gated login flow lives in the 2FA spec.
@@ -43,8 +100,72 @@ export async function loginAs(
   );
   if (hasSession) {
     await page.goto("/en/dashboard");
-    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
     return;
+  }
+
+  // Cross-worker session cache: each test gets a fresh context (no cookies),
+  // and every cold form login burns ~10s of dev-server CPU in argon2 — with
+  // 2 workers that contention also delays every parallel dashboard fetch. The
+  // first login mints a token and caches it (keyed by credentials); later
+  // logins inject it directly and verify it still works by landing on the
+  // dashboard. The seed admin is shared, so the cache hit rate is high; a
+  // revoked/expired cached token falls through to the form path below.
+  const credKey = `${email}:${password}`;
+  const cachedToken = sessionTokens.get(credKey);
+  if (cachedToken) {
+    await page.context().addCookies([
+      {
+        name: "token",
+        value: cachedToken,
+        domain: "localhost",
+        path: "/",
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+    await page.goto("/en/dashboard");
+    if (page.url().includes("/en/dashboard")) {
+      return;
+    } // Token dead (server restart with a changed JWT secret, revocation, etc.)
+    // — clear and fall through to the form path.
+    sessionTokens.delete(credKey);
+  }
+
+  // A 429 seen by an earlier call in this worker is enough to know the window
+  // is open — wait it out before spending another attempt on it.
+  await waitForLoginThrottleWindow();
+
+  // API-login fast path: the form flow depends on the login page's client
+  // hydration, which a degraded/loaded dev server can stall indefinitely
+  // (fields filled, submit never enables — seen on long-lived servers).
+  // POSTing the credentials directly mints the same httpOnly token cookie
+  // into this context's cookie jar (page.request shares it with page),
+  // skipping the hydration dependency entirely. Falls through to the form
+  // flow below if the API rejects (bad credentials, 2FA-gated account).
+  // A 429 is retried once after the Retry-After window rather than reported.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const apiLogin = await page.request.post("/api/auth/login", {
+      data: { email, password },
+      timeout: 90_000,
+    });
+    if (apiLogin.ok()) {
+      const minted = (await page.context().cookies()).find(
+        (c) => c.name === "token" && c.value.length > 0,
+      );
+      if (minted) {
+        sessionTokens.set(credKey, minted.value);
+        await page.goto("/en/dashboard");
+        await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
+        return;
+      }
+    }
+    if (apiLogin.status() === 429) {
+      await waitOutThrottle(retryAfterSecondsFrom(apiLogin));
+      continue;
+    }
+    // Anything else (401, 2FA-gated) → the form path below.
+    break;
   }
 
   // Cold-start hardening: the webServer port probe can succeed a beat before
@@ -80,8 +201,33 @@ export async function loginAs(
       { timeout: 20_000, message: "login form never hydrated" },
     )
     .toBe(true);
+  // Watch the login POST so a throttled submit can be retried instead of
+  // surfacing as "the form submitted but never redirected".
+  const firstLoginResponse = page
+    .waitForResponse(isLoginResponse, { timeout: 60_000 })
+    .catch(() => null);
   await submit.click();
-  await expect(page).toHaveURL(/\/en\/dashboard/);
+  const loginResponse = await firstLoginResponse;
+  if (loginResponse && loginResponse.status() === 429) {
+    await waitOutThrottle(retryAfterSecondsFrom(loginResponse));
+    const retryLoginResponse = page
+      .waitForResponse(isLoginResponse, { timeout: 60_000 })
+      .catch(() => null);
+    await submit.click();
+    await retryLoginResponse;
+  }
+  // The login POST runs argon2 (~10s) against the remote DB and can queue
+  // behind a parallel worker's login — give the redirect real headroom.
+  await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
+
+  // Cache the minted token for later workers/tests (best-effort: the cookie
+  // must exist and the dashboard URL proves the session is live).
+  const minted = (await page.context().cookies()).find(
+    (c) => c.name === "token" && c.value.length > 0,
+  );
+  if (minted) {
+    sessionTokens.set(credKey, minted.value);
+  }
 }
 
 /**
@@ -283,7 +429,12 @@ export async function waitForStableLayout<T>(
 
 /** The API Keys tab renders its toolbar only after the initial fetch resolves. */
 export async function waitForApiKeysTab(page: Page): Promise<void> {
-  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible();
+  // The toolbar renders only after the api-keys fetch resolves on the remote
+  // DB; under 2-worker argon2-login contention that fetch can exceed the 20s
+  // default expect timeout, so grant explicit headroom.
+  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible({
+    timeout: 45_000,
+  });
 }
 
 /**
@@ -296,10 +447,11 @@ export async function createApiKey(page: Page, name: string): Promise<string> {
   await expect(dialog.getByText("Create API Key")).toBeVisible();
   await dialog.getByPlaceholder("e.g., Production Integration").fill(name);
   await dialog.getByRole("button", { name: "Generate Key", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
+  // Both waits gate on the POST + refetch round-tripping the remote DB.
+  await expect(dialog).not.toBeVisible(FETCH_GATED);
 
   const banner = page.locator("main .dashboard-card").filter({ hasText: "API Key Created" });
-  await expect(banner).toBeVisible();
+  await expect(banner).toBeVisible(FETCH_GATED);
   return (await banner.locator("code").textContent())?.trim() ?? "";
 }
 
