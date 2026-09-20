@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { logSecurityEvent } from "@/lib/security-events";
 
 /**
  * Sliding-window rate limiting for auth endpoints.
@@ -63,27 +64,26 @@ export async function checkLoginRateLimit(
 
   // Record every attempt — accepted or rejected — so the window keeps filling
   // while an attacker hammers the endpoint (no bypass by waiting out the count).
-  try {
-    await prisma.securityEvent.create({
-      data: {
-        type: SECURITY_TYPE,
-        ip,
-        userAgent: req.headers.get("user-agent")?.slice(0, 255) ?? null,
-        metadata: {
-          endpoint: "login",
-          attempt: attempts + 1,
-          limit,
-          // Persist the window so the Security Center telemetry card can show
-          // live pressure (used / limit, retry-after) without hardcoding it.
-          windowSeconds,
-          blocked: !allowed,
-          ...(opts?.email ? { email: opts.email } : {}),
-        },
-      },
-    });
-  } catch {
-    // Never let limiter bookkeeping break the login flow.
-  }
+  //
+  // MUST go through logSecurityEvent: a raw `securityEvent.create` leaves
+  // prevHash/hash null, and because these rows are always the newest by seq,
+  // the next real event would read a null tail hash and link itself to GENESIS
+  // — permanently breaking the tamper-evident chain on every throttled login.
+  await logSecurityEvent({
+    userId: null,
+    type: SECURITY_TYPE,
+    req,
+    metadata: {
+      endpoint: "login",
+      attempt: attempts + 1,
+      limit,
+      // Persist the window so the Security Center telemetry card can show
+      // live pressure (used / limit, retry-after) without hardcoding it.
+      windowSeconds,
+      blocked: !allowed,
+      ...(opts?.email ? { email: opts.email } : {}),
+    },
+  });
 
   return {
     allowed,

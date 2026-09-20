@@ -81,6 +81,7 @@ export async function logSecurityEvent(params: {
       // — the hash chain may have gaps under heavy concurrency but the
       // `repair:audit-chain` script can restore it).
       const last = await prisma.securityEvent.findFirst({
+        where: { hash: { not: null } },
         orderBy: { seq: "desc" },
         select: { hash: true },
       });
@@ -127,6 +128,11 @@ export async function logSecurityEvent(params: {
           /* non-Postgres or lock unavailable — proceed best-effort */
         }
         const last = await tx.securityEvent.findFirst({
+          // ONLY the newest *hashed* row can be a link target. Rows written
+          // outside this helper (legacy imports) carry `hash = null`; linking
+          // to one would set `prevHash = GENESIS`, permanently breaking the
+          // chain for every subsequent event.
+          where: { hash: { not: null } },
           orderBy: { seq: "desc" },
           select: { hash: true },
         });
