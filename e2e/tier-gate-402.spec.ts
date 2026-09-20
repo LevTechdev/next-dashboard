@@ -4,9 +4,12 @@ import { loginAs, FETCH_GATED } from "./helpers";
 /**
  * Subscription tier-gate UI (402 → upgrade surface).
  *
- * The seed admin is on the Starter (REGULAR) tier, so the gated analytics
- * read answers 402 from the API — this spec asserts the UI *surfaces* the
- * upgrade path:
+ * Both surfaces are driven by a route intercept rather than by the caller's
+ * real plan. Workspace admins (incl. the seed admin) are deliberately EXEMPT
+ * from the analytics feature gate — see the comment in
+ * /api/analytics/cohorts/route.ts — so the API answers 200 for them and can
+ * never produce the 402 this spec is about. The 402 condition is simulated so
+ * the upgrade-surface contract is tested deterministically for any role.
  *
  * 1. Analytics → Retention tab: the cohort retention heatmap swaps its data
  *    view for the branded upsell card (title, Retry, "View plans" CTA).
@@ -15,12 +18,19 @@ import { loginAs, FETCH_GATED } from "./helpers";
  * 2. Orders → the page's orderLimit gate opens the shared Sora upgrade
  *    dialog and keeps a persistent gradient banner with an Upgrade CTA above
  *    the table. GET /api/orders only 402s once the Starter plan's monthly
- *    order cap is reached, so the 402 condition is simulated with a route
- *    intercept — the dialog/banner contract is what's under test, and the
- *    same payload shape the real API emits (plan_limit_reached, 402) is used.
+ *    order cap is reached, so the same intercept approach is used, with the
+ *    payload shape the real API emits (plan_limit_reached, 402).
  */
 
 const ANALYTICS_URL = "/en/analytics";
+
+/** Exactly what /api/analytics/cohorts emits via tierUpgradeResponse(). */
+const ANALYTICS_402_BODY = JSON.stringify({
+  error: "upgrade_required",
+  feature: "analytics",
+  requiredTier: "PRO",
+  currentFeatures: null,
+});
 
 const PLAN_LIMIT_402_BODY = JSON.stringify({
   error: "plan_limit_reached",
@@ -35,6 +45,9 @@ test.describe("Tier-gate upgrade surfaces", () => {
   });
 
   test("analytics cohort heatmap shows the PRO upsell card on 402", async ({ page }) => {
+    await page.route("**/api/analytics/cohorts", (route) =>
+      route.fulfill({ status: 402, contentType: "application/json", body: ANALYTICS_402_BODY }),
+    );
     const resp = page.waitForResponse(
       (r) => r.url().includes("/api/analytics/cohorts") && r.status() === 402,
       { timeout: 45_000 },
@@ -53,6 +66,9 @@ test.describe("Tier-gate upgrade surfaces", () => {
   });
 
   test("analytics upsell View plans CTA routes to billing", async ({ page }) => {
+    await page.route("**/api/analytics/cohorts", (route) =>
+      route.fulfill({ status: 402, contentType: "application/json", body: ANALYTICS_402_BODY }),
+    );
     await page.goto(ANALYTICS_URL);
     await page.getByRole("tab", { name: "Cohort Retention" }).click();
 

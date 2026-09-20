@@ -86,7 +86,9 @@ test.describe("Mobile modal geometry at 375px", () => {
 
     // Open the first order's details via its row action (the Eye button,
     // title="View Details"). The table only renders after the fetch resolves.
-    const viewButtons = page.locator('button[title="View Details"]');
+    // The row action swapped its `title` for a Tooltip + aria-label during the
+    // tooltip migration, so address it by its accessible name.
+    const viewButtons = page.locator('button[aria-label="View Details"]');
     await expect(viewButtons.first()).toBeVisible({ timeout: 45_000 });
     await viewButtons.first().click();
 

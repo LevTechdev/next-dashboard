@@ -438,6 +438,37 @@ export async function waitForApiKeysTab(page: Page): Promise<void> {
 }
 
 /**
+ * The plan caps API keys per workspace. Specs in this suite leave their keys
+ * behind, so once the cap is full POST /api/api-keys answers
+ * 402 plan_limit_reached and the dialog stays open on its error toast.
+ * Delete the oldest leftover key to reclaim a slot (leaving room for the one
+ * about to be created). Plan-agnostic: the cap comes from the 402 itself.
+ */
+async function reclaimApiKeySlot(page: Page): Promise<void> {
+  const listed = await page.request.get("/api/api-keys");
+  if (!listed.ok()) return;
+  const keys = (await listed.json()) as Array<{ id: string; name: string }>;
+  const oldest = keys[keys.length - 1];
+  if (!oldest) return;
+  await page.request.delete("/api/api-keys", { data: { id: oldest.id } });
+  // The tab refetches the list, so the freed slot is visible before we retry.
+  await expect(page.getByRole("heading", { name: oldest.name, exact: true })).toHaveCount(
+    0,
+    FETCH_GATED,
+  );
+}
+
+/** Submit the create-key dialog and return the POST response. */
+async function submitCreateKey(page: Page, dialog: Locator): Promise<number> {
+  const posted = page.waitForResponse(
+    (r) => r.url().includes("/api/api-keys") && r.request().method() === "POST",
+    { timeout: 60_000 },
+  );
+  await dialog.getByRole("button", { name: "Generate Key", exact: true }).click();
+  return (await posted).status();
+}
+
+/**
  * Open the create-key dialog, fill a unique name, submit, and return the raw
  * `dash_...` key scraped from the one-time reveal banner.
  */
@@ -446,7 +477,17 @@ export async function createApiKey(page: Page, name: string): Promise<string> {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Create API Key")).toBeVisible();
   await dialog.getByPlaceholder("e.g., Production Integration").fill(name);
-  await dialog.getByRole("button", { name: "Generate Key", exact: true }).click();
+
+  if ((await submitCreateKey(page, dialog)) === 402) {
+    // At the plan's key cap — free a slot and submit again (the dialog is
+    // still open, holding the name we already typed).
+    await reclaimApiKeySlot(page);
+    expect(
+      await submitCreateKey(page, dialog),
+      "create should succeed after reclaiming a slot",
+    ).toBe(200);
+  }
+
   // Both waits gate on the POST + refetch round-tripping the remote DB.
   await expect(dialog).not.toBeVisible(FETCH_GATED);
 

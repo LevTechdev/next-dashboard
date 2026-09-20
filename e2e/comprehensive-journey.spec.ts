@@ -12,9 +12,9 @@ test.describe("Comprehensive SaaS User Journey & Regression Suite", () => {
     const heroSection = page.locator('section[aria-label="Interactive Platform Overview"]');
     await expect(heroSection).toBeVisible();
 
-    // Day/night toggle aria-label now localized (Switch to Day Scene).
-    const themeToggle = page.locator('button[aria-label="Switch to Day Scene"]');
-    await expect(themeToggle).toBeVisible();
+    // The hero's day/night scene toggle was removed — the marketing header owns
+    // the single global theme control (see HeroOverview's comment), so this
+    // spec no longer asserts a second control inside the hero.
 
     // Scroll down to activate Back-to-Top button
     await page.evaluate(() => window.scrollTo(0, 1000));
@@ -42,9 +42,11 @@ test.describe("Comprehensive SaaS User Journey & Regression Suite", () => {
 
   test("3. QRIS payment webhook simulator & real-time reactions", async ({ page }) => {
     // The dashboard-header Event Simulator was removed in the redesign; the
-    // gateway simulator now lives on the QRIS billing surface.
+    // gateway simulator now lives inside the billing page's QRIS tab, which is
+    // not the default tab.
     await loginAs(page);
     await page.goto("/en/billing");
+    await page.locator('[role="tab"]:has-text("QRIS & Withdraw")').click();
     const simTrigger = page.locator('button:has-text("Simulate Gateway Webhook")').first();
     await expect(simTrigger).toBeVisible({ timeout: 20000 });
     await simTrigger.click();
@@ -74,7 +76,7 @@ test.describe("Comprehensive SaaS User Journey & Regression Suite", () => {
 
     // Verify Payout metric cards and table
     await expect(page.locator("text=Total Paid Out").first()).toBeVisible();
-    await expect(page.locator("text=Available for Payout").first()).toBeVisible();
+    await expect(page.locator("text=Available commission").first()).toBeVisible();
 
     // Open Request Payout Dialog
     const requestPayoutBtn = page.getByRole("button", { name: "Request Payout" });
@@ -146,7 +148,11 @@ test.describe("Comprehensive SaaS User Journey & Regression Suite", () => {
     await createPoBtn.click();
 
     await expect(page.locator("text=PO Line Items").first()).toBeVisible({ timeout: 5000 });
-    const cancelPoBtn = page.locator('button:has-text("Cancel")').first();
+    // Scope to the open dialog: the PO table also renders small "Cancel" row
+    // chips, and an unscoped `.first()` matched one of those (behind the modal,
+    // whose overlay then swallowed every click).
+    const poDialog = page.getByRole("dialog");
+    const cancelPoBtn = poDialog.getByRole("button", { name: "Cancel", exact: true });
     if (await cancelPoBtn.isVisible()) await cancelPoBtn.click();
 
     // Switch to Warehouses & Channels tab
