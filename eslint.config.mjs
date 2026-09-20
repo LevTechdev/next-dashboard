@@ -18,6 +18,27 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Community skills and generated files:
     ".agents/**",
+    // Build output and generated artifacts. `npm run lint` is `eslint` with no
+    // arguments, so it lints the whole working directory — which locally
+    // includes build output that .gitignore already excludes. CI never sees
+    // those (a fresh checkout has no .next-live/, no storybook-static/), so
+    // without these ignores a local run reports thousands of errors from
+    // generated bundles that can never be fixed. Ignoring them makes the local
+    // run match CI.
+    ".next*/**",
+    "storybook-static/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    ".freebuff/**",
+    ".qa/**",
+    // Local-only scratch material .gitignore already excludes: the embedded
+    // my-app/ repo, one-off codemod scripts, and the scratch/ working
+    // directory. Linting them can only ever produce errors nobody can fix in
+    // this repo.
+    "my-app/**",
+    "scratch/**",
+    "update-*.js",
   ]),
   ...storybook.configs["flat/recommended"],
   {
@@ -64,19 +85,26 @@ const eslintConfig = defineConfig([
     // all components, excluding the design-system primitives, the email
     // templates, stories and tests.
     files: ["src/app/[locale]/(dashboard)/**/*.tsx", "src/components/**/*.tsx"],
-    ignores: ["**/__tests__/**", "**/*.stories.*", "src/components/ui/**", "src/components/emails/**"],
+    ignores: [
+      "**/__tests__/**",
+      "**/*.stories.*",
+      "src/components/ui/**",
+      "src/components/emails/**",
+    ],
     rules: {
       "no-restricted-syntax": [
         "error",
         {
           selector:
             "JSXOpeningElement[name.name=/^([a-z]|(?!EmptyState$|Metadata$|NavSection$|Table$)[A-Z])/] > JSXAttribute[name.name='title'][value.type='Literal']",
-          message: "Use <Tooltip> from @/components/ui/tooltip.tsx instead of a native title tooltip.",
+          message:
+            "Use <Tooltip> from @/components/ui/tooltip.tsx instead of a native title tooltip.",
         },
         {
           selector:
             "JSXOpeningElement[name.name=/^([a-z]|(?!EmptyState$|Metadata$|NavSection$|Table$)[A-Z])/] > JSXAttribute[name.name='title']:has(JSXExpressionContainer CallExpression > Identifier[name=/^t[A-Za-z]*$/])",
-          message: "Use <Tooltip> from @/components/ui/tooltip.tsx instead of a native title tooltip.",
+          message:
+            "Use <Tooltip> from @/components/ui/tooltip.tsx instead of a native title tooltip.",
         },
       ],
     },
