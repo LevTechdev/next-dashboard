@@ -17,16 +17,30 @@ const SEED_STAFF_PASSWORD = "staff123";
  * The card is admin-only (GET /api/scheduler/status 403s for everyone else
  * and the component renders null):
  *   1. Admin sees the card with an Enabled/Disabled state badge and exactly
- *      the four registered jobs (usage-digest, auto-payout, webhook-retry,
- *      auto-reorder) — "Never ran" is a valid state for a cold instance.
+ *      the registered jobs — "Never ran" is a valid state for a cold instance.
  *   2. A non-admin (STAFF seed account) gets no card at all, and the API
  *      answers 403 directly.
  */
 
-const JOB_ROWS = ["usage-digest", "auto-payout", "webhook-retry", "auto-reorder"];
+/**
+ * The scheduler's job registry (src/lib/scheduler.ts). Pinned in full: the card
+ * renders one row per registered job, so growing the registry without updating
+ * this list should fail here rather than silently render an extra row.
+ */
+const JOB_ROWS = [
+  "usage-digest",
+  "auto-payout",
+  "webhook-retry",
+  "auto-reorder",
+  "supabase-sync",
+  "supabase-leaf-sync",
+  "trial-sweep",
+  "scheduled-reports",
+  "backup-verify",
+];
 
 test.describe("Scheduler status card", () => {
-  test("admin sees the card with 4 job rows and an enabled/disabled badge", async ({ page }) => {
+  test("admin sees the card with every registered job row and a state badge", async ({ page }) => {
     await loginAs(page, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD);
     await page.goto("/en/settings", FETCH_GATED);
 
@@ -40,12 +54,12 @@ test.describe("Scheduler status card", () => {
     const state = await badge.getAttribute("data-scheduler-enabled");
     expect(["true", "false"]).toContain(state ?? "");
 
-    // Exactly the four registered jobs, each with a last-run cell.
+    // Exactly the registered jobs, each with a last-run cell.
     for (const job of JOB_ROWS) {
       await expect(card.locator(`[data-scheduler-job="${job}"]`), `job row ${job}`).toBeVisible();
     }
     const rows = card.locator("[data-scheduler-job]");
-    await expect(rows).toHaveCount(4);
+    await expect(rows).toHaveCount(JOB_ROWS.length);
   });
 
   test("non-admin gets no card and the status API answers 403", async ({ page }) => {
