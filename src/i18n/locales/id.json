@@ -1,4 +1,59 @@
 {
+  "systemHealth": {
+    "title": "Kesehatan Sistem",
+    "subtitle": "Tugas penjadwal, surat mati webhook, sinkronisasi mirror, dan verifikasi cadangan dalam satu tempat.",
+    "refresh": "Muat ulang",
+    "verdictHealthy": "Semua sistem normal",
+    "verdictDegraded": "Perlu perhatian",
+    "actionFailed": "Tindakan gagal.",
+    "schedulerTitle": "Tugas penjadwal",
+    "schedulerDesc": "Eksekusi dan hasil terakhir setiap tugas internal.",
+    "schedulerEnabled": "Loop aktif",
+    "schedulerDisabled": "Loop nonaktif",
+    "jobNever": "belum pernah",
+    "jobUsageDigest": "Ringkasan penggunaan",
+    "jobAutoPayout": "Pembayaran otomatis afiliasi",
+    "jobWebhookRetry": "Sapuan ulang webhook",
+    "jobAutoReorder": "Pemesanan ulang stok otomatis",
+    "jobSupabaseSync": "Sinkronisasi mirror Supabase",
+    "jobBackupVerify": "Verifikasi pemulihan cadangan",
+    "jobTrialSweep": "Sapuan masa uji",
+    "jobScheduledReports": "Laporan terjadwal",
+    "dlqTitle": "Antrean surat mati webhook",
+    "dlqDesc": "Pengiriman masuk yang gagal tanda tangan atau pemrosesan dan menunggu pengulangan.",
+    "dlqEmpty": "Tidak ada pengiriman gagal — antrean kosong.",
+    "dlqFailed": "Gagal",
+    "dlqRetrying": "Mengulang",
+    "dlqExhausted": "Habis percobaan",
+    "dlqResolved": "Selesai",
+    "dlqAttempts": "percobaan {count}/{max}",
+    "dlqReplay": "Ulangi",
+    "dlqDiscard": "Buang",
+    "dlqReplayedToast": "Pengiriman diulang dan berhasil.",
+    "dlqReplayFailedToast": "Pengulangan gagal lagi — tetap dalam rotasi coba ulang.",
+    "dlqDiscardedToast": "Pengiriman dibuang.",
+    "dlqDiscardConfirmTitle": "Buang pengiriman ini?",
+    "dlqDiscardConfirmDesc": "Pengiriman {platform} dihapus permanen dari antrean dan tidak bisa diulang lagi.",
+    "mirrorTitle": "Sinkronisasi mirror dan snapshot rollback",
+    "mirrorDesc": "Kesehatan mirror Supabase jarak jauh, dump pra-sinkron yang disimpan, dan pemeriksaan pemulihan.",
+    "mirrorCheck": "Jalankan cek drift",
+    "mirrorHealthyToast": "Mirror sesuai dengan lokal — tidak ada drift.",
+    "mirrorDriftToast": "Drift mirror terdeteksi — lihat laporan.",
+    "mirrorClean": "Tidak ada drift.",
+    "lastSync": "Sinkronisasi mirror terakhir:",
+    "lastBackupCheck": "Pemeriksaan cadangan terakhir:",
+    "snapshotsTitle": "Snapshot rollback",
+    "snapshotsEmpty": "Belum ada snapshot rollback yang disimpan.",
+    "backupVerify": "Verifikasi cadangan",
+    "backupVerifiedToast": "Snapshot {file} dipulihkan ke basis data sementara ({tables} tabel).",
+    "backupFailedToast": "Verifikasi pemulihan gagal: {detail}",
+    "backupNoSnapshots": "Belum ada snapshot untuk diverifikasi.",
+    "backupRestore": "Pulihkan",
+    "restoreConfirmTitle": "Pulihkan snapshot ini?",
+    "restoreConfirmDesc": "Memulihkan {file} akan menimpa mirror Supabase jarak jauh dengan isi snapshot.",
+    "restoreConfirmAction": "Pulihkan mirror",
+    "restoreDoneToast": "{file} dipulihkan ke mirror jarak jauh."
+  },
   "app": {
     "name": "Dashboard",
     "tagline": "Platform Manajemen Bisnis"
@@ -50,8 +105,17 @@
     "sso": "SSO / Perusahaan",
     "aiGenerator": "Generator AI",
     "projects": "Proyek",
-    "superAdmin": "Super Admin",
-    "apiDocs": "API Docs"
+    "adminConsole": "Admin",
+    "systemHealth": "Kesehatan Sistem",
+    "apiDocs": "API Docs",
+    "plans": "Paket & Tagihan",
+    "recommendations": "Rekomendasi",
+    "aiCopilot": "AI Copilot",
+    "apiKeys": "API Keys",
+    "home": "Beranda",
+    "more": "Lainnya",
+    "language": "Bahasa",
+    "switchLanguage": "Ganti bahasa"
   },
   "apiDocs": {
     "title": "API Documentation",
@@ -70,13 +134,207 @@
     "copied": "Copied!",
     "authRequired": "Authentication Required",
     "noAuth": "No Authentication",
+    "endpointCount": "endpoint",
     "noEndpoints": "No endpoints found",
     "noEndpointsDesc": "Try adjusting your search query",
     "param": "Parameter",
     "type": "Type",
     "field": "Field",
     "allGroups": "All",
-    "endpoints": "endpoints"
+    "endpoints": {
+      "orders-get": {
+        "description": "Menampilkan semua pesanan dengan detail pelanggan dan kanal",
+        "params": {
+          "status": "Filter berdasarkan status pesanan",
+          "limit": "Jumlah hasil maksimum (default 100)"
+        }
+      },
+      "orders-post": {
+        "description": "Membuat pesanan baru",
+        "fields": {
+          "customerId": "ID pelanggan",
+          "items": "Array '{'productId, quantity, price'}'",
+          "channel": "Nama kanal penjualan"
+        }
+      },
+      "orders-put": {
+        "description": "Memperbarui status pesanan",
+        "fields": {
+          "id": "ID pesanan",
+          "status": "Status baru (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)"
+        }
+      },
+      "products-get": {
+        "description": "Menampilkan semua produk dengan info kategori",
+        "params": {
+          "includeCategories": "Sertakan daftar kategori (true/false)"
+        }
+      },
+      "products-post": {
+        "description": "Membuat produk baru",
+        "fields": {
+          "name": "Nama produk",
+          "price": "Harga dalam sen",
+          "costPrice": "Harga pokok",
+          "stock": "Stok awal",
+          "sku": "Kode SKU",
+          "categoryId": "ID kategori"
+        }
+      },
+      "products-put": {
+        "description": "Memperbarui produk yang ada",
+        "fields": {
+          "id": "ID produk",
+          "name": "Nama baru",
+          "price": "Harga baru"
+        }
+      },
+      "products-delete": {
+        "description": "Menghapus produk",
+        "fields": {
+          "id": "ID produk yang akan dihapus"
+        }
+      },
+      "customers-get": {
+        "description": "Menampilkan semua pelanggan dengan jumlah pesanan dan pengeluaran"
+      },
+      "customers-post": {
+        "description": "Membuat pelanggan baru",
+        "fields": {
+          "name": "Nama pelanggan",
+          "email": "Alamat email",
+          "phone": "Nomor telepon",
+          "city": "Kota",
+          "segment": "Segmen pelanggan"
+        }
+      },
+      "dashboard-get": {
+        "description": "Mendapatkan statistik dasbor, data pendapatan, kanal penjualan, pesanan terbaru, dan produk teratas"
+      },
+      "search-get": {
+        "description": "Pencarian global di seluruh pesanan, pelanggan, dan produk",
+        "params": {
+          "q": "Kueri pencarian (min 2 karakter)"
+        }
+      },
+      "notifications-get": {
+        "description": "Menampilkan notifikasi dengan jumlah belum dibaca",
+        "params": {
+          "type": "Filter berdasarkan jenis",
+          "read": "Filter berdasarkan status baca (true/false)",
+          "limit": "Jumlah hasil maksimum"
+        }
+      },
+      "notifications-put": {
+        "description": "Menandai notifikasi sebagai dibaca/belum dibaca",
+        "fields": {
+          "id": "ID notifikasi",
+          "action": "mark-read atau mark-unread"
+        }
+      },
+      "analytics-get": {
+        "description": "Mendapatkan data analitik termasuk tren dan rincian"
+      },
+      "auth-login-post": {
+        "description": "Autentikasi pengguna dan buat sesi",
+        "fields": {
+          "email": "Email pengguna",
+          "password": "Kata sandi pengguna"
+        }
+      },
+      "auth-register-post": {
+        "description": "Membuat akun pengguna baru",
+        "fields": {
+          "name": "Nama lengkap",
+          "email": "Email",
+          "password": "Kata sandi (min 8 karakter)"
+        }
+      },
+      "team-get": {
+        "description": "Menampilkan anggota tim dan undangan tertunda"
+      },
+      "team-post": {
+        "description": "Mengundang anggota tim baru",
+        "fields": {
+          "email": "Email penerima undangan",
+          "role": "Peran (ADMIN, MANAGER, STAFF, VIEWER)"
+        }
+      },
+      "billing-get": {
+        "description": "Mendapatkan paket langganan saat ini dan info penagihan"
+      },
+      "reports-get": {
+        "description": "Mendapatkan data laporan dengan filter rentang tanggal",
+        "params": {
+          "from": "Tanggal mulai (YYYY-MM-DD)",
+          "to": "Tanggal akhir (YYYY-MM-DD)",
+          "period": "harian, mingguan, atau bulanan"
+        }
+      },
+      "health-get": {
+        "description": "Endpoint pemeriksaan kesehatan"
+      },
+      "inventory-get": {
+        "description": "Mendapatkan tingkat inventaris dan peringatan stok"
+      },
+      "v1-ping-get": {
+        "description": "Uji coba kunci API — memastikan kunci ada, aktif, tidak kedaluwarsa, dan dalam batas laju sandbox"
+      },
+      "v1-me-get": {
+        "description": "Metadata kunci serta pengguna dan ruang kerja tempat kunci berlaku"
+      },
+      "v1-products-get": {
+        "description": "Menampilkan produk di ruang kerja kunci (dipaginasi)",
+        "params": {
+          "limit": "Hasil per halaman, 1–100 (default 20)",
+          "page": "Nomor halaman (default 1)",
+          "active": "Filter status aktif (true/false)"
+        }
+      },
+      "v1-products-id-get": {
+        "description": "Satu produk dari ruang kerja kunci"
+      },
+      "v1-orders-get": {
+        "description": "Menampilkan pesanan di ruang kerja kunci dengan info pelanggan dan kanal (dipaginasi)",
+        "params": {
+          "status": "PENDING, PROCESSING, SHIPPED, DELIVERED atau CANCELLED",
+          "paymentStatus": "UNPAID, PAID, atau REFUNDED",
+          "limit": "Hasil per halaman, 1–100 (default 20)",
+          "page": "Nomor halaman (default 1)"
+        }
+      },
+      "v1-orders-id-get": {
+        "description": "Satu pesanan dengan item baris, dari ruang kerja kunci"
+      },
+      "v1-customers-get": {
+        "description": "Menampilkan pelanggan di ruang kerja kunci dengan total pengeluaran (dipaginasi)",
+        "params": {
+          "segment": "Filter berdasarkan segmen (VIP, REGULAR, NEW)",
+          "limit": "Hasil per halaman, 1–100 (default 20)",
+          "page": "Nomor halaman (default 1)"
+        }
+      },
+      "v1-customers-id-get": {
+        "description": "Satu pelanggan dari ruang kerja kunci"
+      }
+    },
+    "tryItHint": "Menjalankan permintaan langsung melalui sesi terautentikasi Anda dari dashboard ini.",
+    "groups": {
+      "Orders": "Pesanan",
+      "Products": "Produk",
+      "Customers": "Pelanggan",
+      "Dashboard": "Dasbor",
+      "Search": "Pencarian",
+      "Notifications": "Notifikasi",
+      "Analytics": "Analitik",
+      "Authentication": "Autentikasi",
+      "Team": "Tim",
+      "Billing": "Penagihan",
+      "Reports": "Laporan",
+      "System": "Sistem",
+      "Inventory": "Inventaris",
+      "API Sandbox": "API Sandbox"
+    }
   },
   "dashboard": {
     "title": "Ikhtisar Dashboard",
@@ -113,6 +371,9 @@
     "qaDiscountCodeDesc": "Buat diskon baru",
     "funnel": "Saluran Konversi",
     "funnelDesc": "Lacak tingkat konversi pengunjung ke pembelian",
+    "funnelGoalsLabel": "Target funnel",
+    "funnelSessions": "sesi",
+    "funnelEmpty": "Tidak ada tahap funnel yang dipilih",
     "funnelVisitors": "Pengunjung",
     "funnelAddToCart": "Tambah ke Keranjang",
     "funnelCheckout": "Checkout",
@@ -171,6 +432,17 @@
     "resetView": "Atur Ulang Tampilan",
     "funnelHealthTitle": "Corong Konversi & Kesehatan Operasional",
     "funnelHealthDesc": "Perjalanan konversi pembeli bertingkat dan kecepatan alur checkout",
+    "radarViewFilled": "Terisi",
+    "radarViewDotted": "Titik-titik",
+    "radarViewLines": "Garis saja",
+    "radarViewScore": "Skor tengah",
+    "radarAria": "Radar konversi lintas tahap pipeline",
+    "radarVsPrevious": "Delta dibandingkan periode sebelumnya",
+    "radarBestStage": "Tahap terkuat",
+    "radarBiggestDrop": "Penurunan terbesar",
+    "radarTotalPipeline": "Dalam pipeline",
+    "radarEndToEnd": "Rasio ujung ke ujung",
+    "radarNoData": "Data belum cukup",
     "financialSimulatorTitle": "Simulator Keuangan & Laporan Proyeksi Pendapatan",
     "financialSimulatorDesc": "Proyeksi pertumbuhan Monte Carlo dan estimasi runway",
     "activityFeedTitle": "Aktivitas Terbaru",
@@ -180,7 +452,74 @@
     "activityFeedEarlier": "Sebelumnya",
     "activityFeedEarlierTip": "Terjadi sebelum tab ini dibuka",
     "analyticsTitle": "Analitik",
-    "analyticsDesc": "Telusuri tren pendapatan, kinerja saluran, dan kohort pelanggan di semua kanal penjualan."
+    "analyticsDesc": "Telusuri tren pendapatan, kinerja saluran, dan kohort pelanggan di semua kanal penjualan.",
+    "metricProfit": "Laba Bersih",
+    "metricProfitDesc": "Pendapatan dikurangi biaya",
+    "metricCustomers": "Pelanggan",
+    "metricCustomersDesc": "Aktif pada periode ini",
+    "metricOrders": "Pesanan",
+    "metricOrdersDesc": "Dibuat pada periode ini",
+    "metricAvgOrder": "Rata-rata Nilai Pesanan",
+    "metricAvgOrderDesc": "Pendapatan per pesanan",
+    "greetingMorning": "Selamat pagi,",
+    "greetingAfternoon": "Selamat siang,",
+    "greetingEvening": "Selamat malam,",
+    "viewOrders": "Lihat pesanan",
+    "restock": "Isi ulang",
+    "newOrderTitle": "{count, plural, other {# Pesanan Baru}}",
+    "orderRevenue": "Total pendapatan ${revenue}",
+    "milestoneTitle": "🎉 Tonggak Pendapatan Tercapai!",
+    "newCustomerTitle": "{count, plural, other {# Pelanggan Baru}}",
+    "customerTotal": "Total: {count} pelanggan",
+    "lowStockTitle": "⚠️ {count} Stok Menipis",
+    "productsNeedRestock": "{count} produk perlu diisi ulang",
+    "discountsExpiringTitle": "{count, plural, other {# Diskon Segera Berakhir}}",
+    "newProductTitle": "{count, plural, other {# Produk Baru Ditambahkan}}",
+    "catalogTotal": "{count} total produk di katalog",
+    "budgetExhaustedTitle": "🚨 Anggaran Habis: {name}",
+    "budgetSpentOf": "Terpakai ${spent} dari anggaran ${budget}",
+    "budgetNearTitle": "⚠️ Anggaran {percent}% Terpakai: {name}",
+    "pendingOrdersTitle": "🔔 {count} Pesanan Tertunda",
+    "pendingOrdersDesc": "Pesanan menunggu pemrosesan",
+    "filteredMonth": "Difilter ke {month}",
+    "pipelineTitle": "Pipa Konversi",
+    "pipelineRange7D": "7 hari terakhir",
+    "pipelineRange30D": "30 hari terakhir",
+    "pipelineRange90D": "90 hari terakhir",
+    "pipelineTotal": "{total} peristiwa dalam {range}",
+    "stageVisits": "Kunjungan",
+    "stageSignups": "Pendaftaran",
+    "stageActive": "Aktif",
+    "stagePro": "Pro",
+    "stageTeam": "Tim",
+    "stageEnterprise": "Enterprise",
+    "channelMix": "Komposisi kanal",
+    "channelTrendTitle": "Tren kanal — 30 hari terakhir",
+    "chartWeekly": "Mingguan",
+    "chartMonthly": "Bulanan",
+    "chartYearly": "Tahunan",
+    "chartNoData": "Belum ada data pendapatan",
+    "welcomeBackTitle": "Selamat datang kembali",
+    "welcomeBackDesc": "Kunjungan terakhir Anda {when}. Lanjutkan dari tempat Anda berhenti.",
+    "exportView": "Ekspor tampilan saat ini",
+    "exportViewDesc": "CSV pesanan dalam rentang aktif (Enterprise)",
+    "exportSuccess": "Ekspor dimulai",
+    "exportDenied": "Ekspor memerlukan paket Enterprise",
+    "comparePrev": "vs periode sebelumnya",
+    "noPrevData": "—",
+    "stageConvTitle": "Konversi tahap",
+    "stageConvDelta": "{delta} poin vs sebelumnya",
+    "stageConvFlat": "Belum ada periode sebelumnya",
+    "stageConvOfPrev": "dari periode sebelumnya {range}",
+    "channelRingsTitle": "Target saluran",
+    "ringsEmpty": "Belum ada pendapatan saluran",
+    "ringsShare": "Bagikan sebagai gambar",
+    "ringsShareToast": "Gambar rings saluran tersimpan",
+    "radarRange_7d": "7H",
+    "radarRange_30d": "30H",
+    "radarRange_90d": "90H",
+    "radarRangeLabel": "Rentang waktu",
+    "radarViewLabel": "Gaya radar"
   },
   "sales": {
     "title": "Manajemen Penjualan",
@@ -246,6 +585,7 @@
     "phonePlaceholder": "Telepon",
     "cityPlaceholder": "Kota",
     "confirmDelete": "Hapus pelanggan ini?",
+    "confirmDeleteNamed": "Hapus pelanggan “{name}”? Tindakan ini tidak dapat dibatalkan.",
     "updated": "Pelanggan diperbarui",
     "added": "Pelanggan ditambahkan",
     "deleted": "Pelanggan dihapus",
@@ -425,6 +765,7 @@
     "deliverBtn": "Antarkan",
     "cancelBtn": "Batalkan",
     "viewDetails": "Lihat Detail",
+    "downloadInvoice": "Unduh Faktur",
     "guest": "Tamu",
     "na": "N/A",
     "markedAs": "Pesanan ditandai sebagai {status}",
@@ -457,7 +798,9 @@
     "shippedOn": "Dikirim pada",
     "deliveredOn": "Diterima pada",
     "refundedOn": "Di-refund pada",
-    "invoiceBtn": "Invoice"
+    "invoiceBtn": "Invoice",
+    "limitBanner": "Anda telah mencapai batas pesanan bulanan paket Starter. Upgrade untuk terus menerima pesanan tanpa gangguan.",
+    "upgradeCta": "Upgrade"
   },
   "inventory": {
     "title": "Manajemen Inventaris",
@@ -506,7 +849,17 @@
     "poMarkedReceived": "Pengiriman diterima! Stok produk telah bertambah.",
     "searchPlaceholder": "Cari produk berdasarkan nama atau SKU...",
     "categories": "Distribusi Kategori",
-    "categoriesDesc": "Distribusi inventaris dan volume stok per kategori."
+    "categoriesDesc": "Distribusi inventaris dan volume stok per kategori.",
+    "poIssueSuccess": "Pesanan pembelian diterbitkan ke pemasok.",
+    "poIssueAction": "Terbitkan",
+    "poBulkSelected": "{count} PO draf dipilih",
+    "poBulkIssueAction": "Terbitkan terpilih",
+    "poBulkIssueTitle": "Terbitkan {count} PO draf?",
+    "poBulkIssueDesc": "Setiap draf yang dipilih akan ditandai TERBIT dan dikirim ke pemasoknya. Tindakan ini tidak dapat dibatalkan secara massal.",
+    "poBulkIssueSuccess": "{count} PO diterbitkan",
+    "poBulkIssuePartial": "{ok} diterbitkan, {failed} gagal",
+    "poBulkSelectAll": "Pilih semua PO draf",
+    "poBulkSelect": "Pilih PO draf"
   },
   "settings": {
     "title": "Pengaturan",
@@ -558,6 +911,13 @@
     "densityCompact": "Rapat",
     "densityRegular": "Normal",
     "densityLarge": "Longgar",
+    "themeSwitch": "Efek Ganti Tema",
+    "themeSwitchDesc": "Cara mode terang dan gelap bergantian saat kamu menekan tombol tema",
+    "themeSwitchCircle": "Lingkaran",
+    "themeSwitchCircleBlur": "Lingkaran lembut",
+    "themeSwitchRectangle": "Tirai",
+    "themeSwitchPolygon": "Diagonal",
+    "themeSwitchNone": "Langsung",
     "widgets": "Widget Dashboard",
     "widgetsDesc": "Pilih widget yang ditampilkan di dashboard Anda",
     "widgetQuickActions": "Aksi Cepat",
@@ -575,12 +935,15 @@
     "apiKeyNeverUsed": "Belum pernah digunakan",
     "apiKeyRevoke": "Cabut",
     "apiKeyRevokeConfirm": "Cabut kunci API ini? Tindakan ini tidak dapat dibatalkan.",
+    "apiKeyReactivate": "Aktifkan Kembali",
     "apiKeyEmpty": "Belum ada kunci API. Buat satu untuk memulai.",
     "webhooks": "Webhook",
     "webhooksDesc": "Konfigurasikan endpoint webhook untuk acara real-time",
     "webhookUrl": "URL Webhook",
     "webhookEvents": "Acara",
     "webhookAdd": "Tambah Webhook",
+    "webhookDelete": "Hapus Webhook",
+    "webhookEdit": "Edit Webhook",
     "webhookActive": "Aktif",
     "webhookInactive": "Tidak Aktif",
     "webhookEmpty": "Belum ada webhook yang dikonfigurasi. Tambah satu untuk menerima notifikasi acara.",
@@ -612,7 +975,49 @@
     "webhookNeverTriggered": "Belum pernah dipicu",
     "webhookDeliveryCount": "{count} pengiriman",
     "webhookSelectEvents": "Pilih minimal satu event",
-    "webhookUpdate": "Perbarui Webhook"
+    "webhookUpdate": "Perbarui Webhook",
+    "theme": "Tema",
+    "tourReplay": "Putar ulang tur",
+    "tourReplayDesc": "Putar ulang tur terpandu dasbor dalam bahasa yang dipilih di atas.",
+    "tourReplayToast": "Memulai tur — buka Dasbor.",
+    "scheduler": {
+      "title": "Kesehatan penjadwal",
+      "enabled": "Aktif",
+      "disabled": "Nonaktif",
+      "disabledHint": "Penjadwal dalam-app nonaktif di lingkungan pengembangan. Atur SCHEDULER_ENABLED=1 di .env.local (atau jalankan di produksi) untuk mengaktifkannya.",
+      "never": "Belum pernah",
+      "justNow": "Baru saja",
+      "minsAgo": "{n} mnt lalu",
+      "hoursAgo": "{n} jam lalu",
+      "jobDigest": "Ringkasan penggunaan (harian 02:00)",
+      "jobAutoPayout": "Payout otomatis afiliasi (cek per jam)",
+      "jobWebhookRetry": "Pemindaian ulang webhook (tiap 5 mnt)",
+      "jobAutoReorder": "Draf pesanan pembelian otomatis (cek per jam)",
+      "jobSupabaseSync": "Sinkronisasi cermin Supabase",
+      "jobSupabaseLeafSync": "Sinkronisasi leaf Supabase (30 mnt)",
+      "jobBackupVerify": "Verifikasi pemulihan cadangan",
+      "snapshotsTitle": "Snapshot rollback",
+      "snapshotsEmpty": "Belum ada snapshot — dibuat pada setiap sinkronisasi mirror Supabase.",
+      "restore": "Pulihkan",
+      "restoreConfirmTitle": "Pulihkan snapshot ini?",
+      "restoreConfirmDesc": "Ini menimpa remote Supabase dengan snapshot pra-sinkron \"{file}\". Baris yang ditambahkan ke remote setelahnya akan hilang.",
+      "restoreConfirmAction": "Pulihkan snapshot",
+      "restoreDone": "Remote dipulihkan dari {file}",
+      "restoreFailed": "Pemulihan gagal",
+      "jobTrialSweep": "Pemindaian kedaluwarsa uji coba",
+      "jobScheduledReports": "Laporan terjadwal",
+      "verify": "Verifikasi",
+      "verifyDone": "Cadangan terverifikasi: {file} dipulihkan dengan {tables} tabel ke DB sementara (dihapus).",
+      "verifyFailed": "Verifikasi gagal: {detail}",
+      "verifyNone": "Belum ada snapshot untuk diverifikasi"
+    },
+    "digestPreviewTitle": "Ringkasan email harian",
+    "digestPreviewDesc": "Pratinjau langsung email penggunaan harian — tabel kuota dan peristiwa yang terlewat yang akan dikirim.",
+    "digestPreviewRefresh": "Segarkan pratinjau",
+    "digestPreviewUnavailable": "Pratinjau ringkasan tidak tersedia saat ini.",
+    "digestPreviewMissedTitle": "Selama Anda tidak ada",
+    "digestPreviewPlan": "Dikirim harian untuk paket {plan}.",
+    "jobTrialSweep": "Pembersihan kedaluwarsa uji coba"
   },
   "team": {
     "title": "Manajemen Tim",
@@ -628,6 +1033,12 @@
     "manager": "Manajer",
     "staff": "Staf",
     "noMembers": "Tidak ada anggota tim",
+    "sortName": "Nama",
+    "sortDateModified": "Tanggal diubah",
+    "sortType": "Tipe",
+    "sortAuthor": "Penulis",
+    "sortAscending": "Naik",
+    "sortDescending": "Turun",
     "confirmRemove": "Hapus anggota ini?",
     "memberUpdated": "Anggota diperbarui",
     "memberAdded": "Anggota ditambahkan",
@@ -637,7 +1048,7 @@
     "addMemberSubmit": "Tambah Anggota",
     "editBtn": "Edit",
     "removeBtn": "Hapus",
-    "superAdmin": "Super Admin",
+    "adminConsole": "Admin",
     "auditor": "Auditor",
     "invitations": "Undangan",
     "invitationsDesc": "Undangan tim yang tertunda",
@@ -672,7 +1083,14 @@
     "saveInvitation": "Simpan Perubahan",
     "inviteUpdated": "Undangan berhasil diperbarui",
     "revokeInviteTitle": "Batalkan Undangan Tim",
-    "revokeInviteConfirm": "Apakah Anda yakin ingin membatalkan undangan ini? Penerima tidak akan dapat lagi menggunakan tautan ini untuk bergabung dengan ruang kerja Anda."
+    "revokeInviteConfirm": "Apakah Anda yakin ingin membatalkan undangan ini? Penerima tidak akan dapat lagi menggunakan tautan ini untuk bergabung dengan ruang kerja Anda.",
+    "client": "Klien",
+    "clientEnterprise": "Klien (Enterprise)",
+    "clientLevel_STARTER": "Starter (Gratis)",
+    "clientLevel_PROFESSIONAL": "Profesional",
+    "clientLevel_ENTERPRISE": "SSO Enterprise",
+    "activityCol": "Aktivitas (12m)",
+    "activityTooltip": "{total} aktivitas dalam {days} hari aktif (12 bulan terakhir)"
   },
   "roles": {
     "title": "Peran & Izin",
@@ -762,6 +1180,11 @@
     "emailVerified": "Email Terverifikasi",
     "emailNotVerified": "Email Belum Terverifikasi",
     "verifiedOn": "Diverifikasi pada {date}",
+    "mfaReverifyDue": "2FA Anda belum diverifikasi dalam 30 hari terakhir. Verifikasi sekarang untuk menjaga akun Anda tetap terlindungi.",
+    "mfaReverifyNow": "Verifikasi sekarang",
+    "mfaReverifyTitle": "Verifikasi identitas Anda",
+    "mfaReverifyDesc": "Masukkan kode 6 digit dari aplikasi autentikator Anda untuk mengonfirmasi bahwa autentikasi dua faktor masih aktif.",
+    "mfaReverifySuccess": "Identitas terverifikasi — akun Anda aman untuk 30 hari ke depan",
     "verifyPrompt": "Verifikasi email Anda untuk mengamankan akun dan mendapatkan akses penuh ke semua fitur.",
     "verificationLink": "Tautan Verifikasi (Demo)",
     "verificationNote": "Dalam produksi, tautan ini akan dikirim melalui email. Klik untuk memverifikasi email Anda.",
@@ -839,7 +1262,33 @@
     "resendInSeconds": "Kirim ulang dalam {seconds}dtk",
     "emailResendNote": "Email verifikasi telah dikirim. Anda dapat meminta email baru dalam {seconds}dtk.",
     "emailVerifyLinkInvalid": "Tautan verifikasi ini tidak valid atau telah kedaluwarsa.",
-    "resendEmail": "Kirim Ulang Email"
+    "resendEmail": "Kirim Ulang Email",
+    "scanQrTitle": "Pindai kode QR",
+    "copySecret": "Salin kode",
+    "verifyCodeHint": "Masukkan kode 6 digit dari aplikasi autentikator Anda.",
+    "coverUpload": "Sampul",
+    "coverRemove": "Hapus",
+    "coverUpdated": "Sampul diperbarui",
+    "coverRemoved": "Sampul dihapus",
+    "activityTitle": "Aktivitas",
+    "activitySummary": "{total} kontribusi dalam {days} hari aktif tahun ini",
+    "activityGranWeekly": "Mingguan",
+    "activityGranMonthly": "Bulanan",
+    "activityGranYearly": "Tahunan",
+    "activityLess": "Sedikit",
+    "activityMore": "Banyak",
+    "activityCellHeadline": "{count, plural, =0 {Tidak ada aktivitas pada {date}} one {1 aktivitas pada {date}} other {# aktivitas pada {date}}}",
+    "activityBucketHeadline": "{label} · {count, plural, =0 {tidak ada aktivitas} other {# aktivitas}}",
+    "dow0": "Sen",
+    "dow1": "Sel",
+    "dow2": "Rab",
+    "dow3": "Kam",
+    "dow4": "Jum",
+    "dow5": "Sab",
+    "dow6": "Min",
+    "coverCropTitle": "Potong gambar sampul",
+    "coverCropDesc": "Geser untuk membingkai banner dan sesuaikan zoom, lalu simpan. Disimpan sebagai banner 4:1.",
+    "coverCropSave": "Simpan sampul"
   },
   "billing": {
     "title": "Langganan & Tagihan",
@@ -937,7 +1386,12 @@
     "indonesianBanksDesc": "50+ bank BUMN, swasta, BPD 4 wilayah, dan bank digital",
     "actionsCol": "Tindakan",
     "processInvoice": "Proses",
-    "invoicePaidSuccess": "Faktur berhasil diproses dan ditandai lunas!"
+    "invoicePaidSuccess": "Faktur berhasil diproses dan ditandai lunas!",
+    "displayCurrency": "Mata Uang Tampilan",
+    "displayCurrencyDesc": "Tampilkan setiap nilai faktur dalam mata uang ini",
+    "currencyNote": "Dikonversi dengan kurs indikatif - penyelesaian tetap dalam {base}",
+    "invoiceTotal": "Total Faktur",
+    "convertedLabel": "~ {amount}"
   },
   "integrations": {
     "title": "Integrasi",
@@ -1086,7 +1540,22 @@
     "scopeHint": "Cakupan: read, write, admin. Kunci yang dicabut atau kedaluwarsa mengembalikan 403 dengan alasan.",
     "authorizationLabel": "Authorization",
     "tabChatAlerts": "Obrolan Tim (Slack & Discord)",
-    "tabOmnichannel": "Sinkronisasi Omnichannel"
+    "tabOmnichannel": "Sinkronisasi Omnichannel",
+    "tabDlq": "Kesehatan pengiriman",
+    "dlqFailed": "Gagal",
+    "dlqRetrying": "Mencoba ulang",
+    "dlqResolved": "Berhasil",
+    "dlqTotal": "Total",
+    "dlqEmpty": "Semua pengiriman sehat",
+    "dlqEmptyDesc": "Tidak ada webhook masuk yang gagal. Pengiriman yang gagal masuk ke sini untuk diulang atau dibuang.",
+    "dlqExhausted": "Habis",
+    "dlqAttempts": "{count} dari {max} percobaan",
+    "dlqReplay": "Ulangi",
+    "dlqDiscard": "Buang",
+    "dlqDiscardConfirmTitle": "Buang pengiriman ini?",
+    "dlqDiscardConfirmDesc": "Payload webhook yang gagal akan dihapus permanen tanpa diproses.",
+    "dlqError": "Kesalahan",
+    "dlqNextRetry": "Percobaan ulang berikutnya"
   },
   "pricing": {
     "badge": "Harga Sederhana",
@@ -1169,7 +1638,27 @@
     "previous": "Sebelumnya",
     "next": "Selanjutnya"
   },
+  "checkoutSuccess": {
+    "title": "Pembayaran berhasil",
+    "body": "Terima kasih atas langgananmu. Akunmu sudah diupgrade dan kamu kini bisa mengakses semua fitur premium.",
+    "cta": "Buka Dashboard"
+  },
   "common": {
+    "toggleTheme": "Ganti tema",
+    "commandPlaceholder": "Cari pesanan, pelanggan, produk...",
+    "commandSearching": "Mencari...",
+    "commandNoResults": "Tidak ada hasil untuk \"{query}\"",
+    "commandNoResultsHint": "Coba nomor pesanan, nama pelanggan, atau nama produk.",
+    "commandTypeToSearch": "Ketik minimal 2 karakter untuk mencari",
+    "commandTypeToSearchHint": "Cari pesanan, pelanggan, dan produk dalam satu tempat.",
+    "commandGroupNavigation": "Navigasi",
+    "commandGroupQuickActions": "Aksi Cepat",
+    "commandGroupOrders": "Pesanan",
+    "commandGroupCustomers": "Pelanggan",
+    "commandGroupProducts": "Produk",
+    "commandNavigate": "Navigasi",
+    "commandOpen": "Buka",
+    "commandToggle": "Alihkan",
     "search": "Cari...",
     "filter": "Filter",
     "export": "Ekspor",
@@ -1202,6 +1691,13 @@
     "expired": "Kadaluarsa",
     "na": "N/A",
     "copy": "Salin",
+    "copied": "Disalin ke papan klip",
+    "copyUrl": "Salin URL",
+    "copyPrefix": "Salin prefiks",
+    "copyAwb": "Salin AWB",
+    "backToTop": "Kembali ke atas",
+    "resumeLive": "Lanjutkan pembaruan langsung",
+    "exportCsv": "Ekspor sebagai CSV",
     "done": "Selesai",
     "selectAll": "Pilih semua",
     "showingOf": "Menampilkan {from}–{to} dari {total}",
@@ -1222,7 +1718,11 @@
     "secondsAgo": "{count} dtk lalu",
     "minutesAgo": "{count} mnt lalu",
     "hoursAgo": "{count} jam lalu",
-    "daysAgo": "{count} hr lalu"
+    "daysAgo": "{count} hr lalu",
+    "retry": "Coba lagi",
+    "dismiss": "Tutup",
+    "dismissNotification": "Tutup notifikasi",
+    "notifications": "Notifikasi"
   },
   "notifications": {
     "title": "Pusat Notifikasi",
@@ -1268,6 +1768,10 @@
     "pushNotificationsDesc": "Terima notifikasi langsung di browser Anda meskipun aplikasi ditutup.",
     "enablePushLabel": "Aktifkan Notifikasi Push",
     "enablePushDesc": "Izinkan dasbor untuk mengirimkan peringatan web push kepada Anda.",
+    "pushEnabledToast": "Notifikasi push diaktifkan",
+    "pushFailedToast": "Gagal mengaktifkan notifikasi push",
+    "pushDeniedToast": "Izin push ditolak atau tidak didukung",
+    "pushDisabledToast": "Notifikasi push dinonaktifkan",
     "rulesThresholdsTitle": "Ambang Peringatan",
     "rulesThresholdsDesc": "Konfigurasi kapan peringatan otomatis dipicu",
     "threshStockLabel": "Ambang Stok Menipis",
@@ -1338,7 +1842,9 @@
     "emptyFilteredTitle": "Tidak ada notifikasi {type}",
     "emptyFilteredDesc": "Coba filter yang berbeda",
     "secondsAgo": "{s} dtk lalu",
-    "minutesAgo": "{m} mnt lalu"
+    "minutesAgo": "{m} mnt lalu",
+    "closePanel": "Tutup notifikasi",
+    "typeBilling": "Penagihan"
   },
   "contactPage": {
     "badge": "Hubungi Kami",
@@ -1378,6 +1884,47 @@
     "ctaTitle": "Lebih suka demo langsung?",
     "ctaDesc": "Lihat Dashboard beraksi dengan panduan personal dari tim kami. Kami akan menunjukkan bagaimana Dashboard cocok untuk bisnis Anda.",
     "ctaButton": "Mulai Uji Coba Gratis"
+  },
+  "careersPage": {
+    "heroTag": "Kami sedang merekrut",
+    "heroPrefix": "Bangun sistem operasi untuk",
+    "heroWord1": "commerce modern.",
+    "heroWord2": "tim yang tumbuh.",
+    "heroWord3": "penjual global.",
+    "heroSubtitle": "Kami tim kecil yang sangat peduli pada produk dan membangun infrastruktur commerce. Anda akan merilis untuk merchant nyata sejak minggu pertama — tanpa lapisan antara Anda dan pengguna karya Anda.",
+    "perksTitle": "Alasan betah bekerja di sini",
+    "perk1Title": "Utamakan remote",
+    "perk1Desc": "Bekerja dari mana saja dengan anggaran kantor rumah dan ritme async.",
+    "perk2Title": "Kepemilikan nyata",
+    "perk2Desc": "Tim kecil, cakupan luas — Anda memegang masalah, desain, dan peluncurannya.",
+    "perk3Title": "Pelanggan global",
+    "perk3Desc": "Layani merchant di Indonesia, Jepang, dan lainnya sejak hari pertama.",
+    "perk4Title": "Kriya di atas seremoni",
+    "perk4Desc": "Rapat minim, standar kuat, dan waktu khusus untuk polesan detail.",
+    "rolesTitle": "Posisi terbuka",
+    "rolesSubtitle": "Semua posisi penuh waktu dan dibuka sekarang — kami membalas setiap lamaran.",
+    "rolesCount": "{count} posisi terbuka",
+    "applyCta": "Lamar",
+    "applyAria": "Lamar untuk {role}",
+    "role1Title": "Senior Product Engineer",
+    "role1Dept": "Engineering",
+    "role1Location": "Remote (GMT+7…+9)",
+    "role1Type": "Penuh waktu",
+    "role2Title": "Customer Success Lead",
+    "role2Dept": "Go-to-market",
+    "role2Location": "Jakarta, Indonesia",
+    "role2Type": "Penuh waktu",
+    "role3Title": "Payments Partnerships Manager",
+    "role3Dept": "Kemitraan",
+    "role3Location": "Remote (APAC)",
+    "role3Type": "Penuh waktu",
+    "role4Title": "Product Designer",
+    "role4Dept": "Desain",
+    "role4Location": "Remote (GMT+7…+9)",
+    "role4Type": "Penuh waktu",
+    "ctaTitle": "Tidak menemukan posisi Anda?",
+    "ctaDesc": "Ceritakan apa yang ingin Anda bangun di sini dan bagaimana caranya. Jika cocok, kami cari anggarannya.",
+    "ctaButton": "Hubungi kami"
   },
   "aboutPage": {
     "badge": "Kisah Kami",
@@ -1499,7 +2046,27 @@
     "heroPrefix": "Semua yang Anda butuhkan,",
     "heroWord1": "siap untuk skala.",
     "heroWord2": "siap untuk tumbuh.",
-    "heroWord3": "siap untuk berkinerja."
+    "heroWord3": "siap untuk berkinerja.",
+    "stats": {
+      "locales": "Bahasa didukung",
+      "currencies": "Mata uang",
+      "banks": "Bank Indonesia",
+      "endpoints": "Endpoint REST API"
+    },
+    "surface": {
+      "eyebrow": "Dibangun untuk komersial nyata",
+      "title": "Dari checkout QRIS hingga SSO perusahaan",
+      "subtitle": "Pembayaran QRIS sesuai ASPI, 50+ bank dan e-wallet Indonesia, invoice vektor Code128, dan Server-Sent Events yang menggerakkan setiap dashboard — semuanya berjalan di REST API yang sama yang dapat Anda panggil.",
+      "exploreApi": "Jelajahi referensi API"
+    },
+    "realtime": {
+      "sse": "Streaming SSE real-time",
+      "qris": "Pembayaran QRIS",
+      "banks": "50+ bank & dompet",
+      "apiKeys": "Kunci API berscope",
+      "passkeys": "Passkey & 2FA",
+      "invoices": "Invoice vektor"
+    }
   },
   "changelogPage": {
     "badge": "Catatan Rilis",
@@ -1794,10 +2361,13 @@
     "footerEmailPlaceholder": "Masukkan email Anda",
     "footerSubscribe": "Berlangganan Sekarang",
     "footerPreviewAlt": "Pratinjau dashboard",
-    "legalContactPrompt": "Ada pertanyaan tentang halaman ini? Kirim email ke"
+    "legalContactPrompt": "Ada pertanyaan tentang halaman ini? Kirim email ke",
+    "footerLinkApiDocs": "Dokumentasi API"
   },
   "auth": {
     "login": "Masuk",
+    "sessionExpired": "Sesi Anda telah berakhir — silakan masuk kembali untuk melanjutkan.",
+    "sessionChanged": "Tab ini masuk dengan akun lain — silakan masuk kembali.",
     "register": "Buat Akun",
     "emailLabel": "Email",
     "emailPlaceholder": "Email Anda",
@@ -1888,7 +2458,16 @@
     "otpIncorrectAttempts": "Kode salah. {attempts} percobaan tersisa.",
     "otpIncorrect": "Kode salah. Minta kode baru.",
     "otpGenericError": "Terjadi kesalahan. Silakan coba lagi.",
-    "resendFailedGeneric": "Tidak dapat mengirim ulang kode. Silakan coba lagi."
+    "resendFailedGeneric": "Tidak dapat mengirim ulang kode. Silakan coba lagi.",
+    "strength": {
+      "weak": "Lemah",
+      "fair": "Cukup",
+      "good": "Baik",
+      "strong": "Kuat"
+    },
+    "strengthHint": "Gunakan 8+ karakter dengan huruf besar & kecil, angka, dan simbol.",
+    "accountCreatedNoEmail": "Akun berhasil dibuat! Kami tidak dapat mengirim email verifikasi saat ini — Anda dapat memverifikasi nanti dari Pengaturan → Keamanan.",
+    "passkeySignIn": "Masuk dengan passkey"
   },
   "csvImport": {
     "importCsv": "Impor CSV",
@@ -1944,6 +2523,7 @@
     "earned": "Diperoleh",
     "link": "Tautan",
     "noLinks": "Belum ada tautan afiliasi",
+    "platformRecentLinks": "Tautan terbaru",
     "openLink": "Buka tautan",
     "activate": "Aktifkan",
     "deactivate": "Nonaktifkan",
@@ -2016,7 +2596,7 @@
     "tabPayouts": "Pembayaran & Pencairan",
     "totalPaid": "Total Telah Dibayar",
     "pendingBalance": "Saldo Tertunda",
-    "availableBalance": "Tersedia untuk Dicairkan",
+    "availableBalance": "Komisi tersedia",
     "requestPayout": "Minta Pembayaran",
     "payoutsTitle": "Pembayaran & Pencairan Afiliasi",
     "payoutsSubtitle": "Lacak transfer komisi melalui Stripe Connect dan Midtrans Iris",
@@ -2031,7 +2611,16 @@
     "payoutAmount": "Jumlah Pencairan ($)",
     "selectProvider": "Pilih Metode Pembayaran",
     "submitPayout": "Kirim Permintaan Pembayaran",
-    "payoutSuccess": "Permintaan pembayaran berhasil dikirim"
+    "payoutSuccess": "Permintaan pembayaran berhasil dikirim",
+    "settlementBalance": "Settlement QRIS",
+    "insufficientBalance": "Jumlah melebihi saldo komisi yang tersedia.",
+    "settlementShortfall": "Saldo settlement QRIS belum mencakup pencairan ini — isi ulang atau ajukan jumlah lebih kecil.",
+    "accountInvalid": "bukan akun yang valid untuk jalur ini",
+    "payoutFailed": "Gagal mengirim permintaan pencairan",
+    "processingPayout": "Memproses…",
+    "providerGroupWallet": "E-Dompet",
+    "providerGroupBank": "Transfer Bank",
+    "providerGroupIntl": "Internasional"
   },
   "security": {
     "activeSessions": "Sesi Aktif",
@@ -2066,6 +2655,12 @@
     "evt_SESSIONS_REVOKED_ALL": "Semua sesi lain dicabut",
     "evt_STEP_UP_VERIFIED": "Verifikasi ulang berhasil",
     "evt_REFRESH_REUSE": "Penggunaan ulang token refresh terdeteksi",
+    "evt_RATE_LIMITED": "Terlalu banyak percobaan — dibatasi sementara",
+    "evt_REFRESH_REUSE_GRACE": "Pembaruan sesi serentak (ditoleransi)",
+    "evt_SIGNIN_ALERT_SENT": "Peringatan masuk baru dikirim via email",
+    "evt_SIGNIN_ALERT_SUPPRESSED": "Peringatan masuk disembunyikan (perangkat dikenal)",
+    "evt_ACCOUNT_DELETED": "Akun dihapus",
+    "evt_SSO_CONNECTION_DELETED": "Koneksi SSO dihapus",
     "evt_PASSKEY_ADDED": "Kunci sandi ditambahkan",
     "evt_PASSKEY_REMOVED": "Kunci sandi dihapus",
     "evt_PASSKEY_LOGIN": "Masuk dengan kunci sandi",
@@ -2076,6 +2671,7 @@
     "passkeys": "Passkey",
     "passkeysDesc": "Masuk dengan Touch ID, Windows Hello, atau kunci keamanan. Tanpa kata sandi dan tahan phishing.",
     "addPasskey": "Tambah passkey",
+    "passkeyRegistered": "Passkey Terdaftar",
     "passkeyAdded": "Passkey ditambahkan",
     "passkeyRemoved": "Passkey dihapus",
     "passkeyUnsupported": "Passkey memerlukan koneksi aman — buka situs ini melalui HTTPS (atau localhost) untuk menambahkannya.",
@@ -2090,6 +2686,10 @@
     "verifyPasswordLabel": "Kata sandi",
     "verifyPasswordPlaceholder": "Masukkan kata sandi saat ini",
     "verifyConfirm": "Verifikasi & Hapus",
+    "totpLabel": "Kode autentikator",
+    "totpConfirm": "Verifikasi dengan kode",
+    "totpFreshnessHint": "Verifikasi ulang dua faktor 30 hari Anda jatuh tempo — masukkan kode dari aplikasi autentikator untuk melanjutkan.",
+    "totpRequired": "Masukkan kode 6 digit dari autentikator Anda",
     "verifying": "Memverifikasi…",
     "verificationFailed": "Verifikasi gagal",
     "verifyPasswordRequired": "Masukkan kata sandi untuk melanjutkan",
@@ -2098,6 +2698,13 @@
     "scoreLabel": "Skor keamanan",
     "scoreOf": "dari 100",
     "scoreGreat": "Akun Anda terlindungi dengan baik.",
+    "scoreAction": "{action}{extra}.",
+    "scoreAlsoMissing": " — {count, plural, other {{count} langkah lagi menuju perlindungan penuh}}",
+    "missing_totp": "Aktifkan autentikasi dua faktor",
+    "missing_passkey": "Daftarkan passkey",
+    "missing_backup": "Buat kode pemulihan",
+    "missing_email": "Verifikasi alamat email Anda",
+    "missing_mfaFresh": "Verifikasi ulang autentikasi dua faktor (kesegaran 30 hari)",
     "scoreGood": "Bagus — aktifkan autentikasi dua faktor untuk perlindungan lebih.",
     "scoreFair": "Aktifkan autentikasi dua faktor untuk mengamankan akun Anda.",
     "scoreWeak": "Akun Anda memerlukan perlindungan yang lebih kuat.",
@@ -2134,6 +2741,8 @@
     "noSuspicious": "Tidak ada aktivitas mencurigakan terdeteksi dalam 7 hari terakhir",
     "refreshActivity": "Muat ulang aktivitas",
     "mfaVerifiedRecent": "MFA terverifikasi baru-baru ini",
+    "mfaVerifiedRecentDays": "MFA terverifikasi {count, plural, other {{count} hari lalu}}",
+    "mfaNotVerifiedRecentDays": "MFA tidak terverifikasi selama {count, plural, other {{count} hari}}",
     "mfaNotVerifiedRecent": "MFA tidak diverifikasi dalam 30 hari",
     "passkeyBackupHint": "Anda hanya memiliki satu passkey. Tambahkan satu lagi sebagai cadangan agar Anda tetap bisa masuk jika perangkat ini hilang.",
     "lastPasskeyWarning": "Ini adalah satu-satunya passkey Anda. Setelah dihapus, Anda tidak akan bisa masuk menggunakan passkey lagi.",
@@ -2169,7 +2778,33 @@
     "otpDevCode": "Kode pengembangan",
     "unverifiedAlertTitle": "Email Anda belum diverifikasi",
     "unverifiedAlertDesc": "Verifikasi alamat email Anda untuk mengonfirmasi identitas dan memperkuat keamanan akun.",
-    "unverifiedAlertAction": "Verifikasi sekarang"
+    "unverifiedAlertAction": "Verifikasi sekarang",
+    "evt_EMAIL_DELIVERY_SENT": "Email verifikasi terkirim",
+    "evt_EMAIL_DELIVERY_FAILED": "Email verifikasi gagal terkirim",
+    "sessionRecognized": "Dikenali",
+    "sessionNew": "Perangkat baru",
+    "telemetryTitle": "Tekanan akun",
+    "telemetryPressureBadge": "Tekanan aktif",
+    "telemetryRateLimited": "Upaya masuk dibatasi",
+    "telemetryRateLimitedWindow": "24 jam terakhir",
+    "telemetryLastOffender": "Upaya terakhir dari {ip}",
+    "telemetryLockouts": "Penguncian",
+    "telemetryLockoutsWindow": "7 hari terakhir",
+    "telemetryLastEvent": "{when} lalu",
+    "telemetrySessions": "Sesi aktif",
+    "telemetrySessionsHint": "cabut sesi yang tidak dikenal",
+    "telemetryThrottleTitle": "Jendela pembatasan login",
+    "telemetryThrottleCount": "{used} dari {limit} percobaan",
+    "telemetryThrottleBlocked": "Diblokir — pulih dalam {seconds} dtk",
+    "telemetryThrottleClearing": "Kuota pulih dalam {seconds} dtk",
+    "telemetryThrottleIp": "terbanyak dari {ip}",
+    "scanQrHint": "Pindai kode QR dengan aplikasi autentikator Anda, atau masukkan kunci secara manual.",
+    "scanQrTitle": "Pindai kode QR",
+    "verifyCodeHint": "Masukkan kode 6 digit dari aplikasi autentikator Anda.",
+    "copySecret": "Salin kunci rahasia",
+    "manualEntryHint": "Tidak bisa memindai? Masukkan kunci ini secara manual:",
+    "verifyButton": "Verifikasi",
+    "scoreComplete": "Semua perlindungan aktif — akun Anda sudah aman sepenuhnya."
   },
   "sso": {
     "title": "SSO / Perusahaan",
@@ -2177,6 +2812,7 @@
     "notConfiguredTitle": "Tidak ada koneksi SSO",
     "notConfiguredDesc": "Siapkan single sign-on SAML agar tim Anda dapat masuk dengan penyedia identitas perusahaan.",
     "configureSso": "Konfigurasi SSO",
+    "copied": "Disalin ke papan klip",
     "enabled": "Aktif",
     "disabled": "Nonaktif",
     "certConfigured": "Sertifikat dikonfigurasi",
@@ -2289,7 +2925,12 @@
     "q7Label": "Prakiraan pendapatan",
     "q7Query": "Prakirakan pendapatan saya untuk 90 hari ke depan dan tunjukkan laju penjualan",
     "q8Label": "Trajektori pertumbuhan",
-    "q8Query": "Apa proyeksi pertumbuhan pendapatan dan pendorong kinerja utama kami?"
+    "q8Query": "Apa proyeksi pertumbuhan pendapatan dan pendorong kinerja utama kami?",
+    "copyPrompt": "Salin perintah",
+    "copiedPrompt": "Perintah tersalin",
+    "editPrompt": "Ubah perintah",
+    "saveEdit": "Kirim ulang",
+    "cancelEdit": "Batal"
   },
   "status": {
     "pending": "Tertunda",
@@ -2391,7 +3032,10 @@
           "CACHE: Rasio hit cache edge 98,4%",
           "KEAMANAN: TOTP 2FA terverifikasi untuk sesi admin"
         ]
-      }
+      },
+      "announcement": "v2.4 flow telah hadir — realtime untuk semuanya",
+      "readMore": "Baca selengkapnya",
+      "changelogAria": "Baca changelog"
     },
     "demoOrders": {
       "title": "Pesanan Terbaru"
@@ -2436,7 +3080,10 @@
       "kpiRevenue": "Total Pendapatan",
       "kpiOrders": "Total Pesanan",
       "kpiCustomers": "Total Pelanggan",
-      "kpiProducts": "Total Produk"
+      "kpiProducts": "Total Produk",
+      "liveRevenue": "Ringkasan Pendapatan",
+      "liveChannels": "Penjualan per Kanal",
+      "liveOrders": "Pesanan Terbaru"
     },
     "trust": {
       "b1": "Tanpa kartu kredit",
@@ -2446,11 +3093,11 @@
     },
     "story": {
       "aria": "Perjalanan produk",
-      "badge": "Perjalanan",
+      "badge": "Perjalanan produk",
       "cta": "Jelajahi ruang kerja",
-      "sub": "Empat sistem bekerja seperti satu rasi bintang — lihat bagaimana bisnis Anda bergerak dari pesanan mentah menuju pertumbuhan otomatis.",
-      "t1": "Dari Kosmos,",
-      "t2": "ke Ruang Kendali",
+      "sub": "Telusuri produk sesuai cara tim Anda bekerja — pesanan, pembayaran, analitik, dan otomasi; setiap babak menopang babak berikutnya.",
+      "t1": "Empat babak,",
+      "t2": "satu ruang kerja",
       "c1b": "Semua pesanan dari semua kanal — Shopify, Tokopedia, TikTok, Instagram — masuk ke satu inbox terpadu dengan status yang diperbarui secara langsung.",
       "c1e": "Navigasi Orbit",
       "c1f1": "Inbox terpadu",
@@ -2607,6 +3254,21 @@
     "final": {
       "getStarted": "Mulai Gratis",
       "signIn": "Masuk"
+    },
+    "faq": {
+      "badge": "Dukungan & Jawaban",
+      "titlePart1": "Pertanyaan Yang",
+      "titlePart2": "Sering Diajukan",
+      "q1": "Bagaimana cara kerja sinkronisasi multi-saluran?",
+      "a1": "Next Dashboard terhubung langsung dengan toko Anda di Shopify, TikTok Shop, Shopee, dan Tokopedia. Semua inventaris, pesanan, dan data pelanggan disinkronkan secara real-time melalui koneksi Webhook dan REST API yang aman.",
+      "q2": "Dapatkah saya menyesuaikan dasbor atau mengintegrasikan API khusus?",
+      "a2": "Ya, tentu saja. Anda memiliki kendali penuh atas platform. Buat integrasi khusus dengan REST API terpadu kami, konfigurasikan webhook untuk notifikasi langsung, atau sesuaikan komponen UI sesuai kebutuhan tim Anda.",
+      "q3": "Gerbang pembayaran apa saja yang didukung?",
+      "a3": "Kami menyediakan integrasi bawaan untuk Stripe (kartu global, Apple Pay, Google Pay) dan Midtrans (rekening virtual Indonesia, GoPay, OVO, dan pembayaran QRIS). Perhitungan pajak dan faktur otomatis telah terintegrasi.",
+      "q4": "Seberapa amankah data dan informasi pelanggan saya?",
+      "a4": "Semua data dienkripsi saat transit dan saat disimpan dengan AES-256 dan TLS 1.3. Kami mendukung standar keamanan enterprise termasuk FIDO2 Passkey, WebAuthn, otentikasi dua faktor TOTP, dan log audit kriptografis.",
+      "q5": "Apakah tersedia uji coba gratis?",
+      "a5": "Ya, Anda dapat memulai uji coba gratis 14 hari pada paket Profesional tanpa kartu kredit. Jelajahi analitik langsung, uji pesanan, dan sinkronisasi multi-saluran secara instan."
     }
   },
   "pricingPage": {
@@ -2733,7 +3395,10 @@
     "faqQ3": "Metode pembayaran apa yang Anda terima?",
     "faqA3": "Kami menerima semua kartu kredit utama, PayPal, dan transfer bank untuk paket tahunan. Semua pembayaran diproses secara aman melalui Stripe.",
     "faqQ4": "Bisakah saya membatalkan langganan saya?",
-    "faqA4": "Ya, Anda dapat membatalkan kapan saja. Akses Anda akan berlanjut hingga akhir periode penagihan saat ini."
+    "faqA4": "Ya, Anda dapat membatalkan kapan saja. Akses Anda akan berlanjut hingga akhir periode penagihan saat ini.",
+    "faqBadge": "Pertanyaan Harga",
+    "faqTitlePart1": "Pertanyaan yang",
+    "faqTitlePart2": "Sering Diajukan"
   },
   "legal": {
     "termsTitle": "Ketentuan Layanan",
@@ -2881,7 +3546,7 @@
     "installButton": "Pasang Aplikasi",
     "howToInstall": "Cara Memasang",
     "later": "Nanti",
-    "offlineBanner": "Anda sedang offline — menampilkan data dasbor tersimpan",
+    "offlineBanner": "Anda sedang offline — perubahan disimpan secara lokal",
     "reconnectedBanner": "Koneksi terpulihkan — sinkronisasi langsung aktif",
     "iosTitle": "Pasang di iPhone atau iPad",
     "iosSubtitle": "Ikuti langkah mudah di Safari berikut untuk memasang Dasbor LevTech ke layar beranda:",
@@ -2891,7 +3556,18 @@
     "iosStep2Desc": "Gulir ke bawah pada menu bagikan lalu pilih Tambahkan ke Layar Utama.",
     "iosStep3Title": "Ketuk 'Tambah' di Kanan Atas",
     "iosStep3Desc": "Ikon LevTech akan langsung disematkan pada layar utama Anda.",
-    "gotIt": "Mengerti, terima kasih!"
+    "gotIt": "Mengerti, terima kasih!",
+    "retry": "Coba lagi",
+    "syncedToast": "{count, plural, one {# perubahan tersinkron}, other {# perubahan tersinkron}}",
+    "syncingBanner": "Kembali online — menyinkronkan {count} perubahan…",
+    "offlineTitle": "Anda sedang offline",
+    "offlineDesc": "Sepertinya koneksi internet Anda terputus. Fitur yang sudah terbuka tetap berfungsi, dan perubahan yang Anda buat akan diantrekan lalu disinkronkan otomatis saat terhubung kembali.",
+    "offlineQueueNote": "Pesanan dan suntingan yang dibuat saat offline disimpan di perangkat ini dan diputar ulang otomatis — tidak ada data yang hilang.",
+    "queuePending": "{count, plural, one {# perubahan menunggu sinkronisasi}, other {# perubahan menunggu sinkronisasi}}",
+    "queueEmpty": "Tidak ada yang menunggu sinkronisasi",
+    "tryAgain": "Coba lagi",
+    "syncNow": "Sinkronkan sekarang",
+    "queuedToast": "Disimpan offline — akan disinkronkan otomatis saat terhubung kembali"
   },
   "branding": {
     "brandingTitle": "White-Labeling & Kustomisasi Merek",
@@ -2931,7 +3607,15 @@
     "taxId": "NPWP / Nomor Pajak",
     "taxIdPlaceholder": "00.000.000.0-000.000",
     "invoiceAddress": "Alamat Terdaftar Faktur",
-    "invoiceAddressPlaceholder": "Jalan, Kota, Kode Pos, Negara"
+    "invoiceAddressPlaceholder": "Jalan, Kota, Kode Pos, Negara",
+    "logoLibraryLabel": "Pustaka ikon lokal",
+    "logoUpload": "Unggah SVG",
+    "logoImportUrl": "Impor dari URL",
+    "logoImportUrlDesc": "Tempel URL gambar https:// atau data URL data:image/... untuk dipakai sebagai logo.",
+    "logoImportUrlPlaceholder": "https://example.com/logo.svg",
+    "logoImportApply": "Gunakan logo",
+    "logoImported": "Logo diterapkan — jangan lupa simpan",
+    "logoImportFailed": "Gagal mengimpor logo tersebut"
   },
   "tenants": {
     "switchOrganization": "Ganti Organisasi",
@@ -2970,7 +3654,10 @@
     "breakevenAtMonth": "Impas di Bulan {month}",
     "rfmTitle": "Mesin Segmentasi Pelanggan RFM",
     "rfmSubtitle": "Pengelompokan perilaku otomatis berdasarkan riwayat pesanan Kebaruan, Frekuensi, dan Moneter",
-    "customersUnit": "pelanggan"
+    "customersUnit": "pelanggan",
+    "upsellTitle": "Analitik kohort adalah fitur Professional",
+    "upsellDesc": "Lacak retensi, LTV:CAC, dan segmen RFM di seluruh kohort pelanggan. Upgrade ke Professional untuk membuka heatmap retensi lengkap.",
+    "upsellCta": "Lihat paket"
   },
   "chatAlerts": {
     "hubTitle": "Hub Peringatan Obrolan Tim",
@@ -3177,7 +3864,7 @@
     "flaggedQueueTitle": "Transaksi Mencurigakan yang Ditandai",
     "flaggedQueueDesc": "Antrean penilaian waktu nyata dengan tindakan aturan otomatis dan pemicu audit manual",
     "rulesConfigTitle": "Mesin Aturan Risiko Dinamis",
-    "rulesConfigDesc": "Pemicu ambang batas yang dapat dikonfigurasi untuk verifikasi pembayaran dan pembatalan otomatis",
+    "rulesConfigDesc": "Pemicu ambang batas untuk pertahanan penyelesaian otomatis",
     "dossierModalTitle": "Berkas Pembelaan Sanggahan Chargeback",
     "dossierModalDesc": "Paket bukti terverifikasi secara kriptografis untuk representasi sengketa Stripe & Midtrans",
     "autoApprove": "Setujui Otomatis",
@@ -3195,7 +3882,36 @@
     "threeDsStatus": "Status 3D-Secure 2.2",
     "issuerStatement": "Pernyataan Penerbit yang Disarankan",
     "downloadDossier": "Ekspor Berkas PDF",
-    "saveRules": "Simpan Aturan"
+    "saveRules": "Simpan Aturan",
+    "realtimeBadge": "RADAR RISKO LANGSUNG",
+    "legendActiveThreat": "Trafik ditandai",
+    "legendSafeBaseline": "Basis aman",
+    "axisVelocity": "Velositas",
+    "axisGeo": "Mismatch geo",
+    "axisDevice": "Sidik jari perangkat",
+    "axisBehavior": "Anomali perilaku",
+    "axisNetwork": "Risiko VPN / BIN",
+    "colOrderCustomer": "Pesanan / Pelanggan",
+    "colAmount": "Jumlah",
+    "colIpGeo": "IP & Geo",
+    "colRecommendation": "Rekomendasi",
+    "colAction": "Tindakan",
+    "colRegion": "Wilayah",
+    "vpnTorFlag": "VPN/Tor terdeteksi",
+    "rec_AUTO_APPROVE": "Setujui otomatis",
+    "rec_CHALLENGE_3DS": "Tantangan 3DS",
+    "rec_MANUAL_REVIEW": "Tinjauan manual",
+    "rec_AUTO_VOID": "Void otomatis",
+    "highTrustMatch": "Kecocokan tepercaya tinggi",
+    "signedDeliveryProof": "Bukti pengiriman fisik bertanda tangan tersedia",
+    "copyStatement": "Salin pernyataan",
+    "ipAsnTelemetry": "Telemetri IP & ASN",
+    "generatingDossier": "Membuat dossier forensik…",
+    "copiedToClipboard": "Tersalin ke papan klip",
+    "loadDossierFailed": "Gagal memuat dossier sengketa",
+    "saveRulesFailed": "Gagal memperbarui aturan",
+    "radarHeadlineDefault": "Rata-rata skor ancaman",
+    "probeHint": "Gerakkan kursor di atas matriks untuk memeriksa sumbu risiko"
   },
   "logisticsFleet": {
     "title": "Pelacakan Armada Logistik & Kurir Waktu Nyata",
@@ -3302,6 +4018,8 @@
     "useAppearanceColor": "Gunakan Warna Tema Tampilan",
     "notesLabel": "Catatan Hukum & Ketentuan Kaki Halaman",
     "notesPlaceholder": "Faktur pajak komputerisasi resmi. Bukti transaksi sah di bawah aturan kliring BI-FAST.",
+    "currencyLabel": "Mata Uang Faktur",
+    "currencyHint": "Nominal disimpan dalam USD dan dikonversi ke mata uang tampilan pilihan Anda pada faktur tercetak.",
     "securityBadgesLabel": "Lencana Keamanan & Kode Batang",
     "showBarcodeLabel": "Kode Batang Code 128",
     "showQrLabel": "QR Verifikasi",
@@ -3380,7 +4098,11 @@
     "posTitle": "Terminal Numpad Cepat POS Kasir",
     "posSubtitle": "Terminal penagihan cepat walk-in dengan pembuatan QRIS dinamis real-time dan konfirmasi audio",
     "settlementTitle": "Rekonsiliasi Penyelesaian & Pembayaran Multi-Saluran",
-    "disputeTitle": "Pusat Resolusi Sengketa & Chargeback"
+    "disputeTitle": "Pusat Resolusi Sengketa & Chargeback",
+    "posAudioOn": "Audio Aktif",
+    "posAudioMuted": "Audio Bisu",
+    "posAudioChimesEnabled": "Nada notifikasi aktif",
+    "posAudioMutedTip": "Bisu"
   },
   "webhookSimulator": {
     "simulateWebhook": "Simulasikan Webhook Gateway",
@@ -3428,6 +4150,309 @@
     "stepCustomize": "Sesuaikan penampilan",
     "stepCustomizeDesc": "Jadikan dasbor milik Anda dengan warna dan merek kustom",
     "allDone": "Anda sudah siap!",
-    "allDoneDesc": "Anda telah menyelesaikan semua langkah penyiapan. Selamat berjualan!"
+    "allDoneDesc": "Anda telah menyelesaikan semua langkah penyiapan. Selamat berjualan!",
+    "takeTour": "Ikuti tur"
+  },
+  "aiGenerator": {
+    "title": "Generator Konten AI",
+    "subtitle": "Buat teks yang menarik dalam hitungan detik dengan model AI kami.",
+    "configTitle": "Konfigurasi",
+    "configDesc": "Beri tahu AI apa yang ingin Anda tulis.",
+    "topicLabel": "Topik atau Perintah",
+    "topicPlaceholder": "mis., Email selamat datang untuk pengguna SaaS baru...",
+    "contentTypeLabel": "Jenis Konten",
+    "typeBlog": "Artikel Blog",
+    "typeEmail": "Kampanye Email",
+    "typeSocial": "Postingan Media Sosial",
+    "typeAd": "Teks Iklan",
+    "toneLabel": "Nada Suara",
+    "toneProfessional": "Profesional",
+    "toneCasual": "Santai & Ramah",
+    "toneHumorous": "Lucu",
+    "toneUrgent": "Mendesak & Persuasif",
+    "generate": "Buat Konten",
+    "generating": "Membuat...",
+    "aiWriting": "AI sedang menulis konten Anda...",
+    "resultTitle": "Hasil",
+    "resultEmpty": "Konten yang dihasilkan akan muncul di sini.",
+    "copy": "Salin",
+    "copied": "Tersalin",
+    "saveToProjects": "Simpan ke Proyek"
+  },
+  "projects": {
+    "title": "Proyek",
+    "subtitle": "Kelola dan lihat konten AI yang Anda hasilkan.",
+    "newProject": "Proyek Baru",
+    "recentContent": "Konten Terbaru",
+    "searchPlaceholder": "Cari proyek...",
+    "colTitle": "Judul Proyek",
+    "colType": "Jenis",
+    "colDate": "Tanggal Dibuat",
+    "colStatus": "Status",
+    "colActions": "Tindakan",
+    "noResults": "Proyek tidak ditemukan.",
+    "statusCompleted": "Selesai",
+    "statusDraft": "Draf",
+    "typeEmail": "Email",
+    "typeBlog": "Blog",
+    "typeSocial": "Sosial",
+    "typeAd": "Iklan"
+  },
+  "liquidGlass": {
+    "dock": "Dok kaca",
+    "howCanIHelp": "Ada yang bisa saya bantu hari ini?"
+  },
+  "docsPage": {
+    "heroTag": "Dokumentasi",
+    "heroTitle": "Bangun dengan Next Dashboard",
+    "heroSubtitle": "Semua yang Anda butuhkan untuk integrasi, otomatisasi, dan peluncuran — panduan memulai, referensi API, webhook, dan pembayaran dalam satu tempat.",
+    "openApiDocs": "Buka Referensi API",
+    "quickstartCurl": "curl https://api.nextdashboard.dev/v1/health \\\n  -H \"Authorization: Bearer sk_live_your_api_key\"",
+    "topicsTitle": "Jelajahi per topik",
+    "topicsSubtitle": "Panduan singkat agar Anda dari nol ke request pertama dalam beberapa menit.",
+    "topics": {
+      "quickstart": {
+        "title": "Mulai Cepat",
+        "desc": "Buat kunci API, autentikasi, dan lakukan request pertama ke REST API."
+      },
+      "authentication": {
+        "title": "Autentikasi",
+        "desc": "Token Bearer, rotasi kunci, scope, dan praktik penyimpanan rahasia yang aman."
+      },
+      "restApi": {
+        "title": "REST API v1",
+        "desc": "Endpoint berversi untuk pesanan, produk, pelanggan, inventaris, dan laporan."
+      },
+      "webhooks": {
+        "title": "Webhook",
+        "desc": "Terima event order.completed, payment.confirmed, dan inventory.low secara real-time."
+      },
+      "payments": {
+        "title": "Pembayaran",
+        "desc": "Stripe, Midtrans, QRIS, dan virtual account — satu checkout untuk semua jalur."
+      },
+      "multiCurrency": {
+        "title": "Multi-mata uang",
+        "desc": "Harga dan penyelesaian dalam USD, IDR, JPY, EUR, SGD, dan CNY dengan konversi langsung."
+      },
+      "sdks": {
+        "title": "SDK & Contoh",
+        "desc": "Snippet siap pakai dan alur referensi untuk TypeScript, Go, dan Python."
+      },
+      "security": {
+        "title": "Keamanan",
+        "desc": "2FA, passkey, verifikasi step-up, jejak audit, dan praktik terbaik RBAC."
+      }
+    },
+    "ctaTitle": "Siap membangun?",
+    "ctaDesc": "Buat workspace gratis dan kirim integrasi pertama Anda sore ini.",
+    "ctaButton": "Buat akun gratis"
+  },
+  "apiDocsPage": {
+    "title": "Referensi API",
+    "subtitle": "Semua endpoint produksi, dikelompokkan dan dapat dijelajahi — permukaan yang sama dengan dashboard Anda.",
+    "searchPlaceholder": "Cari endpoint atau path…",
+    "noResults": "Tidak ada endpoint yang cocok dengan pencarian Anda.",
+    "try": {
+      "title": "Coba langsung",
+      "hint": "Mengirim request nyata dari halaman ini — sesi dashboard Anda yang mengautentikasi. Responsnya adalah JSON yang sama seperti yang diterima aplikasi Anda.",
+      "noAuth": "Endpoint ini tidak memerlukan autentikasi.",
+      "queryParams": "Parameter kueri",
+      "requestBody": "Isi permintaan (JSON)",
+      "reset": "Atur ulang",
+      "send": "Kirim request",
+      "confirmSend": "Klik lagi untuk konfirmasi",
+      "sending": "Mengirim…",
+      "mutatingHint": "{method} mengubah data — klik kedua untuk konfirmasi.",
+      "notAuthenticated": "Anda belum masuk, jadi API mengembalikan 401.",
+      "signIn": "Masuk",
+      "ms": "ms",
+      "copied": "Tersalin",
+      "copy": "Salin",
+      "emptyBody": "(respons kosong)",
+      "invalidJson": "Isi permintaan harus JSON yang valid.",
+      "apiKeyLabel": "Kunci API",
+      "apiKeyHint": "Disimpan secara lokal di browser ini saja.",
+      "keyRequired": "Masukkan kunci API untuk memanggil sandbox.",
+      "keyInvalid": "Permintaan ditolak — pastikan kunci adalah dash_ yang valid, berstatus AKTIF, belum kedaluwarsa, dan diizinkan dari IP Anda.",
+      "curlTitle": "cURL",
+      "curlKeyPlaceholder": "Cuplikan cURL memakai placeholder — ganti dash_your_api_key dengan kunci asli Anda sebelum menjalankannya di luar browser."
+    },
+    "sandboxBadge": "Sandbox",
+    "sandboxTitle": "Sandbox kunci API.",
+    "sandboxNotice": "Endpoint ini diautentikasi dengan kunci API (Authorization: Bearer dash_…), bukan sesi dasbor Anda. Tempel kunci apa pun dari Integrasi → Kunci API — pembacaan sandbox dicakupkan ke ruang kerja kunci tersebut.",
+    "snippets": {
+      "title": "Cuplikan kode",
+      "curl": "cURL",
+      "typescript": "TypeScript",
+      "copy": "Salin",
+      "copied": "Tersalin!",
+      "keyPlaceholder": "Cuplikan memakai kunci placeholder — ganti dash_your_api_key dengan kunci asli Anda sebelum menjalankannya."
+    },
+    "openapiDownload": "Spesifikasi OpenAPI 3.1"
+  },
+  "soraGalleryPage": {
+    "badge": "Sora UI",
+    "title": "Galeri dialog peringatan",
+    "subtitle": "Semua varian konfirmasi destruktif dalam satu halaman — buka masing-masing, rasakan gerakannya, bandingkan tile medianya.",
+    "backToDocs": "Kembali ke dokumentasi",
+    "rulesTitle": "Kapan digunakan",
+    "rules": {
+      "deleteRecords": "Menghapus data",
+      "revokeCredentials": "Mencabut kredensial",
+      "irreversible": "Aksi yang tidak dapat dibatalkan",
+      "destructiveAction": "Tombol utama destruktif",
+      "confirmFirst": "Konfirmasi sebelum bertindak"
+    },
+    "variants": {
+      "delete": {
+        "title": "Penghapusan data",
+        "description": "Tile tempah sampah — produk, pelanggan, kampanye, diskon.",
+        "trigger": "Hapus pelanggan",
+        "dialogTitle": "Hapus pelanggan ini?",
+        "dialogDescription": "Pelanggan dinonaktifkan, bukan dihapus — riwayat pesanan tetap utuh untuk pelaporan.",
+        "action": "Hapus pelanggan"
+      },
+      "revoke": {
+        "title": "Pencabutan kredensial",
+        "description": "Tile kunci — passkey, kunci API, sesi, SSO.",
+        "trigger": "Cabut passkey",
+        "dialogTitle": "Cabut passkey ini?",
+        "dialogDescription": "Perangkat yang memakai passkey ini langsung kehilangan akses. Passkey baru bisa didaftarkan kapan saja.",
+        "action": "Cabut passkey"
+      },
+      "warning": {
+        "title": "Peringatan permanen",
+        "description": "Tile segitiga — penghapusan akun dan aksi tanpa jalan kembali serupa.",
+        "trigger": "Hapus akun",
+        "dialogTitle": "Apakah Anda yakin?",
+        "dialogDescription": "Ini tidak dapat dibatalkan. Akun, data basis data, dan semua kunci API dihapus permanen.",
+        "action": "Hapus akun"
+      },
+      "confirm": {
+        "title": "Konfirmasi netral",
+        "description": "Tile utama — perubahan status yang butuh niat, bukan alarm (kode cadangan, paket).",
+        "trigger": "Regenerasi kode",
+        "dialogTitle": "Regenerasi kode cadangan?",
+        "dialogDescription": "Kode yang ada langsung berhenti bekerja. Unduh set baru sebelum melanjutkan.",
+        "action": "Regenerasi"
+      },
+      "signout": {
+        "title": "Keluar sesi",
+        "description": "Tile redup — konfirmasi berisiko rendah dengan tombol aksi destruktif.",
+        "trigger": "Keluar",
+        "dialogTitle": "Keluar dari perangkat ini?",
+        "dialogDescription": "Perubahan yang belum disimpan tetap tersimpan lokal sampai Anda masuk kembali.",
+        "action": "Keluar"
+      },
+      "deactivate": {
+        "title": "Penonaktifan lunak",
+        "description": "Tile amber — penghapusan yang dapat dipulihkan dengan data tetap disimpan.",
+        "trigger": "Nonaktifkan anggota",
+        "dialogTitle": "Nonaktifkan anggota ini?",
+        "dialogDescription": "Anggota langsung kehilangan akses tetapi dapat dipulihkan nanti; tidak ada yang dihapus.",
+        "action": "Nonaktifkan"
+      }
+    }
+  },
+  "onboardingTour": {
+    "stepMetricsTitle": "Metrik utama Anda",
+    "stepMetricsDesc": "Angka penting seluruh ruang kerja diperbarui real-time di sini.",
+    "stepRevenueTitle": "Pendapatan dari waktu ke waktu",
+    "stepRevenueDesc": "Grafik interaktif melacak tren pendapatan Anda sepanjang periode.",
+    "stepSalesTitle": "Penjualan terbaru",
+    "stepSalesDesc": "Lihat pesanan masuk secara langsung — yang terbaru selalu di atas.",
+    "stepSearchTitle": "Temukan apa saja secara instan",
+    "stepSearchDesc": "Tekan Ctrl+K di mana saja untuk membuka command palette dan melompat ke halaman mana pun.",
+    "stepCount": "{current} dari {total}",
+    "next": "Lanjut",
+    "back": "Kembali",
+    "finish": "Selesai",
+    "close": "Tutup",
+    "skip": "Lewati tur"
+  },
+  "sessionStay": {
+    "title": "Sesi Anda akan berakhir",
+    "description": "Anda sudah cukup lama di sini. Tetap masuk untuk melanjutkan pekerjaan tanpa terputus.",
+    "stay": "Tetap masuk",
+    "signOut": "Keluar",
+    "stayFailed": "Tidak dapat memperpanjang sesi saat ini — Anda masih masuk, coba lagi sebentar lagi."
+  },
+  "tierUpgrade": {
+    "title": "Upgrade untuk membuka fitur ini",
+    "description": "{feature} tersedia pada paket {tier}. Upgrade untuk membukanya di ruang kerja Anda.",
+    "featureAnalytics": "Analitik lanjutan",
+    "featureReports": "Laporan kustom",
+    "featureMultiChannel": "Integrasi multi-kanal",
+    "featureApi": "Akses API & webhook",
+    "featureRbac": "Kontrol akses berbasis peran",
+    "featureCustomExports": "Ekspor data kustom",
+    "planPro": "Pro",
+    "planProDesc": "Analitik, laporan, integrasi multi-kanal, API & webhook, RBAC.",
+    "planEnterprise": "Enterprise",
+    "planEnterpriseDesc": "Semua fitur Pro ditambah batas tanpa batas, ekspor data kustom, dan dukungan khusus 24/7.",
+    "notNow": "Nanti saja",
+    "viewPlans": "Lihat paket",
+    "featureOrderLimit": "Volume pesanan bulanan lebih tinggi",
+    "featureSeatLimit": "Lebih banyak kursi tim"
+  },
+  "verificationSuccess": {
+    "emailVerified": "Email berhasil diverifikasi — akun Anda kini sepenuhnya aman.",
+    "emailVerifyFailed": "Tautan verifikasi tidak valid atau sudah kedaluwarsa. Minta kode baru.",
+    "twoFactorEnabled": "Autentikasi dua faktor aktif. Akun Anda kini lebih terlindungi.",
+    "twoFactorDisabled": "Autentikasi dua faktor telah dimatikan.",
+    "passwordChanged": "Kata sandi berhasil diubah. Sesi lain tetap masuk."
+  },
+  "emailVerification": {
+    "title": "Email Anda belum terverifikasi",
+    "description": "Verifikasi email Anda untuk mengamankan akun dan mengaktifkan semua fitur.",
+    "sendCode": "Kirim kode",
+    "sending": "Mengirim…",
+    "verifyNow": "Verifikasi sekarang",
+    "dismiss": "Tutup",
+    "sentToast": "Email verifikasi terkirim! Cek kotak masuk Anda.",
+    "sendFailed": "Email verifikasi gagal dikirim. Silakan coba lagi."
+  },
+  "usageQuota": {
+    "title": "Penggunaan & Kuota",
+    "period": "Siklus berjalan",
+    "orders": "Pesanan",
+    "teamMembers": "Anggota tim",
+    "apiKeys": "Kunci API",
+    "unlimited": "Tak terbatas",
+    "trendTitle": "Tren penggunaan bulanan",
+    "upgradeHint": "Anda menggunakan sumber daya yang dibatasi pada paket Starter.",
+    "upgradeCta": "Upgrade paket",
+    "clientTitle": "Penggunaan ruang kerja",
+    "clientReadOnlyHint": "Tampilan baca-saja dari konsumsi paket ruang kerja ini. Penagihan dan perubahan paket dikelola oleh pemilik ruang kerja.",
+    "trialChip": "Uji coba · sisa {days, plural, one {# hari} other {# hari}}"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Kelola pengguna, langganan, dan pendapatan platform Anda.",
+    "statSubs": "Langganan Aktif",
+    "statSubsHint": "pengguna dengan paket berbayar",
+    "statUsers": "Total Pengguna",
+    "statUsersHint": "akun platform terdaftar",
+    "statAdmins": "Admin",
+    "statAdminsHint": "akun admin terakhir dilindungi dari penghapusan",
+    "statBanned": "Diblokir",
+    "statBannedHint": "akun yang dinonaktifkan",
+    "userManagement": "Manajemen Pengguna",
+    "userManagementDesc": "Lihat dan kelola semua pengguna terdaftar.",
+    "searchPlaceholder": "Cari pengguna...",
+    "name": "Nama",
+    "email": "Email",
+    "role": "Peran",
+    "plan": "Paket",
+    "status": "Status",
+    "joined": "Bergabung",
+    "noUsers": "Tidak ada pengguna ditemukan.",
+    "actionsFor": "Aksi untuk {name}",
+    "deleteUser": "Hapus pengguna",
+    "deletedToast": "Pengguna dihapus",
+    "deactivatedToast": "Akun dinonaktifkan (admin terakhir).",
+    "loadFailed": "Gagal memuat pengguna",
+    "loadFailedStatus": "Gagal memuat pengguna ({status})"
   }
 }

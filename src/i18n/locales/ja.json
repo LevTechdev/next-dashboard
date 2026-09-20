@@ -1,4 +1,59 @@
 {
+  "systemHealth": {
+    "title": "システムヘルス",
+    "subtitle": "スケジューラジョブ、Webhookの配信失敗、ミラー同期、バックアップ検証を一か所で確認できます。",
+    "refresh": "更新",
+    "verdictHealthy": "すべて正常",
+    "verdictDegraded": "要確認",
+    "actionFailed": "操作に失敗しました。",
+    "schedulerTitle": "スケジューラジョブ",
+    "schedulerDesc": "各組み込みジョブの最終実行と結果。",
+    "schedulerEnabled": "ループ有効",
+    "schedulerDisabled": "ループ無効",
+    "jobNever": "未実行",
+    "jobUsageDigest": "利用状況ダイジェスト",
+    "jobAutoPayout": "アフィリエイト自動支払",
+    "jobWebhookRetry": "Webhook再試行スイープ",
+    "jobAutoReorder": "在庫自動発注",
+    "jobSupabaseSync": "Supabaseミラー同期",
+    "jobBackupVerify": "バックアップ復元検証",
+    "jobTrialSweep": "トライアル期限スイープ",
+    "jobScheduledReports": "定期レポート",
+    "dlqTitle": "Webhookデッドレターキュー",
+    "dlqDesc": "署名または処理に失敗し、再送信を待っている受信配信。",
+    "dlqEmpty": "失敗した配信はありません — キューは空です。",
+    "dlqFailed": "失敗",
+    "dlqRetrying": "再試行中",
+    "dlqExhausted": "試行上限",
+    "dlqResolved": "解決済み",
+    "dlqAttempts": "試行 {count}/{max}",
+    "dlqReplay": "再送信",
+    "dlqDiscard": "破棄",
+    "dlqReplayedToast": "配信を再送信し、解決しました。",
+    "dlqReplayFailedToast": "再送信も失敗しました — 再試行ローテーションに残します。",
+    "dlqDiscardedToast": "配信を破棄しました。",
+    "dlqDiscardConfirmTitle": "この配信を破棄しますか？",
+    "dlqDiscardConfirmDesc": "{platform} の配信をキューから完全に削除します。再送信はできません。",
+    "mirrorTitle": "ミラー同期とロールバックスナップショット",
+    "mirrorDesc": "リモートSupabaseミラーの状態、同期前ダンプの保持、復元可能性の検証。",
+    "mirrorCheck": "ドリフト検査を実行",
+    "mirrorHealthyToast": "ミラーはローカルと一致しています — ドリフトなし。",
+    "mirrorDriftToast": "ミラーのドリフトを検出しました — レポートをご確認ください。",
+    "mirrorClean": "ドリフトはありません。",
+    "lastSync": "前回のミラー同期:",
+    "lastBackupCheck": "前回のバックアップ検証:",
+    "snapshotsTitle": "ロールバックスナップショット",
+    "snapshotsEmpty": "保持されているロールバックスナップショットはまだありません。",
+    "backupVerify": "バックアップを検証",
+    "backupVerifiedToast": "スナップショット {file} を検証用DBに復元しました（{tables} テーブル）。",
+    "backupFailedToast": "復元検証に失敗しました: {detail}",
+    "backupNoSnapshots": "検証できるスナップショットがありません。",
+    "backupRestore": "復元",
+    "restoreConfirmTitle": "このスナップショットを復元しますか？",
+    "restoreConfirmDesc": "{file} を復元すると、リモートSupabaseミラーがスナップショットの内容で上書きされます。",
+    "restoreConfirmAction": "ミラーを復元",
+    "restoreDoneToast": "{file} をリモートミラーに復元しました。"
+  },
   "app": {
     "name": "ダッシュボード",
     "tagline": "ビジネス管理プラットフォーム"
@@ -50,8 +105,17 @@
     "sso": "SSO / エンタープライズ",
     "aiGenerator": "AI生成",
     "projects": "プロジェクト",
-    "superAdmin": "スーパー管理者",
-    "apiDocs": "API Docs"
+    "adminConsole": "管理者",
+    "systemHealth": "システムヘルス",
+    "apiDocs": "API Docs",
+    "plans": "ãƒ—ãƒ©ãƒ³ã ¨è«‹æ±‚",
+    "recommendations": "おすすめ",
+    "aiCopilot": "AIコパイロット",
+    "apiKeys": "APIキー",
+    "home": "ホーム",
+    "more": "その他",
+    "language": "言語",
+    "switchLanguage": "言語を切り替える"
   },
   "apiDocs": {
     "title": "API Documentation",
@@ -70,13 +134,207 @@
     "copied": "Copied!",
     "authRequired": "Authentication Required",
     "noAuth": "No Authentication",
+    "endpointCount": "エンドポイント",
     "noEndpoints": "No endpoints found",
     "noEndpointsDesc": "Try adjusting your search query",
     "param": "Parameter",
     "type": "Type",
     "field": "Field",
     "allGroups": "All",
-    "endpoints": "endpoints"
+    "endpoints": {
+      "orders-get": {
+        "description": "顧客とチャネルの詳細を含むすべての注文を一覧表示",
+        "params": {
+          "status": "注文ステータスで絞り込み",
+          "limit": "最大件数（デフォルト100）"
+        }
+      },
+      "orders-post": {
+        "description": "新しい注文を作成",
+        "fields": {
+          "customerId": "顧客ID",
+          "items": "'{'productId, quantity, price'}' の配列",
+          "channel": "販売チャネル名"
+        }
+      },
+      "orders-put": {
+        "description": "注文ステータスを更新",
+        "fields": {
+          "id": "注文ID",
+          "status": "新しいステータス（PENDING、PROCESSING、SHIPPED、DELIVERED、CANCELLED）"
+        }
+      },
+      "products-get": {
+        "description": "カテゴリ情報を含むすべての商品を一覧表示",
+        "params": {
+          "includeCategories": "カテゴリ一覧を含める (true/false)"
+        }
+      },
+      "products-post": {
+        "description": "新しい商品を作成",
+        "fields": {
+          "name": "商品名",
+          "price": "価格（セント）",
+          "costPrice": "原価",
+          "stock": "初期在庫",
+          "sku": "SKUコード",
+          "categoryId": "カテゴリID"
+        }
+      },
+      "products-put": {
+        "description": "既存の商品を更新",
+        "fields": {
+          "id": "商品ID",
+          "name": "更新後の名前",
+          "price": "更新後の価格"
+        }
+      },
+      "products-delete": {
+        "description": "商品を削除",
+        "fields": {
+          "id": "削除する商品ID"
+        }
+      },
+      "customers-get": {
+        "description": "注文数と支出を含むすべての顧客を一覧表示"
+      },
+      "customers-post": {
+        "description": "新しい顧客を作成",
+        "fields": {
+          "name": "顧客名",
+          "email": "メールアドレス",
+          "phone": "電話番号",
+          "city": "都市",
+          "segment": "顧客セグメント"
+        }
+      },
+      "dashboard-get": {
+        "description": "ダッシュボードの統計、売上データ、販売チャネル、最近の注文、人気商品を取得"
+      },
+      "search-get": {
+        "description": "注文・顧客・商品を横断するグローバル検索",
+        "params": {
+          "q": "検索クエリ（2文字以上）"
+        }
+      },
+      "notifications-get": {
+        "description": "未読数を含む通知を一覧表示",
+        "params": {
+          "type": "種類で絞り込み",
+          "read": "既読状態で絞り込み (true/false)",
+          "limit": "最大件数"
+        }
+      },
+      "notifications-put": {
+        "description": "通知を既読/未読にする",
+        "fields": {
+          "id": "通知ID",
+          "action": "mark-read または mark-unread"
+        }
+      },
+      "analytics-get": {
+        "description": "トレンドや内訳を含むアナリティクスデータを取得"
+      },
+      "auth-login-post": {
+        "description": "ユーザーを認証してセッションを作成",
+        "fields": {
+          "email": "ユーザーのメール",
+          "password": "ユーザーのパスワード"
+        }
+      },
+      "auth-register-post": {
+        "description": "新しいユーザーアカウントを作成",
+        "fields": {
+          "name": "氏名",
+          "email": "メール",
+          "password": "パスワード（8文字以上）"
+        }
+      },
+      "team-get": {
+        "description": "チームメンバーと保留中の招待を一覧表示"
+      },
+      "team-post": {
+        "description": "新しいチームメンバーを招待",
+        "fields": {
+          "email": "招待先のメール",
+          "role": "ロール（ADMIN、MANAGER、STAFF、VIEWER）"
+        }
+      },
+      "billing-get": {
+        "description": "現在のサブスクリプションプランと請求情報を取得"
+      },
+      "reports-get": {
+        "description": "日付範囲フィルター付きレポートデータを取得",
+        "params": {
+          "from": "開始日 (YYYY-MM-DD)",
+          "to": "終了日 (YYYY-MM-DD)",
+          "period": "daily、weekly、monthly のいずれか"
+        }
+      },
+      "health-get": {
+        "description": "ヘルスチェックエンドポイント"
+      },
+      "inventory-get": {
+        "description": "在庫レベルと在庫アラートを取得"
+      },
+      "v1-ping-get": {
+        "description": "APIキーのスモークテスト — キーの存在、有効化、有効期限、サンドボックスレート制限内であることを検証"
+      },
+      "v1-me-get": {
+        "description": "キーのメタデータ、およびキーが操作対象とするユーザーとワークスペース"
+      },
+      "v1-products-get": {
+        "description": "キーのワークスペース内の商品を一覧表示（ページネーション）",
+        "params": {
+          "limit": "1ページの件数、1〜100（デフォルト20）",
+          "page": "ページ番号（デフォルト1）",
+          "active": "アクティブ状態で絞り込み (true/false)"
+        }
+      },
+      "v1-products-id-get": {
+        "description": "キーのワークスペースから単一の商品を取得"
+      },
+      "v1-orders-get": {
+        "description": "キーのワークスペース内の注文を顧客・チャネル情報付きで一覧表示（ページネーション）",
+        "params": {
+          "status": "PENDING、PROCESSING、SHIPPED、DELIVERED、CANCELLED のいずれか",
+          "paymentStatus": "UNPAID、PAID、REFUNDED のいずれか",
+          "limit": "1ページの件数、1〜100（デフォルト20）",
+          "page": "ページ番号（デフォルト1）"
+        }
+      },
+      "v1-orders-id-get": {
+        "description": "キーのワークスペースから、明細行を含む単一の注文を取得"
+      },
+      "v1-customers-get": {
+        "description": "キーのワークスペース内の顧客を支出合計付きで一覧表示（ページネーション）",
+        "params": {
+          "segment": "セグメントで絞り込み（VIP、REGULAR、NEW）",
+          "limit": "1ページの件数、1〜100（デフォルト20）",
+          "page": "ページ番号（デフォルト1）"
+        }
+      },
+      "v1-customers-id-get": {
+        "description": "キーのワークスペースから単一の顧客を取得"
+      }
+    },
+    "tryItHint": "このダッシュボードから認証済みセッションで実際のリクエストを実行します。",
+    "groups": {
+      "Orders": "注文",
+      "Products": "商品",
+      "Customers": "顧客",
+      "Dashboard": "ダッシュボード",
+      "Search": "検索",
+      "Notifications": "通知",
+      "Analytics": "アナリティクス",
+      "Authentication": "認証",
+      "Team": "チーム",
+      "Billing": "請求",
+      "Reports": "レポート",
+      "System": "システム",
+      "Inventory": "在庫",
+      "API Sandbox": "API Sandbox"
+    }
   },
   "dashboard": {
     "title": "ダッシュボード概要",
@@ -113,6 +371,9 @@
     "qaDiscountCodeDesc": "新しい割引を作成",
     "funnel": "コンバージョンファネル",
     "funnelDesc": "訪問者から購入までのコンバージョン率を追跡",
+    "funnelGoalsLabel": "ファネル目標",
+    "funnelSessions": "セッション",
+    "funnelEmpty": "ファネル段階が選択されていません",
     "funnelVisitors": "訪問者",
     "funnelAddToCart": "カートに追加",
     "funnelCheckout": "チェックアウト",
@@ -171,6 +432,17 @@
     "resetView": "ビューをリセット",
     "funnelHealthTitle": "コンバージョンファネル＆運用ヘルス",
     "funnelHealthDesc": "マルチティアの購買導線とチェックアウトパイプライン速度",
+    "radarViewFilled": "塗りつぶし",
+    "radarViewDotted": "点線",
+    "radarViewLines": "線のみ",
+    "radarViewScore": "中央スコア",
+    "radarAria": "パイプライン段階ごとのコンバージョンレーダー",
+    "radarVsPrevious": "差分は前期間との比較です",
+    "radarBestStage": "最も強い段階",
+    "radarBiggestDrop": "最大の離脱",
+    "radarTotalPipeline": "パイプライン内",
+    "radarEndToEnd": "エンドツーエンド率",
+    "radarNoData": "データが不足しています",
     "financialSimulatorTitle": "財務シミュレーター＆収益予測レポート",
     "financialSimulatorDesc": "モンテカルロ法による成長予測とランウェイ試算",
     "activityFeedTitle": "アクティビティフィード",
@@ -180,7 +452,74 @@
     "activityFeedEarlier": "以前のイベント",
     "activityFeedEarlierTip": "このタブを開く前に発生したイベント",
     "analyticsTitle": "アナリティクス",
-    "analyticsDesc": "収益トレンド、チャネル別パフォーマンス、顧客コホートをすべての販売チャネルで詳しく分析します。"
+    "analyticsDesc": "収益トレンド、チャネル別パフォーマンス、顧客コホートをすべての販売チャネルで詳しく分析します。",
+    "metricProfit": "ç´”åˆ©ç›Š",
+    "metricProfitDesc": "åŽç›Šã‹ã‚‰ã‚³ã‚¹ãƒˆã‚’å·®ã—å¼•ã„ãŸé¡",
+    "metricCustomers": "é¡§å®¢",
+    "metricCustomersDesc": "æœŸé–“å†…ã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ–æ•°",
+    "metricOrders": "æ³¨æ–‡",
+    "metricOrdersDesc": "æœŸé–“å†…ã®æ³¨æ–‡ä»¶æ•°",
+    "metricAvgOrder": "å¹³å‡æ³¨æ–‡é¡",
+    "metricAvgOrderDesc": "æ³¨æ–‡ã‚ãŸã‚Šã®åŽç›Š",
+    "greetingMorning": "おはようございます、",
+    "greetingAfternoon": "こんにちは、",
+    "greetingEvening": "こんばんは、",
+    "viewOrders": "注文を見る",
+    "restock": "再入荷",
+    "newOrderTitle": "{count, plural, other {新規注文 #件}}",
+    "orderRevenue": "総売上 ${revenue}",
+    "milestoneTitle": "🎉 売上マイルストーン達成！",
+    "newCustomerTitle": "{count, plural, other {新規顧客 #名}}",
+    "customerTotal": "合計: {count}名の顧客",
+    "lowStockTitle": "⚠️ 在庫少アイテム {count}件",
+    "productsNeedRestock": "{count}商品の再入荷が必要です",
+    "discountsExpiringTitle": "{count, plural, other {まもなく終了する割引 #件}}",
+    "newProductTitle": "{count, plural, other {新商品 #件追加}}",
+    "catalogTotal": "カタログ合計 {count}商品",
+    "budgetExhaustedTitle": "🚨 予算使い切り: {name}",
+    "budgetSpentOf": "予算 ${budget} のうち ${spent} を使用",
+    "budgetNearTitle": "⚠️ 予算 {percent}% 使用: {name}",
+    "pendingOrdersTitle": "🔔 保留中の注文 {count}件",
+    "pendingOrdersDesc": "処理待ちの注文があります",
+    "filteredMonth": "{month} に絞り込み中",
+    "pipelineTitle": "パイプライン",
+    "pipelineRange7D": "過去7日間",
+    "pipelineRange30D": "過去30日間",
+    "pipelineRange90D": "過去90日間",
+    "pipelineTotal": "{range}に{total}件のイベント",
+    "stageVisits": "訪問",
+    "stageSignups": "サインアップ",
+    "stageActive": "アクティブ",
+    "stagePro": "Pro",
+    "stageTeam": "チーム",
+    "stageEnterprise": "エンタープライズ",
+    "channelMix": "チャネル構成",
+    "channelTrendTitle": "チャネル傾向 — 過去30日間",
+    "chartWeekly": "週次",
+    "chartMonthly": "月次",
+    "chartYearly": "年次",
+    "chartNoData": "収益データがありません",
+    "welcomeBackTitle": "おかえりなさい",
+    "welcomeBackDesc": "前回の訪問は {when} です。続きから始めましょう。",
+    "exportView": "現在のビューを書き出す",
+    "exportViewDesc": "期間内の注文をCSVで書き出し (Enterprise)",
+    "exportSuccess": "書き出しを開始しました",
+    "exportDenied": "書き出しにはEnterpriseプランが必要です",
+    "comparePrev": "前期間との比較",
+    "noPrevData": "—",
+    "stageConvTitle": "ステージ転換率",
+    "stageConvDelta": "前期比 {delta} ポイント",
+    "stageConvFlat": "前期データなし",
+    "stageConvOfPrev": "前期の {range} 比",
+    "channelRingsTitle": "チャネル目標",
+    "ringsEmpty": "チャネル収益がまだありません",
+    "ringsShare": "画像として共有",
+    "ringsShareToast": "チャネルリングの画像を保存しました",
+    "radarRange_7d": "7日",
+    "radarRange_30d": "30日",
+    "radarRange_90d": "90日",
+    "radarRangeLabel": "期間",
+    "radarViewLabel": "レーダースタイル"
   },
   "sales": {
     "title": "売上管理",
@@ -246,6 +585,7 @@
     "phonePlaceholder": "電話番号",
     "cityPlaceholder": "都市",
     "confirmDelete": "この顧客を削除しますか？",
+    "confirmDeleteNamed": "顧客「{name}」を削除しますか？この操作は取り消せません。",
     "updated": "顧客を更新しました",
     "added": "顧客を追加しました",
     "deleted": "顧客を削除しました",
@@ -425,6 +765,7 @@
     "deliverBtn": "配達",
     "cancelBtn": "キャンセル",
     "viewDetails": "詳細を見る",
+    "downloadInvoice": "請求書をダウンロード",
     "guest": "ゲスト",
     "na": "該当なし",
     "markedAs": "注文を {status} に設定しました",
@@ -457,7 +798,9 @@
     "shippedOn": "発送日時",
     "deliveredOn": "配達日時",
     "refundedOn": "返金日時",
-    "invoiceBtn": "請求書"
+    "invoiceBtn": "請求書",
+    "limitBanner": "Starterプランの月間注文上限に達しました。アップグレードすると中断なく注文を受け付けられます。",
+    "upgradeCta": "アップグレード"
   },
   "inventory": {
     "title": "在庫管理",
@@ -506,7 +849,17 @@
     "poMarkedReceived": "入荷受領完了！在庫数が更新されました。",
     "searchPlaceholder": "商品名またはSKUで検索...",
     "categories": "カテゴリー内訳",
-    "categoriesDesc": "カテゴリー別の在庫配分と在庫量。"
+    "categoriesDesc": "カテゴリー別の在庫配分と在庫量。",
+    "poIssueSuccess": "発注書をサプライヤーに発行しました。",
+    "poIssueAction": "発行",
+    "poBulkSelected": "{count}件の下書き発注書を選択中",
+    "poBulkIssueAction": "選択を発行",
+    "poBulkIssueTitle": "{count}件の下書き発注書を発行しますか？",
+    "poBulkIssueDesc": "選択した下書きは発行済みになり、各サプライヤーに送信されます。一括での取り消しはできません。",
+    "poBulkIssueSuccess": "{count}件の発注書を発行しました",
+    "poBulkIssuePartial": "{ok}件成功、{failed}件失敗",
+    "poBulkSelectAll": "すべての下書き発注書を選択",
+    "poBulkSelect": "下書き発注書を選択"
   },
   "settings": {
     "title": "設定",
@@ -558,6 +911,13 @@
     "densityCompact": "コンパクト",
     "densityRegular": "標準",
     "densityLarge": "ゆったり",
+    "themeSwitch": "テーマ切り替え効果",
+    "themeSwitchDesc": "テーマを切り替えたときのライト／ダークの切り替わり方",
+    "themeSwitchCircle": "円形",
+    "themeSwitchCircleBlur": "ぼかし円形",
+    "themeSwitchRectangle": "シャッター",
+    "themeSwitchPolygon": "斜めワイプ",
+    "themeSwitchNone": "即時",
     "widgets": "ダッシュボードウィジェット",
     "widgetsDesc": "ダッシュボードに表示するウィジェットを選択",
     "widgetQuickActions": "クイックアクション",
@@ -575,12 +935,15 @@
     "apiKeyNeverUsed": "未使用",
     "apiKeyRevoke": "取り消す",
     "apiKeyRevokeConfirm": "このAPIキーを取り消しますか？元に戻せません。",
+    "apiKeyReactivate": "再アクティブ化",
     "apiKeyEmpty": "APIキーがありません。作成して始めましょう。",
     "webhooks": "Webhook",
     "webhooksDesc": "リアルタイムイベントのWebhookエンドポイントを設定",
     "webhookUrl": "Webhook URL",
     "webhookEvents": "イベント",
     "webhookAdd": "Webhookを追加",
+    "webhookDelete": "Webhookを削除",
+    "webhookEdit": "Webhookを編集",
     "webhookActive": "アクティブ",
     "webhookInactive": "非アクティブ",
     "webhookEmpty": "Webhookが設定されていません。追加してイベント通知を受け取りましょう。",
@@ -612,7 +975,49 @@
     "webhookNeverTriggered": "トリガーなし",
     "webhookDeliveryCount": "{count}件の配信",
     "webhookSelectEvents": "少なくとも1つのイベントを選択",
-    "webhookUpdate": "Webhookを更新"
+    "webhookUpdate": "Webhookを更新",
+    "theme": "テーマ",
+    "tourReplay": "ツアーを再生",
+    "tourReplayDesc": "上で選択した言語でダッシュボードのガイドツアーを再生します。",
+    "tourReplayToast": "ツアーを開始します — ダッシュボードへ移動してください。",
+    "scheduler": {
+      "title": "スケジューラの状態",
+      "enabled": "有効",
+      "disabled": "無効",
+      "disabledHint": "開発環境ではアプリ内スケジューラは無効です。.env.local に SCHEDULER_ENABLED=1 を設定（または本番で実行）すると有効になります。",
+      "never": "未実行",
+      "justNow": "たった今",
+      "minsAgo": "{n}分前",
+      "hoursAgo": "{n}時間前",
+      "jobDigest": "使用量ダイジェスト（毎日 02:00）",
+      "jobAutoPayout": "アフィリエイト自動払い出し（毎時チェック）",
+      "jobWebhookRetry": "Webhook 再試行スイープ（5分ごと）",
+      "jobAutoReorder": "発注書自動ドラフト（毎時チェック）",
+      "jobSupabaseSync": "Supabase ミラー同期",
+      "jobSupabaseLeafSync": "Supabaseリーフ同期（30分）",
+      "jobBackupVerify": "バックアップ復元検証",
+      "snapshotsTitle": "ロールバックスナップショット",
+      "snapshotsEmpty": "スナップショットはまだありません — Supabase ミラー同期のたびに作成されます。",
+      "restore": "復元",
+      "restoreConfirmTitle": "このスナップショットを復元しますか？",
+      "restoreConfirmDesc": "リモート Supabase を同期前のスナップショット「{file}」で上書きします。以後にリモートへ追加された行は失われます。",
+      "restoreConfirmAction": "スナップショットを復元",
+      "restoreDone": "{file} からリモートを復元しました",
+      "restoreFailed": "復元に失敗しました",
+      "jobTrialSweep": "トライアル期限スイープ",
+      "jobScheduledReports": "レポートの定期送信",
+      "verify": "検証",
+      "verifyDone": "バックアップ検証済み: {file} をスクラッチDBに {tables} テーブルで復元 (検証後削除)。",
+      "verifyFailed": "検証失敗: {detail}",
+      "verifyNone": "検証できるスナップショットがまだありません"
+    },
+    "digestPreviewTitle": "毎日のメールダイジェスト",
+    "digestPreviewDesc": "毎日送信される利用状況メールのライブプレビュー — クォータ表と見逃したイベントを表示します。",
+    "digestPreviewRefresh": "プレビューを更新",
+    "digestPreviewUnavailable": "ダイジェストのプレビューは現在利用できません。",
+    "digestPreviewMissedTitle": "不在の間に",
+    "digestPreviewPlan": "{plan}プラン向けに毎日送信されます。",
+    "jobTrialSweep": "トライアル期限スイープ"
   },
   "team": {
     "title": "チーム管理",
@@ -628,6 +1033,12 @@
     "manager": "マネージャー",
     "staff": "スタッフ",
     "noMembers": "チームメンバーが見つかりません",
+    "sortName": "名前",
+    "sortDateModified": "更新日",
+    "sortType": "種類",
+    "sortAuthor": "作成者",
+    "sortAscending": "昇順",
+    "sortDescending": "降順",
     "confirmRemove": "このメンバーを削除しますか？",
     "memberUpdated": "メンバーを更新しました",
     "memberAdded": "メンバーを追加しました",
@@ -637,7 +1048,7 @@
     "addMemberSubmit": "メンバーを追加",
     "editBtn": "編集",
     "removeBtn": "削除",
-    "superAdmin": "スーパー管理者",
+    "adminConsole": "管理者",
     "auditor": "監査担当者",
     "invitations": "招待",
     "invitationsDesc": "保留中のチーム招待",
@@ -672,7 +1083,14 @@
     "saveInvitation": "変更を保存",
     "inviteUpdated": "招待が正常に更新されました",
     "revokeInviteTitle": "チーム招待の取り消し",
-    "revokeInviteConfirm": "この招待を取り消してもよろしいですか？受信者はこのリンクを使用してワークスペースに参加できなくなります。"
+    "revokeInviteConfirm": "この招待を取り消してもよろしいですか？受信者はこのリンクを使用してワークスペースに参加できなくなります。",
+    "client": "クライアント",
+    "clientEnterprise": "クライアント（エンタープライズ）",
+    "clientLevel_STARTER": "スターター（無料）",
+    "clientLevel_PROFESSIONAL": "プロフェッショナル",
+    "clientLevel_ENTERPRISE": "SSO エンタープライズ",
+    "activityCol": "アクティビティ (12週)",
+    "activityTooltip": "過去12か月で {total} 件 / {days} 活動日"
   },
   "roles": {
     "title": "ロール・権限",
@@ -762,6 +1180,11 @@
     "emailVerified": "メール確認済み",
     "emailNotVerified": "メール未確認",
     "verifiedOn": "{date} に確認済み",
+    "mfaReverifyDue": "2FAは過去30日間確認されていません。アカウントの保護を維持するために今すぐ確認してください。",
+    "mfaReverifyNow": "今すぐ確認",
+    "mfaReverifyTitle": "本人確認",
+    "mfaReverifyDesc": "認証アプリの6桁のコードを入力して、二要素認証が有効であることを確認してください。",
+    "mfaReverifySuccess": "本人確認が完了しました — 今後30日間は有効です",
     "verifyPrompt": "メールを確認してアカウントを保護し、すべての機能にフルアクセスしましょう。",
     "verificationLink": "確認リンク（デモ）",
     "verificationNote": "本番環境では、このリンクはメールで送信されます。クリックしてメールを確認してください。",
@@ -839,7 +1262,33 @@
     "resendInSeconds": "{seconds}秒後に再送信",
     "emailResendNote": "確認メールを送信しました。{seconds}秒後に再リクエストできます。",
     "emailVerifyLinkInvalid": "この確認リンクは無効か期限切れです。",
-    "resendEmail": "メールを再送信"
+    "resendEmail": "メールを再送信",
+    "scanQrTitle": "QRコードをスキャン",
+    "copySecret": "コードをコピー",
+    "verifyCodeHint": "認証アプリの6桁のコードを入力してください。",
+    "coverUpload": "カバー",
+    "coverRemove": "削除",
+    "coverUpdated": "カバーを更新しました",
+    "coverRemoved": "カバーを削除しました",
+    "activityTitle": "アクティビティ",
+    "activitySummary": "今年は{days}日の活動で{total}件の貢献",
+    "activityGranWeekly": "週次",
+    "activityGranMonthly": "月次",
+    "activityGranYearly": "年次",
+    "activityLess": "少ない",
+    "activityMore": "多い",
+    "activityCellHeadline": "{count, plural, =0 {{date} のアクティビティなし} other {{date} のアクティビティ #件}}",
+    "activityBucketHeadline": "{label} · {count, plural, =0 {アクティビティなし} other {アクティビティ #件}}",
+    "dow0": "月",
+    "dow1": "火",
+    "dow2": "水",
+    "dow3": "木",
+    "dow4": "金",
+    "dow5": "土",
+    "dow6": "日",
+    "coverCropTitle": "カバー画像を切り抜く",
+    "coverCropDesc": "ドラッグでバナーの構図を調整し、ズームを調整して保存します。4:1 のバナーとして保存されます。",
+    "coverCropSave": "カバーを保存"
   },
   "billing": {
     "title": "サブスクリプション・請求",
@@ -937,7 +1386,12 @@
     "indonesianBanksDesc": "国有・民間・4大地域BPD・デジタル銀行など50行以上を網羅",
     "actionsCol": "アクション",
     "processInvoice": "処理",
-    "invoicePaidSuccess": "請求書が正常に処理され、支払い済みとしてマークされました！"
+    "invoicePaidSuccess": "請求書が正常に処理され、支払い済みとしてマークされました！",
+    "displayCurrency": "è¡¨ç¤ºé€šè²¨",
+    "displayCurrencyDesc": "ã™ã¹ã¦ã®è«‹æ±‚é‡‘é¡ã‚’ã“ã®é€šè²¨ã§è¡¨ç¤ºã—ã¾ã™",
+    "currencyNote": "å‚è€ƒãƒ¬ãƒ¼ãƒˆã§æ›ç®— - æ±ºæ¸ˆã¯ {base} ã®ã¾ã¾ã§ã™",
+    "invoiceTotal": "è«‹æ±‚åˆè¨ˆ",
+    "convertedLabel": "~ {amount}"
   },
   "integrations": {
     "title": "連携",
@@ -1086,7 +1540,22 @@
     "scopeHint": "スコープ: read、write、admin。取り消されたキーや期限切れのキーは理由とともに 403 を返します。",
     "authorizationLabel": "Authorization",
     "tabChatAlerts": "チームチャット (Slack & Discord)",
-    "tabOmnichannel": "オムニチャネル同期"
+    "tabOmnichannel": "オムニチャネル同期",
+    "tabDlq": "配信ステータス",
+    "dlqFailed": "失敗",
+    "dlqRetrying": "再試行中",
+    "dlqResolved": "解決済み",
+    "dlqTotal": "合計",
+    "dlqEmpty": "すべての配信は正常です",
+    "dlqEmptyDesc": "失敗した受信Webhookはありません。失敗した配信はここで再送または破棄できます。",
+    "dlqExhausted": "上限超過",
+    "dlqAttempts": "{max} 回中 {count} 回試行",
+    "dlqReplay": "再送",
+    "dlqDiscard": "破棄",
+    "dlqDiscardConfirmTitle": "この配信を破棄しますか？",
+    "dlqDiscardConfirmDesc": "失敗したWebhookペイロードは処理されずに完全に削除されます。",
+    "dlqError": "エラー",
+    "dlqNextRetry": "次回の再試行"
   },
   "audit": {
     "title": "監査ログ",
@@ -1103,7 +1572,27 @@
     "previous": "前へ",
     "next": "次へ"
   },
+  "checkoutSuccess": {
+    "title": "お支払いが完了しました",
+    "body": "ご登録ありがとうございます。アカウントはアップグレードされ、すべてのプレミアム機能をご利用いただけます。",
+    "cta": "ダッシュボードへ"
+  },
   "common": {
+    "toggleTheme": "テーマを切り替え",
+    "commandPlaceholder": "注文・顧客・商品を検索...",
+    "commandSearching": "検索中...",
+    "commandNoResults": "「{query}」に一致する結果はありません",
+    "commandNoResultsHint": "注文番号、顧客名、商品名で試してください。",
+    "commandTypeToSearch": "2文字以上入力して検索",
+    "commandTypeToSearchHint": "注文・顧客・商品をまとめて検索できます。",
+    "commandGroupNavigation": "ナビゲーション",
+    "commandGroupQuickActions": "クイック操作",
+    "commandGroupOrders": "注文",
+    "commandGroupCustomers": "顧客",
+    "commandGroupProducts": "商品",
+    "commandNavigate": "移動",
+    "commandOpen": "開く",
+    "commandToggle": "切り替え",
     "search": "検索...",
     "filter": "フィルター",
     "export": "エクスポート",
@@ -1136,6 +1625,13 @@
     "expired": "期限切れ",
     "na": "該当なし",
     "copy": "コピー",
+    "copied": "クリップボードにコピーしました",
+    "copyUrl": "URLをコピー",
+    "copyPrefix": "プレフィックスをコピー",
+    "copyAwb": "AWBをコピー",
+    "backToTop": "トップへ戻る",
+    "resumeLive": "ライブ更新を再開",
+    "exportCsv": "CSVとしてエクスポート",
     "done": "完了",
     "selectAll": "すべて選択",
     "showingOf": "{from}–{to} 件を表示中（全 {total} 件）",
@@ -1156,7 +1652,11 @@
     "secondsAgo": "{count}秒前",
     "minutesAgo": "{count}分前",
     "hoursAgo": "{count}時間前",
-    "daysAgo": "{count}日前"
+    "daysAgo": "{count}日前",
+    "retry": "再試行",
+    "dismiss": "閉じる",
+    "dismissNotification": "通知を閉じる",
+    "notifications": "通知"
   },
   "notifications": {
     "title": "通知センター",
@@ -1272,7 +1772,13 @@
     "pushNotificationsTitle": "ブラウザプッシュ通知",
     "pushNotificationsDesc": "アプリを閉じていても、ブラウザで直接通知を受け取れます。",
     "enablePushLabel": "プッシュ通知を有効にする",
-    "enablePushDesc": "ダッシュボードからウェブプッシュ通知を受信できるようにします。"
+    "enablePushDesc": "ダッシュボードからウェブプッシュ通知を受信できるようにします。",
+    "pushEnabledToast": "プッシュ通知を有効にしました",
+    "pushFailedToast": "プッシュ通知の有効化に失敗しました",
+    "pushDeniedToast": "プッシュ権限が拒否されたか、サポートされていません",
+    "pushDisabledToast": "プッシュ通知を無効にしました",
+    "closePanel": "通知を閉じる",
+    "typeBilling": "請求"
   },
   "contactPage": {
     "badge": "お問い合わせ",
@@ -1312,6 +1818,47 @@
     "ctaTitle": "ライブデモをご希望ですか？",
     "ctaDesc": "チームによるパーソナライズされた案内で Dashboard を体験できます。ビジネスにどう適合するかをご紹介します。",
     "ctaButton": "無料トライアルを開始"
+  },
+  "careersPage": {
+    "heroTag": "採用募集中",
+    "heroPrefix": "基盤をつくるのは",
+    "heroWord1": "現代のコマース。",
+    "heroWord2": "成長するチーム。",
+    "heroWord3": "グローバルな販売者。",
+    "heroSubtitle": "私たちはプロダクトに真剣な小さなチームで、コマース基盤を開発しています。入社初週から実際の加盟店に向けてリリースします。作ったものを使う人との間に層はありません。",
+    "perksTitle": "ここで働く魅力",
+    "perk1Title": "リモート第一",
+    "perk1Desc": "ホームオフィス手当つきで場所を問わず、非同期を基本に働けます。",
+    "perk2Title": "本当のオーナーシップ",
+    "perk2Desc": "小さなチームと広い裁量 — 課題・設計・リリースまで担当します。",
+    "perk3Title": "世界のお客様",
+    "perk3Desc": "初日からインドネシアや日本など各地の加盟店に届けます。",
+    "perk4Title": "儀式よりクラフト",
+    "perk4Desc": "会議は少なく、既定値は強く、細部を磨く時間を確保します。",
+    "rolesTitle": "募集中の職種",
+    "rolesSubtitle": "すべて正社員・募集中です。応募には必ず返信します。",
+    "rolesCount": "募集中 {count} 件",
+    "applyCta": "応募する",
+    "applyAria": "{role}に応募",
+    "role1Title": "シニアプロダクトエンジニア",
+    "role1Dept": "エンジニアリング",
+    "role1Location": "リモート (GMT+7〜+9)",
+    "role1Type": "正社員",
+    "role2Title": "カスタマーサクセスリード",
+    "role2Dept": "Go-to-market",
+    "role2Location": "ジャカルタ（インドネシア）",
+    "role2Type": "正社員",
+    "role3Title": "決済パートナーシップマネージャー",
+    "role3Dept": "パートナーシップ",
+    "role3Location": "リモート (APAC)",
+    "role3Type": "正社員",
+    "role4Title": "プロダクトデザイナー",
+    "role4Dept": "デザイン",
+    "role4Location": "リモート (GMT+7〜+9)",
+    "role4Type": "正社員",
+    "ctaTitle": "希望する職種がありませんか？",
+    "ctaDesc": "ここで何を作りたいか、どう進めたいかを教えてください。合えば予算を用意します。",
+    "ctaButton": "相談する"
   },
   "aboutPage": {
     "badge": "私たちのストーリー",
@@ -1433,7 +1980,27 @@
     "heroPrefix": "必要なものをすべて、",
     "heroWord1": "スケールする準備ができています。",
     "heroWord2": "成長する準備ができています。",
-    "heroWord3": "パフォーマンスを発揮する準備ができています。"
+    "heroWord3": "パフォーマンスを発揮する準備ができています。",
+    "stats": {
+      "locales": "対応言語",
+      "currencies": "対応通貨",
+      "banks": "インドネシアの銀行",
+      "endpoints": "REST API エンドポイント"
+    },
+    "surface": {
+      "eyebrow": "本物のコマースのために構築",
+      "title": "QRIS 決済からエンタープライズ SSO まで",
+      "subtitle": "ASPI 準拠の QRIS 決済、50 以上のインドネシアの銀行・電子マネー、ベクター Code128請求書、すべてのダッシュボードを駆動する SSE — すべて同じ REST API 上で動作します。",
+      "exploreApi": "API リファレンスを見る"
+    },
+    "realtime": {
+      "sse": "SSE リアルタイム配信",
+      "qris": "QRIS 決済",
+      "banks": "50 以上の銀行・ウォレット",
+      "apiKeys": "スコープ付き API キー",
+      "passkeys": "パスキー & 2FA",
+      "invoices": "ベクター請求書"
+    }
   },
   "changelogPage": {
     "badge": "リリースノート",
@@ -1728,10 +2295,13 @@
     "footerEmailPlaceholder": "メールアドレスを入力",
     "footerSubscribe": "今すぐ登録",
     "footerPreviewAlt": "ダッシュボードのプレビュー",
-    "legalContactPrompt": "このページについてのご質問はこちらまで"
+    "legalContactPrompt": "このページについてのご質問はこちらまで",
+    "footerLinkApiDocs": "APIドキュメント"
   },
   "auth": {
     "login": "ログイン",
+    "sessionExpired": "セッションの有効期限が切れました。続けるにはもう一度サインインしてください。",
+    "sessionChanged": "このタブは別のアカウントでサインインしました。もう一度サインインしてください。",
     "register": "アカウント作成",
     "emailLabel": "メールアドレス",
     "emailPlaceholder": "メールアドレス",
@@ -1822,7 +2392,16 @@
     "createAccountButton": "アカウントを作成",
     "creatingAccount": "アカウントを作成中...",
     "registerDescription": "登録して、Next Dashboard を使い始めましょう。",
-    "verifyButton": "確認"
+    "verifyButton": "確認",
+    "strength": {
+      "weak": "å¼±ã„",
+      "fair": "æ™®é€š",
+      "good": "è‰¯ã„",
+      "strong": "å¼·ã„"
+    },
+    "strengthHint": "8æ–‡å­—ä»¥ä¸Šã§ã€å¤§æ–‡å­—ãƒ»å°æ–‡å­—ãƒ»æ•°å­—ãƒ»è¨˜å·ã‚’å«ã‚ã¦ãã ã•ã„ã€‚",
+    "accountCreatedNoEmail": "アカウントが作成されました！現在確認メールを送信できませんでした — 後で設定 → セキュリティから認証できます。",
+    "passkeySignIn": "パスキーでサインイン"
   },
   "csvImport": {
     "importCsv": "CSV インポート",
@@ -1878,6 +2457,7 @@
     "earned": "獲得額",
     "link": "リンク",
     "noLinks": "アフィリエイトリンクはまだありません",
+    "platformRecentLinks": "最近のリンク",
     "openLink": "リンクを開く",
     "activate": "有効化",
     "deactivate": "無効化",
@@ -1950,7 +2530,7 @@
     "tabPayouts": "支払いと送金",
     "totalPaid": "支払い済み合計",
     "pendingBalance": "保留中残高",
-    "availableBalance": "出金可能残高",
+    "availableBalance": "利用可能な報酬",
     "requestPayout": "出金リクエスト",
     "payoutsTitle": "アフィリエイト支払い・出金履歴",
     "payoutsSubtitle": "Stripe ConnectおよびMidtrans Irisによるコミッション送金を追跡",
@@ -1965,7 +2545,16 @@
     "payoutAmount": "出金金額 ($)",
     "selectProvider": "支払い方法を選択",
     "submitPayout": "出金リクエストを送信",
-    "payoutSuccess": "出金リクエストが正常に送信されました"
+    "payoutSuccess": "出金リクエストが正常に送信されました",
+    "settlementBalance": "QRIS決済残高",
+    "insufficientBalance": "金額が利用可能な報酬残高を超えています。",
+    "settlementShortfall": "QRIS決済残高ではこの支払いをまかなえません — 入金するか金額を減らしてください。",
+    "accountInvalid": "この決済手段のアカウントとして無効です",
+    "payoutFailed": "支払いリクエストの送信に失敗しました",
+    "processingPayout": "処理中…",
+    "providerGroupWallet": "電子マネー",
+    "providerGroupBank": "銀行振込",
+    "providerGroupIntl": "国際"
   },
   "security": {
     "activeSessions": "アクティブなセッション",
@@ -2000,6 +2589,12 @@
     "evt_SESSIONS_REVOKED_ALL": "他のすべてのセッションを取り消しました",
     "evt_STEP_UP_VERIFIED": "再認証を確認しました",
     "evt_REFRESH_REUSE": "リフレッシュトークンの再利用を検出",
+    "evt_RATE_LIMITED": "試行が多すぎます — 一時的に制限中",
+    "evt_REFRESH_REUSE_GRACE": "同時セッションの更新（許容）",
+    "evt_SIGNIN_ALERT_SENT": "新しいサインイン通知をメール送信",
+    "evt_SIGNIN_ALERT_SUPPRESSED": "サインイン通知を抑制（既知のデバイス）",
+    "evt_ACCOUNT_DELETED": "アカウントが削除されました",
+    "evt_SSO_CONNECTION_DELETED": "SSO 接続が削除されました",
     "evt_PASSKEY_ADDED": "パスキーを追加しました",
     "evt_PASSKEY_REMOVED": "パスキーを削除しました",
     "evt_PASSKEY_LOGIN": "パスキーでサインイン",
@@ -2010,6 +2605,7 @@
     "passkeys": "パスキー",
     "passkeysDesc": "Touch ID、Windows Hello、セキュリティキーでサインイン。パスワード不要でフィッシング耐性があります。",
     "addPasskey": "パスキーを追加",
+    "passkeyRegistered": "パスキー登録済み",
     "passkeyAdded": "パスキーを追加しました",
     "passkeyRemoved": "パスキーを削除しました",
     "passkeyUnsupported": "パスキーを追加するには安全なコンテキスト（HTTPS または localhost）でサイトを開いてください。",
@@ -2024,6 +2620,10 @@
     "verifyPasswordLabel": "パスワード",
     "verifyPasswordPlaceholder": "現在のパスワードを入力",
     "verifyConfirm": "確認して削除",
+    "totpLabel": "認証コード",
+    "totpConfirm": "コードで確認",
+    "totpFreshnessHint": "30日ごとの二要素再認証の期限です。続行するには認証アプリのコードを入力してください。",
+    "totpRequired": "6桁の認証コードを入力してください",
     "verifying": "確認中…",
     "verificationFailed": "確認に失敗しました",
     "verifyPasswordRequired": "続行するにはパスワードを入力してください",
@@ -2032,6 +2632,13 @@
     "scoreLabel": "セキュリティスコア",
     "scoreOf": "100 点満点",
     "scoreGreat": "アカウントは強力に保護されています。",
+    "scoreAction": "{action}{extra}。",
+    "scoreAlsoMissing": " — 完全な保護まであと{count}ステップ",
+    "missing_totp": "二段階認証を有効にしてください",
+    "missing_passkey": "パスキーを登録してください",
+    "missing_backup": "バックアップコードを生成してください",
+    "missing_email": "メールアドレスを確認してください",
+    "missing_mfaFresh": "二段階認証を再認証してください（30日の鮮度）",
     "scoreGood": "良好 — 二段階認証を有効にするとさらに保護が強化されます。",
     "scoreFair": "二段階認証を有効にしてアカウントを保護しましょう。",
     "scoreWeak": "アカウントにはより強力な保護が必要です。",
@@ -2068,6 +2675,8 @@
     "noSuspicious": "過去 7 日間に不審なアクティビティは検出されていません",
     "refreshActivity": "アクティビティを更新",
     "mfaVerifiedRecent": "MFA 認証済み（直近）",
+    "mfaVerifiedRecentDays": "MFA 認証済み（{count}日前）",
+    "mfaNotVerifiedRecentDays": "MFA 未認証 {count}日",
     "mfaNotVerifiedRecent": "30 日以内に MFA 認証なし",
     "passkeyBackupHint": "パスキーは 1 つだけです。このデバイスを紛失してもサインインできるよう、予備として 2 つ目を追加してください。",
     "lastPasskeyWarning": "これは最後のパスキーです。削除すると、パスキーでサインインできなくなります。",
@@ -2103,7 +2712,33 @@
     "otpDevCode": "開発用コード",
     "unverifiedAlertTitle": "メールアドレスが未確認です",
     "unverifiedAlertDesc": "メールアドレスを確認して本人確認を完了し、アカウントのセキュリティを強化してください。",
-    "unverifiedAlertAction": "今すぐ確認"
+    "unverifiedAlertAction": "今すぐ確認",
+    "evt_EMAIL_DELIVERY_SENT": "確認メールが送信されました",
+    "evt_EMAIL_DELIVERY_FAILED": "確認メールを送信できませんでした",
+    "sessionRecognized": "確認済み",
+    "sessionNew": "新しいデバイス",
+    "telemetryTitle": "アカウントへの圧力",
+    "telemetryPressureBadge": "異常を検知",
+    "telemetryRateLimited": "制限されたログイン",
+    "telemetryRateLimitedWindow": "過去24時間",
+    "telemetryLastOffender": "最終試行元 {ip}",
+    "telemetryLockouts": "ロックアウト",
+    "telemetryLockoutsWindow": "過去7日間",
+    "telemetryLastEvent": "{when}前",
+    "telemetrySessions": "アクティブセッション",
+    "telemetrySessionsHint": "見覚えのないセッションは取り消してください",
+    "telemetryThrottleTitle": "ログイン制限ウィンドウ",
+    "telemetryThrottleCount": "{limit} 回中 {used} 回の試行",
+    "telemetryThrottleBlocked": "ブロック中 — {seconds}秒で解除",
+    "telemetryThrottleClearing": "{seconds}秒で枠が回復",
+    "telemetryThrottleIp": "最多は {ip} から",
+    "scanQrHint": "認証アプリでQRコードをスキャンするか、キーを手動で入力してください。",
+    "scanQrTitle": "QRコードをスキャン",
+    "verifyCodeHint": "認証アプリの6桁のコードを入力してください。",
+    "copySecret": "シークレットキーをコピー",
+    "manualEntryHint": "スキャンできない場合は、このキーを手動で入力：",
+    "verifyButton": "認証",
+    "scoreComplete": "すべての保護が有効です。アカウントは完全に保護されています。"
   },
   "sso": {
     "title": "SSO / エンタープライズ",
@@ -2111,6 +2746,7 @@
     "notConfiguredTitle": "SSO接続がありません",
     "notConfiguredDesc": "SAMLシングルサインオンを設定して、チームが会社のIDプロバイダーでサインインできるようにします。",
     "configureSso": "SSOを設定",
+    "copied": "クリップボードにコピーしました",
     "enabled": "有効",
     "disabled": "無効",
     "certConfigured": "証明書設定済み",
@@ -2223,7 +2859,12 @@
     "q7Label": "売上予測",
     "q7Query": "今後90日間の売上を予測し、ランレートを表示してください",
     "q8Label": "成長軌道",
-    "q8Query": "収益の成長予測と主なパフォーマンス推進要因は何ですか？"
+    "q8Query": "収益の成長予測と主なパフォーマンス推進要因は何ですか？",
+    "copyPrompt": "ãƒ—ãƒ­ãƒ³ãƒ—ãƒˆã‚’ã‚³ãƒ”ãƒ¼",
+    "copiedPrompt": "ãƒ—ãƒ­ãƒ³ãƒ—ãƒˆã‚’ã‚³ãƒ”ãƒ¼ã—ã¾ã—ãŸ",
+    "editPrompt": "ãƒ—ãƒ­ãƒ³ãƒ—ãƒˆã‚’ç·¨é›†",
+    "saveEdit": "å†é€ä¿¡",
+    "cancelEdit": "ã‚­ãƒ£ãƒ³ã‚»ãƒ«"
   },
   "status": {
     "pending": "保留中",
@@ -2387,7 +3028,10 @@
           "CACHE: エッジキャッシュヒット率 98.4%",
           "SECURITY: 管理者セッションの 2FA TOTP を検証済み"
         ]
-      }
+      },
+      "announcement": "v2.4 flow リリース — すべてがリアルタイム",
+      "readMore": "詳しく見る",
+      "changelogAria": "チェンジログを読む"
     },
     "heroSubtitle": "モダンなSaaS構築に必要なすべて：認証、Stripe & Midtrans決済、国際化、ダークモード、ダッシュボードなど。すぐにデプロイ可能。",
     "ctaAccess": "ワークスペースへ",
@@ -2436,7 +3080,10 @@
       "kpiRevenue": "総売上",
       "kpiOrders": "総注文数",
       "kpiCustomers": "総顧客数",
-      "kpiProducts": "総商品数"
+      "kpiProducts": "総商品数",
+      "liveRevenue": "収益サマリー",
+      "liveChannels": "チャネル別売上",
+      "liveOrders": "最近の注文"
     },
     "trust": {
       "b1": "クレジットカード不要",
@@ -2446,11 +3093,11 @@
     },
     "story": {
       "aria": "プロダクトの旅",
-      "badge": "旅の始まり",
+      "badge": "プロダクトの歩み",
       "cta": "ワークスペースを探索",
-      "sub": "4つのシステムがひとつの星座のように連携します。注文から自動化された成長まで、ビジネスの流れを追いましょう。",
-      "t1": "コスモスから、",
-      "t2": "コントロールルームへ",
+      "sub": "チームの業務の流れに沿って製品をたどれます — 注文、決済、分析、自動化が順に積み重なります。",
+      "t1": "4つの章を、",
+      "t2": "ひとつのワークスペースで",
       "c1b": "Shopify、Tokopedia、TikTok、Instagram などすべてのチャネルの注文が、ライブ配信されるひとつの受信箱に集約されます。",
       "c1e": "軌道ナビゲーション",
       "c1f1": "統合受信箱",
@@ -2607,6 +3254,21 @@
     "final": {
       "getStarted": "無料で始める",
       "signIn": "ログイン"
+    },
+    "faq": {
+      "badge": "サポートと回答",
+      "titlePart1": "よくある",
+      "titlePart2": "ご質問 (FAQ)",
+      "q1": "マルチチャネル同期はどのように機能しますか？",
+      "a1": "Next DashboardはShopify、TikTok Shop、Shopee、Tokopediaのストアと直接連携します。すべての在庫、注文、顧客データは安全なWebhookとREST APIを介してリアルタイムで同期されます。",
+      "q2": "ダッシュボードをカスタマイズしたり、カスタムAPIを連携できますか？",
+      "a2": "はい、もちろん可能です。統一されたREST APIでカスタム統合を構築し、リアルタイム通知用のWebhookを設定し、UIコンポーネントをチームの業務フローに合わせて自在に調整できます。",
+      "q3": "サポートされている決済ゲートウェイは何ですか？",
+      "a3": "Stripe（世界各国のカード、Apple Pay、Google Pay）およびMidtrans（インドネシアの仮想口座、GoPay、OVO、QRIS決済）のネイティブ連携を提供しています。税金計算と自動請求書発行も組み込まれています。",
+      "q4": "データと顧客情報のセキュリティは万全ですか？",
+      "a4": "すべてのデータはAES-256およびTLS 1.3により転送中および保存時に暗号化されます。FIDO2パスキー、WebAuthn、TOTP 2要素認証、暗号化監査ログを完備しています。",
+      "q5": "無料トライアルはありますか？",
+      "a5": "はい、クレジットカード不要でProfessionalプランの14日間無料トライアルをお試しいただけます。リアルタイム分析や注文テスト、マルチチャネル同期をすぐにご体験いただけます。"
     }
   },
   "pricingPage": {
@@ -2733,7 +3395,10 @@
     "faqQ3": "対応している支払い方法は？",
     "faqA3": "主要なクレジットカード、PayPal、年間プランの銀行振込に対応しています。すべての支払いはStripeを通じて安全に処理されます。",
     "faqQ4": "サブスクリプションを解約できますか？",
-    "faqA4": "はい、いつでも解約できます。現在の請求期間の終了までアクセスは継続されます。"
+    "faqA4": "はい、いつでも解約できます。現在の請求期間の終了までアクセスは継続されます。",
+    "faqBadge": "料金に関する質問",
+    "faqTitlePart1": "よくある",
+    "faqTitlePart2": "ご質問 (FAQ)"
   },
   "legal": {
     "termsTitle": "利用規約",
@@ -2881,7 +3546,7 @@
     "installButton": "アプリをインストール",
     "howToInstall": "インストールの手順",
     "later": "後で",
-    "offlineBanner": "オフライン状態です — キャッシュされたデータを表示しています",
+    "offlineBanner": "オフラインです — 変更はローカルに保存されます",
     "reconnectedBanner": "オンラインに復帰しました — リアルタイム同期が有効です",
     "iosTitle": "iPhoneまたはiPadにインストール",
     "iosSubtitle": "Safariで以下の手順に沿ってLevTechダッシュボードをホーム画面に追加してください:",
@@ -2891,7 +3556,18 @@
     "iosStep2Desc": "共有シートを下にスクロールして「ホーム画面に追加」を選択します。",
     "iosStep3Title": "右上の「追加」をタップ",
     "iosStep3Desc": "ホーム画面にLevTechアプリアイコンが配置されます。",
-    "gotIt": "了解しました"
+    "gotIt": "了解しました",
+    "retry": "再試行",
+    "syncedToast": "{count, plural, other {# 件の変更を同期しました}}",
+    "syncingBanner": "オンラインに戻りました — {count} 件の変更を同期中…",
+    "offlineTitle": "オフラインです",
+    "offlineDesc": "インターネット接続が切断されたようです。すでに開いている機能は動作し続け、行った変更はキューに入り、再接続時に自動的に同期されます。",
+    "offlineQueueNote": "オフライン中の注文や編集はこの端末に保存され、自動的に再生されます — データは失われません。",
+    "queuePending": "{count, plural, other {# 件の変更が同期待ち}}",
+    "queueEmpty": "同期待ちの項目はありません",
+    "tryAgain": "再試行",
+    "syncNow": "今すぐ同期",
+    "queuedToast": "オフラインで保存しました — 再接続時に自動的に同期されます"
   },
   "branding": {
     "brandingTitle": "ホワイトレーベルとブランド設定",
@@ -2931,7 +3607,15 @@
     "taxId": "納税者番号 / NPWP",
     "taxIdPlaceholder": "00.000.000.0-000.000",
     "invoiceAddress": "請求書登録住所",
-    "invoiceAddressPlaceholder": "番地、市区町村、郵便番号、国"
+    "invoiceAddressPlaceholder": "番地、市区町村、郵便番号、国",
+    "logoLibraryLabel": "ローカルアイコンライブラリ",
+    "logoUpload": "SVGをアップロード",
+    "logoImportUrl": "URLからインポート",
+    "logoImportUrlDesc": "https:// の画像URLまたは data:image/... データURLをロゴとして貼り付けてください。",
+    "logoImportUrlPlaceholder": "https://example.com/logo.svg",
+    "logoImportApply": "ロゴを使用",
+    "logoImported": "ロゴを適用しました — 保存を忘れずに",
+    "logoImportFailed": "そのロゴをインポートできませんでした"
   },
   "tenants": {
     "switchOrganization": "組織の切り替え",
@@ -2970,7 +3654,10 @@
     "breakevenAtMonth": "{month}ヶ月目で損益分岐",
     "rfmTitle": "RFM顧客セグメンテーションエンジン",
     "rfmSubtitle": "最終購買日（Recency）、頻度（Frequency）、購入金額（Monetary）に基づく自動行動分類",
-    "customersUnit": "顧客"
+    "customersUnit": "顧客",
+    "upsellTitle": "コホート分析はProfessional機能です",
+    "upsellDesc": "すべての顧客コホートのリテンション、LTV:CAC、RFMセグメントを追跡。Professionalにアップグレードするとリテンションヒートマップの全機能が使えます。",
+    "upsellCta": "プランを見る"
   },
   "chatAlerts": {
     "hubTitle": "チームチャットアラートハブ",
@@ -3177,7 +3864,7 @@
     "flaggedQueueTitle": "不審検知取引キュー",
     "flaggedQueueDesc": "自動ルールアクションおよび手動監査トリガーを備えたリアルタイムスコアリングキュー",
     "rulesConfigTitle": "動的リスクルールエンジン",
-    "rulesConfigDesc": "決済検証および自動無効化のための設定可能な閾値トリガー",
+    "rulesConfigDesc": "自動決済防衛のしきい値トリガー",
     "dossierModalTitle": "チャージバック異議申立防御書類",
     "dossierModalDesc": "StripeおよびMidtransでの異議申し立て代理用の暗号検証済み証拠パケット",
     "autoApprove": "自動承認",
@@ -3195,7 +3882,36 @@
     "threeDsStatus": "3Dセキュア2.2認証状況",
     "issuerStatement": "カード発行会社向け推奨陳述書",
     "downloadDossier": "PDF証拠書類を出力",
-    "saveRules": "ルールを保存"
+    "saveRules": "ルールを保存",
+    "realtimeBadge": "ライブリスクレーダー",
+    "legendActiveThreat": "検知トラフィック",
+    "legendSafeBaseline": "安全ベースライン",
+    "axisVelocity": "速度",
+    "axisGeo": "地域不一致",
+    "axisDevice": "デバイスフィンガープリント",
+    "axisBehavior": "行動異常",
+    "axisNetwork": "VPN / BIN リスク",
+    "colOrderCustomer": "注文 / 顧客",
+    "colAmount": "金額",
+    "colIpGeo": "IP & 地域",
+    "colRecommendation": "推奨",
+    "colAction": "アクション",
+    "colRegion": "地域",
+    "vpnTorFlag": "VPN/Tor 検出",
+    "rec_AUTO_APPROVE": "自動承認",
+    "rec_CHALLENGE_3DS": "3DS チャレンジ",
+    "rec_MANUAL_REVIEW": "手動レビュー",
+    "rec_AUTO_VOID": "自動取消",
+    "highTrustMatch": "高信頼一致",
+    "signedDeliveryProof": "署名済みの実配送証明が利用可能",
+    "copyStatement": "声明をコピー",
+    "ipAsnTelemetry": "IP & ASN テレメトリ",
+    "generatingDossier": "フォレンジック資料を生成中…",
+    "copiedToClipboard": "クリップボードにコピーしました",
+    "loadDossierFailed": "争議資料の読み込みに失敗しました",
+    "saveRulesFailed": "ルールの更新に失敗しました",
+    "radarHeadlineDefault": "平均脅威スコア",
+    "probeHint": "マトリックス上でポインターを動かしてリスク軸を確認"
   },
   "logisticsFleet": {
     "title": "物流車両フリート＆配送業者リアルタイム追跡",
@@ -3302,6 +4018,8 @@
     "useAppearanceColor": "外観テーマカラーを使用",
     "notesLabel": "フッターの法的注記と規約",
     "notesPlaceholder": "公式電子計算機処理インボイス。BI-FAST決済規則に基づく正当な取引証明書。",
+    "currencyLabel": "請求書の通貨",
+    "currencyHint": "金額は米ドルで保存され、印刷された請求書では選択した表示通貨に変換されます。",
     "securityBadgesLabel": "セキュリティとバーコードバッジ",
     "showBarcodeLabel": "Code 128 バーコード",
     "showQrLabel": "検証用QRコード",
@@ -3380,7 +4098,11 @@
     "posTitle": "レジPOSクイックテンキー端末",
     "posSubtitle": "リアルタイムの動的QRIS生成と音声フィードバックを備えたウォークイン請求端末",
     "settlementTitle": "加盟店精算照合およびマルチチャネル支払い",
-    "disputeTitle": "異議申し立ておよびチャージバック解決センター"
+    "disputeTitle": "異議申し立ておよびチャージバック解決センター",
+    "posAudioOn": "音声オン",
+    "posAudioMuted": "音声オフ",
+    "posAudioChimesEnabled": "通知音は有効です",
+    "posAudioMutedTip": "ミュート"
   },
   "webhookSimulator": {
     "simulateWebhook": "ゲートウェイWebhookをシミュレート",
@@ -3428,6 +4150,309 @@
     "stepCustomize": "外観をカスタマイズする",
     "stepCustomizeDesc": "カスタムカラーとブランディングでダッシュボードを自分好みにする",
     "allDone": "準備完了です！",
-    "allDoneDesc": "すべての設定手順を完了しました。販売をお楽しみください！"
+    "allDoneDesc": "すべての設定手順を完了しました。販売をお楽しみください！",
+    "takeTour": "ツアーを見る"
+  },
+  "aiGenerator": {
+    "title": "AI コンテンツ生成",
+    "subtitle": "高度な AI モデルで、コンバージョン率の高いコピーを数秒で生成します。",
+    "configTitle": "設定",
+    "configDesc": "AI に書きたい内容を伝えてください。",
+    "topicLabel": "トピックまたはプロンプト",
+    "topicPlaceholder": "例：新しい SaaS ユーザー向けのウェルカムメール……",
+    "contentTypeLabel": "コンテンツの種類",
+    "typeBlog": "ブログ記事",
+    "typeEmail": "メールキャンペーン",
+    "typeSocial": "SNS 投稿",
+    "typeAd": "広告コピー",
+    "toneLabel": "トーン",
+    "toneProfessional": "プロフェッショナル",
+    "toneCasual": "カジュアルで親しみやすい",
+    "toneUrgent": "緊急性と説得力",
+    "toneHumorous": "ユーモラス",
+    "generate": "コンテンツを生成",
+    "generating": "生成中……",
+    "aiWriting": "AI がコンテンツを作成しています……",
+    "resultTitle": "結果",
+    "resultEmpty": "生成されたコンテンツがここに表示されます。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "saveToProjects": "プロジェクトに保存"
+  },
+  "projects": {
+    "title": "プロジェクト",
+    "subtitle": "生成した AI コンテンツを管理・確認できます。",
+    "newProject": "新規プロジェクト",
+    "recentContent": "最近のコンテンツ",
+    "searchPlaceholder": "プロジェクトを検索……",
+    "colTitle": "プロジェクト名",
+    "colType": "種類",
+    "colDate": "作成日",
+    "colStatus": "ステータス",
+    "colActions": "操作",
+    "noResults": "プロジェクトが見つかりません。",
+    "statusCompleted": "完了",
+    "statusDraft": "下書き",
+    "typeEmail": "メール",
+    "typeBlog": "ブログ",
+    "typeSocial": "SNS",
+    "typeAd": "広告"
+  },
+  "liquidGlass": {
+    "dock": "ガラスドック",
+    "howCanIHelp": "本日はどのようなご用件でしょうか？"
+  },
+  "docsPage": {
+    "heroTag": "ドキュメント",
+    "heroTitle": "Next Dashboard で構築",
+    "heroSubtitle": "統合・自動化・リリースに必要なすべて — クイックスタート、API リファレンス、Webhook、決済ガイドを 1 か所に。",
+    "openApiDocs": "API リファレンスを開く",
+    "quickstartCurl": "curl https://api.nextdashboard.dev/v1/health \\\n  -H \"Authorization: Bearer sk_live_your_api_key\"",
+    "topicsTitle": "トピックで探す",
+    "topicsSubtitle": "数分で最初のリクエストまで到達できる、短く焦点を絞ったガイド。",
+    "topics": {
+      "quickstart": {
+        "title": "クイックスタート",
+        "desc": "API キーを作成し、認証して、REST API への最初のリクエストを送信します。"
+      },
+      "authentication": {
+        "title": "認証",
+        "desc": "Bearer トークン、キーのローテーション、スコープ、シークレットの安全な管理。"
+      },
+      "restApi": {
+        "title": "REST API v1",
+        "desc": "注文・商品・顧客・在庫・レポートのバージョン付きエンドポイント。"
+      },
+      "webhooks": {
+        "title": "Webhook",
+        "desc": "order.completed、payment.confirmed、inventory.low をリアルタイムで受信。"
+      },
+      "payments": {
+        "title": "決済",
+        "desc": "Stripe、Midtrans、QRIS、仮想口座 — 1 つのチェックアウトですべての決済手段に対応。"
+      },
+      "multiCurrency": {
+        "title": "多通貨",
+        "desc": "USD・IDR・JPY・EUR・SGD・CNY での価格設定と決済、リアルタイム換算。"
+      },
+      "sdks": {
+        "title": "SDK & サンプル",
+        "desc": "TypeScript・Go・Python 向けのコピペで使えるスニペットとリファレンス実装。"
+      },
+      "security": {
+        "title": "セキュリティ",
+        "desc": "2FA、パスキー、ステップアップ認証、監査証跡、RBAC のベストプラクティス。"
+      }
+    },
+    "ctaTitle": "構築の準備はできましたか？",
+    "ctaDesc": "無料ワークスペースを作成して、今日中に最初の統合をリリースしましょう。",
+    "ctaButton": "無料アカウントを作成"
+  },
+  "apiDocsPage": {
+    "title": "API リファレンス",
+    "subtitle": "本番環境の全エンドポイントをグループ別に探索 — ダッシュボードと同じ API 画面。",
+    "searchPlaceholder": "エンドポイントやパスを検索…",
+    "noResults": "検索に一致するエンドポイントはありません。",
+    "try": {
+      "title": "実際に試す",
+      "hint": "このページから実際のリクエストを送信します — ダッシュボードのセッションが認証します。レスポンスはアプリが受け取るものと同じ JSON です。",
+      "noAuth": "このエンドポイントは認証不要です。",
+      "queryParams": "クエリパラメータ",
+      "requestBody": "リクエストボディ (JSON)",
+      "reset": "リセット",
+      "send": "リクエスト送信",
+      "confirmSend": "もう一度クリックで確定",
+      "sending": "送信中…",
+      "mutatingHint": "{method} はデータを変更します — 2 回目のクリックで確定します。",
+      "notAuthenticated": "サインインしていないため、API は 401 を返しました。",
+      "signIn": "サインイン",
+      "ms": "ms",
+      "copied": "コピーしました",
+      "copy": "コピー",
+      "emptyBody": "（空のレスポンス）",
+      "invalidJson": "リクエストボディは有効な JSON である必要があります。",
+      "apiKeyLabel": "APIキー",
+      "apiKeyHint": "このブラウザにのみ保存されます。",
+      "keyRequired": "サンドボックスを呼び出すにはAPIキーを入力してください。",
+      "keyInvalid": "リクエストが拒否されました — 有効な dash_ キーであり、ACTIVE 状態で期限切れではなく、お使いの IP から許可されているか確認してください。",
+      "curlTitle": "cURL",
+      "curlKeyPlaceholder": "cURLスニペットにはプレースホルダが入っています — ブラウザの外で実行する前に、dash_your_api_key を実際のキーに置き換えてください。"
+    },
+    "sandboxBadge": "サンドボックス",
+    "sandboxTitle": "APIキーサンドボックス。",
+    "sandboxNotice": "このエンドポイントはダッシュボードのセッションではなく、APIキー(Authorization: Bearer dash_…)で認証されます。統合 → APIキーで発行したキーを貼り付けてください。サンドボックスの読み取りはそのキーのワークスペースにスコープされます。",
+    "snippets": {
+      "title": "コードスニペット",
+      "curl": "cURL",
+      "typescript": "TypeScript",
+      "copy": "コピー",
+      "copied": "コピーしました！",
+      "keyPlaceholder": "スニペットにはプレースホルダキーが入っています — 実行前に dash_your_api_key を実際のキーに置き換えてください。"
+    },
+    "openapiDownload": "OpenAPI 3.1仕様"
+  },
+  "soraGalleryPage": {
+    "badge": "Sora UI",
+    "title": "アラートダイアログギャラリー",
+    "subtitle": "破壊的確認の全バリアントを1ページに — それぞれを開き、モーションを確かめ、メディアタイルを比較できます。",
+    "backToDocs": "ドキュメントに戻る",
+    "rulesTitle": "使用場面",
+    "rules": {
+      "deleteRecords": "レコードの削除",
+      "revokeCredentials": "資格情報の取り消し",
+      "irreversible": "元に戻せない操作",
+      "destructiveAction": "破壊的なプライマリボタン",
+      "confirmFirst": "実行前の確認"
+    },
+    "variants": {
+      "delete": {
+        "title": "レコード削除",
+        "description": "ゴミ箱タイル — 製品・顧客・キャンペーン・割引。",
+        "trigger": "顧客を削除",
+        "dialogTitle": "この顧客を削除しますか？",
+        "dialogDescription": "顧客は消去ではなく無効化されます — 注文履歴はレポート用に保持されます。",
+        "action": "顧客を削除"
+      },
+      "revoke": {
+        "title": "資格情報の取り消し",
+        "description": "キータイル — パスキー・APIキー・セッション・SSO。",
+        "trigger": "パスキーを取り消す",
+        "dialogTitle": "このパスキーを取り消しますか？",
+        "dialogDescription": "このパスキーを使用するデバイスは直ちにアクセスできなくなります。新しいパスキーはいつでも登録できます。",
+        "action": "パスキーを取り消す"
+      },
+      "warning": {
+        "title": "元に戻せない警告",
+        "description": "三角タイル — アカウント削除など後戾りできない操作。",
+        "trigger": "アカウントを削除",
+        "dialogTitle": "本当に実行しますか？",
+        "dialogDescription": "この操作は元に戻せません。アカウント・データベース記録・すべてのAPIキーが完全に削除されます。",
+        "action": "アカウントを削除"
+      },
+      "confirm": {
+        "title": "中立の確認",
+        "description": "プライマリタイル — アラームではなく意思確認が必要な状態変更（バックアップコード、プラン変更）。",
+        "trigger": "コードを再生成",
+        "dialogTitle": "バックアップコードを再生成しますか？",
+        "dialogDescription": "既存のコードは直ちに無効になります。続行する前に新しいコードをダウンロードしてください。",
+        "action": "再生成"
+      },
+      "signout": {
+        "title": "セッションのサインアウト",
+        "description": "ミュートタイル — 破壊的なアクションボタンを持つ低リスクの確認。",
+        "trigger": "サインアウト",
+        "dialogTitle": "このデバイスからサインアウトしますか？",
+        "dialogDescription": "未保存の変更は、再度サインインするまでこのデバイスに保持されます。",
+        "action": "サインアウト"
+      },
+      "deactivate": {
+        "title": "ソフト無効化",
+        "description": "アンバータイル — データを保持したまま元に戻せる削除。",
+        "trigger": "メンバーを無効化",
+        "dialogTitle": "このメンバーを無効化しますか？",
+        "dialogDescription": "メンバーは直ちにアクセスできなくなりますが、後で復元できます。削除はされません。",
+        "action": "無効化"
+      }
+    }
+  },
+  "onboardingTour": {
+    "stepMetricsTitle": "主要指標をひと目で",
+    "stepMetricsDesc": "ワークスペース全体の重要な数値がここにリアルタイムで表示されます。",
+    "stepRevenueTitle": "売上の推移",
+    "stepRevenueDesc": "インタラクティブなチャートで期間ごとの売上の傾向を追跡します。",
+    "stepSalesTitle": "最近の売上",
+    "stepSalesDesc": "注文が入るとリアルタイムで表示されます — 常に最新が上部。",
+    "stepSearchTitle": "何でも瞬時に検索",
+    "stepSearchDesc": "Ctrl+K を押すとコマンドパレットが開き、任意のページへ移動できます。",
+    "stepCount": "{current} / {total}",
+    "next": "次へ",
+    "back": "戻る",
+    "finish": "完了",
+    "close": "閉じる",
+    "skip": "ツアーをスキップ"
+  },
+  "sessionStay": {
+    "title": "セッションまもなく期限切れ",
+    "description": "長い間ご利用いただいています。作業を中断せずに続けるにはサインインを維持してください。",
+    "stay": "サインインを維持",
+    "signOut": "サインアウト",
+    "stayFailed": "ただ今セッションを延長できませんでした — ログインしたままです。しばらくしてからもう一度お試しください。"
+  },
+  "tierUpgrade": {
+    "title": "この機能を利用するにはアップグレード",
+    "description": "{feature} は {tier} プランで利用できます。アップグレードしてワークスペースで解放しましょう。",
+    "featureAnalytics": "高度なアナリティクス",
+    "featureReports": "カスタムレポート",
+    "featureMultiChannel": "マルチチャネル連携",
+    "featureApi": "API・Webhookアクセス",
+    "featureRbac": "ロールベースアクセス制御",
+    "featureCustomExports": "カスタムデータエクスポート",
+    "planPro": "Pro",
+    "planProDesc": "アナリティクス、レポート、マルチチャネル連携、API・Webhook、RBAC。",
+    "planEnterprise": "Enterprise",
+    "planEnterpriseDesc": "Pro のすべてに加え、無制限の上限、カスタムデータエクスポート、24/7専任サポート。",
+    "notNow": "後で",
+    "viewPlans": "プランを見る",
+    "featureOrderLimit": "より高い月間注文ボリューム",
+    "featureSeatLimit": "より多くのチームシート"
+  },
+  "verificationSuccess": {
+    "emailVerified": "メールアドレスの確認が完了しました — アカウントは完全に保護されています。",
+    "emailVerifyFailed": "確認リンクが無効または期限切れです。新しいコードをリクエストしてください。",
+    "twoFactorEnabled": "二要素認証が有効になりました。アカウントの保護が強化されました。",
+    "twoFactorDisabled": "二要素認証が無効になりました。",
+    "passwordChanged": "パスワードが変更されました。他のセッションはログイン状態を維持します。"
+  },
+  "emailVerification": {
+    "title": "メールアドレスが未確認です",
+    "description": "メールを確認してアカウントを保護し、すべての機能を有効にしましょう。",
+    "sendCode": "コードを送信",
+    "sending": "送信中…",
+    "verifyNow": "今すぐ確認",
+    "dismiss": "閉じる",
+    "sentToast": "確認メールを送信しました！受信トレイをご確認ください。",
+    "sendFailed": "確認メールを送信できませんでした。もう一度お試しください。"
+  },
+  "usageQuota": {
+    "title": "使用量とクォータ",
+    "period": "現在のサイクル",
+    "orders": "注文",
+    "teamMembers": "チームメンバー",
+    "apiKeys": "APIキー",
+    "unlimited": "無制限",
+    "trendTitle": "月間使用量の推移",
+    "upgradeHint": "Starterプランでは制限のあるリソースを使用しています。",
+    "upgradeCta": "プランをアップグレード",
+    "clientTitle": "ワークスペースの使用状況",
+    "clientReadOnlyHint": "このワークスペースのプラン消費の閲覧専用ビューです。請求とプラン変更はワークスペースのオーナーが管理します。",
+    "trialChip": "トライアル · 残り{days, plural, other {#日}}"
+  },
+  "admin": {
+    "title": "管理者",
+    "subtitle": "プラットフォームのユーザー、サブスクリプション、売上を管理します。",
+    "statSubs": "アクティブなサブスクリプション",
+    "statSubsHint": "有料プランのユーザー",
+    "statUsers": "合計ユーザー",
+    "statUsersHint": "登録済みプラットフォームアカウント",
+    "statAdmins": "管理者",
+    "statAdminsHint": "最後の管理者アカウントは削除から保護されています",
+    "statBanned": "停止中",
+    "statBannedHint": "無効化されたアカウント",
+    "userManagement": "ユーザー管理",
+    "userManagementDesc": "登録済みの全ユーザーを表示・管理します。",
+    "searchPlaceholder": "ユーザーを検索...",
+    "name": "名前",
+    "email": "メール",
+    "role": "ロール",
+    "plan": "プラン",
+    "status": "ステータス",
+    "joined": "登録日",
+    "noUsers": "ユーザーが見つかりません。",
+    "actionsFor": "{name} の操作",
+    "deleteUser": "ユーザーを削除",
+    "deletedToast": "ユーザーを削除しました",
+    "deactivatedToast": "アカウントを無効化しました（最後の管理者）。",
+    "loadFailed": "ユーザーの読み込みに失敗しました",
+    "loadFailedStatus": "ユーザーの読み込みに失敗しました ({status})"
   }
 }

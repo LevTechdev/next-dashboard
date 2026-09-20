@@ -1,4 +1,59 @@
 {
+  "systemHealth": {
+    "title": "系统健康",
+    "subtitle": "调度任务、Webhook 死信队列、镜像同步与备份校验，集中在一处查看。",
+    "refresh": "刷新",
+    "verdictHealthy": "全部正常",
+    "verdictDegraded": "需要关注",
+    "actionFailed": "操作失败。",
+    "schedulerTitle": "调度任务",
+    "schedulerDesc": "每个内置任务的最近执行情况与结果。",
+    "schedulerEnabled": "循环已启用",
+    "schedulerDisabled": "循环已停用",
+    "jobNever": "从未运行",
+    "jobUsageDigest": "用量摘要",
+    "jobAutoPayout": "联盟自动结算",
+    "jobWebhookRetry": "Webhook 重试扫描",
+    "jobAutoReorder": "库存自动补货",
+    "jobSupabaseSync": "Supabase 镜像同步",
+    "jobTrialSweep": "试用到期清理",
+    "jobScheduledReports": "定时报告",
+    "jobBackupVerify": "备份校验",
+    "dlqTitle": "Webhook 死信队列",
+    "dlqDesc": "签名或处理失败、等待重放的入站投递。",
+    "dlqEmpty": "没有失败的投递——队列为空。",
+    "dlqFailed": "失败",
+    "dlqRetrying": "重试中",
+    "dlqExhausted": "已达上限",
+    "dlqResolved": "已解决",
+    "dlqAttempts": "已尝试 {count}/{max}",
+    "dlqReplay": "重放",
+    "dlqDiscard": "丢弃",
+    "dlqReplayedToast": "投递已重放并解决。",
+    "dlqReplayFailedToast": "重放再次失败——保留在重试轮转中。",
+    "dlqDiscardedToast": "投递已丢弃。",
+    "dlqDiscardConfirmTitle": "丢弃此投递？",
+    "dlqDiscardConfirmDesc": "{platform} 投递将从队列中永久删除，无法再次重放。",
+    "mirrorTitle": "镜像同步与回滚快照",
+    "mirrorDesc": "远程 Supabase 镜像状态、保留的同步前转储与可恢复性校验。",
+    "mirrorCheck": "运行漂移检查",
+    "mirrorHealthyToast": "镜像与本地一致——无漂移。",
+    "mirrorDriftToast": "检测到镜像漂移——请查看报告。",
+    "mirrorClean": "未报告漂移。",
+    "lastSync": "上次镜像同步：",
+    "lastBackupCheck": "上次备份校验：",
+    "snapshotsTitle": "回滚快照",
+    "snapshotsEmpty": "尚未保留回滚快照。",
+    "backupVerify": "校验备份",
+    "backupVerifiedToast": "快照 {file} 已恢复到临时数据库（{tables} 张表）。",
+    "backupFailedToast": "恢复校验失败：{detail}",
+    "backupNoSnapshots": "尚无可校验的快照。",
+    "backupRestore": "恢复",
+    "restoreConfirmTitle": "恢复此快照？",
+    "restoreConfirmDesc": "恢复 {file} 会用快照内容覆盖远程 Supabase 镜像。",
+    "restoreConfirmAction": "恢复镜像",
+    "restoreDoneToast": "已将 {file} 恢复到远程镜像。"
+  },
   "app": {
     "name": "仪表盘",
     "tagline": "业务管理平台"
@@ -50,8 +105,17 @@
     "sso": "SSO / 企业",
     "aiGenerator": "AI 生成器",
     "projects": "项目",
-    "superAdmin": "超级管理员",
-    "apiDocs": "API Docs"
+    "adminConsole": "管理员",
+    "systemHealth": "系统健康",
+    "apiDocs": "API Docs",
+    "plans": "å¥—é¤ ä¸Žè´¦å •",
+    "recommendations": "推荐",
+    "aiCopilot": "AI 助手",
+    "apiKeys": "API 密钥",
+    "home": "首页",
+    "more": "更多",
+    "language": "语言",
+    "switchLanguage": "切换语言"
   },
   "apiDocs": {
     "title": "API Documentation",
@@ -70,13 +134,207 @@
     "copied": "Copied!",
     "authRequired": "Authentication Required",
     "noAuth": "No Authentication",
+    "endpointCount": "个端点",
     "noEndpoints": "No endpoints found",
     "noEndpointsDesc": "Try adjusting your search query",
     "param": "Parameter",
     "type": "Type",
     "field": "Field",
     "allGroups": "All",
-    "endpoints": "endpoints"
+    "endpoints": {
+      "orders-get": {
+        "description": "列出所有订单及其客户与渠道详情",
+        "params": {
+          "status": "按订单状态筛选",
+          "limit": "最大返回条数（默认 100）"
+        }
+      },
+      "orders-post": {
+        "description": "创建新订单",
+        "fields": {
+          "customerId": "客户 ID",
+          "items": "'{'productId, quantity, price'}' 数组",
+          "channel": "销售渠道名称"
+        }
+      },
+      "orders-put": {
+        "description": "更新订单状态",
+        "fields": {
+          "id": "订单 ID",
+          "status": "新状态（PENDING、PROCESSING、SHIPPED、DELIVERED、CANCELLED）"
+        }
+      },
+      "products-get": {
+        "description": "列出所有商品及其分类信息",
+        "params": {
+          "includeCategories": "是否包含分类列表 (true/false)"
+        }
+      },
+      "products-post": {
+        "description": "创建新商品",
+        "fields": {
+          "name": "商品名称",
+          "price": "价格（分）",
+          "costPrice": "成本价",
+          "stock": "初始库存",
+          "sku": "SKU 编码",
+          "categoryId": "分类 ID"
+        }
+      },
+      "products-put": {
+        "description": "更新已有商品",
+        "fields": {
+          "id": "商品 ID",
+          "name": "新名称",
+          "price": "新价格"
+        }
+      },
+      "products-delete": {
+        "description": "删除商品",
+        "fields": {
+          "id": "要删除的商品 ID"
+        }
+      },
+      "customers-get": {
+        "description": "列出所有客户及其订单数与消费金额"
+      },
+      "customers-post": {
+        "description": "创建新客户",
+        "fields": {
+          "name": "客户名称",
+          "email": "电子邮箱",
+          "phone": "电话号码",
+          "city": "城市",
+          "segment": "客户分层"
+        }
+      },
+      "dashboard-get": {
+        "description": "获取仪表盘统计、收入数据、销售渠道、最近订单与热销商品"
+      },
+      "search-get": {
+        "description": "跨订单、客户与商品的全局搜索",
+        "params": {
+          "q": "搜索关键词（至少 2 个字符）"
+        }
+      },
+      "notifications-get": {
+        "description": "列出通知及未读数量",
+        "params": {
+          "type": "按类型筛选",
+          "read": "按已读状态筛选 (true/false)",
+          "limit": "最大返回条数"
+        }
+      },
+      "notifications-put": {
+        "description": "将通知标记为已读/未读",
+        "fields": {
+          "id": "通知 ID",
+          "action": "mark-read 或 mark-unread"
+        }
+      },
+      "analytics-get": {
+        "description": "获取包含趋势与细分维度的分析数据"
+      },
+      "auth-login-post": {
+        "description": "验证用户身份并创建会话",
+        "fields": {
+          "email": "用户邮箱",
+          "password": "用户密码"
+        }
+      },
+      "auth-register-post": {
+        "description": "创建新用户账号",
+        "fields": {
+          "name": "姓名",
+          "email": "邮箱",
+          "password": "密码（至少 8 位）"
+        }
+      },
+      "team-get": {
+        "description": "列出团队成员与待处理邀请"
+      },
+      "team-post": {
+        "description": "邀请新的团队成员",
+        "fields": {
+          "email": "被邀请人邮箱",
+          "role": "角色（ADMIN、MANAGER、STAFF、VIEWER）"
+        }
+      },
+      "billing-get": {
+        "description": "获取当前订阅套餐与账单信息"
+      },
+      "reports-get": {
+        "description": "获取支持日期范围筛选的报表数据",
+        "params": {
+          "from": "开始日期 (YYYY-MM-DD)",
+          "to": "结束日期 (YYYY-MM-DD)",
+          "period": "daily、weekly 或 monthly"
+        }
+      },
+      "health-get": {
+        "description": "健康检查端点"
+      },
+      "inventory-get": {
+        "description": "获取库存水平与库存预警"
+      },
+      "v1-ping-get": {
+        "description": "API 密钥冒烟测试 — 校验密钥存在、处于启用状态、未过期且在沙箱限流范围内"
+      },
+      "v1-me-get": {
+        "description": "密钥元数据，以及该密钥所属的用户与工作区"
+      },
+      "v1-products-get": {
+        "description": "列出密钥工作区内的商品（分页）",
+        "params": {
+          "limit": "每页条数，1–100（默认 20）",
+          "page": "页码（默认 1）",
+          "active": "按启用状态筛选 (true/false)"
+        }
+      },
+      "v1-products-id-get": {
+        "description": "获取密钥工作区中的单个商品"
+      },
+      "v1-orders-get": {
+        "description": "列出密钥工作区内的订单，含客户与渠道信息（分页）",
+        "params": {
+          "status": "PENDING、PROCESSING、SHIPPED、DELIVERED 或 CANCELLED",
+          "paymentStatus": "UNPAID、PAID 或 REFUNDED",
+          "limit": "每页条数，1–100（默认 20）",
+          "page": "页码（默认 1）"
+        }
+      },
+      "v1-orders-id-get": {
+        "description": "获取密钥工作区中含明细行的单个订单"
+      },
+      "v1-customers-get": {
+        "description": "列出密钥工作区内的客户及其消费总额（分页）",
+        "params": {
+          "segment": "按分层筛选（VIP、REGULAR、NEW）",
+          "limit": "每页条数，1–100（默认 20）",
+          "page": "页码（默认 1）"
+        }
+      },
+      "v1-customers-id-get": {
+        "description": "获取密钥工作区中的单个客户"
+      }
+    },
+    "tryItHint": "从此仪表板通过您已认证的会话执行实际请求。",
+    "groups": {
+      "Orders": "订单",
+      "Products": "商品",
+      "Customers": "客户",
+      "Dashboard": "仪表盘",
+      "Search": "搜索",
+      "Notifications": "通知",
+      "Analytics": "分析",
+      "Authentication": "认证",
+      "Team": "团队",
+      "Billing": "账单",
+      "Reports": "报表",
+      "System": "系统",
+      "Inventory": "库存",
+      "API Sandbox": "API Sandbox"
+    }
   },
   "dashboard": {
     "title": "仪表盘概览",
@@ -113,6 +371,9 @@
     "qaDiscountCodeDesc": "创建新折扣",
     "funnel": "转化漏斗",
     "funnelDesc": "追踪访客到购买的转化率",
+    "funnelGoalsLabel": "漏斗目标",
+    "funnelSessions": "会话",
+    "funnelEmpty": "未选择漏斗阶段",
     "funnelVisitors": "访客",
     "funnelAddToCart": "加入购物车",
     "funnelCheckout": "结账",
@@ -171,6 +432,17 @@
     "resetView": "重置视图",
     "funnelHealthTitle": "转化漏斗与运营健康度",
     "funnelHealthDesc": "多层级买家转化旅程与结账链路流转速度",
+    "radarViewFilled": "填充",
+    "radarViewDotted": "点线",
+    "radarViewLines": "仅线条",
+    "radarViewScore": "中心评分",
+    "radarAria": "各渠道阶段转化雷达图",
+    "radarVsPrevious": "变化量与上一周期对比",
+    "radarBestStage": "最强阶段",
+    "radarBiggestDrop": "最大流失",
+    "radarTotalPipeline": "漏斗内总量",
+    "radarEndToEnd": "端到端转化率",
+    "radarNoData": "数据不足",
     "financialSimulatorTitle": "财务模拟器与收入预测报告",
     "financialSimulatorDesc": "蒙特卡洛增长预测与跑道估算",
     "activityFeedTitle": "动态记录",
@@ -180,7 +452,74 @@
     "activityFeedEarlier": "更早",
     "activityFeedEarlierTip": "发生于此标签页打开之前",
     "analyticsTitle": "数据分析",
-    "analyticsDesc": "深入分析所有销售渠道的收入趋势、渠道表现与客户群组。"
+    "analyticsDesc": "深入分析所有销售渠道的收入趋势、渠道表现与客户群组。",
+    "metricProfit": "å‡€åˆ©æ¶¦",
+    "metricProfitDesc": "æ”¶å…¥å‡åŽ»æˆæœ¬",
+    "metricCustomers": "å®¢æˆ·",
+    "metricCustomersDesc": "å‘¨æœŸå†…æ´»è·ƒ",
+    "metricOrders": "è®¢å•",
+    "metricOrdersDesc": "å‘¨æœŸå†…ä¸‹å•",
+    "metricAvgOrder": "å¹³å‡è®¢å•é‡‘é¢",
+    "metricAvgOrderDesc": "æ¯å•æ”¶å…¥",
+    "greetingMorning": "早上好，",
+    "greetingAfternoon": "下午好，",
+    "greetingEvening": "晚上好，",
+    "viewOrders": "查看订单",
+    "restock": "补货",
+    "newOrderTitle": "{count, plural, other {# 个新订单}}",
+    "orderRevenue": "总收入 ${revenue}",
+    "milestoneTitle": "🎉 达到收入里程碑！",
+    "newCustomerTitle": "{count, plural, other {# 位新客户}}",
+    "customerTotal": "总计 {count} 位客户",
+    "lowStockTitle": "⚠️ {count} 个低库存商品",
+    "productsNeedRestock": "{count} 个商品需要补货",
+    "discountsExpiringTitle": "{count, plural, other {# 个折扣即将到期}}",
+    "newProductTitle": "{count, plural, other {新增 # 个商品}}",
+    "catalogTotal": "目录共 {count} 个商品",
+    "budgetExhaustedTitle": "🚨 预算耗尽: {name}",
+    "budgetSpentOf": "预算 ${budget} 已使用 ${spent}",
+    "budgetNearTitle": "⚠️ 预算已使用 {percent}%: {name}",
+    "pendingOrdersTitle": "🔔 {count} 个待处理订单",
+    "pendingOrdersDesc": "订单等待处理中",
+    "filteredMonth": "已筛选至 {month}",
+    "pipelineTitle": "转化管道",
+    "pipelineRange7D": "最近 7 天",
+    "pipelineRange30D": "最近 30 天",
+    "pipelineRange90D": "最近 90 天",
+    "pipelineTotal": "{range}内共 {total} 个事件",
+    "stageVisits": "访问",
+    "stageSignups": "注册",
+    "stageActive": "活跃",
+    "stagePro": "Pro",
+    "stageTeam": "团队",
+    "stageEnterprise": "企业",
+    "channelMix": "渠道构成",
+    "channelTrendTitle": "渠道趋势 — 近30天",
+    "chartWeekly": "周报",
+    "chartMonthly": "月报",
+    "chartYearly": "年报",
+    "chartNoData": "暂无收入数据",
+    "welcomeBackTitle": "欢迎回来",
+    "welcomeBackDesc": "您上次访问是 {when}。从中断的地方继续吧。",
+    "exportView": "导出当前视图",
+    "exportViewDesc": "导出当前区间的订单 CSV (Enterprise)",
+    "exportSuccess": "已开始导出",
+    "exportDenied": "导出需要 Enterprise 套餐",
+    "comparePrev": "对比上一周期",
+    "noPrevData": "—",
+    "stageConvTitle": "阶段转化率",
+    "stageConvDelta": "较上期 {delta} 个百分点",
+    "stageConvFlat": "无上一期数据",
+    "stageConvOfPrev": "占上一期 {range}",
+    "channelRingsTitle": "渠道目标",
+    "ringsEmpty": "暂无渠道收入",
+    "ringsShare": "分享为图片",
+    "ringsShareToast": "渠道环图像已保存",
+    "radarRange_7d": "7天",
+    "radarRange_30d": "30天",
+    "radarRange_90d": "90天",
+    "radarRangeLabel": "时间范围",
+    "radarViewLabel": "雷达样式"
   },
   "sales": {
     "title": "销售管理",
@@ -246,6 +585,7 @@
     "phonePlaceholder": "电话",
     "cityPlaceholder": "城市",
     "confirmDelete": "删除此客户？",
+    "confirmDeleteNamed": "删除客户“{name}”？此操作无法撤销。",
     "updated": "客户已更新",
     "added": "客户已添加",
     "deleted": "客户已删除",
@@ -425,6 +765,7 @@
     "deliverBtn": "送达",
     "cancelBtn": "取消",
     "viewDetails": "查看详情",
+    "downloadInvoice": "下载发票",
     "guest": "游客",
     "na": "无",
     "markedAs": "订单已标记为 {status}",
@@ -457,7 +798,9 @@
     "shippedOn": "发货于",
     "deliveredOn": "送达于",
     "refundedOn": "退款于",
-    "invoiceBtn": "发票"
+    "invoiceBtn": "发票",
+    "limitBanner": "您已达到 Starter 套餐的每月订单上限。升级后即可不间断地继续接单。",
+    "upgradeCta": "升级"
   },
   "inventory": {
     "title": "库存管理",
@@ -506,7 +849,17 @@
     "poMarkedReceived": "已确认到货！商品库存已自动增加。",
     "searchPlaceholder": "按名称或SKU搜索产品...",
     "categories": "品类明细",
-    "categoriesDesc": "按品类划分的库存分布与存货量。"
+    "categoriesDesc": "按品类划分的库存分布与存货量。",
+    "poIssueSuccess": "采购订单已签发给供应商。",
+    "poIssueAction": "签发",
+    "poBulkSelected": "已选择 {count} 张草稿采购单",
+    "poBulkIssueAction": "批量签发",
+    "poBulkIssueTitle": "签发 {count} 张草稿采购单？",
+    "poBulkIssueDesc": "每张选中的草稿将被标记为已签发并发送给供应商。此操作无法批量撤销。",
+    "poBulkIssueSuccess": "已签发 {count} 张采购单",
+    "poBulkIssuePartial": "{ok} 张成功，{failed} 张失败",
+    "poBulkSelectAll": "全选草稿采购单",
+    "poBulkSelect": "选择草稿采购单"
   },
   "settings": {
     "title": "设置",
@@ -558,6 +911,13 @@
     "densityCompact": "紧凑",
     "densityRegular": "标准",
     "densityLarge": "宽松",
+    "themeSwitch": "主题切换效果",
+    "themeSwitchDesc": "切换主题时浅色与深色的过渡方式",
+    "themeSwitchCircle": "圆形",
+    "themeSwitchCircleBlur": "柔化圆形",
+    "themeSwitchRectangle": "快门",
+    "themeSwitchPolygon": "斜向擦除",
+    "themeSwitchNone": "即时",
     "widgets": "仪表盘小组件",
     "widgetsDesc": "选择仪表盘上显示的小组件",
     "widgetQuickActions": "快速操作",
@@ -575,12 +935,15 @@
     "apiKeyNeverUsed": "未使用",
     "apiKeyRevoke": "撤销",
     "apiKeyRevokeConfirm": "撤销此API密钥？此操作无法撤回。",
+    "apiKeyReactivate": "重新激活",
     "apiKeyEmpty": "暂无API密钥。创建一个以开始使用。",
     "webhooks": "Webhook",
     "webhooksDesc": "为实时事件配置Webhook端点",
     "webhookUrl": "Webhook URL",
     "webhookEvents": "事件",
     "webhookAdd": "添加Webhook",
+    "webhookDelete": "删除Webhook",
+    "webhookEdit": "编辑Webhook",
     "webhookActive": "活跃",
     "webhookInactive": "未激活",
     "webhookEmpty": "未配置Webhook。添加一个以接收事件通知。",
@@ -612,7 +975,49 @@
     "webhookNeverTriggered": "从未触发",
     "webhookDeliveryCount": "{count} 次投递",
     "webhookSelectEvents": "至少选择一个事件",
-    "webhookUpdate": "更新 Webhook"
+    "webhookUpdate": "更新 Webhook",
+    "theme": "主题",
+    "tourReplay": "重新播放导览",
+    "tourReplayDesc": "以上方选择的语言重新播放仪表板引导导览。",
+    "tourReplayToast": "导览即将开始 — 请前往仪表板。",
+    "scheduler": {
+      "title": "调度器状态",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "disabledHint": "开发环境中应用内调度器处于关闭状态。在 .env.local 中设置 SCHEDULER_ENABLED=1（或在生产环境运行）以启用。",
+      "never": "从未运行",
+      "justNow": "刚刚",
+      "minsAgo": "{n} 分钟前",
+      "hoursAgo": "{n} 小时前",
+      "jobDigest": "用量摘要（每日 02:00）",
+      "jobAutoPayout": "联盟自动付款（每小时检查）",
+      "jobWebhookRetry": "Webhook 重试扫描（每 5 分钟）",
+      "jobAutoReorder": "自动采购订单草稿（每小时检查）",
+      "jobSupabaseSync": "Supabase 镜像同步",
+      "jobSupabaseLeafSync": "Supabase 叶子表同步（30 分钟）",
+      "jobBackupVerify": "备份恢复验证",
+      "snapshotsTitle": "回滚快照",
+      "snapshotsEmpty": "暂无快照 — 每次 Supabase 镜像同步时都会生成。",
+      "restore": "恢复",
+      "restoreConfirmTitle": "恢复此快照？",
+      "restoreConfirmDesc": "这会用同步前的快照「{file}」覆盖远程 Supabase。此后新增到远程的数据将丢失。",
+      "restoreConfirmAction": "恢复快照",
+      "restoreDone": "已从 {file} 恢复远程",
+      "restoreFailed": "恢复失败",
+      "jobTrialSweep": "试用到期清扫",
+      "jobScheduledReports": "定时报告",
+      "verify": "验证",
+      "verifyDone": "备份已验证：{file} 已恢复到临时数据库（{tables} 张表，验证后已删除）。",
+      "verifyFailed": "验证失败：{detail}",
+      "verifyNone": "暂无可验证的快照"
+    },
+    "digestPreviewTitle": "每日邮件摘要",
+    "digestPreviewDesc": "每日使用情况邮件的实时预览 — 包含配额表和错过的活动。",
+    "digestPreviewRefresh": "刷新预览",
+    "digestPreviewUnavailable": "摘要预览暂不可用。",
+    "digestPreviewMissedTitle": "在您离开期间",
+    "digestPreviewPlan": "每天为 {plan} 方案发送。",
+    "jobTrialSweep": "试用到期清理"
   },
   "team": {
     "title": "团队管理",
@@ -628,6 +1033,12 @@
     "manager": "经理",
     "staff": "员工",
     "noMembers": "未找到团队成员",
+    "sortName": "名称",
+    "sortDateModified": "修改日期",
+    "sortType": "类型",
+    "sortAuthor": "作者",
+    "sortAscending": "升序",
+    "sortDescending": "降序",
     "confirmRemove": "移除此成员？",
     "memberUpdated": "成员已更新",
     "memberAdded": "成员已添加",
@@ -637,7 +1048,7 @@
     "addMemberSubmit": "添加成员",
     "editBtn": "编辑",
     "removeBtn": "移除",
-    "superAdmin": "超级管理员",
+    "adminConsole": "管理员",
     "auditor": "审计员",
     "invitations": "邀请",
     "invitationsDesc": "待处理的团队邀请",
@@ -672,7 +1083,14 @@
     "saveInvitation": "保存修改",
     "inviteUpdated": "邀请已成功更新",
     "revokeInviteTitle": "撤回团队邀请",
-    "revokeInviteConfirm": "确定要撤回此邀请吗？受邀者将无法再使用该链接加入工作区。"
+    "revokeInviteConfirm": "确定要撤回此邀请吗？受邀者将无法再使用该链接加入工作区。",
+    "client": "客户",
+    "clientEnterprise": "客户（企业）",
+    "clientLevel_STARTER": "入门版（免费）",
+    "clientLevel_PROFESSIONAL": "专业版",
+    "clientLevel_ENTERPRISE": "SSO 企业版",
+    "activityCol": "活动 (12周)",
+    "activityTooltip": "近12个月 {total} 条动态 / {days} 个活跃日"
   },
   "roles": {
     "title": "角色与权限",
@@ -762,6 +1180,11 @@
     "emailVerified": "邮箱已验证",
     "emailNotVerified": "邮箱未验证",
     "verifiedOn": "验证于 {date}",
+    "mfaReverifyDue": "您的两步验证已超过30天未验证。请立即验证以保护您的账户。",
+    "mfaReverifyNow": "立即验证",
+    "mfaReverifyTitle": "验证您的身份",
+    "mfaReverifyDesc": "输入身份验证器应用中的6位验证码，确认您的两步验证仍然有效。",
+    "mfaReverifySuccess": "身份已验证 — 未来30天内无需再次验证",
     "verifyPrompt": "验证您的邮箱以保护账户安全并获得所有功能的完全访问权限。",
     "verificationLink": "验证链接（演示）",
     "verificationNote": "在生产环境中，此链接将通过邮件发送。点击以验证您的邮箱。",
@@ -839,7 +1262,33 @@
     "resendInSeconds": "{seconds}秒后可重新发送",
     "emailResendNote": "验证邮件已发送。{seconds}秒后可重新请求。",
     "emailVerifyLinkInvalid": "此验证链接无效或已过期。",
-    "resendEmail": "重新发送邮件"
+    "resendEmail": "重新发送邮件",
+    "scanQrTitle": "扫描二维码",
+    "copySecret": "复制密钥",
+    "verifyCodeHint": "请输入验证应用中的6位数字代码。",
+    "coverUpload": "封面",
+    "coverRemove": "移除",
+    "coverUpdated": "封面已更新",
+    "coverRemoved": "封面已移除",
+    "activityTitle": "活动",
+    "activitySummary": "今年 {days} 个活跃日，共 {total} 次贡献",
+    "activityGranWeekly": "每周",
+    "activityGranMonthly": "每月",
+    "activityGranYearly": "每年",
+    "activityLess": "少",
+    "activityMore": "多",
+    "activityCellHeadline": "{count, plural, =0 {{date} 无活动} other {{date} 有 # 条动态}}",
+    "activityBucketHeadline": "{label} · {count, plural, =0 {无活动} other {# 条动态}}",
+    "dow0": "一",
+    "dow1": "二",
+    "dow2": "三",
+    "dow3": "四",
+    "dow4": "五",
+    "dow5": "六",
+    "dow6": "日",
+    "coverCropTitle": "裁剪封面图片",
+    "coverCropDesc": "拖动以调整横幅构图并调整缩放，然后保存。将以 4:1 横幅保存。",
+    "coverCropSave": "保存封面"
   },
   "billing": {
     "title": "订阅与账单",
@@ -937,7 +1386,12 @@
     "indonesianBanksDesc": "涵盖国有、民营、四大区域地方发展银行(BPD)及数字银行50余家",
     "actionsCol": "操作",
     "processInvoice": "处理",
-    "invoicePaidSuccess": "发票已成功处理并标记为已支付！"
+    "invoicePaidSuccess": "发票已成功处理并标记为已支付！",
+    "displayCurrency": "æ˜¾ç¤ºè´§å¸",
+    "displayCurrencyDesc": "ä»¥è¯¥è´§å¸æ˜¾ç¤ºæ‰€æœ‰å‘ç¥¨é‡‘é¢",
+    "currencyNote": "æŒ‰å‚è€ƒæ±‡çŽ‡æ¢ç®— - ç»“ç®—ä»ä»¥ {base} è¿›è¡Œ",
+    "invoiceTotal": "å‘ç¥¨æ€»é¢",
+    "convertedLabel": "~ {amount}"
   },
   "integrations": {
     "title": "集成",
@@ -1086,7 +1540,22 @@
     "scopeHint": "权限范围：read、write、admin。已撤销或过期的密钥将返回 403 及原因。",
     "authorizationLabel": "Authorization",
     "tabChatAlerts": "团队聊天 (Slack & Discord)",
-    "tabOmnichannel": "全渠道同步"
+    "tabOmnichannel": "全渠道同步",
+    "tabDlq": "投递健康度",
+    "dlqFailed": "失败",
+    "dlqRetrying": "重试中",
+    "dlqResolved": "已恢复",
+    "dlqTotal": "总计",
+    "dlqEmpty": "所有投递均正常",
+    "dlqEmptyDesc": "没有失败的入站 Webhook。失败的投递会进入此处，可重放或丢弃。",
+    "dlqExhausted": "已达上限",
+    "dlqAttempts": "已尝试 {count}/{max} 次",
+    "dlqReplay": "重放",
+    "dlqDiscard": "丢弃",
+    "dlqDiscardConfirmTitle": "丢弃此投递？",
+    "dlqDiscardConfirmDesc": "失败的 Webhook 载荷将被永久删除且不再处理。",
+    "dlqError": "错误",
+    "dlqNextRetry": "下次重试"
   },
   "audit": {
     "title": "审计日志",
@@ -1103,7 +1572,27 @@
     "previous": "上一页",
     "next": "下一页"
   },
+  "checkoutSuccess": {
+    "title": "支付成功",
+    "body": "感谢你的订阅。账户已升级，现在可以使用全部高级功能。",
+    "cta": "前往仪表盘"
+  },
   "common": {
+    "toggleTheme": "切换主题",
+    "commandPlaceholder": "搜索订单、客户、产品...",
+    "commandSearching": "搜索中...",
+    "commandNoResults": "没有找到“{query}”的结果",
+    "commandNoResultsHint": "试试订单号、客户名称或产品名称。",
+    "commandTypeToSearch": "输入至少 2 个字符以搜索",
+    "commandTypeToSearchHint": "在一个位置搜索订单、客户和产品。",
+    "commandGroupNavigation": "导航",
+    "commandGroupQuickActions": "快捷操作",
+    "commandGroupOrders": "订单",
+    "commandGroupCustomers": "客户",
+    "commandGroupProducts": "产品",
+    "commandNavigate": "导航",
+    "commandOpen": "打开",
+    "commandToggle": "切换",
     "search": "搜索...",
     "filter": "筛选",
     "export": "导出",
@@ -1136,6 +1625,13 @@
     "expired": "已过期",
     "na": "无",
     "copy": "复制",
+    "copied": "已复制到剪贴板",
+    "copyUrl": "复制链接",
+    "copyPrefix": "复制前缀",
+    "copyAwb": "复制运单号",
+    "backToTop": "回到顶部",
+    "resumeLive": "恢复实时更新",
+    "exportCsv": "导出为CSV",
     "done": "完成",
     "selectAll": "全选",
     "showingOf": "显示 {from}–{to}，共 {total} 条",
@@ -1156,7 +1652,11 @@
     "secondsAgo": "{count}秒前",
     "minutesAgo": "{count}分钟前",
     "hoursAgo": "{count}小时前",
-    "daysAgo": "{count}天前"
+    "daysAgo": "{count}天前",
+    "retry": "重试",
+    "dismiss": "关闭",
+    "dismissNotification": "关闭通知",
+    "notifications": "通知"
   },
   "notifications": {
     "title": "通知中心",
@@ -1272,7 +1772,13 @@
     "pushNotificationsTitle": "浏览器推送通知",
     "pushNotificationsDesc": "即使应用已关闭，也能直接在浏览器中接收通知。",
     "enablePushLabel": "启用推送通知",
-    "enablePushDesc": "允许仪表盘向您发送网页推送提醒。"
+    "enablePushDesc": "允许仪表盘向您发送网页推送提醒。",
+    "pushEnabledToast": "已启用推送通知",
+    "pushFailedToast": "启用推送通知失败",
+    "pushDeniedToast": "推送权限被拒绝或不受支持",
+    "pushDisabledToast": "已停用推送通知",
+    "closePanel": "关闭通知",
+    "typeBilling": "账单"
   },
   "contactPage": {
     "badge": "联系我们",
@@ -1312,6 +1818,47 @@
     "ctaTitle": "想看实时演示？",
     "ctaDesc": "通过团队的个性化演示了解 Dashboard，我们将展示它如何适合您的业务。",
     "ctaButton": "开始免费试用"
+  },
+  "careersPage": {
+    "heroTag": "正在招聘",
+    "heroPrefix": "打造以下领域的基础设施",
+    "heroWord1": "现代商贸。",
+    "heroWord2": "成长中的团队。",
+    "heroWord3": "全球卖家。",
+    "heroSubtitle": "我们是一支专注产品的小团队，正在构建商贸基础设施。入职第一周你就会为真实商户交付功能——你与使用者之间没有中间层。",
+    "perksTitle": "为什么值得加入",
+    "perk1Title": "远程优先",
+    "perk1Desc": "自带居家办公预算，随处办公，默认异步协作。",
+    "perk2Title": "真正的所有权",
+    "perk2Desc": "小团队、大范围——问题、设计与上线都由你主导。",
+    "perk3Title": "全球客户",
+    "perk3Desc": "第一天就服务印尼、日本等地的商户。",
+    "perk4Title": "重工艺而非仪式",
+    "perk4Desc": "会议少、默认强，并留出打磨细节的时间。",
+    "rolesTitle": "热招职位",
+    "rolesSubtitle": "所有职位均为全职且正在招聘——我们回复每一份申请。",
+    "rolesCount": "{count} 个在招职位",
+    "applyCta": "申请",
+    "applyAria": "申请{role}",
+    "role1Title": "资深产品工程师",
+    "role1Dept": "工程",
+    "role1Location": "远程（GMT+7～+9）",
+    "role1Type": "全职",
+    "role2Title": "客户成功负责人",
+    "role2Dept": "市场增长",
+    "role2Location": "印尼雅加达",
+    "role2Type": "全职",
+    "role3Title": "支付合作伙伴经理",
+    "role3Dept": "合作伙伴",
+    "role3Location": "远程（亚太）",
+    "role3Type": "全职",
+    "role4Title": "产品设计师",
+    "role4Dept": "设计",
+    "role4Location": "远程（GMT+7～+9）",
+    "role4Type": "全职",
+    "ctaTitle": "没有合适的职位？",
+    "ctaDesc": "告诉我们你想在这里做什么、怎么做。若契合，我们会为你留出预算。",
+    "ctaButton": "联系我们"
   },
   "aboutPage": {
     "badge": "我们的故事",
@@ -1433,7 +1980,27 @@
     "heroPrefix": "你需要的一切，",
     "heroWord1": "随时扩展。",
     "heroWord2": "随时成长。",
-    "heroWord3": "随时高性能运行。"
+    "heroWord3": "随时高性能运行。",
+    "stats": {
+      "locales": "支持语言",
+      "currencies": "支持币种",
+      "banks": "印尼银行",
+      "endpoints": "REST API 端点"
+    },
+    "surface": {
+      "eyebrow": "为真实商业而建",
+      "title": "从 QRIS 收银到企业级 SSO",
+      "subtitle": "符合 ASPI 标准的 QRIS 支付、50+ 家印尼银行与电子钱包、矢量 Code128 发票，以及驱动每个仪表板的 SSE —— 全部运行在你可以直接调用的同一套 REST API 上。",
+      "exploreApi": "查看 API 参考"
+    },
+    "realtime": {
+      "sse": "SSE 实时推送",
+      "qris": "QRIS 支付",
+      "banks": "50+ 银行与钱包",
+      "apiKeys": "作用域 API 密钥",
+      "passkeys": "通行密钥与 2FA",
+      "invoices": "矢量发票"
+    }
   },
   "changelogPage": {
     "badge": "发布说明",
@@ -1728,10 +2295,13 @@
     "footerEmailPlaceholder": "输入您的邮箱",
     "footerSubscribe": "立即订阅",
     "footerPreviewAlt": "仪表盘预览",
-    "legalContactPrompt": "对此页面有疑问？请发送邮件至"
+    "legalContactPrompt": "对此页面有疑问？请发送邮件至",
+    "footerLinkApiDocs": "API 文档"
   },
   "auth": {
     "login": "登录",
+    "sessionExpired": "您的会话已过期——请重新登录以继续。",
+    "sessionChanged": "此标签页已使用其他账户登录——请重新登录。",
     "register": "创建账户",
     "emailLabel": "电子邮件",
     "emailPlaceholder": "你的电子邮件",
@@ -1822,7 +2392,16 @@
     "createAccountButton": "创建账户",
     "creatingAccount": "正在创建账户...",
     "registerDescription": "注册以开始使用 Next Dashboard。",
-    "verifyButton": "验证"
+    "verifyButton": "验证",
+    "strength": {
+      "weak": "å¼±",
+      "fair": "ä¸€èˆ¬",
+      "good": "è‰¯å¥½",
+      "strong": "å¼º"
+    },
+    "strengthHint": "è¯·ä½¿ç”¨ 8 ä½ä»¥ä¸Šå­—ç¬¦ï¼ŒåŒ…å«å¤§å°å†™å­—æ¯ã€æ•°å­—å’Œç¬¦å·ã€‚",
+    "accountCreatedNoEmail": "账户已创建！目前无法发送验证邮件 — 您可以稍后在“设置 → 安全”中完成验证。",
+    "passkeySignIn": "使用通行密钥登录"
   },
   "csvImport": {
     "importCsv": "导入 CSV",
@@ -1878,6 +2457,7 @@
     "earned": "已赚取",
     "link": "链接",
     "noLinks": "暂无推广链接",
+    "platformRecentLinks": "最近链接",
     "openLink": "打开链接",
     "activate": "启用",
     "deactivate": "停用",
@@ -1950,7 +2530,7 @@
     "tabPayouts": "付款与提现",
     "totalPaid": "累计已付款",
     "pendingBalance": "待处理余额",
-    "availableBalance": "可提现余额",
+    "availableBalance": "可用佣金",
     "requestPayout": "申请提现",
     "payoutsTitle": "联盟佣金付款与提现明细",
     "payoutsSubtitle": "通过 Stripe Connect 和 Midtrans Iris 跟踪佣金转账",
@@ -1965,7 +2545,16 @@
     "payoutAmount": "提现金额 ($)",
     "selectProvider": "选择提现方式",
     "submitPayout": "提交提现申请",
-    "payoutSuccess": "提现申请已成功提交"
+    "payoutSuccess": "提现申请已成功提交",
+    "settlementBalance": "QRIS 结算余额",
+    "insufficientBalance": "金额超出可用佣金余额。",
+    "settlementShortfall": "QRIS 结算余额尚不足以支付此提现 —— 请先充值或减少金额。",
+    "accountInvalid": "不是该通道的有效账户",
+    "payoutFailed": "提交提现请求失败",
+    "processingPayout": "处理中…",
+    "providerGroupWallet": "电子钱包",
+    "providerGroupBank": "银行转账",
+    "providerGroupIntl": "国际"
   },
   "security": {
     "activeSessions": "活动会话",
@@ -2000,6 +2589,12 @@
     "evt_SESSIONS_REVOKED_ALL": "所有其他会话已撤销",
     "evt_STEP_UP_VERIFIED": "二次验证已通过",
     "evt_REFRESH_REUSE": "检测到刷新令牌重用",
+    "evt_RATE_LIMITED": "尝试过多 — 已临时限流",
+    "evt_REFRESH_REUSE_GRACE": "并发会话刷新（已容忍）",
+    "evt_SIGNIN_ALERT_SENT": "已发送新登录提醒邮件",
+    "evt_SIGNIN_ALERT_SUPPRESSED": "登录提醒已抑制（已知设备）",
+    "evt_ACCOUNT_DELETED": "账户已删除",
+    "evt_SSO_CONNECTION_DELETED": "SSO 连接已移除",
     "evt_PASSKEY_ADDED": "已添加通行密钥",
     "evt_PASSKEY_REMOVED": "已移除通行密钥",
     "evt_PASSKEY_LOGIN": "使用通行密钥登录",
@@ -2010,6 +2605,7 @@
     "passkeys": "通行密钥",
     "passkeysDesc": "使用 Touch ID、Windows Hello 或安全密钥登录。无密码且防钓鱼。",
     "addPasskey": "添加通行密钥",
+    "passkeyRegistered": "通行密钥已注册",
     "passkeyAdded": "已添加通行密钥",
     "passkeyRemoved": "已移除通行密钥",
     "passkeyUnsupported": "添加通行密钥需要安全上下文 — 请通过 HTTPS（或 localhost）打开此网站。",
@@ -2024,6 +2620,10 @@
     "verifyPasswordLabel": "密码",
     "verifyPasswordPlaceholder": "输入当前密码",
     "verifyConfirm": "验证并删除",
+    "totpLabel": "身份验证器代码",
+    "totpConfirm": "使用代码验证",
+    "totpFreshnessHint": "您的30天双因素重新验证已到期——请输入身份验证器应用中的代码以继续。",
+    "totpRequired": "请输入6位身份验证器代码",
     "verifying": "验证中…",
     "verificationFailed": "验证失败",
     "verifyPasswordRequired": "请输入密码以继续",
@@ -2032,6 +2632,13 @@
     "scoreLabel": "安全评分",
     "scoreOf": "满分 100",
     "scoreGreat": "您的账户受到强力保护。",
+    "scoreAction": "{action}{extra}。",
+    "scoreAlsoMissing": " — 距离完全保护还差 {count} 步",
+    "missing_totp": "请开启双重验证",
+    "missing_passkey": "请注册通行密钥",
+    "missing_backup": "请生成备用代码",
+    "missing_email": "请验证您的邮箱地址",
+    "missing_mfaFresh": "请重新验证双重认证（30 天有效期）",
     "scoreGood": "不错 — 开启双重验证以加强保护。",
     "scoreFair": "开启双重验证以保护您的账户。",
     "scoreWeak": "您的账户需要更强的保护。",
@@ -2068,6 +2675,8 @@
     "noSuspicious": "最近 7 天未检测到可疑活动",
     "refreshActivity": "刷新活动",
     "mfaVerifiedRecent": "最近已验证多因素认证",
+    "mfaVerifiedRecentDays": "已验证多因素认证（{count}天前）",
+    "mfaNotVerifiedRecentDays": "已 {count} 天未验证多因素认证",
     "mfaNotVerifiedRecent": "30 天内未验证多因素认证",
     "passkeyBackupHint": "您只有一个通行密钥。建议再添加一个作为备份，以防此设备丢失后无法登录。",
     "lastPasskeyWarning": "这是您唯一的通行密钥。删除后将无法再使用通行密钥登录。",
@@ -2103,7 +2712,33 @@
     "otpDevCode": "开发模式验证码",
     "unverifiedAlertTitle": "您的邮箱尚未验证",
     "unverifiedAlertDesc": "请验证您的邮箱地址，以确认身份并增强账户安全。",
-    "unverifiedAlertAction": "立即验证"
+    "unverifiedAlertAction": "立即验证",
+    "evt_EMAIL_DELIVERY_SENT": "验证邮件已送达",
+    "evt_EMAIL_DELIVERY_FAILED": "验证邮件未能送达",
+    "sessionRecognized": "已识别",
+    "sessionNew": "新设备",
+    "telemetryTitle": "账户压力",
+    "telemetryPressureBadge": "检测到压力",
+    "telemetryRateLimited": "被限流的登录",
+    "telemetryRateLimitedWindow": "过去24小时",
+    "telemetryLastOffender": "最近尝试来自 {ip}",
+    "telemetryLockouts": "锁定次数",
+    "telemetryLockoutsWindow": "过去7天",
+    "telemetryLastEvent": "{when}前",
+    "telemetrySessions": "活跃会话",
+    "telemetrySessionsHint": "撤销不认识的会话",
+    "telemetryThrottleTitle": "登录限流窗口",
+    "telemetryThrottleCount": "{limit} 次中已用 {used} 次",
+    "telemetryThrottleBlocked": "已阻止 — {seconds} 秒后解除",
+    "telemetryThrottleClearing": "配额将在 {seconds} 秒后恢复",
+    "telemetryThrottleIp": "最多来自 {ip}",
+    "scanQrHint": "使用您的身份验证器应用扫描二维码，或手动输入密钥。",
+    "scanQrTitle": "扫描二维码",
+    "verifyCodeHint": "请输入身份验证器应用中的 6 位代码。",
+    "copySecret": "复制密钥",
+    "manualEntryHint": "无法扫描？手动输入此密钥：",
+    "verifyButton": "验证",
+    "scoreComplete": "所有保护均已启用 — 账户已受到全面保护。"
   },
   "sso": {
     "title": "SSO / 企业",
@@ -2111,6 +2746,7 @@
     "notConfiguredTitle": "未配置 SSO 连接",
     "notConfiguredDesc": "设置 SAML 单点登录，让您的团队可以使用企业身份提供商登录。",
     "configureSso": "配置 SSO",
+    "copied": "已复制到剪贴板",
     "enabled": "已启用",
     "disabled": "已禁用",
     "certConfigured": "已配置证书",
@@ -2223,7 +2859,12 @@
     "q7Label": "预测营收",
     "q7Query": "预测未来 90 天的收入并显示预估运行率",
     "q8Label": "增长轨迹",
-    "q8Query": "我们的收入增长预测和主要驱动因素是什么？"
+    "q8Query": "我们的收入增长预测和主要驱动因素是什么？",
+    "copyPrompt": "å¤åˆ¶æç¤ºè¯",
+    "copiedPrompt": "æç¤ºè¯å·²å¤åˆ¶",
+    "editPrompt": "ç¼–è¾‘æç¤ºè¯",
+    "saveEdit": "é‡æ–°å‘é€",
+    "cancelEdit": "å–æ¶ˆ"
   },
   "status": {
     "pending": "待处理",
@@ -2387,7 +3028,10 @@
           "CACHE：边缘缓存命中率 98.4%",
           "SECURITY：已为管理员会话验证 2FA TOTP"
         ]
-      }
+      },
+      "announcement": "v2.4 flow 已上线 — 全面实时化",
+      "readMore": "了解更多",
+      "changelogAria": "阅读更新日志"
     },
     "heroSubtitle": "构建现代 SaaS 所需的一切：认证、Stripe 与 Midtrans 支付、国际化、深色模式、仪表盘等。开箱即用。",
     "ctaAccess": "进入工作区",
@@ -2436,7 +3080,10 @@
       "kpiRevenue": "总收入",
       "kpiOrders": "订单总数",
       "kpiCustomers": "客户总数",
-      "kpiProducts": "商品总数"
+      "kpiProducts": "商品总数",
+      "liveRevenue": "收入概览",
+      "liveChannels": "按渠道销售",
+      "liveOrders": "最近订单"
     },
     "trust": {
       "b1": "无需信用卡",
@@ -2446,11 +3093,11 @@
     },
     "story": {
       "aria": "产品旅程",
-      "badge": "旅程",
+      "badge": "产品旅程",
       "cta": "探索工作区",
-      "sub": "四大系统如同一座星座协同运作——看看您的业务如何从原始订单走向自动化增长。",
-      "t1": "从宇宙，",
-      "t2": "到控制室",
+      "sub": "按照团队的运转方式浏览产品——订单、支付、分析与自动化，层层递进。",
+      "t1": "四个章节，",
+      "t2": "一个工作区",
       "c1b": "来自所有渠道的每一笔订单——Shopify、Tokopedia、TikTok、Instagram——都汇入统一收件箱，状态实时更新。",
       "c1e": "轨道导航",
       "c1f1": "统一收件箱",
@@ -2607,6 +3254,21 @@
     "final": {
       "getStarted": "免费开始",
       "signIn": "登录"
+    },
+    "faq": {
+      "badge": "支持与解答",
+      "titlePart1": "常见",
+      "titlePart2": "问题解答 (FAQ)",
+      "q1": "多渠道数据同步是如何工作的？",
+      "a1": "Next Dashboard 直接连接您在 Shopify、TikTok Shop、Shopee 和 Tokopedia 上的店铺。所有库存、订单和客户数据均通过安全的 Webhook 和 REST API 实时同步。",
+      "q2": "我可以定制仪表板或集成自定义 API 吗？",
+      "a2": "完全可以。您对平台拥有完全控制权。使用我们统一的 REST API 构建自定义集成，配置实时 Webhook 通知，或直接修改 UI 组件以满足团队工作流需求。",
+      "q3": "支持哪些支付网关？",
+      "a3": "我们为 Stripe（全球银行卡、Apple Pay、Google Pay）和 Midtrans（印尼虚拟账户、GoPay、OVO 和 QRIS 支付）提供原生支持，内置税费计算与自动发票生成。",
+      "q4": "我的数据与客户信息安全吗？",
+      "a4": "所有数据在传输和存储过程中均采用 AES-256 和 TLS 1.3 进行加密保护。支持 FIDO2 Passkey、WebAuthn、TOTP 双因素认证以及不可篡改的加密审计日志。",
+      "q5": "是否提供免费试用？",
+      "a5": "是的，您可以免费试用专业版 14 天，无需信用卡。即刻体验实时分析、订单测试与多渠道同步。"
     }
   },
   "pricingPage": {
@@ -2733,7 +3395,10 @@
     "faqQ3": "你们接受哪些支付方式？",
     "faqA3": "我们接受所有主流信用卡、PayPal 以及年度方案的银行转账。所有支付均通过 Stripe 安全处理。",
     "faqQ4": "我可以取消订阅吗？",
-    "faqA4": "可以，您可以随时取消。在当前计费周期结束前，您的访问权限仍然有效。"
+    "faqA4": "可以，您可以随时取消。在当前计费周期结束前，您的访问权限仍然有效。",
+    "faqBadge": "定价常见问题",
+    "faqTitlePart1": "常见",
+    "faqTitlePart2": "问题解答 (FAQ)"
   },
   "legal": {
     "termsTitle": "服务条款",
@@ -2881,7 +3546,7 @@
     "installButton": "立即安装应用",
     "howToInstall": "安装引导",
     "later": "稍后再说",
-    "offlineBanner": "当前处于离线离网状态 — 正在展示最近本地缓存数据",
+    "offlineBanner": "您已离线 — 更改已在本地保存",
     "reconnectedBanner": "网络连接已恢复 — 实时数据同步中",
     "iosTitle": "在 iPhone 或 iPad 上安装",
     "iosSubtitle": "请在 Safari 浏览器中通过以下步骤将 LevTech 仪表板添加到主屏幕：",
@@ -2891,7 +3556,18 @@
     "iosStep2Desc": "在弹出的操作面板中向下滑动，点击“添加到主屏幕”。",
     "iosStep3Title": "点击右上角“添加”",
     "iosStep3Desc": "LevTech 高清图标将常驻在您的手机桌面上。",
-    "gotIt": "知道了，完成！"
+    "gotIt": "知道了，完成！",
+    "retry": "重试",
+    "syncedToast": "已同步 {count} 项更改",
+    "syncingBanner": "已恢复在线 — 正在同步 {count} 项更改…",
+    "offlineTitle": "您已离线",
+    "offlineDesc": "您的互联网连接似乎已中断。已打开的功能仍可使用，您所做的更改会进入队列并在重新连接后自动同步。",
+    "offlineQueueNote": "离线期间创建的订单和编辑内容会保存在此设备上并自动重放 — 数据不会丢失。",
+    "queuePending": "{count} 项更改等待同步",
+    "queueEmpty": "没有等待同步的项目",
+    "tryAgain": "重试",
+    "syncNow": "立即同步",
+    "queuedToast": "已离线保存 — 重新连接后将自动同步"
   },
   "branding": {
     "brandingTitle": "白标定制与品牌外观",
@@ -2931,7 +3607,15 @@
     "taxId": "税号 / NPWP",
     "taxIdPlaceholder": "00.000.000.0-000.000",
     "invoiceAddress": "发票注册地址",
-    "invoiceAddressPlaceholder": "街道、城市、邮编、国家"
+    "invoiceAddressPlaceholder": "街道、城市、邮编、国家",
+    "logoLibraryLabel": "本地图标库",
+    "logoUpload": "上传SVG",
+    "logoImportUrl": "从URL导入",
+    "logoImportUrlDesc": "粘贴 https:// 图片链接或 data:image/... 数据链接作为Logo。",
+    "logoImportUrlPlaceholder": "https://example.com/logo.svg",
+    "logoImportApply": "使用Logo",
+    "logoImported": "Logo已应用 — 别忘了保存",
+    "logoImportFailed": "无法导入该Logo"
   },
   "tenants": {
     "switchOrganization": "切换工作空间 / 组织",
@@ -2970,7 +3654,10 @@
     "breakevenAtMonth": "第 {month} 个月回本",
     "rfmTitle": "RFM 客户分群引擎",
     "rfmSubtitle": "基于最近购买（R）、频次（F）和金额（M）的自动化行为分层",
-    "customersUnit": "名客户"
+    "customersUnit": "名客户",
+    "upsellTitle": "同期群分析是 Professional 功能",
+    "upsellDesc": "跟踪所有客户群的留存率、LTV:CAC 和 RFM 细分。升级到 Professional 即可解锁完整的留存热力图。",
+    "upsellCta": "查看套餐"
   },
   "chatAlerts": {
     "hubTitle": "团队聊天预警中心",
@@ -3177,7 +3864,7 @@
     "flaggedQueueTitle": "疑似风险可疑交易队列",
     "flaggedQueueDesc": "具备自动规则处置与人工复审触发器的实时风控评分队列",
     "rulesConfigTitle": "动态风控规则引擎",
-    "rulesConfigDesc": "用于结算验证拦截与自动撤单的可配置阈值触发器",
+    "rulesConfigDesc": "自动结算防御的阈值触发器",
     "dossierModalTitle": "拒付抗辩防御证据档案",
     "dossierModalDesc": "适用于Stripe和Midtrans拒付申诉的密码学防篡改证据包",
     "autoApprove": "自动放行",
@@ -3195,7 +3882,36 @@
     "threeDsStatus": "3D-Secure 2.2认证状态",
     "issuerStatement": "建议向发卡行提交的抗辩陈述",
     "downloadDossier": "导出PDF档案",
-    "saveRules": "保存规则"
+    "saveRules": "保存规则",
+    "realtimeBadge": "实时风险雷达",
+    "legendActiveThreat": "可疑流量",
+    "legendSafeBaseline": "安全基线",
+    "axisVelocity": "速度",
+    "axisGeo": "地区不匹配",
+    "axisDevice": "设备指纹",
+    "axisBehavior": "行为异常",
+    "axisNetwork": "VPN / BIN 风险",
+    "colOrderCustomer": "订单 / 客户",
+    "colAmount": "金额",
+    "colIpGeo": "IP 与地区",
+    "colRecommendation": "建议",
+    "colAction": "操作",
+    "colRegion": "地区",
+    "vpnTorFlag": "检测到 VPN/Tor",
+    "rec_AUTO_APPROVE": "自动批准",
+    "rec_CHALLENGE_3DS": "3DS 验证",
+    "rec_MANUAL_REVIEW": "人工审核",
+    "rec_AUTO_VOID": "自动作废",
+    "highTrustMatch": "高可信匹配",
+    "signedDeliveryProof": "已有签收配送证明",
+    "copyStatement": "复制声明",
+    "ipAsnTelemetry": "IP 与 ASN 遥测",
+    "generatingDossier": "正在生成取证卷宗…",
+    "copiedToClipboard": "已复制到剪贴板",
+    "loadDossierFailed": "加载争议卷宗失败",
+    "saveRulesFailed": "更新规则失败",
+    "radarHeadlineDefault": "平均威胁分数",
+    "probeHint": "在矩阵上移动指针以探测风险轴"
   },
   "logisticsFleet": {
     "title": "实时物流车队与承运商智能追踪",
@@ -3302,6 +4018,8 @@
     "useAppearanceColor": "使用外观主题色",
     "notesLabel": "页脚法律备注与条款",
     "notesPlaceholder": "官方计算机开具发票。符合BI-FAST结算规则的有效交易凭证。",
+    "currencyLabel": "发票币种",
+    "currencyHint": "金额以美元存储，打印时将转换为所选的展示币种。",
     "securityBadgesLabel": "安全与条码徽章",
     "showBarcodeLabel": "Code 128 条形码",
     "showQrLabel": "验证二维码",
@@ -3380,7 +4098,11 @@
     "posTitle": "收银POS快捷数字键盘终端",
     "posSubtitle": "具有实时动态QRIS生成和音频反馈的快速现场结账终端",
     "settlementTitle": "商户结算对账与多渠道付款",
-    "disputeTitle": "争议与退款解决中心"
+    "disputeTitle": "争议与退款解决中心",
+    "posAudioOn": "提示音开",
+    "posAudioMuted": "提示音关",
+    "posAudioChimesEnabled": "提示音已启用",
+    "posAudioMutedTip": "已静音"
   },
   "webhookSimulator": {
     "simulateWebhook": "模拟网关 Webhook",
@@ -3428,6 +4150,309 @@
     "stepCustomize": "自定义外观",
     "stepCustomizeDesc": "使用自定义颜色和品牌打造您的仪表板",
     "allDone": "大功告成！",
-    "allDoneDesc": "您已完成所有设置步骤。祝您销售愉快！"
+    "allDoneDesc": "您已完成所有设置步骤。祝您销售愉快！",
+    "takeTour": "查看引导"
+  },
+  "aiGenerator": {
+    "title": "AI 内容生成器",
+    "subtitle": "使用先进的 AI 模型，几秒钟生成高转化文案。",
+    "configTitle": "配置",
+    "configDesc": "告诉 AI 您想写什么。",
+    "topicLabel": "主题或提示词",
+    "topicPlaceholder": "例如：给新 SaaS 用户的欢迎邮件……",
+    "contentTypeLabel": "内容类型",
+    "typeBlog": "博客文章",
+    "typeEmail": "邮件营销",
+    "typeSocial": "社交媒体帖子",
+    "typeAd": "广告文案",
+    "toneLabel": "语气",
+    "toneProfessional": "专业",
+    "toneCasual": "轻松友好",
+    "toneHumorous": "幽默",
+    "toneUrgent": "紧迫且具说服力",
+    "generate": "生成内容",
+    "generating": "生成中……",
+    "aiWriting": "AI 正在为您撰写内容……",
+    "resultTitle": "结果",
+    "resultEmpty": "生成的内容将显示在这里。",
+    "copy": "复制",
+    "copied": "已复制",
+    "saveToProjects": "保存到项目"
+  },
+  "projects": {
+    "title": "项目",
+    "subtitle": "管理并查看您生成的 AI 内容。",
+    "newProject": "新建项目",
+    "recentContent": "最近内容",
+    "searchPlaceholder": "搜索项目……",
+    "colTitle": "项目标题",
+    "colType": "类型",
+    "colDate": "创建日期",
+    "colStatus": "状态",
+    "colActions": "操作",
+    "noResults": "未找到项目。",
+    "statusCompleted": "已完成",
+    "statusDraft": "草稿",
+    "typeEmail": "邮件",
+    "typeBlog": "博客",
+    "typeSocial": "社交",
+    "typeAd": "广告"
+  },
+  "liquidGlass": {
+    "dock": "玻璃程序坞",
+    "howCanIHelp": "今天我能帮您什么？"
+  },
+  "docsPage": {
+    "heroTag": "文档",
+    "heroTitle": "使用 Next Dashboard 构建",
+    "heroSubtitle": "集成、自动化与上线所需的一切 —— 快速入门、API 参考、Webhook 与支付指南，尽在一处。",
+    "openApiDocs": "打开 API 参考",
+    "quickstartCurl": "curl https://api.nextdashboard.dev/v1/health \\\n  -H \"Authorization: Bearer sk_live_your_api_key\"",
+    "topicsTitle": "按主题浏览",
+    "topicsSubtitle": "简明扼要的指南，几分钟内完成你的第一次请求。",
+    "topics": {
+      "quickstart": {
+        "title": "快速开始",
+        "desc": "创建 API 密钥、完成认证，并向 REST API 发出第一次请求。"
+      },
+      "authentication": {
+        "title": "认证",
+        "desc": "Bearer 令牌、密钥轮换、权限范围与安全的密钥存储实践。"
+      },
+      "restApi": {
+        "title": "REST API v1",
+        "desc": "订单、商品、客户、库存与报表的版本化端点。"
+      },
+      "webhooks": {
+        "title": "Webhook",
+        "desc": "实时接收 order.completed、payment.confirmed、inventory.low 事件。"
+      },
+      "payments": {
+        "title": "支付",
+        "desc": "Stripe、Midtrans、QRIS 与虚拟账户 —— 一个收银台，覆盖所有通道。"
+      },
+      "multiCurrency": {
+        "title": "多币种",
+        "desc": "以 USD、IDR、JPY、EUR、SGD、CNY 定价与结算，实时汇率换算。"
+      },
+      "sdks": {
+        "title": "SDK 与示例",
+        "desc": "适用于 TypeScript、Go 和 Python 的即拷即用代码片段与参考流程。"
+      },
+      "security": {
+        "title": "安全",
+        "desc": "2FA、通行密钥、二次验证、审计追踪与 RBAC 最佳实践。"
+      }
+    },
+    "ctaTitle": "准备好构建了吗？",
+    "ctaDesc": "创建免费工作区，今天下午就发布你的第一个集成。",
+    "ctaButton": "创建免费账户"
+  },
+  "apiDocsPage": {
+    "title": "API 参考",
+    "subtitle": "所有生产端点，分组呈现、可自由探索 —— 与你的仪表板使用同一套 API。",
+    "searchPlaceholder": "搜索端点或路径…",
+    "noResults": "没有与搜索匹配的端点。",
+    "try": {
+      "title": "在线试用",
+      "hint": "从此页面发送真实请求 —— 由你的仪表板会话进行认证。响应与你的应用收到的 JSON 完全一致。",
+      "noAuth": "此端点无需认证。",
+      "queryParams": "查询参数",
+      "requestBody": "请求体 (JSON)",
+      "reset": "重置",
+      "send": "发送请求",
+      "confirmSend": "再次点击以确认",
+      "sending": "发送中…",
+      "mutatingHint": "{method} 会修改数据 —— 第二次点击确认。",
+      "notAuthenticated": "你尚未登录，因此 API 返回 401。",
+      "signIn": "登录",
+      "ms": "毫秒",
+      "copied": "已复制",
+      "copy": "复制",
+      "emptyBody": "（空响应）",
+      "invalidJson": "请求体必须是有效的 JSON。",
+      "apiKeyLabel": "API 密钥",
+      "apiKeyHint": "仅保存在此浏览器中。",
+      "keyRequired": "请输入 API 密钥以调用沙盒。",
+      "keyInvalid": "请求被拒绝——请确认密钥是有效的 dash_ 密钥、处于 ACTIVE 状态、未过期，且允许来自您的 IP。",
+      "curlTitle": "cURL",
+      "curlKeyPlaceholder": "cURL 片段使用占位符——在浏览器外运行前，请将 dash_your_api_key 替换为您的真实密钥。"
+    },
+    "sandboxBadge": "沙盒",
+    "sandboxTitle": "API 密钥沙盒。",
+    "sandboxNotice": "该端点使用 API 密钥（Authorization: Bearer dash_…）而非控制台会话进行认证。粘贴任意来自「集成 → API 密钥」的密钥——沙盒读取的范围仅限于该密钥所属的工作区。",
+    "snippets": {
+      "title": "代码片段",
+      "curl": "cURL",
+      "typescript": "TypeScript",
+      "copy": "复制",
+      "copied": "已复制！",
+      "keyPlaceholder": "片段使用占位符密钥——运行前请将 dash_your_api_key 替换为您的真实密钥。"
+    },
+    "openapiDownload": "OpenAPI 3.1 规范"
+  },
+  "soraGalleryPage": {
+    "badge": "Sora UI",
+    "title": "警告对话框图库",
+    "subtitle": "所有破坏性确认变体汇聚一页——逐个打开，感受动效，比较媒体图标。",
+    "backToDocs": "返回文档",
+    "rulesTitle": "使用时机",
+    "rules": {
+      "deleteRecords": "删除记录",
+      "revokeCredentials": "吊销凭据",
+      "irreversible": "不可逆操作",
+      "destructiveAction": "破坏性主按钮",
+      "confirmFirst": "操作前确认"
+    },
+    "variants": {
+      "delete": {
+        "title": "记录删除",
+        "description": "垃圾桶图标——产品、客户、营销活动、折扣。",
+        "trigger": "删除客户",
+        "dialogTitle": "删除该客户？",
+        "dialogDescription": "客户将被停用而非清除——订单历史会保留用于报表。",
+        "action": "删除客户"
+      },
+      "revoke": {
+        "title": "凭据吊销",
+        "description": "钥匙图标——通行密钥、API 密钥、会话、SSO。",
+        "trigger": "吊销通行密钥",
+        "dialogTitle": "吊销该通行密钥？",
+        "dialogDescription": "使用该密钥的设备将立即失去访问权限。您可以随时注册新密钥。",
+        "action": "吊销通行密钥"
+      },
+      "warning": {
+        "title": "不可逆警告",
+        "description": "三角图标——删除账户等无法撤回的操作。",
+        "trigger": "删除账户",
+        "dialogTitle": "您确定要继续吗？",
+        "dialogDescription": "此操作无法撤销。您的账户、数据库记录以及所有 API 密钥将被永久删除。",
+        "action": "删除账户"
+      },
+      "confirm": {
+        "title": "中性确认",
+        "description": "主色图标——需要确认意图而非警报的状态更改（备份代码、方案变更）。",
+        "trigger": "重新生成代码",
+        "dialogTitle": "重新生成备份代码？",
+        "dialogDescription": "现有代码将立即失效。请先下载新代码再继续。",
+        "action": "重新生成"
+      },
+      "signout": {
+        "title": "退出会话",
+        "description": "中性图标——低风险确认，搭配破坏性操作按钮。",
+        "trigger": "退出登录",
+        "dialogTitle": "从此设备退出登录？",
+        "dialogDescription": "未保存的更改会保留在本设备上，直到您重新登录。",
+        "action": "退出登录"
+      },
+      "deactivate": {
+        "title": "软停用",
+        "description": "琥珀图标——数据保留、可恢复的移除。",
+        "trigger": "停用成员",
+        "dialogTitle": "停用该成员？",
+        "dialogDescription": "该成员将立即失去访问权限，但之后可以恢复；不会删除任何内容。",
+        "action": "停用"
+      }
+    }
+  },
+  "onboardingTour": {
+    "stepMetricsTitle": "核心指标一览",
+    "stepMetricsDesc": "整个工作区的关键数据都会在这里实时更新。",
+    "stepRevenueTitle": "收入趋势",
+    "stepRevenueDesc": "交互图表跟踪您的收入随时间的变化趋势。",
+    "stepSalesTitle": "最新销售",
+    "stepSalesDesc": "实时查看新订单 — 最新订单始终在最上方。",
+    "stepSearchTitle": "即刻查找任何内容",
+    "stepSearchDesc": "随时按 Ctrl+K 打开命令面板，跳转到任意页面。",
+    "stepCount": "{current} / {total}",
+    "next": "下一步",
+    "back": "上一步",
+    "finish": "完成",
+    "close": "关闭",
+    "skip": "跳过引导"
+  },
+  "sessionStay": {
+    "title": "您的会话即将过期",
+    "description": "您已在此停留较长时间。保持登录即可继续工作而不中断。",
+    "stay": "保持登录",
+    "signOut": "退出登录",
+    "stayFailed": "暂时无法延长会话 — 您仍处于登录状态，请稍后重试。"
+  },
+  "tierUpgrade": {
+    "title": "升级以解锁此功能",
+    "description": "{feature} 属于 {tier} 套餐。升级后即可在工作区中使用。",
+    "featureAnalytics": "高级分析",
+    "featureReports": "自定义报表",
+    "featureMultiChannel": "多渠道集成",
+    "featureApi": "API 与 Webhook 访问",
+    "featureRbac": "基于角色的访问控制",
+    "featureCustomExports": "自定义数据导出",
+    "planPro": "Pro",
+    "planProDesc": "分析、报表、多渠道集成、API 与 Webhook、RBAC。",
+    "planEnterprise": "Enterprise",
+    "planEnterpriseDesc": "包含 Pro 全部功能，另有无上限额度、自定义数据导出和 7×24 专人支持。",
+    "notNow": "暂不",
+    "viewPlans": "查看套餐",
+    "featureOrderLimit": "更高的每月订单量",
+    "featureSeatLimit": "更多团队席位"
+  },
+  "verificationSuccess": {
+    "emailVerified": "邮箱验证成功 — 您的账户现已受到全面保护。",
+    "emailVerifyFailed": "该验证链接无效或已过期。请申请新的验证码。",
+    "twoFactorEnabled": "双因素认证已开启。您的账户得到了更好的保护。",
+    "twoFactorDisabled": "双因素认证已关闭。",
+    "passwordChanged": "密码修改成功。其他会话保持登录状态。"
+  },
+  "emailVerification": {
+    "title": "您的邮箱尚未验证",
+    "description": "验证您的邮箱以保护账户并启用所有功能。",
+    "sendCode": "发送验证码",
+    "sending": "发送中…",
+    "verifyNow": "立即验证",
+    "dismiss": "关闭",
+    "sentToast": "验证邮件已发送！请查看您的收件箱。",
+    "sendFailed": "验证邮件发送失败。请重试。"
+  },
+  "usageQuota": {
+    "title": "用量与配额",
+    "period": "当前周期",
+    "orders": "订单",
+    "teamMembers": "团队成员",
+    "apiKeys": "API 密钥",
+    "unlimited": "无限制",
+    "trendTitle": "每月用量趋势",
+    "upgradeHint": "您正在使用入门版计划中受限制的资源。",
+    "upgradeCta": "升级套餐",
+    "clientTitle": "工作区使用量",
+    "clientReadOnlyHint": "此工作区套餐用量的只读视图。账单与套餐变更由工作区所有者管理。",
+    "trialChip": "试用 · 剩余 {days, plural, other {# 天}}"
+  },
+  "admin": {
+    "title": "管理员",
+    "subtitle": "管理平台的用户、订阅与收入。",
+    "statSubs": "有效订阅",
+    "statSubsHint": "使用付费计划的用户",
+    "statUsers": "总用户数",
+    "statUsersHint": "已注册的平台账户",
+    "statAdmins": "管理员",
+    "statAdminsHint": "最后一名管理员账户受删除保护",
+    "statBanned": "已封禁",
+    "statBannedHint": "已停用的账户",
+    "userManagement": "用户管理",
+    "userManagementDesc": "查看并管理所有注册用户。",
+    "searchPlaceholder": "搜索用户...",
+    "name": "姓名",
+    "email": "邮箱",
+    "role": "角色",
+    "plan": "套餐",
+    "status": "状态",
+    "joined": "加入时间",
+    "noUsers": "未找到用户。",
+    "actionsFor": "{name} 的操作",
+    "deleteUser": "删除用户",
+    "deletedToast": "用户已删除",
+    "deactivatedToast": "账户已停用（最后一名管理员）。",
+    "loadFailed": "加载用户失败",
+    "loadFailedStatus": "加载用户失败 ({status})"
   }
 }

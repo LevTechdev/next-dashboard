@@ -1,4 +1,59 @@
 {
+  "systemHealth": {
+    "title": "System Health",
+    "subtitle": "Scheduler jobs, webhook dead letters, mirror sync and backup verification in one place.",
+    "refresh": "Refresh",
+    "verdictHealthy": "All systems normal",
+    "verdictDegraded": "Needs attention",
+    "actionFailed": "The action failed.",
+    "schedulerTitle": "Scheduler jobs",
+    "schedulerDesc": "Last execution and outcome of every in-app job.",
+    "schedulerEnabled": "Loop enabled",
+    "schedulerDisabled": "Loop disabled",
+    "jobNever": "never",
+    "jobUsageDigest": "Usage digest",
+    "jobAutoPayout": "Affiliate auto-payout",
+    "jobWebhookRetry": "Webhook retry sweep",
+    "jobAutoReorder": "Inventory auto-reorder",
+    "jobSupabaseSync": "Supabase mirror sync",
+    "jobTrialSweep": "Trial expiry sweep",
+    "jobScheduledReports": "Scheduled reports",
+    "jobBackupVerify": "Backup verification",
+    "dlqTitle": "Webhook dead-letter queue",
+    "dlqDesc": "Inbound deliveries that failed signature or processing and are waiting on a replay.",
+    "dlqEmpty": "No failed deliveries — the queue is empty.",
+    "dlqFailed": "Failed",
+    "dlqRetrying": "Retrying",
+    "dlqExhausted": "Exhausted",
+    "dlqResolved": "Resolved",
+    "dlqAttempts": "attempt {count}/{max}",
+    "dlqReplay": "Replay",
+    "dlqDiscard": "Discard",
+    "dlqReplayedToast": "Delivery replayed and resolved.",
+    "dlqReplayFailedToast": "Replay failed again — left in the retry rotation.",
+    "dlqDiscardedToast": "Delivery discarded.",
+    "dlqDiscardConfirmTitle": "Discard this delivery?",
+    "dlqDiscardConfirmDesc": "The {platform} delivery is removed from the queue permanently and can never be replayed.",
+    "mirrorTitle": "Mirror sync and rollback snapshots",
+    "mirrorDesc": "Remote Supabase mirror health, retained pre-sync dumps, and restorability checks.",
+    "mirrorCheck": "Run drift check",
+    "mirrorHealthyToast": "Mirror matches local — no drift.",
+    "mirrorDriftToast": "Mirror drift detected — see the report.",
+    "mirrorClean": "No drift reported.",
+    "lastSync": "Last mirror sync:",
+    "lastBackupCheck": "Last backup check:",
+    "snapshotsTitle": "Rollback snapshots",
+    "snapshotsEmpty": "No rollback snapshots retained yet.",
+    "backupVerify": "Verify backup",
+    "backupVerifiedToast": "Snapshot {file} restored into a scratch database ({tables} tables).",
+    "backupFailedToast": "Restore verification failed: {detail}",
+    "backupNoSnapshots": "No snapshot to verify yet.",
+    "backupRestore": "Restore",
+    "restoreConfirmTitle": "Restore this snapshot?",
+    "restoreConfirmDesc": "Restoring {file} overwrites the remote Supabase mirror with the snapshot contents.",
+    "restoreConfirmAction": "Restore mirror",
+    "restoreDoneToast": "Restored {file} into the remote mirror."
+  },
   "app": {
     "name": "Dashboard",
     "tagline": "Business Management Platform"
@@ -50,8 +105,17 @@
     "sso": "SSO / Enterprise",
     "aiGenerator": "AI Generator",
     "projects": "Projects",
-    "superAdmin": "Super Admin",
-    "apiDocs": "API Docs"
+    "adminConsole": "Admin",
+    "systemHealth": "System Health",
+    "apiDocs": "API Docs",
+    "plans": "Plans & Billing",
+    "recommendations": "Recommended",
+    "aiCopilot": "AI Copilot",
+    "apiKeys": "API Keys",
+    "home": "Home",
+    "more": "More",
+    "language": "Language",
+    "switchLanguage": "Switch language"
   },
   "apiDocs": {
     "title": "API Documentation",
@@ -70,13 +134,207 @@
     "copied": "Copied!",
     "authRequired": "Authentication Required",
     "noAuth": "No Authentication",
+    "endpointCount": "endpoints",
     "noEndpoints": "No endpoints found",
     "noEndpointsDesc": "Try adjusting your search query",
     "param": "Parameter",
     "type": "Type",
     "field": "Field",
     "allGroups": "All",
-    "endpoints": "endpoints"
+    "endpoints": {
+      "orders-get": {
+        "description": "List all orders with customer and channel details",
+        "params": {
+          "status": "Filter by order status",
+          "limit": "Max results (default 100)"
+        }
+      },
+      "orders-post": {
+        "description": "Create a new order",
+        "fields": {
+          "customerId": "Customer ID",
+          "items": "Array of '{'productId, quantity, price'}'",
+          "channel": "Sales channel name"
+        }
+      },
+      "orders-put": {
+        "description": "Update order status",
+        "fields": {
+          "id": "Order ID",
+          "status": "New status (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)"
+        }
+      },
+      "products-get": {
+        "description": "List all products with category info",
+        "params": {
+          "includeCategories": "Include category list (true/false)"
+        }
+      },
+      "products-post": {
+        "description": "Create a new product",
+        "fields": {
+          "name": "Product name",
+          "price": "Price in cents",
+          "costPrice": "Cost price",
+          "stock": "Initial stock",
+          "sku": "SKU code",
+          "categoryId": "Category ID"
+        }
+      },
+      "products-put": {
+        "description": "Update an existing product",
+        "fields": {
+          "id": "Product ID",
+          "name": "Updated name",
+          "price": "Updated price"
+        }
+      },
+      "products-delete": {
+        "description": "Delete a product",
+        "fields": {
+          "id": "Product ID to delete"
+        }
+      },
+      "customers-get": {
+        "description": "List all customers with order counts and spending"
+      },
+      "customers-post": {
+        "description": "Create a new customer",
+        "fields": {
+          "name": "Customer name",
+          "email": "Email address",
+          "phone": "Phone number",
+          "city": "City",
+          "segment": "Customer segment"
+        }
+      },
+      "dashboard-get": {
+        "description": "Get dashboard stats, revenue data, sales channels, recent orders, and top products"
+      },
+      "search-get": {
+        "description": "Global search across orders, customers, and products",
+        "params": {
+          "q": "Search query (min 2 chars)"
+        }
+      },
+      "notifications-get": {
+        "description": "List notifications with unread counts",
+        "params": {
+          "type": "Filter by type",
+          "read": "Filter by read status (true/false)",
+          "limit": "Max results"
+        }
+      },
+      "notifications-put": {
+        "description": "Mark notification as read/unread",
+        "fields": {
+          "id": "Notification ID",
+          "action": "mark-read or mark-unread"
+        }
+      },
+      "analytics-get": {
+        "description": "Get analytics data including trends and breakdowns"
+      },
+      "auth-login-post": {
+        "description": "Authenticate user and create session",
+        "fields": {
+          "email": "User email",
+          "password": "User password"
+        }
+      },
+      "auth-register-post": {
+        "description": "Create a new user account",
+        "fields": {
+          "name": "Full name",
+          "email": "Email",
+          "password": "Password (min 8 chars)"
+        }
+      },
+      "team-get": {
+        "description": "List team members and pending invitations"
+      },
+      "team-post": {
+        "description": "Invite a new team member",
+        "fields": {
+          "email": "Invitee email",
+          "role": "Role (ADMIN, MANAGER, STAFF, VIEWER)"
+        }
+      },
+      "billing-get": {
+        "description": "Get current subscription plan and billing info"
+      },
+      "reports-get": {
+        "description": "Get report data with date range filtering",
+        "params": {
+          "from": "Start date (YYYY-MM-DD)",
+          "to": "End date (YYYY-MM-DD)",
+          "period": "daily, weekly, or monthly"
+        }
+      },
+      "health-get": {
+        "description": "Health check endpoint"
+      },
+      "inventory-get": {
+        "description": "Get inventory levels and stock alerts"
+      },
+      "v1-ping-get": {
+        "description": "Smoke-test an API key — verifies it exists, is active, unexpired, and within the sandbox rate limit"
+      },
+      "v1-me-get": {
+        "description": "Key metadata plus the user and workspace the key acts for"
+      },
+      "v1-products-get": {
+        "description": "List products in the key's workspace (paginated)",
+        "params": {
+          "limit": "Results per page, 1–100 (default 20)",
+          "page": "Page number (default 1)",
+          "active": "Filter by active state (true/false)"
+        }
+      },
+      "v1-products-id-get": {
+        "description": "A single product from the key's workspace"
+      },
+      "v1-orders-get": {
+        "description": "List orders in the key's workspace with customer and channel info (paginated)",
+        "params": {
+          "status": "PENDING, PROCESSING, SHIPPED, DELIVERED or CANCELLED",
+          "paymentStatus": "UNPAID, PAID or REFUNDED",
+          "limit": "Results per page, 1–100 (default 20)",
+          "page": "Page number (default 1)"
+        }
+      },
+      "v1-orders-id-get": {
+        "description": "A single order with line items, from the key's workspace"
+      },
+      "v1-customers-get": {
+        "description": "List customers in the key's workspace with spending totals (paginated)",
+        "params": {
+          "segment": "Filter by segment (VIP, REGULAR, NEW)",
+          "limit": "Results per page, 1–100 (default 20)",
+          "page": "Page number (default 1)"
+        }
+      },
+      "v1-customers-id-get": {
+        "description": "A single customer from the key's workspace"
+      }
+    },
+    "tryItHint": "Executes a live request against your authenticated session from this dashboard.",
+    "groups": {
+      "Orders": "Orders",
+      "Products": "Products",
+      "Customers": "Customers",
+      "Dashboard": "Dashboard",
+      "Search": "Search",
+      "Notifications": "Notifications",
+      "Analytics": "Analytics",
+      "Authentication": "Authentication",
+      "Team": "Team",
+      "Billing": "Billing",
+      "Reports": "Reports",
+      "System": "System",
+      "Inventory": "Inventory",
+      "API Sandbox": "API Sandbox"
+    }
   },
   "dashboard": {
     "title": "Dashboard Overview",
@@ -95,6 +353,9 @@
     "topProductsDesc": "Best selling products",
     "funnel": "Conversion Funnel",
     "funnelDesc": "Track visitor-to-purchase conversion rates",
+    "funnelGoalsLabel": "Funnel goals",
+    "funnelSessions": "sessions",
+    "funnelEmpty": "No funnel stages selected",
     "funnelVisitors": "Visitors",
     "funnelAddToCart": "Add to Cart",
     "funnelCheckout": "Checkout",
@@ -171,6 +432,17 @@
     "resetView": "Reset View",
     "funnelHealthTitle": "Conversion Funnel & Operational Health",
     "funnelHealthDesc": "Multi-tier shopper conversion journey and checkout pipeline velocity",
+    "radarViewFilled": "Filled",
+    "radarViewDotted": "Dotted",
+    "radarViewLines": "Lines only",
+    "radarViewScore": "Centre score",
+    "radarAria": "Conversion radar across pipeline stages",
+    "radarVsPrevious": "Deltas compare with the previous period",
+    "radarBestStage": "Strongest stage",
+    "radarBiggestDrop": "Biggest drop-off",
+    "radarTotalPipeline": "In pipeline",
+    "radarEndToEnd": "End-to-end rate",
+    "radarNoData": "Not enough data",
     "financialSimulatorTitle": "Financial Simulator & Revenue Forecast Report",
     "financialSimulatorDesc": "Monte Carlo growth projections and runway estimation",
     "activityFeedTitle": "Activity Feed",
@@ -180,7 +452,74 @@
     "activityFeedEarlier": "Earlier",
     "activityFeedEarlierTip": "Happened before this tab was opened",
     "analyticsTitle": "Analytics",
-    "analyticsDesc": "Deep-dive into revenue trends, channel performance, and customer cohorts across every sales channel."
+    "analyticsDesc": "Deep-dive into revenue trends, channel performance, and customer cohorts across every sales channel.",
+    "metricProfit": "Net Profit",
+    "metricProfitDesc": "Revenue minus costs",
+    "metricCustomers": "Customers",
+    "metricCustomersDesc": "Active in the period",
+    "metricOrders": "Orders",
+    "metricOrdersDesc": "Placed in the period",
+    "metricAvgOrder": "Avg. Order Value",
+    "metricAvgOrderDesc": "Revenue per order",
+    "greetingMorning": "Good morning,",
+    "greetingAfternoon": "Good afternoon,",
+    "greetingEvening": "Good evening,",
+    "viewOrders": "View orders",
+    "restock": "Restock",
+    "newOrderTitle": "{count, plural, one {1 New Order} other {# New Orders}}",
+    "orderRevenue": "${revenue} total revenue",
+    "milestoneTitle": "🎉 Revenue Milestone Reached!",
+    "newCustomerTitle": "{count, plural, one {1 New Customer} other {# New Customers}}",
+    "customerTotal": "Total: {count} customers",
+    "lowStockTitle": "⚠️ {count} Low Stock Items",
+    "productsNeedRestock": "{count} products need restocking",
+    "discountsExpiringTitle": "{count, plural, one {1 Discount Expiring Soon} other {# Discounts Expiring Soon}}",
+    "newProductTitle": "{count, plural, one {1 New Product Added} other {# New Products Added}}",
+    "catalogTotal": "{count} total products in catalog",
+    "budgetExhaustedTitle": "🚨 Budget Exhausted: {name}",
+    "budgetSpentOf": "Spent ${spent} of ${budget} budget",
+    "budgetNearTitle": "⚠️ Budget {percent}% Used: {name}",
+    "pendingOrdersTitle": "🔔 {count} Pending Orders",
+    "pendingOrdersDesc": "Orders awaiting processing attention",
+    "filteredMonth": "Filtered to {month}",
+    "pipelineTitle": "Pipeline",
+    "pipelineRange7D": "Last 7 days",
+    "pipelineRange30D": "Last 30 days",
+    "pipelineRange90D": "Last 90 days",
+    "pipelineTotal": "{total} events in the {range}",
+    "stageVisits": "Visits",
+    "stageSignups": "Sign-up",
+    "stageActive": "Active",
+    "stagePro": "Pro",
+    "stageTeam": "Team",
+    "stageEnterprise": "Enterprise",
+    "channelMix": "Channel mix",
+    "channelTrendTitle": "Channel trend — last 30 days",
+    "chartWeekly": "Weekly",
+    "chartMonthly": "Monthly",
+    "chartYearly": "Yearly",
+    "chartNoData": "No revenue data available",
+    "welcomeBackTitle": "Welcome back",
+    "welcomeBackDesc": "You last visited {when}. Pick up right where you left off.",
+    "exportView": "Export current view",
+    "exportViewDesc": "CSV of orders in the active range (Enterprise)",
+    "exportSuccess": "Export started",
+    "exportDenied": "Exports require the Enterprise plan",
+    "comparePrev": "vs previous period",
+    "noPrevData": "—",
+    "stageConvTitle": "Stage conversion",
+    "stageConvDelta": "{delta} pp vs prev.",
+    "stageConvFlat": "No prior window",
+    "stageConvOfPrev": "of previous {range}",
+    "channelRingsTitle": "Channel goals",
+    "ringsEmpty": "No channel revenue recorded yet",
+    "ringsShare": "Share as image",
+    "ringsShareToast": "Channel rings image saved",
+    "radarRange_7d": "7D",
+    "radarRange_30d": "30D",
+    "radarRange_90d": "90D",
+    "radarRangeLabel": "Time range",
+    "radarViewLabel": "Radar style"
   },
   "sales": {
     "title": "Sales Management",
@@ -246,6 +585,7 @@
     "phonePlaceholder": "Phone",
     "cityPlaceholder": "City",
     "confirmDelete": "Delete this customer?",
+    "confirmDeleteNamed": "Delete customer “{name}”? This action cannot be undone.",
     "updated": "Customer updated",
     "added": "Customer added",
     "deleted": "Customer deleted",
@@ -425,6 +765,7 @@
     "deliverBtn": "Deliver",
     "cancelBtn": "Cancel",
     "viewDetails": "View Details",
+    "downloadInvoice": "Download Invoice",
     "guest": "Guest",
     "na": "N/A",
     "markedAs": "Order marked as {status}",
@@ -457,7 +798,9 @@
     "shippedOn": "Shipped on",
     "deliveredOn": "Delivered on",
     "refundedOn": "Refunded on",
-    "invoiceBtn": "Invoice"
+    "invoiceBtn": "Invoice",
+    "limitBanner": "You’ve reached the Starter plan’s monthly order limit. Upgrade to keep taking orders without interruption.",
+    "upgradeCta": "Upgrade"
   },
   "inventory": {
     "title": "Inventory Management",
@@ -506,7 +849,17 @@
     "poMarkedReceived": "Shipment received! Stock levels incremented.",
     "searchPlaceholder": "Search products by name or SKU...",
     "categories": "Category Breakdown",
-    "categoriesDesc": "Inventory distribution and stock volume by category."
+    "categoriesDesc": "Inventory distribution and stock volume by category.",
+    "poIssueSuccess": "Purchase order issued to the supplier.",
+    "poIssueAction": "Issue",
+    "poBulkSelected": "{count} draft PO(s) selected",
+    "poBulkIssueAction": "Issue selected",
+    "poBulkIssueTitle": "Issue {count} draft purchase order(s)?",
+    "poBulkIssueDesc": "Each selected draft will be marked ISSUED and sent to its supplier. This cannot be undone in bulk.",
+    "poBulkIssueSuccess": "{count} purchase order(s) issued",
+    "poBulkIssuePartial": "{ok} issued, {failed} failed",
+    "poBulkSelectAll": "Select all draft purchase orders",
+    "poBulkSelect": "Select draft purchase order"
   },
   "settings": {
     "title": "Settings",
@@ -558,6 +911,13 @@
     "densityCompact": "Compact",
     "densityRegular": "Regular",
     "densityLarge": "Large",
+    "themeSwitch": "Theme Switch",
+    "themeSwitchDesc": "How light and dark hand over when you flip the switch",
+    "themeSwitchCircle": "Circle",
+    "themeSwitchCircleBlur": "Soft circle",
+    "themeSwitchRectangle": "Shutter",
+    "themeSwitchPolygon": "Diagonal",
+    "themeSwitchNone": "Instant",
     "widgets": "Dashboard Widgets",
     "widgetsDesc": "Choose which widgets appear on your dashboard",
     "widgetQuickActions": "Quick Actions",
@@ -575,12 +935,15 @@
     "apiKeyNeverUsed": "Never used",
     "apiKeyRevoke": "Revoke",
     "apiKeyRevokeConfirm": "Revoke this API key? This cannot be undone.",
+    "apiKeyReactivate": "Reactivate",
     "apiKeyEmpty": "No API keys yet. Create one to get started.",
     "webhooks": "Webhooks",
     "webhooksDesc": "Configure webhook endpoints for real-time events",
     "webhookUrl": "Webhook URL",
     "webhookEvents": "Events",
     "webhookAdd": "Add Webhook",
+    "webhookDelete": "Delete Webhook",
+    "webhookEdit": "Edit Webhook",
     "webhookActive": "Active",
     "webhookInactive": "Inactive",
     "webhookEmpty": "No webhooks configured. Add one to receive event notifications.",
@@ -612,7 +975,49 @@
     "deleteAccountDesc": "Permanently delete your account and all associated data",
     "deleteAccountConfirm": "Are you sure? This action cannot be undone.",
     "dataExported": "Data export started. You will receive an email when ready.",
-    "webhookUpdate": "Update Webhook"
+    "webhookUpdate": "Update Webhook",
+    "theme": "Theme",
+    "tourReplay": "Replay tour",
+    "tourReplayDesc": "Replay the guided tour of the dashboard, in the language selected above.",
+    "tourReplayToast": "Starting the tour — head to the Dashboard.",
+    "scheduler": {
+      "title": "Scheduler health",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "disabledHint": "The in-app scheduler is off in development. Set SCHEDULER_ENABLED=1 in .env.local (or run in production) to activate it.",
+      "never": "Never ran",
+      "justNow": "Just now",
+      "minsAgo": "{n} min ago",
+      "hoursAgo": "{n} h ago",
+      "jobDigest": "Usage digest (daily 02:00)",
+      "jobAutoPayout": "Affiliate auto-payout (hourly check)",
+      "jobWebhookRetry": "Webhook retry sweep (every 5 min)",
+      "jobAutoReorder": "Auto purchase-order drafts (hourly check)",
+      "jobSupabaseSync": "Supabase mirror sync",
+      "jobSupabaseLeafSync": "Supabase leaf sync (30 min)",
+      "jobBackupVerify": "Backup restore verify",
+      "snapshotsTitle": "Rollback snapshots",
+      "snapshotsEmpty": "No snapshots yet — they are created on every Supabase mirror sync.",
+      "restore": "Restore",
+      "restoreConfirmTitle": "Restore this snapshot?",
+      "restoreConfirmDesc": "This overwrites the remote Supabase with the pre-sync snapshot \"{file}\". Rows added to the remote since then are lost.",
+      "restoreConfirmAction": "Restore snapshot",
+      "restoreDone": "Remote restored from {file}",
+      "restoreFailed": "Restore failed",
+      "jobTrialSweep": "Trial expiry sweep",
+      "jobScheduledReports": "Scheduled reports",
+      "verify": "Verify",
+      "verifyDone": "Backup verified: {file} restored with {tables} tables into a scratch DB (dropped).",
+      "verifyFailed": "Verify failed: {detail}",
+      "verifyNone": "No snapshots to verify yet"
+    },
+    "digestPreviewTitle": "Daily email digest",
+    "digestPreviewDesc": "A live preview of the daily usage email — the quota table and missed events it will contain.",
+    "digestPreviewRefresh": "Refresh preview",
+    "digestPreviewUnavailable": "Digest preview is unavailable right now.",
+    "digestPreviewMissedTitle": "While you were away",
+    "digestPreviewPlan": "Mailed daily for the {plan} plan.",
+    "jobTrialSweep": "Trial expiry sweep"
   },
   "team": {
     "title": "Team Management",
@@ -628,6 +1033,12 @@
     "manager": "Manager",
     "staff": "Staff",
     "noMembers": "No team members found",
+    "sortName": "Name",
+    "sortDateModified": "Date modified",
+    "sortType": "Type",
+    "sortAuthor": "Author",
+    "sortAscending": "Ascending",
+    "sortDescending": "Descending",
     "confirmRemove": "Remove this member?",
     "memberUpdated": "Member updated",
     "memberAdded": "Member added",
@@ -637,7 +1048,7 @@
     "addMemberSubmit": "Add Member",
     "editBtn": "Edit",
     "removeBtn": "Remove",
-    "superAdmin": "Super Admin",
+    "adminConsole": "Admin",
     "auditor": "Auditor",
     "invitations": "Invitations",
     "invitationsDesc": "Pending team invitations",
@@ -672,7 +1083,14 @@
     "saveInvitation": "Save Changes",
     "inviteUpdated": "Invitation updated successfully",
     "revokeInviteTitle": "Revoke Team Invitation",
-    "revokeInviteConfirm": "Are you sure you want to revoke this invitation? The recipient will no longer be able to use the link to join your workspace."
+    "revokeInviteConfirm": "Are you sure you want to revoke this invitation? The recipient will no longer be able to use the link to join your workspace.",
+    "client": "Client",
+    "clientEnterprise": "Client (Enterprise)",
+    "clientLevel_STARTER": "Starter (Free)",
+    "clientLevel_PROFESSIONAL": "Professional",
+    "clientLevel_ENTERPRISE": "SSO Enterprise",
+    "activityCol": "Activity (12w)",
+    "activityTooltip": "{total} events across {days} active days (last 12 months)"
   },
   "roles": {
     "title": "Roles & Permissions",
@@ -762,6 +1180,11 @@
     "emailVerified": "Email Verified",
     "emailNotVerified": "Email Not Verified",
     "verifiedOn": "Verified on {date}",
+    "mfaReverifyDue": "Your 2FA hasn't been verified in the last 30 days. Verify it now to keep your account protected.",
+    "mfaReverifyNow": "Verify now",
+    "mfaReverifyTitle": "Verify your identity",
+    "mfaReverifyDesc": "Enter the 6-digit code from your authenticator app to confirm your two-factor authentication is still active.",
+    "mfaReverifySuccess": "Identity verified — you're good for another 30 days",
     "verifyPrompt": "Verify your email to secure your account and get full access to all features.",
     "verificationLink": "Verification Link (Demo)",
     "verificationNote": "In production, this link would be sent via email. Click it to verify your email.",
@@ -839,7 +1262,33 @@
     "resendInSeconds": "Resend in {seconds}s",
     "emailResendNote": "A verification email was sent. You can request a new one in {seconds}s.",
     "emailVerifyLinkInvalid": "This verification link is invalid or has expired.",
-    "resendEmail": "Resend Email"
+    "resendEmail": "Resend Email",
+    "scanQrTitle": "Scan QR code",
+    "copySecret": "Copy code",
+    "verifyCodeHint": "Enter the 6-digit code from your authenticator app.",
+    "coverUpload": "Cover",
+    "coverRemove": "Remove",
+    "coverUpdated": "Cover updated",
+    "coverRemoved": "Cover removed",
+    "activityTitle": "Activity",
+    "activitySummary": "{total} contributions across {days} active days this year",
+    "activityGranWeekly": "Weekly",
+    "activityGranMonthly": "Monthly",
+    "activityGranYearly": "Yearly",
+    "activityLess": "Less",
+    "activityMore": "More",
+    "activityCellHeadline": "{count, plural, =0 {No activity on {date}} one {1 event on {date}} other {# events on {date}}}",
+    "activityBucketHeadline": "{label} · {count, plural, =0 {no activity} one {1 event} other {# events}}",
+    "dow0": "Mon",
+    "dow1": "Tue",
+    "dow2": "Wed",
+    "dow3": "Thu",
+    "dow4": "Fri",
+    "dow5": "Sat",
+    "dow6": "Sun",
+    "coverCropTitle": "Crop your cover image",
+    "coverCropDesc": "Drag to frame the banner and adjust the zoom, then save. It is stored as a 4:1 banner.",
+    "coverCropSave": "Save cover"
   },
   "billing": {
     "title": "Subscription & Billing",
@@ -937,7 +1386,12 @@
     "indonesianBanksDesc": "50+ national, private, regional BPD across 4 regions, and digital banks",
     "actionsCol": "Actions",
     "processInvoice": "Process",
-    "invoicePaidSuccess": "Invoice processed and marked as paid!"
+    "invoicePaidSuccess": "Invoice processed and marked as paid!",
+    "displayCurrency": "Display Currency",
+    "displayCurrencyDesc": "Show every invoice amount in this currency",
+    "currencyNote": "Converted at indicative FX rates - settlement stays in {base}",
+    "invoiceTotal": "Invoice Total",
+    "convertedLabel": "~ {amount}"
   },
   "integrations": {
     "title": "Integrations",
@@ -1086,7 +1540,22 @@
     "scopeHint": "Scopes: read, write, admin. Revoked or expired keys return 403 with a reason.",
     "authorizationLabel": "Authorization",
     "tabChatAlerts": "Team Chat (Slack & Discord)",
-    "tabOmnichannel": "Omnichannel Sync"
+    "tabOmnichannel": "Omnichannel Sync",
+    "tabDlq": "Delivery health",
+    "dlqFailed": "Failed",
+    "dlqRetrying": "Retrying",
+    "dlqResolved": "Resolved",
+    "dlqTotal": "Total",
+    "dlqEmpty": "All deliveries healthy",
+    "dlqEmptyDesc": "No failed inbound webhooks. Failed deliveries land here for replay or discard.",
+    "dlqExhausted": "Exhausted",
+    "dlqAttempts": "{count} of {max} attempts",
+    "dlqReplay": "Replay",
+    "dlqDiscard": "Discard",
+    "dlqDiscardConfirmTitle": "Discard this delivery?",
+    "dlqDiscardConfirmDesc": "The failed webhook payload will be permanently removed without being processed.",
+    "dlqError": "Error",
+    "dlqNextRetry": "Next retry"
   },
   "pricing": {
     "badge": "Simple Pricing",
@@ -1169,7 +1638,27 @@
     "previous": "Previous",
     "next": "Next"
   },
+  "checkoutSuccess": {
+    "title": "Payment successful",
+    "body": "Thank you for your subscription. Your account has been upgraded and you now have access to every premium feature.",
+    "cta": "Go to Dashboard"
+  },
   "common": {
+    "toggleTheme": "Toggle theme",
+    "commandPlaceholder": "Search orders, customers, products...",
+    "commandSearching": "Searching...",
+    "commandNoResults": "No results found for \"{query}\"",
+    "commandNoResultsHint": "Try an order number, a customer name, or a product name.",
+    "commandTypeToSearch": "Type at least 2 characters to search",
+    "commandTypeToSearchHint": "Search across orders, customers, and products in one place.",
+    "commandGroupNavigation": "Navigation",
+    "commandGroupQuickActions": "Quick Actions",
+    "commandGroupOrders": "Orders",
+    "commandGroupCustomers": "Customers",
+    "commandGroupProducts": "Products",
+    "commandNavigate": "Navigate",
+    "commandOpen": "Open",
+    "commandToggle": "Toggle",
     "search": "Search...",
     "filter": "Filter",
     "export": "Export",
@@ -1202,6 +1691,13 @@
     "expired": "Expired",
     "na": "N/A",
     "copy": "Copy",
+    "copied": "Copied to clipboard",
+    "copyUrl": "Copy URL",
+    "copyPrefix": "Copy prefix",
+    "copyAwb": "Copy AWB",
+    "backToTop": "Back to top",
+    "resumeLive": "Resume live updates",
+    "exportCsv": "Export as CSV",
     "done": "Done",
     "selectAll": "Select all",
     "showingOf": "Showing {from}–{to} of {total}",
@@ -1222,7 +1718,11 @@
     "secondsAgo": "{count}s ago",
     "minutesAgo": "{count}m ago",
     "hoursAgo": "{count}h ago",
-    "daysAgo": "{count}d ago"
+    "daysAgo": "{count}d ago",
+    "retry": "Retry",
+    "dismiss": "Dismiss",
+    "dismissNotification": "Dismiss notification",
+    "notifications": "Notifications"
   },
   "notifications": {
     "title": "Notification Center",
@@ -1268,6 +1768,10 @@
     "pushNotificationsDesc": "Receive notifications directly in your browser even when the app is closed.",
     "enablePushLabel": "Enable Push Notifications",
     "enablePushDesc": "Allow the dashboard to send you web push alerts.",
+    "pushEnabledToast": "Push notifications enabled",
+    "pushFailedToast": "Failed to enable push notifications",
+    "pushDeniedToast": "Push permission denied or not supported",
+    "pushDisabledToast": "Push notifications disabled",
     "rulesThresholdsTitle": "Alert Thresholds",
     "rulesThresholdsDesc": "Configure when automated alerts are triggered",
     "threshStockLabel": "Low Stock Threshold",
@@ -1338,7 +1842,9 @@
     "emptyFilteredTitle": "No {type} notifications",
     "emptyFilteredDesc": "Try a different filter",
     "secondsAgo": "{s}s ago",
-    "minutesAgo": "{m}m ago"
+    "minutesAgo": "{m}m ago",
+    "closePanel": "Close notifications",
+    "typeBilling": "Billing"
   },
   "contactPage": {
     "badge": "Get in Touch",
@@ -1378,6 +1884,47 @@
     "ctaTitle": "Prefer a live demo?",
     "ctaDesc": "See Dashboard in action with a personalized walkthrough from our team. We'll show you exactly how it fits your business.",
     "ctaButton": "Start Free Trial"
+  },
+  "careersPage": {
+    "heroTag": "We're hiring",
+    "heroPrefix": "Build the operating system for",
+    "heroWord1": "modern commerce.",
+    "heroWord2": "growing teams.",
+    "heroWord3": "global sellers.",
+    "heroSubtitle": "We're a small, product-obsessed team building commerce infrastructure. You'll ship to real merchants in your first week — there are no layers between you and the people using what you make.",
+    "perksTitle": "Why you'll like it here",
+    "perk1Title": "Remote-first",
+    "perk1Desc": "Work from anywhere with a home-office budget and async-by-default rituals.",
+    "perk2Title": "Real ownership",
+    "perk2Desc": "Small teams, wide scope — you own the problem, the design and the rollout.",
+    "perk3Title": "Global customers",
+    "perk3Desc": "Ship to merchants across Indonesia, Japan and beyond from day one.",
+    "perk4Title": "Craft over ceremony",
+    "perk4Desc": "Few meetings, strong defaults, and time set aside for the unglamorous polish.",
+    "rolesTitle": "Open roles",
+    "rolesSubtitle": "Every role is full-time and open right now — we reply to every application.",
+    "rolesCount": "{count} open positions",
+    "applyCta": "Apply",
+    "applyAria": "Apply for {role}",
+    "role1Title": "Senior Product Engineer",
+    "role1Dept": "Engineering",
+    "role1Location": "Remote (GMT+7…+9)",
+    "role1Type": "Full-time",
+    "role2Title": "Customer Success Lead",
+    "role2Dept": "Go-to-market",
+    "role2Location": "Jakarta, Indonesia",
+    "role2Type": "Full-time",
+    "role3Title": "Payments Partnerships Manager",
+    "role3Dept": "Partnerships",
+    "role3Location": "Remote (APAC)",
+    "role3Type": "Full-time",
+    "role4Title": "Product Designer",
+    "role4Dept": "Design",
+    "role4Location": "Remote (GMT+7…+9)",
+    "role4Type": "Full-time",
+    "ctaTitle": "Don't see your role?",
+    "ctaDesc": "Tell us what you'd build here and how. If there's a fit, we'll find the budget for it.",
+    "ctaButton": "Talk to us"
   },
   "aboutPage": {
     "badge": "Our Story",
@@ -1499,7 +2046,27 @@
     "heroPrefix": "Everything you need,",
     "heroWord1": "ready to scale.",
     "heroWord2": "ready to grow.",
-    "heroWord3": "ready to perform."
+    "heroWord3": "ready to perform.",
+    "stats": {
+      "locales": "Languages supported",
+      "currencies": "Currencies",
+      "banks": "Indonesian banks",
+      "endpoints": "REST API endpoints"
+    },
+    "surface": {
+      "eyebrow": "Built for real commerce",
+      "title": "From QRIS checkout to enterprise SSO",
+      "subtitle": "ASPI-compliant QRIS payments, 50+ Indonesian banks and e-wallets, vector Code128 invoicing, and Server-Sent Events driving every dashboard — all running on the same REST API you can call.",
+      "exploreApi": "Explore the API reference"
+    },
+    "realtime": {
+      "sse": "SSE realtime stream",
+      "qris": "QRIS payments",
+      "banks": "50+ banks & wallets",
+      "apiKeys": "Scoped API keys",
+      "passkeys": "Passkeys & 2FA",
+      "invoices": "Vector invoices"
+    }
   },
   "changelogPage": {
     "badge": "Release Notes",
@@ -1794,10 +2361,13 @@
     "footerEmailPlaceholder": "Enter your email",
     "footerSubscribe": "Subscribe Now",
     "footerPreviewAlt": "Dashboard preview",
-    "legalContactPrompt": "Questions about this page? Email us at"
+    "legalContactPrompt": "Questions about this page? Email us at",
+    "footerLinkApiDocs": "API Docs"
   },
   "auth": {
     "login": "Log in",
+    "sessionExpired": "Your session expired — sign in again to continue.",
+    "sessionChanged": "This tab was signed in as a different account — please sign in again.",
     "register": "Create an account",
     "emailLabel": "Email",
     "emailPlaceholder": "Your email",
@@ -1888,7 +2458,16 @@
     "otpIncorrectAttempts": "Incorrect code. {attempts} attempt(s) left.",
     "otpIncorrect": "Incorrect code. Request a new one.",
     "otpGenericError": "Something went wrong. Please try again.",
-    "resendFailedGeneric": "Could not resend the code. Please try again."
+    "resendFailedGeneric": "Could not resend the code. Please try again.",
+    "strength": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "strengthHint": "Use 8+ characters with upper & lowercase, a number, and a symbol.",
+    "accountCreatedNoEmail": "Account created! We couldn't send the verification email right now — you can verify later from Settings → Security.",
+    "passkeySignIn": "Sign in with a passkey"
   },
   "csvImport": {
     "importCsv": "Import CSV",
@@ -1944,6 +2523,7 @@
     "earned": "Earned",
     "link": "Link",
     "noLinks": "No affiliate links yet",
+    "platformRecentLinks": "Recent links",
     "openLink": "Open link",
     "activate": "Activate",
     "deactivate": "Deactivate",
@@ -2016,7 +2596,7 @@
     "tabPayouts": "Payouts & Disbursements",
     "totalPaid": "Total Paid Out",
     "pendingBalance": "Pending Balance",
-    "availableBalance": "Available for Payout",
+    "availableBalance": "Available commission",
     "requestPayout": "Request Payout",
     "payoutsTitle": "Affiliate Payouts & Disbursements",
     "payoutsSubtitle": "Track commission transfers via Stripe Connect and Midtrans Iris",
@@ -2031,7 +2611,16 @@
     "payoutAmount": "Payout Amount ($)",
     "selectProvider": "Select Payment Method",
     "submitPayout": "Submit Payout Request",
-    "payoutSuccess": "Payout request submitted successfully"
+    "payoutSuccess": "Payout request submitted successfully",
+    "settlementBalance": "QRIS settlement",
+    "insufficientBalance": "Amount exceeds your available commission balance.",
+    "settlementShortfall": "The QRIS settlement balance cannot cover this payout yet — top up or request a smaller amount.",
+    "accountInvalid": "not a valid account for this rail",
+    "payoutFailed": "Failed to submit payout request",
+    "processingPayout": "Processing…",
+    "providerGroupWallet": "E-Wallet",
+    "providerGroupBank": "Bank Transfer",
+    "providerGroupIntl": "International"
   },
   "security": {
     "activeSessions": "Active Sessions",
@@ -2066,6 +2655,12 @@
     "evt_SESSIONS_REVOKED_ALL": "All other sessions revoked",
     "evt_STEP_UP_VERIFIED": "Re-authentication verified",
     "evt_REFRESH_REUSE": "Refresh token reuse detected",
+    "evt_RATE_LIMITED": "Too many attempts — temporarily throttled",
+    "evt_REFRESH_REUSE_GRACE": "Concurrent session refresh (graced)",
+    "evt_SIGNIN_ALERT_SENT": "New sign-in alert emailed",
+    "evt_SIGNIN_ALERT_SUPPRESSED": "Sign-in alert suppressed (known device)",
+    "evt_ACCOUNT_DELETED": "Account deleted",
+    "evt_SSO_CONNECTION_DELETED": "SSO connection removed",
     "evt_PASSKEY_ADDED": "Passkey added",
     "evt_PASSKEY_REMOVED": "Passkey removed",
     "evt_PASSKEY_LOGIN": "Signed in with a passkey",
@@ -2076,6 +2671,7 @@
     "passkeys": "Passkeys",
     "passkeysDesc": "Sign in with Touch ID, Windows Hello, or a security key. Passwordless and phishing-resistant.",
     "addPasskey": "Add a passkey",
+    "passkeyRegistered": "Passkey Registered",
     "passkeyAdded": "Passkey added",
     "passkeyRemoved": "Passkey removed",
     "passkeyUnsupported": "Passkeys need a secure context — open this site via HTTPS (or localhost) to add one.",
@@ -2090,6 +2686,10 @@
     "verifyPasswordLabel": "Password",
     "verifyPasswordPlaceholder": "Enter your current password",
     "verifyConfirm": "Verify & Remove",
+    "totpLabel": "Authenticator code",
+    "totpConfirm": "Verify with code",
+    "totpFreshnessHint": "Your 30-day two-factor re-verification is due — enter a code from your authenticator app to continue.",
+    "totpRequired": "Enter your 6-digit authenticator code",
     "verifying": "Verifying…",
     "verificationFailed": "Verification failed",
     "verifyPasswordRequired": "Enter your password to continue",
@@ -2098,6 +2698,13 @@
     "scoreLabel": "Security score",
     "scoreOf": "out of 100",
     "scoreGreat": "Your account is strongly protected.",
+    "scoreAction": "{action}{extra}.",
+    "scoreAlsoMissing": " — {count, plural, one {one more step} other {{count} more steps}} to full protection",
+    "missing_totp": "Enable two-factor authentication",
+    "missing_passkey": "Register a passkey",
+    "missing_backup": "Generate backup codes",
+    "missing_email": "Verify your email address",
+    "missing_mfaFresh": "Re-verify two-factor authentication (30-day freshness)",
     "scoreGood": "Good — enable two-factor authentication to strengthen protection.",
     "scoreFair": "Enable two-factor authentication to secure your account.",
     "scoreWeak": "Your account needs stronger protection.",
@@ -2134,6 +2741,8 @@
     "noSuspicious": "No suspicious activity detected in the last 7 days",
     "refreshActivity": "Refresh activity",
     "mfaVerifiedRecent": "MFA verified recently",
+    "mfaVerifiedRecentDays": "MFA verified {count, plural, one {today} other {{count} days ago}}",
+    "mfaNotVerifiedRecentDays": "MFA not verified for {count, plural, one {1 day} other {{count} days}}",
     "mfaNotVerifiedRecent": "MFA not verified in 30 days",
     "passkeyBackupHint": "You have only one passkey. Add a second one as a backup so you can still sign in if this device is lost.",
     "lastPasskeyWarning": "This is your only passkey. After removing it you will no longer be able to sign in with a passkey.",
@@ -2169,7 +2778,33 @@
     "otpDevCode": "Development code",
     "unverifiedAlertTitle": "Your email is not verified",
     "unverifiedAlertDesc": "Verify your email address to confirm your identity and strengthen your account security.",
-    "unverifiedAlertAction": "Verify now"
+    "unverifiedAlertAction": "Verify now",
+    "evt_EMAIL_DELIVERY_SENT": "Verification email delivered",
+    "evt_EMAIL_DELIVERY_FAILED": "Verification email could not be delivered",
+    "sessionRecognized": "Recognized",
+    "sessionNew": "New device",
+    "telemetryTitle": "Account pressure",
+    "telemetryPressureBadge": "Active pressure",
+    "telemetryRateLimited": "Throttled sign-ins",
+    "telemetryRateLimitedWindow": "last 24 hours",
+    "telemetryLastOffender": "Last attempt from {ip}",
+    "telemetryLockouts": "Lockouts",
+    "telemetryLockoutsWindow": "last 7 days",
+    "telemetryLastEvent": "{when} ago",
+    "telemetrySessions": "Active sessions",
+    "telemetrySessionsHint": "revoke any you don’t recognize",
+    "telemetryThrottleTitle": "Login throttle window",
+    "telemetryThrottleCount": "{used} of {limit} attempts",
+    "telemetryThrottleBlocked": "Blocked — clears in {seconds}s",
+    "telemetryThrottleClearing": "Allowance refreshes in {seconds}s",
+    "telemetryThrottleIp": "busiest from {ip}",
+    "scanQrHint": "Scan the QR code with your authenticator app, or enter the key manually.",
+    "scanQrTitle": "Scan QR code",
+    "verifyCodeHint": "Enter the 6-digit code from your authenticator app.",
+    "copySecret": "Copy secret key",
+    "manualEntryHint": "Can't scan? Enter this key manually:",
+    "verifyButton": "Verify",
+    "scoreComplete": "All protections are active — your account is fully secured."
   },
   "sso": {
     "title": "SSO / Enterprise",
@@ -2177,6 +2812,7 @@
     "notConfiguredTitle": "No SSO connection",
     "notConfiguredDesc": "Set up SAML single sign-on so your team can sign in with their corporate identity provider.",
     "configureSso": "Configure SSO",
+    "copied": "Copied to clipboard",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "certConfigured": "Certificate configured",
@@ -2289,7 +2925,12 @@
     "q7Label": "Forecast revenue",
     "q7Query": "Forecast my revenue for the next 90 days and show projected run-rate",
     "q8Label": "Growth trajectory",
-    "q8Query": "What are our revenue growth predictions and key performance drivers?"
+    "q8Query": "What are our revenue growth predictions and key performance drivers?",
+    "copyPrompt": "Copy prompt",
+    "copiedPrompt": "Prompt copied",
+    "editPrompt": "Edit prompt",
+    "saveEdit": "Resend edited",
+    "cancelEdit": "Cancel"
   },
   "status": {
     "pending": "Pending",
@@ -2391,7 +3032,10 @@
           "CACHE: Edge cache hit ratio 98.4%",
           "SECURITY: 2FA TOTP verified for admin session"
         ]
-      }
+      },
+      "announcement": "v2.4 flow is live — realtime everything",
+      "readMore": "Read more",
+      "changelogAria": "Read the changelog"
     },
     "demoOrders": {
       "title": "Recent Orders"
@@ -2436,7 +3080,10 @@
       "kpiRevenue": "Total Revenue",
       "kpiOrders": "Total Orders",
       "kpiCustomers": "Total Customers",
-      "kpiProducts": "Total Products"
+      "kpiProducts": "Total Products",
+      "liveRevenue": "Revenue Overview",
+      "liveChannels": "Sales by Channel",
+      "liveOrders": "Recent Orders"
     },
     "trust": {
       "b1": "No credit card required",
@@ -2446,11 +3093,11 @@
     },
     "story": {
       "aria": "Product journey",
-      "badge": "The Journey",
+      "badge": "Product journey",
       "cta": "Explore the workspace",
-      "sub": "Four systems working as one constellation — see how your business moves from raw orders to automated growth.",
-      "t1": "From Cosmos,",
-      "t2": "to Control Room",
+      "sub": "Stack through the product the way your team runs it — orders, payments, analytics and automation, each chapter building on the last.",
+      "t1": "Four chapters,",
+      "t2": "one workspace",
       "c1b": "Every order from every channel — Shopify, Tokopedia, TikTok, Instagram — lands in one unified inbox with live status streaming.",
       "c1e": "Orbit Navigation",
       "c1f1": "Unified inbox",
@@ -2607,6 +3254,21 @@
     "final": {
       "getStarted": "Get Started Free",
       "signIn": "Sign In"
+    },
+    "faq": {
+      "badge": "Support & Answers",
+      "titlePart1": "Frequently",
+      "titlePart2": "Asked Questions",
+      "q1": "How does the multi-channel synchronization work?",
+      "a1": "Next Dashboard connects directly to your stores across Shopify, TikTok Shop, Shopee, and Tokopedia. All inventory, orders, and customer data sync in real time via secure Webhook and REST API connections, keeping your stock numbers accurate across every channel.",
+      "q2": "Can I customize the dashboard or integrate custom APIs?",
+      "a2": "Yes, absolutely. You have full control over the platform. Build custom integrations with our unified REST APIs, configure webhooks for real-time notifications, or tweak the UI components directly to suit your team's exact workflow.",
+      "q3": "What payment gateways are supported?",
+      "a3": "We provide native integrations for Stripe (for global cards, Apple Pay, Google Pay) and Midtrans (for Indonesian virtual accounts, GoPay, OVO, and QRIS payments). Tax calculation and automatic invoicing are fully built-in.",
+      "q4": "How secure is my data and customer information?",
+      "a4": "All data is encrypted in transit and at rest with AES-256 and TLS 1.3. We support enterprise security standards including FIDO2 Passkeys, WebAuthn, TOTP two-factor authentication, and append-only cryptographic audit logs for strict compliance.",
+      "q5": "Is there a free trial available?",
+      "a5": "Yes, you can get started with our 14-day free trial on the Professional tier with no credit card required. Explore the live analytics, test orders, and multi-channel synchronization instantly."
     }
   },
   "pricingPage": {
@@ -2733,7 +3395,10 @@
     "faqQ3": "What payment methods do you accept?",
     "faqA3": "We accept all major credit cards, PayPal, and bank transfers for annual plans. All payments are processed securely through Stripe.",
     "faqQ4": "Can I cancel my subscription?",
-    "faqA4": "Yes, you can cancel anytime. Your access will continue until the end of your current billing period."
+    "faqA4": "Yes, you can cancel anytime. Your access will continue until the end of your current billing period.",
+    "faqBadge": "Pricing Questions",
+    "faqTitlePart1": "Frequently",
+    "faqTitlePart2": "Asked Questions"
   },
   "legal": {
     "termsTitle": "Terms of Service",
@@ -2881,7 +3546,7 @@
     "installButton": "Install App",
     "howToInstall": "How to Install",
     "later": "Later",
-    "offlineBanner": "You are offline — viewing cached dashboard data",
+    "offlineBanner": "You are offline — changes are saved locally",
     "reconnectedBanner": "Connection restored — live sync active",
     "iosTitle": "Install on iPhone or iPad",
     "iosSubtitle": "Follow these simple steps in Safari to install LevTech Dashboard to your home screen:",
@@ -2891,7 +3556,18 @@
     "iosStep2Desc": "Scroll down the share sheet and select Add to Home Screen.",
     "iosStep3Title": "Tap 'Add' in Top Right",
     "iosStep3Desc": "The LevTech icon will be placed directly on your home screen.",
-    "gotIt": "Got it, thanks!"
+    "gotIt": "Got it, thanks!",
+    "retry": "Retry",
+    "syncedToast": "{count, plural, one {# queued change synced}, other {# queued changes synced}}",
+    "syncingBanner": "Back online — syncing {count} queued change(s)…",
+    "offlineTitle": "You are offline",
+    "offlineDesc": "It looks like you have lost your internet connection. Features you have already opened keep working, and any changes you make are queued and synced automatically when you reconnect.",
+    "offlineQueueNote": "Orders and edits you make while offline are stored on this device and replay automatically — no data is lost.",
+    "queuePending": "{count, plural, one {# change waiting to sync}, other {# changes waiting to sync}}",
+    "queueEmpty": "Nothing waiting to sync",
+    "tryAgain": "Try again",
+    "syncNow": "Sync now",
+    "queuedToast": "Saved offline — it will sync automatically when you reconnect"
   },
   "branding": {
     "brandingTitle": "White-Labeling & Brand Customization",
@@ -2931,7 +3607,15 @@
     "taxId": "Tax ID / NPWP",
     "taxIdPlaceholder": "00.000.000.0-000.000",
     "invoiceAddress": "Invoice Registered Address",
-    "invoiceAddressPlaceholder": "Street, City, Postal Code, Country"
+    "invoiceAddressPlaceholder": "Street, City, Postal Code, Country",
+    "logoLibraryLabel": "Local icons library",
+    "logoUpload": "Upload SVG",
+    "logoImportUrl": "Import from URL",
+    "logoImportUrlDesc": "Paste an https:// image URL or a data:image/... data URL to use as the logo.",
+    "logoImportUrlPlaceholder": "https://example.com/logo.svg",
+    "logoImportApply": "Use logo",
+    "logoImported": "Logo applied — remember to save",
+    "logoImportFailed": "Could not import that logo"
   },
   "tenants": {
     "switchOrganization": "Switch Organization",
@@ -2970,7 +3654,10 @@
     "breakevenAtMonth": "Breakeven at Month {month}",
     "rfmTitle": "RFM Customer Segmentation Engine",
     "rfmSubtitle": "Automated behavior grouping based on Recency, Frequency, and Monetary order history",
-    "customersUnit": "customers"
+    "customersUnit": "customers",
+    "upsellTitle": "Cohort analytics is a Professional feature",
+    "upsellDesc": "Track retention, LTV:CAC and RFM segments across every customer cohort. Upgrade to Professional to unlock the full retention heatmap.",
+    "upsellCta": "View plans"
   },
   "chatAlerts": {
     "hubTitle": "Team Chat Alert Hub",
@@ -3177,7 +3864,7 @@
     "flaggedQueueTitle": "Flagged Suspicious Transactions",
     "flaggedQueueDesc": "Real-time scoring queue with automated rule actions and manual audit triggers",
     "rulesConfigTitle": "Dynamic Risk Rules Engine",
-    "rulesConfigDesc": "Configurable threshold triggers for checkout verification and auto-voiding",
+    "rulesConfigDesc": "Threshold triggers for automated settlement defense",
     "dossierModalTitle": "Chargeback Dispute Defense Dossier",
     "dossierModalDesc": "Cryptographically verified evidence pack for Stripe & Midtrans dispute representation",
     "autoApprove": "Auto Approve",
@@ -3195,7 +3882,36 @@
     "threeDsStatus": "3D-Secure 2.2 Status",
     "issuerStatement": "Recommended Issuer Statement",
     "downloadDossier": "Export PDF Dossier",
-    "saveRules": "Save Rules"
+    "saveRules": "Save Rules",
+    "realtimeBadge": "LIVE RISK RADAR",
+    "legendActiveThreat": "Flagged traffic",
+    "legendSafeBaseline": "Safe baseline",
+    "axisVelocity": "Velocity",
+    "axisGeo": "Geo mismatch",
+    "axisDevice": "Device fingerprint",
+    "axisBehavior": "Behavioral anomaly",
+    "axisNetwork": "VPN / BIN risk",
+    "colOrderCustomer": "Order / Customer",
+    "colAmount": "Amount",
+    "colIpGeo": "IP & Geo",
+    "colRecommendation": "Recommendation",
+    "colAction": "Action",
+    "colRegion": "Region",
+    "vpnTorFlag": "VPN/Tor detected",
+    "rec_AUTO_APPROVE": "Auto approve",
+    "rec_CHALLENGE_3DS": "Challenge 3DS",
+    "rec_MANUAL_REVIEW": "Manual review",
+    "rec_AUTO_VOID": "Auto void",
+    "highTrustMatch": "High trust match",
+    "signedDeliveryProof": "Signed physical delivery proof available",
+    "copyStatement": "Copy statement",
+    "ipAsnTelemetry": "IP & ASN telemetry",
+    "generatingDossier": "Generating forensic dossier…",
+    "copiedToClipboard": "Copied to clipboard",
+    "loadDossierFailed": "Failed to load dispute dossier",
+    "saveRulesFailed": "Failed to update rules",
+    "radarHeadlineDefault": "Average threat score",
+    "probeHint": "Move the pointer over the matrix to probe risk axes"
   },
   "logisticsFleet": {
     "title": "Live Logistics Fleet & Carrier Tracking",
@@ -3302,6 +4018,8 @@
     "useAppearanceColor": "Use Appearance Theme Color",
     "notesLabel": "Footer Legal Notes & Terms",
     "notesPlaceholder": "Official computerized tax invoice. Valid proof of transaction under BI-FAST clearing rules.",
+    "currencyLabel": "Invoice Currency",
+    "currencyHint": "Amounts are stored in USD and converted to the chosen presentation currency on the printed invoice.",
     "securityBadgesLabel": "Security & Barcode Badges",
     "showBarcodeLabel": "Code 128 Barcode",
     "showQrLabel": "Verification QR",
@@ -3380,7 +4098,11 @@
     "posTitle": "Cashier POS Quick-Numpad Terminal",
     "posSubtitle": "Rapid walk-in billing terminal with real-time dynamic QRIS generation and audio feedback",
     "settlementTitle": "Merchant Settlement Reconciliation & Multi-Channel Payouts",
-    "disputeTitle": "Dispute & Chargeback Resolution Center"
+    "disputeTitle": "Dispute & Chargeback Resolution Center",
+    "posAudioOn": "Audio On",
+    "posAudioMuted": "Audio Muted",
+    "posAudioChimesEnabled": "Audio chimes enabled",
+    "posAudioMutedTip": "Muted"
   },
   "webhookSimulator": {
     "simulateWebhook": "Simulate Gateway Webhook",
@@ -3428,6 +4150,309 @@
     "stepCustomize": "Customize appearance",
     "stepCustomizeDesc": "Make the dashboard yours with custom colors and branding",
     "allDone": "You're all set!",
-    "allDoneDesc": "You've completed all the setup steps. Happy selling!"
+    "allDoneDesc": "You've completed all the setup steps. Happy selling!",
+    "takeTour": "Take the tour"
+  },
+  "aiGenerator": {
+    "title": "AI Content Generator",
+    "subtitle": "Generate high-converting copy in seconds using our advanced AI model.",
+    "configTitle": "Configuration",
+    "configDesc": "Tell the AI what you want to write.",
+    "topicLabel": "Topic or Prompt",
+    "topicPlaceholder": "e.g., A welcome email for new SaaS users...",
+    "contentTypeLabel": "Content Type",
+    "typeBlog": "Blog Post",
+    "typeEmail": "Email Campaign",
+    "typeSocial": "Social Media Post",
+    "typeAd": "Ad Copy",
+    "toneLabel": "Tone of Voice",
+    "toneProfessional": "Professional",
+    "toneCasual": "Casual & Friendly",
+    "toneHumorous": "Humorous",
+    "toneUrgent": "Urgent & Persuasive",
+    "generate": "Generate Content",
+    "generating": "Generating...",
+    "aiWriting": "AI is writing your content...",
+    "resultTitle": "Result",
+    "resultEmpty": "Your generated content will appear here.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "saveToProjects": "Save to Projects"
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Manage and view your generated AI content.",
+    "newProject": "New Project",
+    "recentContent": "Recent Content",
+    "searchPlaceholder": "Search projects...",
+    "colTitle": "Project Title",
+    "colType": "Type",
+    "colDate": "Date Created",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "noResults": "No projects found.",
+    "statusCompleted": "Completed",
+    "statusDraft": "Draft",
+    "typeEmail": "Email",
+    "typeBlog": "Blog",
+    "typeSocial": "Social",
+    "typeAd": "Ad"
+  },
+  "liquidGlass": {
+    "dock": "Glass dock",
+    "howCanIHelp": "How can I help you today?"
+  },
+  "docsPage": {
+    "heroTag": "Documentation",
+    "heroTitle": "Build with Next Dashboard",
+    "heroSubtitle": "Everything you need to integrate, automate, and ship — quickstart guides, API references, webhooks, and payments cookbooks in one place.",
+    "openApiDocs": "Open API Reference",
+    "quickstartCurl": "curl https://api.nextdashboard.dev/v1/health \\\n  -H \"Authorization: Bearer sk_live_your_api_key\"",
+    "topicsTitle": "Explore by topic",
+    "topicsSubtitle": "Short, focused guides that get you from zero to first request in minutes.",
+    "topics": {
+      "quickstart": {
+        "title": "Quickstart",
+        "desc": "Create an API key, authenticate, and make your first request against the REST API."
+      },
+      "authentication": {
+        "title": "Authentication",
+        "desc": "Bearer tokens, key rotation, scopes, and safe secret storage practices."
+      },
+      "restApi": {
+        "title": "REST API v1",
+        "desc": "Versioned endpoints for orders, products, customers, inventory, and reporting."
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "desc": "Receive order.completed, payment.confirmed, and inventory.low events in real time."
+      },
+      "payments": {
+        "title": "Payments",
+        "desc": "Stripe, Midtrans, QRIS, and virtual accounts — one checkout surface, every rail."
+      },
+      "multiCurrency": {
+        "title": "Multi-currency",
+        "desc": "Price and settle in USD, IDR, JPY, EUR, SGD, and CNY with live conversion."
+      },
+      "sdks": {
+        "title": "SDKs & Examples",
+        "desc": "Copy-paste snippets and reference flows for TypeScript, Go, and Python."
+      },
+      "security": {
+        "title": "Security",
+        "desc": "2FA, passkeys, step-up verification, audit trails, and RBAC best practices."
+      }
+    },
+    "ctaTitle": "Ready to build?",
+    "ctaDesc": "Spin up a free workspace and ship your first integration this afternoon.",
+    "ctaButton": "Create free account"
+  },
+  "apiDocsPage": {
+    "title": "API Reference",
+    "subtitle": "Every production endpoint, grouped and explorable — the same surface your dashboard uses.",
+    "searchPlaceholder": "Search endpoints or paths…",
+    "noResults": "No endpoints match your search.",
+    "try": {
+      "title": "Try it live",
+      "hint": "Sends a real request from this page — your dashboard session authenticates it. Responses are the same JSON your apps receive.",
+      "noAuth": "This endpoint needs no authentication.",
+      "queryParams": "Query parameters",
+      "requestBody": "Request body (JSON)",
+      "reset": "Reset",
+      "send": "Send request",
+      "confirmSend": "Click again to confirm",
+      "sending": "Sending…",
+      "mutatingHint": "{method} changes data — a second click confirms.",
+      "notAuthenticated": "You're not signed in, so the API returned 401.",
+      "signIn": "Sign in",
+      "ms": "ms",
+      "copied": "Copied",
+      "copy": "Copy",
+      "emptyBody": "(empty response)",
+      "invalidJson": "Request body must be valid JSON.",
+      "apiKeyLabel": "API key",
+      "apiKeyHint": "Stored locally in this browser only.",
+      "keyRequired": "Enter an API key to call the sandbox.",
+      "keyInvalid": "Request rejected — check that the key is a valid dash_ key, ACTIVE, unexpired, and allowed from your IP.",
+      "curlTitle": "cURL",
+      "curlKeyPlaceholder": "The cURL snippet uses a placeholder — replace dash_your_api_key with your real key before running it outside the browser."
+    },
+    "sandboxBadge": "Sandbox",
+    "sandboxTitle": "API-key sandbox.",
+    "sandboxNotice": "This endpoint authenticates with an API key (Authorization: Bearer dash_…), not your dashboard session. Paste any key from Integrations → API Keys — sandbox reads are scoped to that key's workspace.",
+    "snippets": {
+      "title": "Code snippets",
+      "curl": "cURL",
+      "typescript": "TypeScript",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "keyPlaceholder": "The snippet uses a placeholder key — replace dash_your_api_key with your real key before running it."
+    },
+    "openapiDownload": "OpenAPI 3.1 spec"
+  },
+  "soraGalleryPage": {
+    "badge": "Sora UI",
+    "title": "Alert dialog gallery",
+    "subtitle": "Every destructive-confirmation variant on one page — open each one, feel the motion, compare the media tiles.",
+    "backToDocs": "Back to documentation",
+    "rulesTitle": "When to use",
+    "rules": {
+      "deleteRecords": "Deleting records",
+      "revokeCredentials": "Revoking credentials",
+      "irreversible": "Irreversible actions",
+      "destructiveAction": "Destructive primary button",
+      "confirmFirst": "Confirm before acting"
+    },
+    "variants": {
+      "delete": {
+        "title": "Record deletion",
+        "description": "Trash tile — products, customers, campaigns, discounts.",
+        "trigger": "Delete customer",
+        "dialogTitle": "Delete this customer?",
+        "dialogDescription": "The customer is deactivated, not erased — order history stays intact for reporting.",
+        "action": "Delete customer"
+      },
+      "revoke": {
+        "title": "Credential revocation",
+        "description": "Key tile — passkeys, API keys, sessions, SSO.",
+        "trigger": "Revoke passkey",
+        "dialogTitle": "Revoke this passkey?",
+        "dialogDescription": "Devices using this passkey immediately lose access. A new one can be registered anytime.",
+        "action": "Revoke passkey"
+      },
+      "warning": {
+        "title": "Irreversible warning",
+        "description": "Triangle tile — account deletion and similar point-of-no-return actions.",
+        "trigger": "Delete account",
+        "dialogTitle": "Are you absolutely sure?",
+        "dialogDescription": "This cannot be undone. Your account, database records, and all API keys are permanently removed.",
+        "action": "Delete account"
+      },
+      "confirm": {
+        "title": "Neutral confirmation",
+        "description": "Primary tile — state changes that need intent, not alarm (backup codes, plan changes).",
+        "trigger": "Regenerate codes",
+        "dialogTitle": "Regenerate backup codes?",
+        "dialogDescription": "Existing codes stop working immediately. Download the new set before continuing.",
+        "action": "Regenerate"
+      },
+      "signout": {
+        "title": "Session sign-out",
+        "description": "Muted tile — low-stakes confirmations with a destructive action button.",
+        "trigger": "Sign out",
+        "dialogTitle": "Sign out of this device?",
+        "dialogDescription": "Unsaved changes on this device are kept locally until you sign back in.",
+        "action": "Sign out"
+      },
+      "deactivate": {
+        "title": "Soft deactivation",
+        "description": "Amber tile — reversible removals where data is retained.",
+        "trigger": "Deactivate member",
+        "dialogTitle": "Deactivate this member?",
+        "dialogDescription": "The member loses access immediately but can be restored later; nothing is deleted.",
+        "action": "Deactivate"
+      }
+    }
+  },
+  "onboardingTour": {
+    "stepMetricsTitle": "Your metrics at a glance",
+    "stepMetricsDesc": "Key numbers for the whole workspace update in real time right here.",
+    "stepRevenueTitle": "Revenue over time",
+    "stepRevenueDesc": "Interactive charts track how your revenue trends across the period.",
+    "stepSalesTitle": "Recent sales",
+    "stepSalesDesc": "Watch orders land as they happen — newest always on top.",
+    "stepSearchTitle": "Find anything instantly",
+    "stepSearchDesc": "Press Ctrl+K anywhere to open the command palette and jump to any page.",
+    "stepCount": "{current} of {total}",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Finish",
+    "close": "Close",
+    "skip": "Skip tour"
+  },
+  "sessionStay": {
+    "title": "Your session is about to expire",
+    "description": "You have been here a while. Stay signed in to keep working without interruption.",
+    "stay": "Stay signed in",
+    "signOut": "Sign out",
+    "stayFailed": "Couldn't extend your session just now — still signed in, try again shortly."
+  },
+  "tierUpgrade": {
+    "title": "Upgrade to unlock this feature",
+    "description": "{feature} is available on the {tier} plan. Upgrade to unlock it for your workspace.",
+    "featureAnalytics": "Advanced analytics",
+    "featureReports": "Custom reports",
+    "featureMultiChannel": "Multi-channel integrations",
+    "featureApi": "API & webhooks access",
+    "featureRbac": "Role-based access control",
+    "featureCustomExports": "Custom data exports",
+    "planPro": "Pro",
+    "planProDesc": "Analytics, reports, multi-channel integrations, API & webhooks, RBAC.",
+    "planEnterprise": "Enterprise",
+    "planEnterpriseDesc": "Everything in Pro plus unlimited limits, custom data exports and 24/7 dedicated support.",
+    "notNow": "Not now",
+    "viewPlans": "View plans",
+    "featureOrderLimit": "Higher monthly order volume",
+    "featureSeatLimit": "More team seats"
+  },
+  "verificationSuccess": {
+    "emailVerified": "Email verified successfully — your account is now fully secured.",
+    "emailVerifyFailed": "That verification link is invalid or has expired. Request a new code.",
+    "twoFactorEnabled": "Two-factor authentication is on. Your account is better protected.",
+    "twoFactorDisabled": "Two-factor authentication has been turned off.",
+    "passwordChanged": "Password changed successfully. All other sessions stay signed in."
+  },
+  "emailVerification": {
+    "title": "Your email is not verified",
+    "description": "Verify your email to secure your account and enable all features.",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "verifyNow": "Verify now",
+    "dismiss": "Dismiss",
+    "sentToast": "Verification email sent! Check your inbox.",
+    "sendFailed": "Could not send verification email. Please try again."
+  },
+  "usageQuota": {
+    "title": "Usage & Quota",
+    "period": "Current cycle",
+    "orders": "Orders",
+    "teamMembers": "Team members",
+    "apiKeys": "API keys",
+    "unlimited": "Unlimited",
+    "trendTitle": "Monthly usage trend",
+    "upgradeHint": "You're consuming a capped resource on the Starter plan.",
+    "upgradeCta": "Upgrade plan",
+    "clientTitle": "Workspace usage",
+    "clientReadOnlyHint": "Read-only view of this workspace's plan consumption. Billing and plan changes are managed by the workspace owner.",
+    "trialChip": "Trial · {days, plural, one {# day} other {# days}} left"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Manage your platform users, subscriptions, and revenue.",
+    "statSubs": "Active Subscriptions",
+    "statSubsHint": "users on a paid plan",
+    "statUsers": "Total Users",
+    "statUsersHint": "registered platform accounts",
+    "statAdmins": "Admins",
+    "statAdminsHint": "last-admin accounts are protected from deletion",
+    "statBanned": "Banned",
+    "statBannedHint": "deactivated accounts",
+    "userManagement": "User Management",
+    "userManagementDesc": "View and manage all registered users.",
+    "searchPlaceholder": "Search users...",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "plan": "Plan",
+    "status": "Status",
+    "joined": "Joined",
+    "noUsers": "No users found.",
+    "actionsFor": "Actions for {name}",
+    "deleteUser": "Delete user",
+    "deletedToast": "User deleted",
+    "deactivatedToast": "Account deactivated (last admin).",
+    "loadFailed": "Failed to load users",
+    "loadFailedStatus": "Failed to load users ({status})"
   }
 }
