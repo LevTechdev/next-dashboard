@@ -2467,7 +2467,18 @@
     },
     "strengthHint": "Gunakan 8+ karakter dengan huruf besar & kecil, angka, dan simbol.",
     "accountCreatedNoEmail": "Akun berhasil dibuat! Kami tidak dapat mengirim email verifikasi saat ini — Anda dapat memverifikasi nanti dari Pengaturan → Keamanan.",
-    "passkeySignIn": "Masuk dengan passkey"
+    "passkeySignIn": "Masuk dengan passkey",
+    "chooseVerifyTitle": "Pilih cara verifikasi",
+    "chooseVerifyDesc": "Akun Anda dilindungi autentikasi dua faktor. Pilih metode untuk menyelesaikan proses masuk.",
+    "useAuthenticator": "Gunakan aplikasi autentikator",
+    "useAuthenticatorDesc": "Masukkan kode 6 digit dari aplikasi autentikator, atau kode cadangan.",
+    "useEmailCode": "Kirim kode ke email saya",
+    "useEmailCodeDesc": "Kami akan mengirim kode sekali pakai ke alamat email Anda.",
+    "emailOtpTitle": "Periksa email Anda",
+    "emailOtpDesc": "Kami mengirim kode 6 digit ke {email}. Masukkan di bawah untuk melanjutkan.",
+    "emailOtpSentToast": "Kode verifikasi terkirim — cek kotak masuk Anda.",
+    "resendEmailCode": "Kirim ulang kode",
+    "chooseOtherMethod": "Coba metode lain"
   },
   "csvImport": {
     "importCsv": "Impor CSV",

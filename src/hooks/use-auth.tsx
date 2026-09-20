@@ -57,7 +57,21 @@ interface AuthContextType {
     email: string,
     password: string,
     totpToken?: string,
-  ) => Promise<{ success: boolean; requires2FA?: boolean; error?: string }>;
+    /** Second factor via an emailed OTP instead of the authenticator app. */
+    emailOtpCode?: string,
+    /** Ask the server to email a login-challenge OTP (method chooser). */
+    challengeEmailOtp?: boolean,
+  ) => Promise<{
+    success: boolean;
+    requires2FA?: boolean;
+    /** Which second factor the server expects / has just emailed. */
+    method?: "totp" | "email_otp";
+    emailSent?: boolean;
+    /** Dev-mode inline OTP (no mailer configured). */
+    devOtp?: string;
+    error?: string;
+    attemptsLeft?: number;
+  }>;
   register: (
     name: string,
     email: string,
@@ -203,23 +217,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = useCallback(
-    async (email: string, password: string, totpToken?: string) => {
+    async (
+      email: string,
+      password: string,
+      totpToken?: string,
+      emailOtpCode?: string,
+      challengeEmailOtp?: boolean,
+    ) => {
       setError(null);
       try {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, totpToken }),
+          body: JSON.stringify({ email, password, totpToken, emailOtpCode, challengeEmailOtp }),
         });
 
         const data = await res.json();
 
         if (!res.ok) {
-          return { success: false, error: data.error || "Login failed" };
+          return {
+            success: false,
+            error: data.error || "Login failed",
+            attemptsLeft: data.attemptsLeft,
+          };
         }
 
         if (data.requires2FA) {
-          return { success: false, requires2FA: true };
+          return {
+            success: false,
+            requires2FA: true,
+            method: data.method,
+            emailSent: data.emailSent,
+            devOtp: data.devOtp,
+          };
         }
 
         if (data.user) {

@@ -11,17 +11,87 @@ import { sendNewSignInAlert } from "@/lib/security-notifications";
 import { recognizeSessionContext } from "@/lib/device-recognition";
 import { getRequestMeta } from "@/lib/request-meta";
 import { checkLoginRateLimit } from "@/lib/rate-limit";
+import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
+import { verifyOtp, isOtpExpired, MAX_OTP_ATTEMPTS } from "@/lib/email-otp";
 
 export const dynamic = "force-dynamic";
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 
+/**
+ * Verify an emailed login-challenge OTP against the user's stored hash.
+ * Mirrors the verify-email flow's protections (TTL, attempt cap, wipe on
+ * exhaustion) but authenticates a sign-in instead of marking the address
+ * verified. Returns `{ ok: true }` or a localized-key-ready failure.
+ */
+async function verifyLoginEmailOtp(
+  user: {
+    id: string;
+    tenantId: string | null;
+    emailOtpHash: string | null;
+    emailOtpExpires: Date | null;
+    emailOtpAttempts: number;
+  },
+  code: string,
+  req: Request,
+): Promise<{ ok: true } | { ok: false; error: string; attemptsLeft?: number }> {
+  if (!user.emailOtpHash) return { ok: false, error: "OTP_NOT_REQUESTED" };
+
+  if (isOtpExpired(user.emailOtpExpires)) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailOtpHash: null, emailOtpExpires: null, emailOtpAttempts: 0 },
+    });
+    return { ok: false, error: "OTP_EXPIRED" };
+  }
+
+  if (user.emailOtpAttempts >= MAX_OTP_ATTEMPTS) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailOtpHash: null, emailOtpExpires: null, emailOtpAttempts: 0 },
+    });
+    return { ok: false, error: "OTP_TOO_MANY_ATTEMPTS" };
+  }
+
+  if (!verifyOtp(code, user.emailOtpHash)) {
+    const attempts = user.emailOtpAttempts + 1;
+    const exhausted = attempts >= MAX_OTP_ATTEMPTS;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailOtpAttempts: attempts,
+        ...(exhausted ? { emailOtpHash: null, emailOtpExpires: null } : {}),
+      },
+    });
+    await logSecurityEvent({
+      userId: user.id,
+      type: "LOGIN_FAILED",
+      req,
+      metadata: { method: "email_otp", attempt: attempts },
+      tenantId: user.tenantId,
+    });
+    return {
+      ok: false,
+      error: "OTP_INVALID",
+      attemptsLeft: exhausted ? 0 : MAX_OTP_ATTEMPTS - attempts,
+    };
+  }
+
+  // Consumed on success — one challenge, one sign-in.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailOtpHash: null, emailOtpExpires: null, emailOtpAttempts: 0 },
+  });
+  return { ok: true };
+}
+
 export async function POST(req: Request) {
   try {
     console.log("parsing body");
     const body = await req.json();
-    const { email, password, totpToken, backupCode, locale } = body;
+    const { email, password, totpToken, backupCode, emailOtpCode, challengeEmailOtp, locale } =
+      body;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -99,50 +169,108 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // 2FA: accept a TOTP code OR a single-use backup code.
+    // ── Verification-method chooser ──
+    // A user with 2FA enabled may authenticate the second factor either with
+    // their authenticator app (TOTP / backup code) or with an emailed OTP.
+    // `challengeEmailOtp: true` asks for an email challenge instead: the
+    // password has ALREADY been verified at this point, so issuing the code is
+    // safe — the session is only granted once the code comes back and passes.
+    if (!totpToken && !backupCode && !emailOtpCode && challengeEmailOtp === true) {
+      const { sent, code } = await issueEmailOtp({
+        userId: user.id,
+        email: user.email,
+        locale,
+      });
+      await logSecurityEvent({
+        userId: user.id,
+        type: "EMAIL_DELIVERY_SENT",
+        req,
+        metadata: { purpose: "login_challenge", sent },
+        tenantId: user.tenantId,
+      });
+      return NextResponse.json(
+        {
+          requires2FA: true,
+          method: "email_otp",
+          emailSent: sent,
+          // Dev fallback (no mailer): surface the code inline so the flow stays
+          // testable — same contract as the register flow's devOtp.
+          ...(isDevFallbackAllowed() && !sent ? { devOtp: code } : {}),
+        },
+        { status: 200 },
+      );
+    }
+
+    // 2FA: accept a TOTP code, a single-use backup code, or an emailed OTP.
     if (user.totpEnabled && user.totpSecret) {
-      if (!totpToken && !backupCode) {
+      if (!totpToken && !backupCode && !emailOtpCode) {
         return NextResponse.json(
-          { requires2FA: true, message: "TOTP verification code required" },
+          { requires2FA: true, method: "totp", message: "TOTP verification code required" },
           { status: 200 },
         );
       }
-      let passed = false;
-      if (totpToken) {
-        passed = verifyTotp(totpToken, user.totpSecret);
-        if (passed) {
-          await logSecurityEvent({
-            userId: user.id,
-            type: "MFA_VERIFIED",
-            req,
-            metadata: { method: "totp" },
-            tenantId: user.tenantId,
-          });
+      // Emailed-OTP path: same hashed comparison + attempt caps as the
+      // verify-email flow, but it authenticates the sign-in (MFA_VERIFIED)
+      // instead of marking the address verified.
+      if (emailOtpCode) {
+        const emailPassed = await verifyLoginEmailOtp(user, emailOtpCode, req);
+        if (!emailPassed.ok) {
+          return NextResponse.json(
+            {
+              error: emailPassed.error,
+              ...(emailPassed.attemptsLeft !== undefined
+                ? { attemptsLeft: emailPassed.attemptsLeft }
+                : {}),
+            },
+            { status: 401 },
+          );
         }
-      }
-      if (!passed && backupCode) {
-        passed = await consumeBackupCode(user.id, backupCode);
-        if (passed) {
-          await logSecurityEvent({
-            userId: user.id,
-            type: "BACKUP_CODE_USED",
-            req,
-            tenantId: user.tenantId,
-          });
-          await logSecurityEvent({
-            userId: user.id,
-            type: "MFA_VERIFIED",
-            req,
-            metadata: { method: "backup_code" },
-            tenantId: user.tenantId,
-          });
+        await logSecurityEvent({
+          userId: user.id,
+          type: "MFA_VERIFIED",
+          req,
+          metadata: { method: "email_otp" },
+          tenantId: user.tenantId,
+        });
+        // Fall through to session issuance — emailPassed.ok means continue.
+      } else {
+        let passed = false;
+        if (totpToken) {
+          passed = verifyTotp(totpToken, user.totpSecret);
+          if (passed) {
+            await logSecurityEvent({
+              userId: user.id,
+              type: "MFA_VERIFIED",
+              req,
+              metadata: { method: "totp" },
+              tenantId: user.tenantId,
+            });
+          }
         }
-      }
-      if (!passed) {
-        return NextResponse.json(
-          { error: "Invalid two-factor authentication code" },
-          { status: 401 },
-        );
+        if (!passed && backupCode) {
+          passed = await consumeBackupCode(user.id, backupCode);
+          if (passed) {
+            await logSecurityEvent({
+              userId: user.id,
+              type: "BACKUP_CODE_USED",
+              req,
+              tenantId: user.tenantId,
+            });
+            await logSecurityEvent({
+              userId: user.id,
+              type: "MFA_VERIFIED",
+              req,
+              metadata: { method: "backup_code" },
+              tenantId: user.tenantId,
+            });
+          }
+        }
+        if (!passed) {
+          return NextResponse.json(
+            { error: "Invalid two-factor authentication code" },
+            { status: 401 },
+          );
+        }
       }
     }
 

@@ -24,7 +24,8 @@ describe("Marketing Landing Page", () => {
 
   it("renders the hero section with headline", () => {
     expect(screen.getByText(/Your Business,/)).toBeInTheDocument();
-    expect(screen.getByText("The Complete Next.js SaaS Starter Kit")).toBeInTheDocument();
+    // The retired "The Complete Next.js SaaS Starter Kit" badge must stay gone.
+    expect(screen.queryByText("The Complete Next.js SaaS Starter Kit")).not.toBeInTheDocument();
     expect(screen.getByText(/Everything you need to build a modern SaaS/)).toBeInTheDocument();
   });
 

@@ -46,6 +46,10 @@ async function fillLoginTotp(page: Page, code: string) {
   await page.locator('input[inputmode="numeric"]').fill(code);
 }
 
+/**
+ * Sign in through the verification-method chooser → authenticator step →
+ * TOTP code. Every 2FA sign-in now lands on the chooser first.
+ */
 async function loginWithTotp(page: Page) {
   await page.goto("/en/login");
   await page.waitForLoadState("networkidle");
@@ -56,6 +60,10 @@ async function loginWithTotp(page: Page) {
   // /en/login instead of reaching the TOTP step.
   await waitForLoginThrottleWindow();
   await page.getByRole("button", { name: "Log in", exact: true }).click();
+
+  // The chooser replaces the login card; pick the authenticator app.
+  await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+  await page.getByRole("button", { name: /Use authenticator app/ }).click();
 
   // 2FA prompt replaces the login card (h1 t("auth.twoFactorAuth")).
   await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
@@ -117,12 +125,17 @@ test.describe("Two-Factor Authentication", () => {
   });
 
   test("requires a TOTP code at sign-in and rejects an invalid code", async ({ page }) => {
-    // 1. Logged-out sign-in with 2FA-enabled account → TOTP prompt appears.
+    // 1. Logged-out sign-in with 2FA-enabled account → the verification-method
+    //    chooser appears first (new UX: 2FA users pick app vs. email code).
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
     await page.locator('input[type="email"]').fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+
+    // 2. Choose the authenticator app → the TOTP prompt appears.
+    await page.getByRole("button", { name: /Use authenticator app/ }).click();
     await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
 
     // 2. A wrong code auto-submits on the 6th digit, is rejected (toast —
@@ -139,8 +152,47 @@ test.describe("Two-Factor Authentication", () => {
     await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
   });
 
+  test("signs in with an emailed code chosen from the verification-method chooser", async ({
+    page,
+  }) => {
+    // 1. Sign-in with the 2FA account → chooser.
+    await page.goto("/en/login");
+    await page.waitForLoadState("networkidle");
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await waitForLoginThrottleWindow();
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+
+    // 2. Pick "Email me a code" → the challenge request fires (password was
+    //    already verified server-side, so issuing the code is safe) and the
+    //    entry step renders. The dev server has no mailer, so the code is
+    //    surfaced inline in a "Development OTP" block (scope to the card —
+    //    the toast echoes the same words).
+    await page.getByRole("button", { name: /Email me a code/ }).click();
+    await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+    // The raw code sits in a tabular paragraph right under the "Development
+    // OTP" caption (the toast echoes the caption, so match the caption's
+    // sibling, not any getByText hit).
+    const devCode =
+      (await page
+        .getByRole("paragraph")
+        .filter({ hasText: /^\d{6}$/ })
+        .textContent()) ?? "";
+    expect(devCode).toMatch(/^\d{6}$/);
+
+    // 3. Enter the emailed code → the chooser grants the same session as the
+    //    TOTP path.
+    await page.locator('input[inputmode="numeric"]').fill(devCode);
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
+
+    // Leave 2FA enabled for the serial tests that follow? No — the final test
+    // asserts 2FA-off sign-in; disabling happens in the next test.
+  });
+
   test("disables 2FA from the Security Center with password confirmation", async ({ page }) => {
-    // Sign in (requires TOTP) to reach the Security Center.
+    // Sign in (requires TOTP) to reach the Security Center — the helper walks
+    // the chooser → authenticator step → code.
     await loginWithTotp(page);
 
     await page.goto("/en/security");

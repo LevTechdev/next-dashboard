@@ -2467,7 +2467,18 @@
     },
     "strengthHint": "Use 8+ characters with upper & lowercase, a number, and a symbol.",
     "accountCreatedNoEmail": "Account created! We couldn't send the verification email right now — you can verify later from Settings → Security.",
-    "passkeySignIn": "Sign in with a passkey"
+    "passkeySignIn": "Sign in with a passkey",
+    "chooseVerifyTitle": "Choose how to verify",
+    "chooseVerifyDesc": "Your account is protected with two-factor authentication. Pick a method to finish signing in.",
+    "useAuthenticator": "Use authenticator app",
+    "useAuthenticatorDesc": "Enter the 6-digit code from your authenticator, or a backup code.",
+    "useEmailCode": "Email me a code",
+    "useEmailCodeDesc": "We will send a one-time code to your email address.",
+    "emailOtpTitle": "Check your email",
+    "emailOtpDesc": "We sent a 6-digit code to {email}. Enter it below to continue.",
+    "emailOtpSentToast": "Verification code sent — check your inbox.",
+    "resendEmailCode": "Resend code",
+    "chooseOtherMethod": "Try another method"
   },
   "csvImport": {
     "importCsv": "Import CSV",

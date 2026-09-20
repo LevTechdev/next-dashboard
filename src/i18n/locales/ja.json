@@ -2401,7 +2401,18 @@
     },
     "strengthHint": "8æ–‡å­—ä»¥ä¸Šã§ã€å¤§æ–‡å­—ãƒ»å°æ–‡å­—ãƒ»æ•°å­—ãƒ»è¨˜å·ã‚’å«ã‚ã¦ãã ã•ã„ã€‚",
     "accountCreatedNoEmail": "アカウントが作成されました！現在確認メールを送信できませんでした — 後で設定 → セキュリティから認証できます。",
-    "passkeySignIn": "パスキーでサインイン"
+    "passkeySignIn": "パスキーでサインイン",
+    "chooseVerifyTitle": "認証方法を選択",
+    "chooseVerifyDesc": "このアカウントは二要素認証で保護されています。サインインを完了する方法を選んでください。",
+    "useAuthenticator": "認証アプリを使用",
+    "useAuthenticatorDesc": "認証アプリの 6 桁のコード、またはバックアップコードを入力してください。",
+    "useEmailCode": "メールでコードを受け取る",
+    "useEmailCodeDesc": "ワンタイムコードをメールアドレスに送信します。",
+    "emailOtpTitle": "メールを確認してください",
+    "emailOtpDesc": "{email} に 6 桁のコードを送信しました。下に入力して続行してください。",
+    "emailOtpSentToast": "認証コードを送信しました — 受信箱をご確認ください。",
+    "resendEmailCode": "コードを再送",
+    "chooseOtherMethod": "別の方法を試す"
   },
   "csvImport": {
     "importCsv": "CSV インポート",

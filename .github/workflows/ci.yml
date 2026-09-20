@@ -80,6 +80,22 @@ jobs:
           name: coverage-components
           path: coverage/components/
 
+  # Storybook stories as tests: the `storybook` vitest project (86 stories)
+  # renders every story in a real browser via @storybook/addon-vitest, so a
+  # broken story fails CI instead of surfacing as a dead Storybook entry.
+  test-storybook:
+    name: Storybook Stories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vitest run --config vitest.config.ts --project storybook
+
   test-api:
     name: API Integration Tests
     runs-on: ubuntu-latest
@@ -176,7 +192,7 @@ jobs:
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [lint, typecheck, test, test-components, test-api, build, e2e]
+    needs: [lint, typecheck, test, test-components, test-storybook, test-api, build, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write

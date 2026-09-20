@@ -2401,7 +2401,18 @@
     },
     "strengthHint": "è¯·ä½¿ç”¨ 8 ä½ä»¥ä¸Šå­—ç¬¦ï¼ŒåŒ…å«å¤§å°å†™å­—æ¯ã€æ•°å­—å’Œç¬¦å·ã€‚",
     "accountCreatedNoEmail": "账户已创建！目前无法发送验证邮件 — 您可以稍后在“设置 → 安全”中完成验证。",
-    "passkeySignIn": "使用通行密钥登录"
+    "passkeySignIn": "使用通行密钥登录",
+    "chooseVerifyTitle": "选择验证方式",
+    "chooseVerifyDesc": "您的账户已启用两步验证。选择一种方式完成登录。",
+    "useAuthenticator": "使用验证器应用",
+    "useAuthenticatorDesc": "输入验证器中的 6 位验证码，或备用代码。",
+    "useEmailCode": "通过电子邮件接收验证码",
+    "useEmailCodeDesc": "我们将向您的电子邮箱发送一次性验证码。",
+    "emailOtpTitle": "请查收电子邮件",
+    "emailOtpDesc": "我们已向 {email} 发送 6 位验证码。请在下方输入以继续。",
+    "emailOtpSentToast": "验证码已发送 — 请查收您的收件箱。",
+    "resendEmailCode": "重新发送验证码",
+    "chooseOtherMethod": "尝试其他方式"
   },
   "csvImport": {
     "importCsv": "导入 CSV",

@@ -4,7 +4,16 @@ import { useState, Suspense, useRef, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LoaderCircleIcon } from "lucide-animated";
-import { Fingerprint, Building2, Eye, EyeOff, Timer } from "lucide-react";
+import {
+  Fingerprint,
+  Building2,
+  Eye,
+  EyeOff,
+  Timer,
+  SmartphoneIcon,
+  MailIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +48,14 @@ function LoginForm() {
   // cleared by the component's own reset (onChange("") after the drain) so the
   // row returns to the idle treatment ready for the next attempt.
   const [totpRejected, setTotpRejected] = useState(false);
+  // ── Verification-method chooser (2FA step) ──
+  // `null` = the default TOTP prompt (unchanged behaviour); "choose" = the
+  // picker between authenticator app and an emailed code; "email" = the
+  // emailed-OTP entry step (CodeSlots + resend).
+  const [verifyMethod, setVerifyMethod] = useState<null | "choose" | "email_otp">(null);
+  const [, setEmailOtpSent] = useState(false);
+  const [emailOtpDevCode, setEmailOtpDevCode] = useState<string | null>(null);
+  const [emailOtpHint, setEmailOtpHint] = useState<string | null>(null);
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
   const { login } = useAuth();
@@ -80,6 +97,11 @@ function LoginForm() {
         setSavedEmail(email);
         setSavedPassword(password);
         setTotpRequired(true);
+        // Fresh challenge → always land on the method chooser.
+        setVerifyMethod("choose");
+        setEmailOtpSent(false);
+        setEmailOtpDevCode(null);
+        setEmailOtpHint(null);
         setIsLoading(false);
         return;
       }
@@ -97,6 +119,67 @@ function LoginForm() {
   };
 
   const totpSubmittingRef = useRef(false);
+
+  /** Send (or re-send) the email login challenge and switch to its entry step. */
+  const requestEmailOtp = async () => {
+    setIsLoading(true);
+    try {
+      const result = await login(savedEmail, savedPassword, undefined, undefined, true);
+      if (result.requires2FA) {
+        setEmailOtpSent(true);
+        setVerifyMethod("email_otp");
+        setEmailOtpDevCode(result.devOtp ?? null);
+        setEmailOtpHint(null);
+        setTotpCode("");
+        setTotpRejected(false);
+        toast.success(result.emailSent ? t("emailOtpSentToast") : t("developmentOtp"));
+      } else {
+        toast.error(result.error || t("errorGeneric"));
+      }
+    } catch {
+      toast.error(t("errorGeneric"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** Submit the emailed-OTP step (same session grant as the TOTP path). */
+  const handleEmailOtpVerification = async (code: string) => {
+    if (code.length < 6) {
+      toast.error(t("invalidCodeLength"));
+      return;
+    }
+    if (totpSubmittingRef.current) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await login(savedEmail, savedPassword, undefined, code);
+      if (result.success) {
+        toast.success(t("welcomeBackToast"));
+        router.push(redirect);
+      } else {
+        setTotpRejected(true);
+        setEmailOtpHint(
+          result.attemptsLeft !== undefined
+            ? t("otpIncorrectAttempts").replace("{attempts}", String(result.attemptsLeft))
+            : result.error === "OTP_EXPIRED"
+              ? t("otpExpired")
+              : result.error === "OTP_TOO_MANY_ATTEMPTS"
+                ? t("otpTooManyAttempts")
+                : null,
+        );
+        toast.error(
+          result.error === "OTP_INVALID" ? t("invalidCode") : result.error || t("invalidCode"),
+        );
+      }
+    } catch {
+      setTotpRejected(true);
+      toast.error(t("errorGeneric"));
+    } finally {
+      totpSubmittingRef.current = false;
+      setIsLoading(false);
+    }
+  };
 
   const handleTotpVerification = async (code: string) => {
     if (code.length < 6) {
@@ -228,71 +311,239 @@ function LoginForm() {
 
             {totpRequired ? (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-                  {t("twoFactorAuth")}
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
+                {verifyMethod === "choose" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("chooseVerifyTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("chooseVerifyDesc")}</p>
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void handleTotpVerification(totpCode);
-                  }}
-                  className="space-y-6"
-                >
-                  <div className="space-y-2">
-                    <Label className="text-zinc-700">{t("verificationCode")}</Label>
-                    {/* CodeSlots: six animated slots, a gliding caret, and the
+                    <div className="space-y-3">
+                      {/* Authenticator app — the default second factor */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod(null);
+                          setTotpCode("");
+                          setTotpRejected(false);
+                        }}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <SmartphoneIcon className="h-5 w-5" />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useAuthenticator")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useAuthenticatorDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Emailed code — same account, different channel */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => void requestEmailOtp()}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {isLoading ? (
+                            <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <MailIcon className="h-5 w-5" />
+                          )}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useEmailCode")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useEmailCodeDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTotpRequired(false);
+                        setVerifyMethod(null);
+                        setTotpCode("");
+                      }}
+                      className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                    >
+                      ← Back to login
+                    </button>
+                  </>
+                ) : verifyMethod === "email_otp" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("emailOtpTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">
+                      {t("emailOtpDesc", { email: savedEmail })}
+                    </p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleEmailOtpVerification(totpCode);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("verificationCode")}</Label>
+                        <div className="flex w-full justify-center pt-1">
+                          <CodeSlots
+                            value={totpCode}
+                            onChange={(code) => {
+                              setTotpCode(code);
+                              if (code.length === 0) {
+                                setTotpRejected(false);
+                                setEmailOtpHint(null);
+                              }
+                            }}
+                            onComplete={(code) => {
+                              void handleEmailOtpVerification(code);
+                            }}
+                            status={totpRejected ? "error" : "idle"}
+                            disabled={isLoading}
+                            autoFocus
+                            ariaLabel={t("verificationCode")}
+                            slotSize={48}
+                            gap={6}
+                          />
+                        </div>
+                        {emailOtpDevCode && (
+                          <div className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-2.5 text-center">
+                            <p className="text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">
+                              {t("developmentOtp")}
+                            </p>
+                            <p className="font-mono text-lg font-bold tracking-[0.3em] text-zinc-800 dark:text-zinc-100">
+                              {emailOtpDevCode}
+                            </p>
+                          </div>
+                        )}
+                        {emailOtpHint && (
+                          <p className="text-xs text-destructive text-center">{emailOtpHint}</p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={totpCode.length < 6 || isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
+                    </form>
+
+                    <div className="mt-4 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => void requestEmailOtp()}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("resendEmailCode")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod("choose");
+                          setTotpCode("");
+                          setTotpRejected(false);
+                          setEmailOtpHint(null);
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        ← {t("chooseOtherMethod")}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("twoFactorAuth")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleTotpVerification(totpCode);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("verificationCode")}</Label>
+                        {/* CodeSlots: six animated slots, a gliding caret, and the
                         real verification state — a rejected code drains the row
                         and flashes the destructive treatment, an accepted one
                         washes it with the accent before the redirect. */}
-                    <div className="flex w-full justify-center pt-1">
-                      <CodeSlots
-                        value={totpCode}
-                        onChange={(code) => {
-                          setTotpCode(code);
-                          if (code.length === 0 && totpRejected) setTotpRejected(false);
-                        }}
-                        onComplete={(code) => {
-                          void handleTotpVerification(code);
-                        }}
-                        status={totpRejected ? "error" : "idle"}
-                        disabled={isLoading}
-                        autoFocus
-                        ariaLabel={t("verificationCode")}
-                        slotSize={48}
-                        gap={6}
-                      />
-                    </div>
-                  </div>
+                        <div className="flex w-full justify-center pt-1">
+                          <CodeSlots
+                            value={totpCode}
+                            onChange={(code) => {
+                              setTotpCode(code);
+                              if (code.length === 0 && totpRejected) setTotpRejected(false);
+                            }}
+                            onComplete={(code) => {
+                              void handleTotpVerification(code);
+                            }}
+                            status={totpRejected ? "error" : "idle"}
+                            disabled={isLoading}
+                            autoFocus
+                            ariaLabel={t("verificationCode")}
+                            slotSize={48}
+                            gap={6}
+                          />
+                        </div>
+                      </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
-                    disabled={totpCode.length < 6 || isLoading}
-                  >
-                    {" "}
-                    {isLoading ? (
-                      <>
-                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
-                        {t("verifying")}
-                      </>
-                    ) : (
-                      t("verifyAndLogin")
-                    )}
-                  </Button>
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={totpCode.length < 6 || isLoading}
+                      >
+                        {" "}
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTotpRequired(false);
-                      setTotpCode("");
-                    }}
-                    className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
-                  >
-                    ← Back to login
-                  </button>
-                </form>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTotpRequired(false);
+                          setVerifyMethod(null);
+                          setTotpCode("");
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        ← Back to login
+                      </button>
+                    </form>
+                  </>
+                )}
               </>
             ) : view === "forgot" ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
