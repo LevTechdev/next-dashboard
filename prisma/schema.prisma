@@ -14,6 +14,7 @@ model User {
   password                 String
   role                     String                  @default("STAFF") // ADMIN, MANAGER, STAFF
   avatar                   String?
+  coverImage               String? // profile cover banner (base64 data URL); falls back to the appearance accent
   phone                    String?
   position                 String?
   totpSecret               String? // Encrypted TOTP secret for 2FA
@@ -281,6 +282,10 @@ model Order {
   updatedAt       DateTime       @updatedAt
   items           OrderItem[]
   discount        OrderDiscount?
+  // Issue-time invoice snapshot (see lib/order-invoice-snapshot.ts): frozen
+  // once when the PDF is first issued so reprints are byte-identical even if
+  // prices, FX rates, or branding change afterwards.
+  invoiceSnapshot Json?
 
   @@index([tenantId])
 }
@@ -490,9 +495,12 @@ model Invoice {
   description    String?
   periodStart    DateTime?
   periodEnd      DateTime?
-  paidAt         DateTime?
+  paidAt        DateTime?
   paymentMethod  String? // credit_card, bank_transfer, paypal
   invoiceFile    String? // URL to generated PDF
+  // Immutable issue-time snapshot (plan price/interval, amounts, currency)
+  // so historical PDFs stay reproducible after plan/FX changes.
+  snapshotJson   Json?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -686,4 +694,207 @@ model GeneratedContent {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ─── JSON Store Tables (replaces data/*.json persistence) ────────────────────
+// These models back the operational stores that previously lived as JSON files
+// in data/. All writes go through Prisma transactions (see src/lib/*-store.ts)
+// so ledger mutations are atomic and concurrent-safe across server instances.
+
+/// Singleton row holding the QRIS ledger balance aggregates.
+model QrisLedgerBalance {
+  id               String   @id @default(cuid()) // "singleton"
+  availableBalance Float    @default(0)
+  pendingBalance   Float    @default(0)
+  totalWithdrawn   Float    @default(0)
+  totalInbound     Float    @default(0)
+  updatedAt        DateTime @updatedAt
+}
+
+/// One QRIS payment transaction (ASPI QRIS Merchant-Presented Mode).
+model QrisTransaction {
+  id            String    @id
+  invoiceNumber String
+  amount        Float
+  currency      String    @default("IDR")
+  customerName  String
+  sourceBank    String
+  status        String // PENDING, PAID, EXPIRED, DISPUTED
+  qrisPayload   String    @db.Text
+  rrn           String
+  createdAt     DateTime
+  paidAt        DateTime?
+  seq           Int       @unique @default(autoincrement())
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// One income payout / withdrawal disbursement.
+model QrisDisbursement {
+  id                  String   @id
+  disbursementNumber  String   @unique
+  method              String // dana, bank_transfer, card_oct, alipay, linkaja
+  destinationName     String
+  destinationAccount  String
+  bankCode            String?
+  cardType            String?
+  grossAmount         Float
+  fee                 Float    @default(0)
+  netAmount           Float
+  status              String   @default("COMPLETED")
+  referenceNumber     String
+  timestamp           DateTime
+  notes               String?
+  destinationCurrency String?
+  fxRate              Float?
+  destinationAmount   Float?
+  seq                 Int      @unique @default(autoincrement())
+
+  @@index([timestamp])
+}
+
+/// Supplier purchase order with its line items.
+model PurchaseOrder {
+  id                   String              @id
+  poNumber             String              @unique
+  supplierId           String
+  supplierName         String
+  supplierEmail        String
+  status               String              @default("ISSUED") // DRAFT, ISSUED, RECEIVED, CANCELLED
+  totalAmount          Float
+  warehouseId          String
+  warehouseName        String
+  leadTimeDays         Int
+  issueDate            DateTime
+  expectedDeliveryDate DateTime
+  receivedDate         DateTime?
+  notes                String?
+  createdAt            DateTime
+  updatedAt            DateTime
+  items                PurchaseOrderItem[]
+  seq                  Int                 @unique @default(autoincrement())
+
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  productName String
+  sku         String
+  quantity    Int
+  unitCost    Float
+  totalCost   Float
+
+  @@index([orderId])
+}
+
+/// Per-tenant white-label branding + custom-domain settings.
+model TenantBranding {
+  tenantId           String   @id
+  brandName          String
+  customDomain       String
+  domainStatus       String   @default("VERIFIED") // VERIFIED, PENDING_DNS, FAILED
+  cnameTarget        String
+  sslActive          Boolean  @default(true)
+  logoUrl            String
+  faviconUrl         String
+  primaryColor       String
+  accentColor        String
+  invoiceHeaderNote  String
+  invoiceFooterNote  String
+  invoiceAddress     String
+  taxId              String
+  emailDigestSubject String
+  updatedAt          DateTime @updatedAt
+}
+
+/// Daily inventory valuation snapshot, deduplicated by calendar date.
+model InventorySnapshot {
+  id        String   @id @default(cuid())
+  date      String   @unique // YYYY-MM-DD
+  value     Float
+  createdAt DateTime @default(now())
+}
+
+/// Disbursement beneficiary directory with usage tracking.
+model Beneficiary {
+  id             String   @id
+  accountNumber  String   @unique
+  maskedAccount  String
+  accountName    String
+  channel        String // dana, bank_transfer, card_oct, alipay, linkaja
+  bankCode       String?
+  bankName       String?
+  cardType       String?
+  cardTier       String?
+  verified       Boolean  @default(false)
+  favorite       Boolean  @default(false)
+  lastUsedAt     DateTime
+  totalDisbursed Float    @default(0)
+  createdAt      DateTime @default(now())
+}
+
+/// Dead-letter queue for inbound platform webhooks that failed processing.
+model WebhookDlqEntry {
+  id            String    @id
+  platform      String // shopify, tiktok, shopee, woocommerce
+  event         String
+  headers       Json      @default("{}")
+  payload       Json
+  errorMessage  String
+  retryCount    Int       @default(0)
+  maxRetries    Int       @default(5)
+  status        String    @default("FAILED") // FAILED, RETRYING, RESOLVED
+  createdAt     DateTime
+  lastAttemptAt DateTime
+  nextRetryAt   DateTime?
+  seq           Int       @unique @default(autoincrement())
+}
+
+/// Chat-ops alert channel configuration (Slack / Discord webhooks).
+model ChatChannel {
+  id            String    @id
+  name          String
+  platform      String // slack, discord, telegram
+  webhookUrl    String
+  channelName   String
+  avatarUrl     String?
+  enabledEvents String[]
+  status        String    @default("ACTIVE") // ACTIVE, PAUSED
+  lastPingAt    DateTime?
+  lastStatus    String?
+  createdAt     DateTime
+  updatedAt     DateTime
+}
+
+/// Singleton row with the chat-alert trigger rule thresholds.
+model ChatAlertRule {
+  id                   String   @id @default(cuid()) // "singleton"
+  stockoutDoiThreshold Int      @default(7)
+  vipOrderMinAmount    Float    @default(500)
+  paymentAlertsEnabled Boolean  @default(true)
+  dailyDigestTime      String   @default("09:00")
+  dailyDigestEnabled   Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+}
+
+/// Delivery log for chat-ops alert dispatches (latest 25 kept).
+model ChatDeliveryLog {
+  id             String   @id
+  channelId      String
+  platform       String
+  event          String
+  status         String // DELIVERED, FAILED, SIMULATED
+  statusCode     Int
+  durationMs     Int
+  payloadPreview String
+  responseText   String?
+  createdAt      DateTime
+  seq            Int      @unique @default(autoincrement())
+
+  @@index([createdAt])
 }
