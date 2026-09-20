@@ -35,14 +35,12 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const { formatMoney } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-3">
+    <div className="rounded-xl border border-white/50 bg-white/70 shadow-xl backdrop-blur-md dark:border-border dark:bg-card/95 p-3 pointer-events-none">
       <div className="flex items-center gap-2 mb-1.5">
         <SalesChannelIcon name={label || ""} size={15} />
-        <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{label}</p>
+        <p className="text-xs font-medium text-gray-600 dark:text-muted-foreground">{label}</p>
       </div>
-      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-        {formatMoney(payload[0].value)}
-      </p>
+      <p className="text-sm font-bold tabular-nums">{formatMoney(payload[0].value)}</p>
     </div>
   );
 }
@@ -94,10 +92,14 @@ export function SalesChannelChart({ data, height = 300, onClick }: SalesChannelC
         <Tooltip
           content={<CustomTooltip />}
           cursor={{ fill: "currentColor", className: "fill-gray-100 dark:fill-gray-800/50" }}
+          // Bar-following: pin to the hovered bar's top edge, not slot center.
+          position={{ y: 0 }}
+          offset={12}
+          animationDuration={80}
         />
-        <Bar 
-          dataKey="value" 
-          radius={[0, 4, 4, 0]} 
+        <Bar
+          dataKey="value"
+          radius={[0, 4, 4, 0]}
           maxBarSize={32}
           onClick={onClick ? (data) => onClick(data.name) : undefined}
           style={{ cursor: onClick ? "pointer" : "default" }}

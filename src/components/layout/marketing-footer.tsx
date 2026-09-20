@@ -31,7 +31,8 @@ export function MarketingFooter() {
     {
       titleKey: "footerResources",
       links: [
-        { labelKey: "footerLinkDocumentation", href: "#" },
+        { labelKey: "footerLinkDocumentation", href: `/${locale}/docs` },
+        { labelKey: "footerLinkApiDocs", href: `/${locale}/docs/api` },
         { labelKey: "navPricing", href: `/${locale}/pricing` },
         { labelKey: "navChangelog", href: `/${locale}/changelog` },
       ],
@@ -41,7 +42,7 @@ export function MarketingFooter() {
       links: [
         { labelKey: "footerLinkAboutUs", href: `/${locale}/about` },
         { labelKey: "navContact", href: `/${locale}/contact` },
-        { labelKey: "footerLinkCareers", href: "#" },
+        { labelKey: "footerLinkCareers", href: `/${locale}/careers` },
       ],
     },
   ];
@@ -92,12 +93,16 @@ export function MarketingFooter() {
               </div>
             </div>
             <div className="hidden justify-end md:flex">
-              <div className="relative">
+              <div className="relative max-w-full">
                 <div className="bg-[#b3f021]/20 dark:bg-purple-500/20 absolute inset-0 rotate-6 rounded-2xl" />
                 <img
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=320&h=240"
+                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=640&h=480"
+                  srcSet="
+                    https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=320&h=240 320w,
+                    https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=640&h=480 640w"
+                  sizes="(min-width: 1024px) 320px, (min-width: 768px) 40vw, 0px"
                   alt={t("footerPreviewAlt")}
-                  className="relative w-80 rounded-2xl object-cover shadow-2xl border border-border/50"
+                  className="relative w-40 lg:w-80 max-w-full h-auto rounded-2xl object-cover shadow-2xl border border-border/50"
                 />
               </div>
             </div>

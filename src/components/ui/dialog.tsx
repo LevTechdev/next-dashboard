@@ -9,6 +9,18 @@ const DialogClose = DialogPrimitive.Close;
 
 const DialogPortal = DialogPrimitive.Portal;
 
+/**
+ * Sora-UI-style perspective choreography (matches
+ * src/components/sora-ui/base/dialog.tsx): the popup rises out of a slight 3D
+ * rotation with a blur-to-sharp settle, then swings back with a quick exit.
+ * Implemented with CSS transforms so it works through Radix's data-state
+ * mount/unmount without a JS animation runtime.
+ */
+const dialogContentAnimation =
+  "origin-center " +
+  "data-[state=open]:animate-[sora-dialog-in_0.45s_cubic-bezier(0.17,0.67,0.51,1)] " +
+  "data-[state=closed]:animate-[sora-dialog-out_0.28s_cubic-bezier(0.67,0.17,0.62,0.64)]";
+
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -63,6 +75,7 @@ const DialogContent = React.forwardRef<
         <DialogOverlay />
         <DialogPrimitive.Content
           ref={ref}
+          data-slot="dialog-content"
           onPointerDownOutside={(e) => {
             const target = e.target as HTMLElement | null;
             if (preventOutsideClose || isPortaledTarget(target)) {
@@ -78,7 +91,13 @@ const DialogContent = React.forwardRef<
             onInteractOutside?.(e);
           }}
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl",
+            // Mobile-first modal geometry (matches the AI copilot panel's
+            // floating-sheet look): inset from the viewport edges with a
+            // fully rounded frame on small screens, tightening the inset
+            // and relaxing the radius on ≥640px where there is room to
+            // breathe. Keeps max-w-lg so large dialogs never over-stretch.
+            "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg max-h-[92dvh] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto scrollbar-thin rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-lg duration-200 sm:w-full sm:rounded-xl sm:p-6",
+            dialogContentAnimation,
             className,
           )}
           {...props}

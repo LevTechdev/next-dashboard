@@ -120,7 +120,7 @@ export function CsvImportDialog({
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-indigo-500" />
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
               {timport("importCsv")}
             </DialogTitle>
           </DialogHeader>

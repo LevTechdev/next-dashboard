@@ -7,8 +7,15 @@ import { toast } from "sonner";
 import { AlertTriangle, KeyRound, Monitor, Shield } from "lucide-react";
 import { ClockIcon, FingerprintIcon, ShieldCheckIcon } from "lucide-animated";
 import { useSecurityData, withinDays } from "@/components/security/use-security-data";
+import {
+  missingProtections,
+  scoreBannerMode,
+  MFA_VERIFIED_RECENT_DAYS,
+  type MissingProtection,
+} from "@/lib/security-score";
 import { SessionsCard } from "@/components/security/sessions-card";
 import { ActivityCard } from "@/components/security/activity-card";
+import { TelemetryCard } from "@/components/security/telemetry-card";
 import { TotpCard } from "@/components/security/totp-card";
 import { PasskeysCard } from "@/components/security/passkeys-card";
 import { BackupCodesCard } from "@/components/security/backup-codes-card";
@@ -121,7 +128,30 @@ export function SecurityCenter() {
   });
 
   const tier = scoreTier(score);
-  const scoreMessage = t(`score${tier[0].toUpperCase()}${tier.slice(1)}` as never);
+  // Component-aware banner: name the protections actually missing (heaviest
+  // first) instead of a static per-tier sentence — "enable 2FA" under an
+  // enabled 2FA card contradicted the state right below it. When every
+  // protection is enrolled (score may still sit below 100 from session /
+  // suspicious-activity deductions), say so explicitly — the account is fully
+  // protected even at a "good" tier.
+  const bannerInput = {
+    totpEnabled: data.totpEnabled,
+    passkeyCount: data.passkeys.length,
+    backupRemaining: data.backupRemaining,
+    emailVerified: data.emailVerified ? true : null,
+    suspiciousRecent,
+    sessionCount: data.sessions.length,
+    mfaVerifiedRecently: data.mfaVerifiedRecently,
+  };
+  const missing = data.loading ? [] : missingProtections(bannerInput);
+  const bannerMode = data.loading ? ("missing" as const) : scoreBannerMode(bannerInput);
+  const scoreMessage =
+    bannerMode === "missing" && missing.length > 0
+      ? t("scoreAction", {
+          action: t(`missing_${missing[0]}` as never),
+          extra: missing.length > 1 ? t("scoreAlsoMissing", { count: missing.length - 1 }) : "",
+        })
+      : t("scoreComplete");
 
   const color = scoreColor(score);
 
@@ -201,13 +231,19 @@ export function SecurityCenter() {
                 <>
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <span className="text-emerald-600 dark:text-emerald-400">
-                    {t("mfaVerifiedRecent")}
+                    {t("mfaVerifiedRecentDays", {
+                      count: data.mfaDaysSince ?? 0,
+                    })}
                   </span>
                 </>
               ) : (
                 <>
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
-                  <span className="text-gray-500">{t("mfaNotVerifiedRecent")}</span>
+                  <span className="text-gray-500">
+                    {t("mfaNotVerifiedRecentDays", {
+                      count: data.mfaDaysSince ?? MFA_VERIFIED_RECENT_DAYS,
+                    })}
+                  </span>
                 </>
               )}
             </div>
@@ -280,6 +316,9 @@ export function SecurityCenter() {
 
       {/* Autonomous Fraud Prevention & Risk Radar */}
       <FraudPreventionCard />
+
+      {/* Account-pressure telemetry: rate-limits, lockouts, session posture */}
+      <TelemetryCard data={data} />
 
       {/* Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">

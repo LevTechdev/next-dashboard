@@ -4,6 +4,25 @@ import { useEffect, useState } from "react";
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { usePathname, useParams } from "next/navigation";
+import { useReportWebVitals } from "next/web-vitals";
+
+/**
+ * Core Web Vitals → PostHog. Every route change reports LCP/CLS/FID/INP/TTFB
+ * (useReportWebVitals buffers internally and fires once per metric per page)
+ * so LCP regressions on the heavily animated landing page surface in
+ * analytics instead of only in CrUX field data.
+ */
+function WebVitalsReporter() {
+  useReportWebVitals((metric) => {
+    posthog.capture(metric.name, {
+      value: metric.value,
+      rating: metric.rating,
+      id: metric.id,
+      path: window.location.pathname,
+    });
+  });
+  return null;
+}
 
 function PostHogPageViewTracker({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -50,6 +69,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   // so it won't fire before init completes.
   return (
     <PHProvider client={posthog}>
+      <WebVitalsReporter />
       <PostHogPageViewTracker>{children}</PostHogPageViewTracker>
     </PHProvider>
   );

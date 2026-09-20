@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -46,6 +47,7 @@ import {
 
 export function LogisticsFleetTracker() {
   const t = useTranslations("logisticsFleet");
+  const tc = useTranslations("common");
 
   const [shipments, setShipments] = useState<FleetShipment[]>(MOCK_FLEET_SHIPMENTS);
   const [summary, setSummary] = useState<FleetTelemetrySummary>(() =>
@@ -337,17 +339,19 @@ export function LogisticsFleetTracker() {
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 dark:text-white">
                           <span>{shp.trackingNumber}</span>
-                          <button
-                            onClick={() => handleCopyTracking(shp.trackingNumber)}
-                            className="text-slate-400 hover:text-slate-600 cursor-pointer"
-                            title="Copy AWB"
-                          >
-                            {isCopied ? (
-                              <Check className="h-3 w-3 text-emerald-500" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </button>
+                          <Tooltip content={tc("copyAwb")} side="top">
+                            <button
+                              onClick={() => handleCopyTracking(shp.trackingNumber)}
+                              className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                              aria-label={tc("copyAwb")}
+                            >
+                              {isCopied ? (
+                                <Check className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </button>
+                          </Tooltip>
                         </div>
                         <div className="text-[11px] text-slate-500">
                           {shp.orderNumber} • {shp.recipientName}
@@ -421,7 +425,7 @@ export function LogisticsFleetTracker() {
                             size="sm"
                             variant="outline"
                             onClick={() => setSelectedShipment(shp)}
-                            className="h-7 text-xs border-indigo-400/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
+                            className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
                           >
                             <Navigation className="h-3 w-3 mr-1" />
                             {t("inspectRoute")}

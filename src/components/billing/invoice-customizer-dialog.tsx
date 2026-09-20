@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { generateBarcodeSvg } from "@/lib/barcode";
+import { CURRENCIES, convertFromUSD, type SupportedCurrencyCode } from "@/lib/currency";
 import { useAppearance } from "@/hooks/use-appearance";
 
 export interface InvoiceTemplateSettings {
@@ -34,6 +35,8 @@ export interface InvoiceTemplateSettings {
   notes: string;
   showBarcode: boolean;
   showQr: boolean;
+  /** Presentation currency for amounts on the printed invoice. */
+  currency: SupportedCurrencyCode;
 }
 
 const STORAGE_KEY = "levtech-invoice-template-config";
@@ -46,6 +49,7 @@ export const DEFAULT_INVOICE_CONFIG: InvoiceTemplateSettings = {
     "Official computerized tax invoice. Valid proof of transaction under BI-FAST clearing rules.",
   showBarcode: true,
   showQr: true,
+  currency: "USD",
 };
 
 export function InvoiceCustomizerDialog({
@@ -63,6 +67,20 @@ export function InvoiceCustomizerDialog({
   const [config, setConfig] = useState<InvoiceTemplateSettings>(DEFAULT_INVOICE_CONFIG);
   const [previewBarcodeSvg, setPreviewBarcodeSvg] = useState<string>("");
   const [previewQrDataUrl, setPreviewQrDataUrl] = useState<string>("");
+
+  /** Render USD-base sample amounts in the template's chosen currency. */
+  const formatInvoiceMoney = (usdAmount: number) => {
+    const cfg = CURRENCIES[config.currency] ?? CURRENCIES.USD;
+    const converted = convertFromUSD(usdAmount, config.currency);
+    const formatted =
+      cfg.decimals === 0
+        ? Math.round(converted).toLocaleString("en-US")
+        : converted.toLocaleString("en-US", {
+            minimumFractionDigits: cfg.decimals,
+            maximumFractionDigits: cfg.decimals,
+          });
+    return `${cfg.symbol}${formatted}`;
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -134,6 +152,7 @@ export function InvoiceCustomizerDialog({
       notes: config.notes,
       barcode: config.showBarcode ? "true" : "false",
       qr: config.showQr ? "true" : "false",
+      currency: config.currency,
       preview: "true",
     });
     const orderId = sampleOrderId || "sample-order-id";
@@ -244,6 +263,33 @@ export function InvoiceCustomizerDialog({
               />
             </div>
 
+            <div>
+              <Label className="text-xs font-semibold text-foreground">{t("currencyLabel")}</Label>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {(Object.keys(CURRENCIES) as SupportedCurrencyCode[]).map((code) => {
+                  const cfg = CURRENCIES[code];
+                  const selected = config.currency === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setConfig((prev) => ({ ...prev, currency: code }))}
+                      className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer inline-flex items-center gap-1 ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      }`}
+                      title={cfg.name}
+                    >
+                      <span>{cfg.flag}</span>
+                      {code}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("currencyHint")}</p>
+            </div>
+
             <div className="pt-2 border-t border-border space-y-2">
               <Label className="text-xs font-semibold text-foreground">
                 {t("securityBadgesLabel")}
@@ -323,15 +369,15 @@ export function InvoiceCustomizerDialog({
               <div className="space-y-2 text-[11px] text-muted-foreground mt-3">
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span>Standard Commerce Package</span>
-                  <span className="font-semibold text-foreground">$120.00</span>
+                  <span className="font-semibold text-foreground">{formatInvoiceMoney(120)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span>VAT / Tax (11%)</span>
-                  <span className="font-semibold text-foreground">$13.20</span>
+                  <span className="font-semibold text-foreground">{formatInvoiceMoney(13.2)}</span>
                 </div>
                 <div className="flex justify-between py-1 font-bold text-foreground">
                   <span>Total Due / Paid</span>
-                  <span style={{ color: config.accentColor }}>$133.20</span>
+                  <span style={{ color: config.accentColor }}>{formatInvoiceMoney(133.2)}</span>
                 </div>
               </div>
             </div>

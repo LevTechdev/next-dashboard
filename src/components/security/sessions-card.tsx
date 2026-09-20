@@ -36,6 +36,7 @@ export function SessionsCard({ data }: { data: SecurityData }) {
       title: t("revokeAllTitle"),
       description: t("revokeAllDesc"),
       confirmLabel: t("revokeAll"),
+      icon: "key",
       destructive: true,
     });
     if (!ok) return;
@@ -78,11 +79,24 @@ export function SessionsCard({ data }: { data: SecurityData }) {
                 <Monitor className="h-4 w-4 text-gray-500" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium flex items-center gap-2">
-                  {s.browser || "Unknown"} · {s.device || "Unknown"}
+                <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                  <span>
+                    {s.browser || "Unknown"} · {s.device || "Unknown"}
+                  </span>
                   {s.current && (
                     <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                       {t("thisDevice")}
+                    </Badge>
+                  )}
+                  {typeof s.recognized === "boolean" && !s.current && (
+                    <Badge
+                      className={
+                        s.recognized
+                          ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      }
+                    >
+                      {s.recognized ? t("sessionRecognized") : t("sessionNew")}
                     </Badge>
                   )}
                 </div>

@@ -13,6 +13,8 @@ const baseData = (overrides: Partial<SecurityData> = {}): SecurityData => ({
   totpEnabled: null,
   emailVerified: null,
   mfaVerifiedRecently: false,
+  mfaLastVerifiedAt: "2026-09-10T09:00:00.000Z",
+  mfaDaysSince: 9,
   loading: false,
   refresh: vi.fn().mockResolvedValue(undefined),
   ...overrides,

@@ -7,8 +7,6 @@ import {
   Sparkles,
   ArrowRight,
   ChevronRight,
-  Sun,
-  Moon,
   Monitor,
   Route,
   LayoutGrid,
@@ -18,7 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
 
 interface HeroOverviewProps {
   locale: string;
@@ -69,15 +67,17 @@ const signalStripItems = [
 ] as const;
 
 export default function HeroOverview({ locale, t, revealed = true }: HeroOverviewProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  // Theme is read (never toggled) here: the ambient gradient mesh below picks
+  // the dark or light scene from the resolved theme. The day/night toggle that
+  // used to live in the top bar was removed — the marketing header owns the
+  // single global theme control.
+  const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const toggleDayNight = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <section
@@ -137,56 +137,28 @@ export default function HeroOverview({ locale, t, revealed = true }: HeroOvervie
           <span>{t("hero.terminal.liveStream")}</span>
         </div>
       </div>
-      {/* ═══ Top bar: tagline badge + day/night toggle ═══ */}
+      {/* ═══ Top bar: announcement badge (theme toggle lives in the navbar) ═══ */}
       <div
         className={cn(
-          "relative z-30 pt-24 px-4 sm:px-8 max-w-7xl mx-auto w-full flex items-center justify-between pointer-events-auto",
+          "relative z-30 pt-24 px-4 sm:px-8 max-w-7xl mx-auto w-full flex flex-wrap items-center justify-center gap-3 pointer-events-auto",
           revealClass(revealed),
         )}
         style={{ transitionDelay: revealed ? "120ms" : "0ms" }}
       >
-        <div
-          className={cn(
-            "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold backdrop-blur-md shadow-md",
-            isDark
-              ? "border-sky-500/30 bg-black/50 text-sky-200 shadow-sky-950/40"
-              : "border-white/60 bg-white/70 text-zinc-900 shadow-zinc-200/50",
-          )}
+        {/* SaaS-reference announcement pill: message + Read more arrow */}
+        <Link
+          href={`/${locale}/changelog`}
+          className="group inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-full border text-xs backdrop-blur-sm shadow-md transition-all duration-300 hover:scale-[1.03] active:scale-95 max-w-full"
+          aria-label={t("hero.changelogAria")}
         >
           <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
-          <span>{t("heroTag")}</span>
-          <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-        </div>
-
-        <button
-          onClick={toggleDayNight}
-          className={cn(
-            "group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-medium backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 shadow-md cursor-pointer",
-            isDark
-              ? "border-amber-400/30 bg-black/60 text-amber-300 hover:bg-black/80 hover:border-amber-400/60 shadow-amber-950/30"
-              : "border-zinc-300/80 bg-white/80 text-zinc-800 hover:bg-white hover:border-zinc-400 shadow-zinc-200/60",
-          )}
-          title={isDark ? t("hero.mode.switchDay") : t("hero.mode.switchNight")}
-          aria-label={isDark ? t("hero.mode.switchDay") : t("hero.mode.switchNight")}
-        >
-          {isDark ? (
-            <>
-              <Moon className="h-3.5 w-3.5 text-sky-400" />
-              <span>{t("hero.mode.night")}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/50">
-                {t("hero.mode.active")}
-              </span>
-            </>
-          ) : (
-            <>
-              <Sun className="h-3.5 w-3.5 text-amber-500" />
-              <span>{t("hero.mode.day")}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                {t("hero.mode.active")}
-              </span>
-            </>
-          )}
-        </button>
+          <span className="font-semibold text-foreground">{t("heroTag")}</span>
+          <span className="hidden sm:inline text-muted-foreground">{t("hero.announcement")}</span>
+          <span className="inline-flex items-center gap-0.5 text-muted-foreground group-hover:text-foreground transition-colors whitespace-nowrap">
+            {t("hero.readMore")}
+            <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </span>
+        </Link>
       </div>
       {/* ═══ Headline + CTAs + trust metrics ═══ */}
       <div
@@ -196,14 +168,26 @@ export default function HeroOverview({ locale, t, revealed = true }: HeroOvervie
         )}
         style={{ transitionDelay: revealed ? "260ms" : "0ms" }}
       >
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-center">
-          {t("heroPrefix")}{" "}
-          <span className="block mt-2">
-            <FlipFadeText
-              words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
-              interval={2600}
-              className="!min-h-[1.2em] inline-flex justify-center"
-              textClassName="!text-4xl sm:!text-5xl md:!text-6xl lg:!text-7xl !font-bold !tracking-tight !normal-case text-accent-gradient"
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.03em] leading-[1.05] text-center">
+          <span className="bg-gradient-to-b from-foreground via-foreground to-foreground/55 bg-clip-text text-transparent">
+            {t("heroPrefix")}
+          </span>{" "}
+          <span className="mt-2 block">
+            {/* Real hero copy, revealed by the chromatic sweep: each localized
+                word sweeps in, holds, and hands off to the next phrase. */}
+            <DiaTextReveal
+              text={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+              repeat
+              fixedWidth
+              duration={1.1}
+              holdDuration={1.9}
+              colors={[
+                "hsl(var(--primary))",
+                "color-mix(in oklab, hsl(var(--primary)) 45%, #fff)",
+                "hsl(var(--primary))",
+              ]}
+              textColor="hsl(var(--primary))"
+              className="text-4xl font-bold tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-7xl"
             />
           </span>
         </h1>

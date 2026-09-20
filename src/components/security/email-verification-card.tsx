@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertTriangle, KeyRound, Loader2, Mail, Timer } from "lucide-react";
+import { AlertTriangle, Loader2, Mail, Timer } from "lucide-react";
 import { CheckIcon, CheckCheckIcon, CopyIcon, MailCheckIcon } from "lucide-animated";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CodeSlots } from "@/components/ui/code-slots";
 import { toast } from "sonner";
 import type { SecurityData } from "@/components/security/use-security-data";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
@@ -34,6 +34,9 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
   const [otp, setOtp] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  // Drives CodeSlots' destructive treatment on a rejected code; cleared when
+  // the component finishes draining (onChange("")).
+  const [otpRejected, setOtpRejected] = useState(false);
   // Guards the OTP submission against double-firing: the auto-submit on the
   // 6th digit and a click on "Verify" for the same code can both trigger
   // verification, so the second call is a no-op while the first is in flight.
@@ -80,6 +83,7 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
     if (otpSubmittingRef.current) return;
     if (!/^\d{6}$/.test(code)) {
       setOtpError(t("otpInvalidFormat"));
+      setOtpRejected(true);
       return;
     }
     otpSubmittingRef.current = true;
@@ -100,6 +104,7 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
         else if (typeof d.attemptsLeft === "number")
           setOtpError(t("otpInvalid", { attemptsLeft: d.attemptsLeft }));
         else setOtpError(t("otpInvalidFinal"));
+        setOtpRejected(true);
         return;
       }
       toast.success(t("emailVerifiedToast"));
@@ -108,6 +113,7 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
       refreshUser();
     } catch {
       setOtpError(t("otpGenericError"));
+      setOtpRejected(true);
     } finally {
       otpSubmittingRef.current = false;
       setVerifying(false);
@@ -183,32 +189,26 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
               >
                 {t("otpLabel")}
               </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="verify-otp-input"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    pattern="\d{6}"
-                    value={otp}
-                    onChange={(e) => {
-                      const next = e.target.value.replace(/\D/g, "");
-                      setOtp(next);
-                      // Auto-submit the moment the 6th digit lands — same
-                      // pattern as the register page and login TOTP prompt.
-                      // Correcting a digit back to 6 re-verifies; the submit
-                      // button stays as a fallback (guarded against the
-                      // double-fire by otpSubmittingRef).
-                      if (next.length === 6) verifyOtpCode(next);
-                    }}
-                    placeholder={t("otpPlaceholder")}
-                    className="pl-9 text-center tracking-[0.4em] font-semibold"
-                    disabled={verifying}
-                  />
-                </div>
+              <div className="flex flex-col items-center gap-2 sm:flex-row">
+                {/* CodeSlots: the same animated code control used everywhere a
+                    six-digit code is entered. Auto-submits on the 6th digit —
+                    correcting a digit back to 6 re-verifies; the submit button
+                    stays as a fallback (guarded by otpSubmittingRef). */}
+                <CodeSlots
+                  inputId="verify-otp-input"
+                  value={otp}
+                  onChange={(code) => {
+                    setOtp(code);
+                    if (code.length === 0 && otpRejected) setOtpRejected(false);
+                    if (code.length === 6) verifyOtpCode(code);
+                  }}
+                  status={otpRejected ? "error" : "idle"}
+                  disabled={verifying}
+                  ariaLabel={t("otpLabel")}
+                  placeholder={t("otpPlaceholder")}
+                  slotSize={42}
+                  gap={5}
+                />
                 <Button type="submit" size="sm" disabled={verifying || otp.length !== 6 || sending}>
                   {verifying ? (
                     <>

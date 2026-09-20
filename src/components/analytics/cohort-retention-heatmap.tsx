@@ -10,10 +10,11 @@ import {
   ShieldCheckIcon,
   RefreshCwIcon,
   ZapIcon,
-  SparklesIcon,
+  LayoutGridIcon,
   HeartHandshakeIcon,
 } from "lucide-animated";
-import { AlertCircle, Award } from "lucide-react";
+import { AlertCircle, Award, Lock } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function CohortRetentionHeatmap() {
   const { currency, formatMoney } = useCurrency();
 
   const [data, setData] = useState<CohortAnalyticsResponse | null>(null);
+  const [upgradeRequired, setUpgradeRequired] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<{
@@ -56,6 +58,14 @@ export function CohortRetentionHeatmap() {
       setLoading(true);
       setError(null);
       const res = await fetch("/api/analytics/cohorts");
+      if (res.status === 402) {
+        // PRO-gated: the API returned the upgrade challenge — show the
+        // upsell empty-state instead of a generic error.
+        setUpgradeRequired(true);
+        setError(null);
+        return;
+      }
+      setUpgradeRequired(false);
       if (!res.ok) throw new Error("Failed to load cohort analytics");
       const json: CohortAnalyticsResponse = await res.json();
       setData(json);
@@ -77,6 +87,32 @@ export function CohortRetentionHeatmap() {
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
           {t("calculatingCohorts")}
         </p>
+      </div>
+    );
+  }
+
+  if (upgradeRequired) {
+    return (
+      <div className="relative overflow-hidden p-8 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border border-primary/20 rounded-2xl text-center space-y-3">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Lock className="h-6 w-6" />
+        </div>
+        <p className="text-sm font-semibold">{t("upsellTitle")}</p>
+        <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+          {t("upsellDesc")}
+        </p>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <Button size="sm" variant="outline" onClick={fetchData}>
+            <RefreshCwIcon size={14} className="mr-1.5 h-3.5 w-3.5" />
+            {tc("retry")}
+          </Button>
+          <Button size="sm" className="gap-1.5" asChild>
+            <Link href="/en/billing">
+              <Lock className="h-3.5 w-3.5" />
+              {t("upsellCta")}
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -191,7 +227,7 @@ export function CohortRetentionHeatmap() {
                 </span>
               </div>
             </div>
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl text-indigo-600 dark:text-indigo-400">
+            <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
               <ZapIcon size={20} className="h-5 w-5" />
             </div>
           </CardContent>
@@ -228,7 +264,7 @@ export function CohortRetentionHeatmap() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <SparklesIcon size={20} className="h-5 w-5 text-emerald-500" />
+                <LayoutGridIcon size={20} className="h-5 w-5 text-emerald-500" />
                 {t("matrixTitle")}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">{t("matrixSubtitle")}</CardDescription>
@@ -424,12 +460,13 @@ export function CohortRetentionHeatmap() {
                     domain={[0, "auto"]}
                   />
                   <Tooltip
+                    cursor={{ stroke: "hsl(var(--border))" }}
                     content={({ active, payload, label }) => {
                       if (!active || !payload || !payload.length) return null;
                       const pt = payload[0].payload as LtvCacPoint;
                       return (
-                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 rounded-xl shadow-lg text-xs space-y-1">
-                          <p className="font-bold text-gray-900 dark:text-white">
+                        <div className="rounded-xl border border-white/50 bg-white/70 text-gray-900 shadow-xl backdrop-blur-md dark:border-border dark:bg-card/95 dark:text-card-foreground p-3 text-xs space-y-1 tabular-nums pointer-events-none">
+                          <p className="font-bold text-gray-900 dark:text-card-foreground">
                             Month {pt.month} ({pt.label})
                           </p>
                           <div className="flex items-center justify-between gap-4 text-emerald-600">
@@ -438,11 +475,11 @@ export function CohortRetentionHeatmap() {
                               {formatMoney(pt.cumulativeLtv, "USD")}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between gap-4 text-gray-500">
+                          <div className="flex items-center justify-between gap-4 text-gray-500 dark:text-muted-foreground">
                             <span>Blended CAC:</span>
                             <span>{formatMoney(pt.blendedCac, "USD")}</span>
                           </div>
-                          <div className="flex items-center justify-between gap-4 font-semibold text-primary pt-1 border-t border-gray-100 dark:border-gray-800">
+                          <div className="flex items-center justify-between gap-4 font-semibold text-primary pt-1 border-t border-white/50 dark:border-border">
                             <span>LTV : CAC:</span>
                             <span>{pt.ratio}x</span>
                           </div>

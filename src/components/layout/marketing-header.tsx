@@ -3,40 +3,24 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
-import {
-  XIcon,
-  MenuIcon,
-  ChevronRightIcon,
-  SparklesIcon,
-  LayersIcon,
-  SunIcon,
-  MoonIcon,
-  MessageSquareIcon,
-} from "lucide-animated";
-import {
-  BarChart3Icon,
-  LayoutGridIcon,
-  CircleDollarSignIcon,
-  UsersIcon,
-  ShieldIcon,
-  ZapIcon,
-  GlobeIcon,
-} from "lucide-react";
+import { XIcon, MenuIcon, ChevronRightIcon } from "lucide-animated";
+import { BarChart3Icon, ShieldIcon, ZapIcon, GlobeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StaggerButton } from "@/components/sora-ui/buttons/stagger-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { LanguageToggle } from "@/components/layout/language-toggle";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
   const params = useParams();
   const pathname = usePathname();
   const locale = (params?.locale as string) || "en";
-  const { theme, setTheme } = useTheme();
   const t = useTranslations("site");
   const [mounted, setMounted] = useState(false);
   const { trackLanguageSwitch } = useAnalytics();
@@ -67,7 +51,14 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
     }
   }, [locale, prevLocale, trackLanguageSwitch]);
 
-  const isLinkActive = (href: string) => pathname.startsWith(`/${locale}${href}`);
+  // Segment-aware active check: exact match, or the href followed by "/". Any
+  // in-page anchor is stripped first — the Features mega-menu deep-links carry
+  // a hash (#analytics) that never appears in usePathname(), and a naive
+  // startsWith would also light up /en/features while on /en/features-old.
+  const isLinkActive = (href: string) => {
+    const base = `/${locale}${href.split("#")[0]}`;
+    return pathname === base || pathname.startsWith(`${base}/`);
+  };
 
   const megaMenuItems = [
     {
@@ -104,12 +95,14 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
     },
   ];
 
+  // Text-only links: the leading feature icons were removed so the nav reads as
+  // one typographic row (the mega menu keeps its icons as content markers).
   const standardNavLinks = [
-    { labelKey: "navIntegrations", href: "/integrations-overview", icon: LayersIcon },
-    { labelKey: "navPricing", href: "/pricing", icon: CircleDollarSignIcon },
-    { labelKey: "navChangelog", href: "/changelog", icon: SparklesIcon },
-    { labelKey: "navAbout", href: "/about", icon: UsersIcon },
-    { labelKey: "navContact", href: "/contact", icon: MessageSquareIcon },
+    { labelKey: "navIntegrations", href: "/integrations-overview" },
+    { labelKey: "navPricing", href: "/pricing" },
+    { labelKey: "navChangelog", href: "/changelog" },
+    { labelKey: "navAbout", href: "/about" },
+    { labelKey: "navContact", href: "/contact" },
   ] as const;
 
   return (
@@ -156,7 +149,6 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                     : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5",
                 )}
               >
-                <LayoutGridIcon size={14} className="h-3.5 w-3.5" />
                 {t("navFeatures")}
                 <ChevronRightIcon
                   size={12}
@@ -204,21 +196,20 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
 
             {standardNavLinks.map((link) => {
               const isActive = isLinkActive(link.href);
-              const Icon = link.icon;
               return (
-                <Link
+                <StaggerButton
                   key={link.href}
                   href={`/${locale}${link.href}`}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "relative flex items-center gap-1.5 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200 px-3 py-2 rounded-lg whitespace-nowrap",
+                    "relative rounded-lg px-3 py-2 text-[13px] font-medium tracking-[-0.01em] transition-colors duration-200 whitespace-nowrap",
                     isActive
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5",
                   )}
                 >
-                  <Icon size={14} className="h-3.5 w-3.5" />
                   {t(link.labelKey)}
-                </Link>
+                </StaggerButton>
               );
             })}
           </nav>
@@ -228,37 +219,30 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
             {/* Language Toggle — globe icon dropdown with all 4 locales */}
             <LanguageToggle locale={locale} pathname={pathname} />
 
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all motion-spring-fast"
-              aria-label="Toggle theme"
-            >
-              {mounted && theme === "dark" ? (
-                <SunIcon size={16} className="h-4 w-4" />
-              ) : (
-                <MoonIcon size={16} className="h-4 w-4" />
-              )}
-            </button>
+            {/* Theme Toggle — the shared button, so the reveal origin, the
+                hydration-safe icon and the localized label match the
+                dashboard header and the auth pages. */}
+            <ThemeToggleButton className="p-2 motion-spring-fast" side="bottom" />
 
             {/* CTAs */}
             <div className="hidden sm:flex items-center gap-2 ml-1 lg:ml-2">
               {!mounted || isLoading ? (
                 <div className="h-9 w-9 rounded-full bg-black/5 dark:bg-white/10 animate-pulse" />
               ) : isAuthenticated ? (
-                <Link
-                  href={`/${locale}/dashboard`}
-                  aria-label={t("myAccount")}
-                  title={user?.name || t("myAccount")}
-                  className="group flex items-center rounded-full press-scale"
-                >
-                  <Avatar className="h-9 w-9 ring-2 ring-primary/40 ring-offset-2 ring-offset-transparent transition-all group-hover:ring-primary/70">
-                    <AvatarImage src={user?.avatar || ""} alt={user?.name || ""} />
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
+                <Tooltip side="bottom" content={user?.name || t("myAccount")}>
+                  <Link
+                    href={`/${locale}/dashboard`}
+                    aria-label={t("myAccount")}
+                    className="group flex items-center rounded-full press-scale"
+                  >
+                    <Avatar className="h-9 w-9 ring-2 ring-primary/40 ring-offset-2 ring-offset-transparent transition-all group-hover:ring-primary/70">
+                      <AvatarImage src={user?.avatar || ""} alt={user?.name || ""} />
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                </Tooltip>
               ) : (
                 <>
                   <Link
@@ -300,23 +284,36 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
             className="lg:hidden overflow-hidden bg-background/95 backdrop-blur-xl border-b border-border"
           >
             <div className="p-4 flex flex-col gap-2">
+              {/* Mobile hamburger links carry the same active treatment as the
+                  desktop nav (bg-primary/10 + primary text + aria-current), so
+                  the current page is obvious at tablet/mobile widths too. */}
               <Link
                 href={`/${locale}/features`}
-                className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 font-medium"
+                aria-current={isLinkActive("/features") ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 p-3 rounded-lg font-medium transition-colors",
+                  isLinkActive("/features")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                )}
               >
-                <LayoutGridIcon size={16} className="text-primary" />
                 {t("navFeatures")}
               </Link>
 
               {standardNavLinks.map((link) => {
-                const Icon = link.icon;
+                const active = isLinkActive(link.href);
                 return (
                   <Link
                     key={link.href}
                     href={`/${locale}${link.href}`}
-                    className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground font-medium"
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-2 p-3 rounded-lg font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                    )}
                   >
-                    <Icon size={16} />
                     {t(link.labelKey)}
                   </Link>
                 );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Globe,
   Users,
@@ -143,8 +144,8 @@ const CITY_HUBS: CityTelemetryHub[] = [
     topProduct: "Enterprise Cloud Pro",
     edgeCluster: "OCN-SYD-01",
     status: "Operational",
-    color: "bg-indigo-500",
-    dotColor: "#6366f1",
+    color: "bg-primary",
+    dotColor: "hsl(var(--primary))",
   },
   {
     id: "dubai",
@@ -341,6 +342,19 @@ export function GlobalSalesMap() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
+  // Narrow stages (mobile) render the telemetry HUD as a pinned panel instead
+  // of a cursor-following tooltip, so it can never overflow the card.
+  const [stageNarrow, setStageNarrow] = useState(false);
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      setStageNarrow((entries[0]?.contentRect.width ?? 9999) < 480);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Active hub to display in result cards: hovered takes precedence, falls back to selected
   const activeHub = hoveredHub || selectedHub;
 
@@ -528,35 +542,38 @@ export function GlobalSalesMap() {
 
           {/* Floating Precision Zoom Controls (+ / - / ⟲) */}
           <div className="absolute bottom-12 sm:bottom-10 right-3 z-30 flex flex-col items-center rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-lg p-0.5 gap-0.5 transition-all">
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              aria-label={t("zoomIn")}
-              title={t("zoomIn")}
-              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
+            <Tooltip side="left" content={t("zoomIn")}>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                aria-label={t("zoomIn")}
+                className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
             <div className="w-4 h-[1px] bg-slate-200 dark:bg-slate-800" />
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              aria-label={t("zoomOut")}
-              title={t("zoomOut")}
-              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
+            <Tooltip side="left" content={t("zoomOut")}>
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                aria-label={t("zoomOut")}
+                className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
             <div className="w-4 h-[1px] bg-slate-200 dark:bg-slate-800" />
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              aria-label={t("resetView")}
-              title={t("resetView")}
-              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
-            >
-              <RotateCcw className="h-3 w-3" />
-            </button>
+            <Tooltip side="left" content={t("resetView")}>
+              <button
+                type="button"
+                onClick={handleResetZoom}
+                aria-label={t("resetView")}
+                className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+            </Tooltip>
           </div>
 
           {/* Floating Glassmorphism Telemetry HUD Tooltip (Synchronous across 3D & 2D) */}
@@ -565,8 +582,7 @@ export function GlobalSalesMap() {
               activeHub &&
               (() => {
                 const isFlipped = hudPos.yPct < 26;
-                const clampedX = Math.max(18, Math.min(82, hudPos.xPct));
-                const caretOffset = Math.max(12, Math.min(88, 50 + (hudPos.xPct - clampedX) * 2.2));
+                const clampedX = Math.max(20, Math.min(80, hudPos.xPct));
 
                 return (
                   <motion.div
@@ -574,27 +590,26 @@ export function GlobalSalesMap() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: isFlipped ? -4 : 4 }}
                     transition={{ duration: 0.15 }}
-                    style={{
-                      left: `${clampedX}%`,
-                      top: `${hudPos.yPct}%`,
-                    }}
+                    style={
+                      stageNarrow
+                        ? undefined
+                        : {
+                            left: `${clampedX}%`,
+                            top: `${hudPos.yPct}%`,
+                          }
+                    }
                     className={cn(
-                      "absolute -translate-x-1/2 pointer-events-none z-40",
-                      isFlipped ? "translate-y-4" : "-translate-y-[calc(100%+10px)]",
+                      "absolute pointer-events-none z-40",
+                      stageNarrow
+                        ? // Pinned panel: centered under the status pills, always inside the stage
+                          "left-1/2 -translate-x-1/2 top-14 w-[calc(100%-1.5rem)] max-w-[300px]"
+                        : cn(
+                            "-translate-x-1/2",
+                            isFlipped ? "translate-y-4" : "-translate-y-[calc(100%+10px)]",
+                          ),
                     )}
                   >
-                    <div className="relative p-3.5 rounded-xl bg-white/95 text-slate-900 border border-sky-400/60 shadow-2xl shadow-sky-950/20 backdrop-blur-md dark:bg-slate-950/95 dark:text-white dark:border-cyan-500/60 dark:shadow-[0_0_35px_rgba(6,182,212,0.35)] text-xs min-w-[240px] max-w-[290px] transition-all duration-200">
-                      {/* Reticle pointer caret dynamically aligned to city beacon */}
-                      <div
-                        style={{ left: `${caretOffset}%` }}
-                        className={cn(
-                          "absolute -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white dark:bg-slate-950 pointer-events-none",
-                          isFlipped
-                            ? "-top-1.5 border-l border-t border-sky-400/60 dark:border-cyan-500/60"
-                            : "-bottom-1.5 border-r border-b border-sky-400/60 dark:border-cyan-500/60",
-                        )}
-                      />
-
+                    <div className="relative p-3.5 rounded-xl bg-white/95 text-slate-900 border border-sky-400/60 shadow-2xl shadow-sky-950/20 backdrop-blur-md dark:bg-slate-950/95 dark:text-white dark:border-cyan-500/60 dark:shadow-[0_0_35px_rgba(6,182,212,0.35)] text-xs w-full sm:w-auto sm:min-w-[240px] sm:max-w-[290px] transition-all duration-200">
                       {/* City Header & Status */}
                       <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white truncate">

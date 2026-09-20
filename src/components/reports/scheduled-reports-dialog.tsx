@@ -128,7 +128,7 @@ export function ScheduledReportsDialog() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 text-xs border-indigo-500/30 hover:border-indigo-500/50"
+          className="gap-2 text-xs border-primary/30 hover:border-primary/50"
         >
           <Mail className="h-3.5 w-3.5 text-indigo-500" />
           {t("buttonLabel")}
@@ -158,7 +158,7 @@ export function ScheduledReportsDialog() {
                   onClick={() => setFrequency(freq)}
                   className={`p-2.5 rounded-lg border text-xs font-semibold transition-all ${
                     frequency === freq
-                      ? "border-indigo-600 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      ? "border-primary bg-primary/10 text-primary shadow-sm"
                       : "border-border hover:bg-muted/50 text-muted-foreground"
                   }`}
                 >
@@ -265,7 +265,7 @@ export function ScheduledReportsDialog() {
               type="button"
               variant="outline"
               size="sm"
-              className="gap-2 text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+              className="gap-2 text-xs text-primary border-primary/30"
               onClick={handleSendTestNow}
               disabled={sendingTest}
             >

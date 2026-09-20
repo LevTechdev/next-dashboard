@@ -182,6 +182,7 @@ export function SsoSettings() {
     const ok = await confirm({
       title: t("deleteTitle"),
       description: t("deleteDesc"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;

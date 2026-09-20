@@ -24,6 +24,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrency } from "@/components/currency-provider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -153,54 +154,61 @@ export function FunnelConversionIntelligence() {
 
           {/* Device Segment Selector */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
-            <button
-              onClick={() => setDevice("all")}
-              className={cn(
-                "px-2 py-1 rounded-md transition cursor-pointer",
-                device === "all"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
-                  : "text-slate-600 dark:text-slate-400",
-              )}
-              title={t("deviceAll")}
-            >
-              {t("deviceAll")}
-            </button>
-            <button
-              onClick={() => setDevice("mobile")}
-              className={cn(
-                "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
-                device === "mobile"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
-                  : "text-slate-600 dark:text-slate-400",
-              )}
-              title={t("deviceMobile")}
-            >
-              <Smartphone className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => setDevice("desktop")}
-              className={cn(
-                "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
-                device === "desktop"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
-                  : "text-slate-600 dark:text-slate-400",
-              )}
-              title={t("deviceDesktop")}
-            >
-              <Laptop className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => setDevice("tablet")}
-              className={cn(
-                "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
-                device === "tablet"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
-                  : "text-slate-600 dark:text-slate-400",
-              )}
-              title={t("deviceTablet")}
-            >
-              <TabletIcon className="h-3 w-3" />
-            </button>
+            <Tooltip side="top" content={t("deviceAll")}>
+              <button
+                onClick={() => setDevice("all")}
+                className={cn(
+                  "px-2 py-1 rounded-md transition cursor-pointer",
+                  device === "all"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
+                )}
+              >
+                {t("deviceAll")}
+              </button>
+            </Tooltip>
+            <Tooltip side="top" content={t("deviceMobile")}>
+              <button
+                onClick={() => setDevice("mobile")}
+                aria-label={t("deviceMobile")}
+                className={cn(
+                  "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
+                  device === "mobile"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
+                )}
+              >
+                <Smartphone className="h-3 w-3" />
+              </button>
+            </Tooltip>
+            <Tooltip side="top" content={t("deviceDesktop")}>
+              <button
+                onClick={() => setDevice("desktop")}
+                aria-label={t("deviceDesktop")}
+                className={cn(
+                  "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
+                  device === "desktop"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
+                )}
+              >
+                <Laptop className="h-3 w-3" />
+              </button>
+            </Tooltip>
+            <Tooltip side="top" content={t("deviceTablet")}>
+              <button
+                onClick={() => setDevice("tablet")}
+                aria-label={t("deviceTablet")}
+                className={cn(
+                  "px-2 py-1 rounded-md transition cursor-pointer flex items-center gap-1",
+                  device === "tablet"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
+                )}
+              >
+                <TabletIcon className="h-3 w-3" />
+              </button>
+            </Tooltip>
           </div>
 
           {/* Timeframe Selector */}
@@ -269,11 +277,11 @@ export function FunnelConversionIntelligence() {
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {t("overallRate")}
               </span>
-              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                 <TrendingUp className="h-4 w-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 mt-2 font-mono">
+            <div className="text-2xl font-bold tracking-tight text-primary mt-2 font-mono">
               {data.summary.overallConversionRate}%
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">

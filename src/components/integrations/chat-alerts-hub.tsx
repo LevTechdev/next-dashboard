@@ -46,6 +46,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ConfirmProvider, useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   ChatChannelConfig,
   ChatAlertTriggerRules,
@@ -55,8 +57,17 @@ import {
 import { ChatPlatform, ChatAlertType } from "@/lib/chat-alerts";
 
 export function ChatAlertsHub() {
+  return (
+    <ConfirmProvider>
+      <ChatAlertsHubInner />
+    </ConfirmProvider>
+  );
+}
+
+function ChatAlertsHubInner() {
   const t = useTranslations("chatAlerts");
   const tc = useTranslations("common");
+  const confirm = useConfirm();
 
   const [data, setData] = useState<ChatAlertsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,7 +163,12 @@ export function ChatAlertsHub() {
   };
 
   const handleDeleteChannel = async (id: string) => {
-    if (!confirm(t("confirmDeleteChannel"))) return;
+    const ok = await confirm({
+      description: t("confirmDeleteChannel"),
+      icon: "trash",
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`/api/integrations/chat-alerts?id=${id}`, {
@@ -408,18 +424,20 @@ export function ChatAlertsHub() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-800 gap-2">
                       <div className="flex items-center gap-1.5 font-mono text-[11px] truncate max-w-xs text-gray-400">
                         <span>{chan.webhookUrl.slice(0, 32)}...</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(chan.webhookUrl, chan.id)}
-                          className="hover:text-primary transition-colors ml-1"
-                          title={tc("copy")}
-                        >
-                          {copiedId === chan.id ? (
-                            <CheckIcon size={12} className="h-3 w-3 text-emerald-500" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </button>
+                        <Tooltip content={tc("copy")} side="top">
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(chan.webhookUrl, chan.id)}
+                            className="hover:text-primary transition-colors ml-1"
+                            aria-label={tc("copy")}
+                          >
+                            {copiedId === chan.id ? (
+                              <CheckIcon size={12} className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </button>
+                        </Tooltip>
                       </div>
 
                       <div className="flex items-center gap-2 text-[11px]">
@@ -643,7 +661,7 @@ export function ChatAlertsHub() {
                           log.status === "DELIVERED"
                             ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200"
                             : log.status === "SIMULATED"
-                              ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200"
+                              ? "text-primary bg-primary/10 border-primary/30"
                               : "text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200",
                         )}
                       >

@@ -38,6 +38,11 @@ export function ThemeTransitionWatcher() {
       const dark = html.classList.contains("dark");
       if (dark === prevDark) return;
       prevDark = dark;
+      // A reveal (use-theme-reveal.ts) already animates this switch, and it
+      // rasterises the new theme as soon as the class flips — a 450ms colour
+      // transition here would be captured mid-flight, so the revealed frame
+      // would show the OLD colours and only settle once the wipe ends.
+      if (html.hasAttribute("data-theme-reveal")) return;
       suppress = true;
       html.classList.add("theme-transitioning");
       if (timerRef.current) clearTimeout(timerRef.current);

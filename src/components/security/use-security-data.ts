@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { isMfaVerificationEventType, MFA_VERIFIED_RECENT_DAYS } from "@/lib/security-score";
+import {
+  daysSinceMfaVerification,
+  isMfaVerificationEventType,
+  MFA_VERIFIED_RECENT_DAYS,
+} from "@/lib/security-score";
 
 export interface SessionRow {
   id: string;
@@ -12,6 +16,8 @@ export interface SessionRow {
   lastActiveAt: string;
   createdAt: string;
   current: boolean;
+  /** Both device profile and IP seen on an earlier session of this user. */
+  recognized?: boolean;
 }
 
 export interface SecurityEventRow {
@@ -19,6 +25,15 @@ export interface SecurityEventRow {
   type: string;
   ip: string | null;
   createdAt: string;
+  /** Structured payload (rate-limit counters, endpoint, blocked flag…). */
+  metadata?: {
+    endpoint?: string;
+    attempt?: number;
+    limit?: number;
+    blocked?: boolean;
+    email?: string;
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface PasskeyRow {
@@ -39,6 +54,14 @@ export interface SecurityData {
   emailVerified: string | null;
   /** Whether an MFA method was verified within the last 30 days. */
   mfaVerifiedRecently: boolean;
+  /**
+   * ISO timestamp of the newest MFA-verification event (TOTP, passkey login,
+   * backup code) visible in the fetched window — null when none exists.
+   * Backs the visible days-since counter for the 30-day policy.
+   */
+  mfaLastVerifiedAt: string | null;
+  /** Whole days since that verification (null = never verified). */
+  mfaDaysSince: number | null;
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -73,12 +96,17 @@ export function useSecurityData(): SecurityData {
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
   const [emailVerified, setEmailVerified] = useState<string | null>(null);
   const [mfaVerifiedRecently, setMfaVerifiedRecently] = useState(false);
+  const [mfaLastVerifiedAt, setMfaLastVerifiedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     const [s, e, b, p, pr] = await Promise.allSettled([
       fetch("/api/auth/sessions").then((r) => json<SessionRow[]>(r, [])),
-      fetch("/api/auth/security-events").then((r) => json<SecurityEventRow[]>(r, [])),
+      // 30 events (not 20) so the telemetry panel has enough RATE_LIMITED /
+      // ACCOUNT_LOCKED rows to summarize even on busy accounts.
+      // take=60: wide enough that seeded demo telemetry (RATE_LIMITED /
+      // ACCOUNT_LOCKED) stays visible alongside normal sign-in traffic.
+      fetch("/api/auth/security-events?take=60").then((r) => json<SecurityEventRow[]>(r, [])),
       fetch("/api/auth/backup-codes")
         .then((r) => json<{ remaining: number }>(r, { remaining: 0 }))
         .then((d) => d.remaining ?? 0),
@@ -92,6 +120,10 @@ export function useSecurityData(): SecurityData {
       setEvents(e.value);
       // MFA verification is rewarded if a real second-factor proof happened
       // within the recency window (TOTP, passkey login, or backup code).
+      // Events arrive newest-first, so the first hit is the newest proof —
+      // the same timestamp the visible days-since counter renders.
+      const newestProof = e.value.find((ev) => isMfaVerificationEventType(ev.type));
+      setMfaLastVerifiedAt(newestProof ? newestProof.createdAt : null);
       setMfaVerifiedRecently(
         e.value.some(
           (ev) =>
@@ -126,6 +158,9 @@ export function useSecurityData(): SecurityData {
     totpEnabled,
     emailVerified,
     mfaVerifiedRecently,
+    mfaLastVerifiedAt,
+    // Computed on fetch completion (client-only), never during SSR render.
+    mfaDaysSince: daysSinceMfaVerification(mfaLastVerifiedAt),
     loading,
     refresh,
   };

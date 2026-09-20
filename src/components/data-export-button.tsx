@@ -307,7 +307,7 @@ export function DataExportButton<T = any>({
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-150",
                     isSelected
-                      ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300"
+                      ? "bg-primary/10 text-primary"
                       : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50",
                   )}
                 >
@@ -315,7 +315,7 @@ export function DataExportButton<T = any>({
                     className={cn(
                       "w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0",
                       isSelected
-                        ? "border-indigo-500 bg-indigo-500"
+                        ? "border-primary bg-primary"
                         : "border-gray-300 dark:border-gray-600",
                     )}
                   >

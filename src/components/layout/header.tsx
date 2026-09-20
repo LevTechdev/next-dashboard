@@ -11,10 +11,20 @@ import {
   SettingsIcon,
   MenuIcon,
 } from "lucide-animated";
-import { Monitor, Command, WifiOff, Loader2 } from "lucide-react";
+import {
+  Monitor,
+  Command,
+  WifiOff,
+  Loader2,
+  CreditCard,
+  Bell,
+  KeyRound,
+  Shield,
+} from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { useTheme } from "next-themes";
-import { useState, useEffect, useRef } from "react";
+import { useThemeReveal } from "@/hooks/use-theme-reveal";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -165,10 +175,28 @@ function RealtimeConnectionBadge() {
 }
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
+  const { select: selectTheme } = useThemeReveal();
   const pathname = usePathname();
+  const { unreadCount } = useRealtime();
+  const locale = pathname.split("/")[1] || "en";
   const [mounted, setMounted] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+
+  // Navigation links inside the user dropdown must close the menu so the
+  // destination page is revealed cleanly (previously the menu stayed open).
+  const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
+  // Theme switches made from this menu reveal FROM the pressed button (see
+  // use-theme-reveal.ts). The menu closes first so the switch is judged on the
+  // page behind it instead of on a frozen open panel.
+  const chooseTheme = useCallback(
+    (next: string, origin: Element | null) => {
+      setUserMenuOpen(false);
+      selectTheme(next, { origin: origin ?? "center" });
+    },
+    [selectTheme],
+  );
   const tnav = useTranslations("nav");
   const tcommon = useTranslations("common");
   const tsettings = useTranslations("settings");
@@ -241,7 +269,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
         {/* Center: Search / Command Palette Trigger (Centered with generous spacing) */}
         <div className="flex-1 flex justify-center items-center px-2 sm:px-6">
-          <div className="w-full max-w-[220px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px] hidden sm:block">
+          <div className="tour-search-bar w-full max-w-[220px] sm:max-w-[280px] md:max-w-[360px] lg:max-w-[440px] hidden sm:block">
             <button onClick={openSearch} className="relative w-full group">
               <div className="flex items-center gap-2 sm:gap-3 h-9 px-3 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700/50 rounded-xl cursor-pointer group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-all duration-200 group-hover:shadow-sm">
                 <SearchIcon size={16} className="h-4 w-4 text-gray-400 shrink-0" />
@@ -262,59 +290,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* Real-time Connection Status */}
           <RealtimeConnectionBadge />
 
-          {/* Theme Toggle */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-500 active:scale-95 transition-transform duration-150 rounded-xl"
-                aria-label={tsettings("appearance")}
-              >
-                {mounted && theme === "dark" ? (
-                  <MoonIcon size={20} className="h-5 w-5" />
-                ) : mounted && theme === "light" ? (
-                  <SunIcon size={20} className="h-5 w-5" />
-                ) : (
-                  <Monitor className="h-5 w-5" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>{tsettings("appearance")}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {[
-                { key: "light", icon: SunIcon, label: tsettings("light") },
-                { key: "dark", icon: MoonIcon, label: tsettings("dark") },
-                { key: "system", icon: Monitor, label: tsettings("system") },
-              ].map(({ key, icon: Icon, label }) => {
-                const isSelected = mounted && theme === key;
-                return (
-                  <DropdownMenuItem
-                    key={key}
-                    onClick={() => setTheme(key)}
-                    className={cn(
-                      "flex items-center gap-3 cursor-pointer group rounded-lg",
-                      isSelected
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-gray-700 dark:text-gray-300",
-                    )}
-                  >
-                    <Icon size={16} className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-sm">{label}</span>
-                    {isSelected ? (
-                      <CheckIcon
-                        size={16}
-                        className="h-4 w-4 text-primary animate-in zoom-in-50 duration-200"
-                      />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Theme toggle lives in the avatar dropdown → Appearance submenu */}
 
           {/* Currency Switcher */}
           <div className="hidden lg:block">
@@ -326,14 +302,21 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             <LanguageToggle locale={pathname.split("/")[1] || "en"} pathname={pathname} />
           </div>
 
-          {/* Notifications */}
+          {/* Notifications — the standalone bell is desktop-only (lg+); on
+              tablet & mobile the avatar dropdown's Notifications item fires
+              dashboard:open-notifications, which opens this same panel. The
+              trigger button is hidden below lg via the panel's own responsive
+              class so the OPENED panel (absolute-positioned) still shows. */}
           <NotificationPanel />
 
           {/* Command Palette (rendered outside the header) */}
           <CommandPalette />
 
           {/* User Menu */}
-          <DropdownMenu>
+          {/* Controlled open state: clicking a nav item closes the menu before
+              the router navigates (Radix keeps it open otherwise, leaving the
+              menu rendered over the destination page). */}
+          <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2 px-2 rounded-xl">
                 <Avatar className="h-8 w-8 ring-2 ring-primary/30 dark:ring-primary/40 ring-offset-2 ring-offset-transparent">
@@ -355,34 +338,156 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span>{user?.name}</span>
-                  <span className="text-xs text-gray-400 font-normal">{user?.email}</span>
+            <DropdownMenuContent
+              align="end"
+              className="w-64 rounded-[26px] p-2 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] outline-none space-y-0.5"
+            >
+              {/* User summary header */}
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] mb-1">
+                <Avatar className="h-8 w-8 ring-1 ring-black/5 dark:ring-white/10">
+                  <AvatarImage
+                    src={user?.avatar || (user as any)?.picture || ""}
+                    alt={user?.name || ""}
+                  />
+                  <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-foreground truncate">
+                    {user?.name || "User"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate">{user?.email}</span>
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              </div>
+
+              {/* 1. Profile */}
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/${pathname.split("/")[1]}/profile`}
-                  className="flex items-center cursor-pointer"
+                  href={`/${locale}/profile`}
+                  onClick={closeUserMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
                 >
-                  <UserIcon size={16} className="h-4 w-4 mr-2" /> {tnav("profile")}
+                  <UserIcon size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">{tnav("profile")}</span>
                 </Link>
               </DropdownMenuItem>
+
+              {/* 2. Security */}
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/${pathname.split("/")[1]}/settings`}
-                  className="flex items-center cursor-pointer"
+                  href={`/${locale}/security`}
+                  onClick={closeUserMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
                 >
-                  <SettingsIcon size={16} className="h-4 w-4 mr-2" /> {tnav("settings")}
+                  <Shield size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">{tnav("security")}</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+
+              {/* 3. Notifications */}
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent("dashboard:open-notifications"));
+                }}
+                className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
+              >
+                <Bell size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="flex-1">{tnav("notifications")}</span>
+                {mounted && unreadCount > 0 && (
+                  <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </DropdownMenuItem>
+
+              {/* 4. Billings */}
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${locale}/billing`}
+                  onClick={closeUserMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
+                >
+                  <CreditCard size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">{tnav("billing")}</span>
+                </Link>
+              </DropdownMenuItem>
+
+              {/* 5. Api Keys */}
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${locale}/api-docs`}
+                  onClick={closeUserMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
+                >
+                  <KeyRound size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">{tnav("apiKeys")}</span>
+                </Link>
+              </DropdownMenuItem>
+
+              {/* 6. Settings */}
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/${locale}/settings`}
+                  onClick={closeUserMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08] focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
+                >
+                  <SettingsIcon size={16} className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">{tnav("settings")}</span>
+                </Link>
+              </DropdownMenuItem>
+
+              {/* 7. Theme toggle */}
+              <div className="my-1.5 h-px bg-black/[0.06] dark:bg-white/[0.08]" />
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03]">
+                <span className="flex-1 text-xs text-muted-foreground">
+                  {tsettings("theme") || "Theme"}
+                </span>
+                <div className="flex items-center gap-1 p-0.5 rounded-xl bg-black/5 dark:bg-white/10 shrink-0">
+                  <button
+                    onClick={(event) => chooseTheme("light", event.currentTarget)}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all cursor-pointer",
+                      mounted && theme === "light"
+                        ? "bg-white dark:bg-zinc-800 text-amber-500 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label={tsettings("light")}
+                  >
+                    <SunIcon size={14} className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={(event) => chooseTheme("dark", event.currentTarget)}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all cursor-pointer",
+                      mounted && theme === "dark"
+                        ? "bg-white dark:bg-zinc-800 text-sky-400 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label={tsettings("dark")}
+                  >
+                    <MoonIcon size={14} className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={(event) => chooseTheme("system", event.currentTarget)}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all cursor-pointer",
+                      mounted && theme === "system"
+                        ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label={tsettings("system")}
+                  >
+                    <Monitor size={14} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 8. Log out */}
+              <div className="my-1.5 h-px bg-black/[0.06] dark:bg-white/[0.08]" />
               <DropdownMenuItem
                 onSelect={async (e) => {
                   e.preventDefault();
+                  setUserMenuOpen(false);
                   const ok = await confirm({
                     title: tnav("logoutConfirmTitle"),
                     description: tnav("logoutConfirmDesc"),
@@ -391,9 +496,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   });
                   if (ok) logout();
                 }}
-                className="text-red-600 dark:text-red-400 w-full flex items-center cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors"
               >
-                <LogoutIcon size={16} className="h-4 w-4 mr-2" /> {tnav("logout")}
+                <LogoutIcon size={16} className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{tnav("logout")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

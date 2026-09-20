@@ -10,20 +10,34 @@ import {
   Check,
   Palette,
   Sparkles,
+  ImagePlus,
+  SwatchBook,
   ShieldCheck,
   Save,
   Loader2,
   FileText,
   Building,
   RefreshCw,
+  Upload,
+  Link2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAppearance } from "@/hooks/use-appearance";
+import { LOGO_LIBRARY, logoEntryToDataUrl, logoLibraryIdFromUrl } from "@/lib/logo-icon-library";
 
 const THEME_PRESETS = [
   { key: "presetIndigo", hex: "#4f46e5", bg: "bg-indigo-600" },
@@ -43,6 +57,9 @@ export function WhiteLabelBranding() {
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
 
   const [branding, setBranding] = useState({
     brandName: "Next Dashboard Enterprise",
@@ -56,6 +73,8 @@ export function WhiteLabelBranding() {
     accentColor: "#06b6d4",
     invoiceHeaderNote: "Thank you for your business. Please remit payment within terms.",
     invoiceFooterNote: "Registered Enterprise Inc. • Tax ID / NPWP: 01.234.567.8-901.000",
+    invoiceAddress: "Pacific Edge Tower, Level 24, Jakarta 10220, Indonesia",
+    taxId: "01.234.567.8-901.000",
     emailDigestSubject: "Executive Weekly Digest & KPI Report",
   });
 
@@ -139,6 +158,63 @@ export function WhiteLabelBranding() {
   const handleSelectColor = (hex: string) => {
     setBranding((prev) => ({ ...prev, primaryColor: hex }));
     document.documentElement.style.setProperty("--primary", hex);
+  };
+
+  const applyImportedLogo = (logoUrl: string) => {
+    setBranding((prev) => ({ ...prev, logoUrl }));
+    toast.success(t("logoImported"));
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    setImporting(true);
+    try {
+      const res = await fetch("/api/branding/logo", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: await file.text(),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        logoUrl?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.logoUrl) {
+        toast.error(data?.error ?? t("logoImportFailed"));
+        return;
+      }
+      applyImportedLogo(data.logoUrl);
+    } catch {
+      toast.error(t("logoImportFailed"));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleLogoImportUrl = async () => {
+    const url = importUrl.trim();
+    if (!url) return;
+    setImporting(true);
+    try {
+      const res = await fetch("/api/branding/logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        logoUrl?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.logoUrl) {
+        toast.error(data?.error ?? t("logoImportFailed"));
+        return;
+      }
+      setUrlDialogOpen(false);
+      setImportUrl("");
+      applyImportedLogo(data.logoUrl);
+    } catch {
+      toast.error(t("logoImportFailed"));
+    } finally {
+      setImporting(false);
+    }
   };
 
   const ACCENT_HEX_MAP: Record<string, string> = {
@@ -281,31 +357,175 @@ export function WhiteLabelBranding() {
                   placeholder={t("logoUrlPlaceholder")}
                   className="text-xs font-mono"
                 />
-                <div className="h-9 w-9 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center bg-gray-50 dark:bg-gray-900 shrink-0">
-                  <Building className="h-4 w-4 text-gray-400" />
+                <div className="h-9 w-9 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center bg-gray-50 dark:bg-gray-900 shrink-0 overflow-hidden">
+                  {branding.logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={branding.logoUrl}
+                      alt="Logo preview"
+                      className="h-6 w-6 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <Building className="h-4 w-4 text-gray-400" />
+                  )}
+                </div>
+              </div>
+              {/* Local icons library — one-click brand marks serialized to
+                  self-contained data URLs (works offline, no upload needed). */}
+              <div className="mt-2.5">
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
+                  <ImagePlus className="h-3 w-3 text-primary" />
+                  {t("logoLibraryLabel")}
+                </p>
+                {/* Upload + URL import — the API sanitizes SVG uploads
+                    (script/foreignObject/event-handler stripping) and passes
+                    data/remote URLs through with a size ceiling. */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2.5 text-[11px] font-medium gap-1.5"
+                    disabled={importing}
+                    onClick={() => document.getElementById("branding-logo-upload")?.click()}
+                  >
+                    {importing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Upload className="h-3 w-3" />
+                    )}
+                    {t("logoUpload")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2.5 text-[11px] font-medium gap-1.5"
+                    onClick={() => setUrlDialogOpen(true)}
+                  >
+                    <Link2 className="h-3 w-3" />
+                    {t("logoImportUrl")}
+                  </Button>
+                  <input
+                    id="branding-logo-upload"
+                    type="file"
+                    accept=".svg,image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      void handleLogoUpload(file);
+                    }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {LOGO_LIBRARY.map((entry) => {
+                    const activeId = logoLibraryIdFromUrl(branding.logoUrl);
+                    const isActive = activeId === entry.id;
+                    return (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        title={entry.label}
+                        aria-label={`${t("logoLibraryLabel")}: ${entry.label}`}
+                        aria-pressed={isActive}
+                        onClick={() =>
+                          setBranding((prev) => ({
+                            ...prev,
+                            logoUrl: logoEntryToDataUrl(entry),
+                          }))
+                        }
+                        className={cn(
+                          "h-9 w-9 rounded-lg border flex items-center justify-center transition-all hover:scale-105",
+                          isActive
+                            ? "border-primary ring-2 ring-primary/40 bg-primary/5"
+                            : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-gray-50 dark:bg-gray-900",
+                        )}
+                      >
+                        {entry.badge ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={logoEntryToDataUrl(entry)}
+                            alt=""
+                            className="h-6 w-6 rounded-full"
+                          />
+                        ) : (
+                          <span
+                            className="h-5 w-5 [&>svg]:h-full [&>svg]:w-full"
+                            style={{ color: entry.color }}
+                            dangerouslySetInnerHTML={{ __html: entry.svg }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
+          {/* URL import dialog */}
+          <Dialog open={urlDialogOpen} onOpenChange={setUrlDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t("logoImportUrl")}</DialogTitle>
+                <DialogDescription>{t("logoImportUrlDesc")}</DialogDescription>
+              </DialogHeader>
+              <Input
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder={t("logoImportUrlPlaceholder")}
+                className="text-xs font-mono"
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUrlDialogOpen(false)}
+                >
+                  {tcommon("cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!importUrl.trim() || importing}
+                  onClick={() => void handleLogoImportUrl()}
+                >
+                  {importing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Link2 className="h-3.5 w-3.5" />
+                  )}
+                  {t("logoImportApply")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Theme Color Accents */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <SwatchBook className="h-3.5 w-3.5 text-primary" />
                 {t("themeColorAccent")}
               </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleSyncDashboardTheme}
-                className="h-7 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 gap-1.5"
-                title={t("syncWithTheme")}
-              >
-                <RefreshCw className="h-3 w-3" />
-                <span>{t("syncWithTheme")}</span>
-              </Button>
+              <Tooltip side="bottom" content={t("syncWithTheme")}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSyncDashboardTheme}
+                  className="h-7 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 gap-1.5"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  <span>{t("syncWithTheme")}</span>
+                </Button>
+              </Tooltip>
             </div>
 
             <div className="flex flex-wrap gap-2.5 items-center">
@@ -371,6 +591,30 @@ export function WhiteLabelBranding() {
                 onChange={(e) => setBranding({ ...branding, invoiceFooterNote: e.target.value })}
                 placeholder={t("invoiceFooterPlaceholder")}
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  {t("taxId")}
+                </label>
+                <Input
+                  value={branding.taxId}
+                  onChange={(e) => setBranding({ ...branding, taxId: e.target.value })}
+                  placeholder={t("taxIdPlaceholder")}
+                  className="font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  {t("invoiceAddress")}
+                </label>
+                <Input
+                  value={branding.invoiceAddress}
+                  onChange={(e) => setBranding({ ...branding, invoiceAddress: e.target.value })}
+                  placeholder={t("invoiceAddressPlaceholder")}
+                />
+              </div>
             </div>
           </div>
 

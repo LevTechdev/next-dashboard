@@ -15,7 +15,6 @@ import {
   Code2,
   Activity,
   Send,
-  Sparkles,
 } from "lucide-react";
 import {
   Dialog,

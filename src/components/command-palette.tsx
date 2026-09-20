@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ComponentType } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   SearchIcon,
   ArrowRightIcon,
@@ -17,8 +18,18 @@ import {
   CreditCardIcon,
   SettingsIcon,
 } from "lucide-animated";
-import { ShoppingBag, Package, Command, Loader2, Sparkles, PlusCircle, Palette, Download } from "lucide-react";
+import {
+  ShoppingBag,
+  Package,
+  Command,
+  Loader2,
+  Sparkles,
+  PlusCircle,
+  Palette,
+  Download,
+} from "lucide-react";
 import { useTheme } from "next-themes";
+import { useThemeReveal } from "@/hooks/use-theme-reveal";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -90,7 +101,7 @@ const DASHBOARD_MENUS: NavMenuItem[] = [
     keywords: ["home", "main", "metrics", "stats", "telemetry", "revenue"],
     icon: LayoutGridIcon,
     iconBg: "bg-indigo-50 dark:bg-indigo-900/30",
-    iconColor: "text-indigo-600 dark:text-indigo-400",
+    iconColor: "text-primary",
   },
   {
     id: "nav-analytics",
@@ -301,6 +312,7 @@ export function CommandPalette() {
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || "en";
+  const t = useTranslations("common");
 
   // Reset search state whenever the palette closes (any path).
   const closePalette = useCallback(() => {
@@ -365,14 +377,18 @@ export function CommandPalette() {
   };
 
   const { open: openCopilot } = useAiCopilot();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
+  const { select: selectTheme } = useThemeReveal();
 
   // ── Build grouped item list ──
 
   const { items, groupRanges } = useMemo(() => {
     const q = query.trim().toLowerCase();
     const allItems: ResultItem[] = [];
-    const ranges: { label: string; start: number; count: number }[] = [];
+    // Group label KEYS (not translated text): the ranges are memoized on data,
+    // while the translation happens at render — so a locale switch relabels the
+    // groups without re-running the search-derived memo.
+    const ranges: { labelKey: string; start: number; count: number }[] = [];
 
     // Filter dashboard menus
     const matchingMenus =
@@ -399,18 +415,19 @@ export function CommandPalette() {
           href: `/${locale}${m.href}`,
         }),
       );
-      ranges.push({ label: "Navigation", start, count: matchingMenus.length });
+      ranges.push({ labelKey: "commandGroupNavigation", start, count: matchingMenus.length });
     }
 
     // 1.5 Quick Actions
-    const matchingActions = q.length > 0
-      ? QUICK_ACTIONS.filter(
-          (a) =>
-            a.label.toLowerCase().includes(q) ||
-            a.keywords.some((k) => k.includes(q)) ||
-            a.subtitle.toLowerCase().includes(q),
-        )
-      : QUICK_ACTIONS;
+    const matchingActions =
+      q.length > 0
+        ? QUICK_ACTIONS.filter(
+            (a) =>
+              a.label.toLowerCase().includes(q) ||
+              a.keywords.some((k) => k.includes(q)) ||
+              a.subtitle.toLowerCase().includes(q),
+          )
+        : QUICK_ACTIONS;
 
     if (matchingActions.length > 0) {
       const start = allItems.length;
@@ -425,7 +442,7 @@ export function CommandPalette() {
           href: a.action === "navigate" ? `/${locale}${a.href}` : `#${a.inlineAction}`,
         }),
       );
-      ranges.push({ label: "Quick Actions", start, count: matchingActions.length });
+      ranges.push({ labelKey: "commandGroupQuickActions", start, count: matchingActions.length });
     }
 
     // 2. Orders from database search
@@ -442,7 +459,7 @@ export function CommandPalette() {
           href: `/${locale}/orders`,
         }),
       );
-      ranges.push({ label: "Orders", start, count: results.orders.length });
+      ranges.push({ labelKey: "commandGroupOrders", start, count: results.orders.length });
     }
 
     // 3. Customers from database search
@@ -459,7 +476,7 @@ export function CommandPalette() {
           href: `/${locale}/customers`,
         }),
       );
-      ranges.push({ label: "Customers", start, count: results.customers.length });
+      ranges.push({ labelKey: "commandGroupCustomers", start, count: results.customers.length });
     }
 
     // 4. Products from database search
@@ -476,7 +493,7 @@ export function CommandPalette() {
           href: `/${locale}/products`,
         }),
       );
-      ranges.push({ label: "Products", start, count: results.products.length });
+      ranges.push({ labelKey: "commandGroupProducts", start, count: results.products.length });
     }
 
     return { items: allItems, groupRanges: ranges };
@@ -505,7 +522,9 @@ export function CommandPalette() {
     }
     if (item.href === "#toggle-theme") {
       const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-      setTheme(next);
+      // Keyboard-driven switch: there is no pressed control to grow from, so
+      // the reveal expands from the centre of the viewport.
+      selectTheme(next, { origin: "center" });
       return;
     }
     if (item.href === "#install-pwa") {
@@ -530,7 +549,15 @@ export function CommandPalette() {
         }}
       >
         <DialogContent
-          className="top-[15%] sm:top-[20%] translate-y-0 max-w-xl p-0 gap-0 rounded-xl shadow-2xl border-gray-200 dark:border-gray-800 overflow-hidden"
+          className={cn(
+            "top-[15%] sm:top-[20%] translate-y-0 max-w-xl p-0 gap-0 rounded-xl shadow-2xl border-gray-200 dark:border-gray-800 overflow-hidden",
+            // tailwind-merge drops the base center-translate choreography and
+            // substitutes top-anchored keyframes (see globals.css) — otherwise
+            // the shared sora-dialog-in transform yanks the palette to screen
+            // center and back at the end of the animation.
+            "data-[state=open]:animate-[sora-dialog-in-top_0.45s_cubic-bezier(0.17,0.67,0.51,1)]",
+            "data-[state=closed]:animate-[sora-dialog-out-top_0.28s_cubic-bezier(0.67,0.17,0.62,0.64)]",
+          )}
           onKeyDown={onKeyDown}
         >
           {/* Search input */}
@@ -545,7 +572,7 @@ export function CommandPalette() {
               type="text"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Search orders, customers, products..."
+              placeholder={t("commandPlaceholder")}
               className="flex-1 bg-transparent border-0 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
               autoComplete="off"
               autoFocus
@@ -555,47 +582,53 @@ export function CommandPalette() {
             </kbd>
           </div>
 
-          {/* Results */}
+          {/* Results. Every empty state is the same centered paragraph block
+              (icon + headline + supporting line) so the blank space below the
+              input always reads as one deliberate surface instead of a
+              lopsided snippet shoved to the top of the scroll area. */}
           <ScrollContainer className="max-h-[360px] py-2">
             {loading && query.length >= 2 && (
-              <div className="flex items-center justify-center py-8 text-sm text-gray-400">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Searching...
+              <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{t("commandSearching")}</span>
               </div>
             )}
 
             {!loading && query.length >= 2 && !hasResults && (
-              <div className="py-8 text-center">
+              <div className="mx-auto max-w-sm px-6 py-12 text-center">
                 <SearchIcon
                   size={32}
-                  className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2"
+                  className="mx-auto mb-3 h-8 w-8 text-gray-300 dark:text-gray-600"
                 />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No results found for &ldquo;{query}&rdquo;
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  {t("commandNoResults", { query })}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Try searching by order number, customer name, or product name
+                <p className="mt-1.5 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
+                  {t("commandNoResultsHint")}
                 </p>
               </div>
             )}
 
             {!loading && query.length < 2 && (
-              <div className="py-8 text-center">
-                <Command className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Type at least 2 characters to search
+              <div className="mx-auto max-w-sm px-6 py-12 text-center">
+                <Command className="mx-auto mb-3 h-8 w-8 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  {t("commandTypeToSearch")}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Search across orders, customers, and products
+                <p className="mt-1.5 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
+                  {t("commandTypeToSearchHint")}
                 </p>
               </div>
             )}
 
             {hasResults &&
               groupRanges.map((group) => (
-                <div key={group.label}>
-                  <div className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                    {group.label}
+                <div key={group.labelKey}>
+                  {/* Group label sits on the same 24px inset as the row
+                      content below it (row = mx-2 + px-4), so the whole list
+                      reads as one centered column with equal gutters. */}
+                  <div className="px-6 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    {t(group.labelKey as never)}
                   </div>
                   {items.slice(group.start, group.start + group.count).map((item, i) => {
                     const globalIdx = group.start + i;
@@ -605,10 +638,14 @@ export function CommandPalette() {
                       <button
                         key={item.id}
                         className={cn(
-                          "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors",
+                          // Symmetric hover pill: mx-2 on both sides + w-auto
+                          // keeps the rounded corners equal left vs right. The
+                          // old single-sided mx-1 + w-full shifted the row
+                          // right, so the left corner radius read tighter.
+                          "flex items-center gap-3 w-auto mx-2 px-4 py-2.5 text-left transition-colors rounded-lg",
                           isSelected
-                            ? "bg-indigo-50 dark:bg-indigo-900/20"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                            ? "bg-primary/10 text-primary"
+                            : "hover:bg-gray-100 dark:hover:bg-gray-800/50",
                         )}
                         onClick={() => navigateTo(item)}
                         onMouseEnter={() => setSelectedIndex(globalIdx)}
@@ -629,7 +666,7 @@ export function CommandPalette() {
                           className={cn(
                             "h-4 w-4 shrink-0 transition-opacity",
                             isSelected
-                              ? "text-indigo-500 opacity-100"
+                              ? "text-primary opacity-100"
                               : "text-gray-300 dark:text-gray-600 opacity-0",
                           )}
                         />
@@ -646,19 +683,19 @@ export function CommandPalette() {
               <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono">
                 ↑↓
               </kbd>
-              <span>Navigate</span>
+              <span>{t("commandNavigate")}</span>
             </span>
             <span className="flex items-center gap-1 text-[11px] text-gray-400">
               <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono">
                 ↵
               </kbd>
-              <span>Open</span>
+              <span>{t("commandOpen")}</span>
             </span>
             <span className="flex items-center gap-1 text-[11px] text-gray-400 ml-auto">
               <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono">
                 ⌘K
               </kbd>
-              <span>Toggle</span>
+              <span>{t("commandToggle")}</span>
             </span>
           </div>
         </DialogContent>

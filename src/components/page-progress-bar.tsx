@@ -64,7 +64,9 @@ export default function PageProgressBar({ duration = 600 }: PageProgressBarProps
             : "w-[80%] opacity-100 animate-progress-sweep motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:w-[60%]"
         }`}
       >
-        <div className="h-full w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent dark:via-indigo-400" />
+        {/* Dynamic accent sweep — follows --primary (Settings → Appearance) in
+            both themes instead of a fixed indigo. */}
+        <div className="h-full w-full bg-gradient-to-r from-transparent via-primary to-transparent" />
       </div>
     </div>
   );

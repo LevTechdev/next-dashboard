@@ -13,7 +13,6 @@ import {
   Percent,
   Receipt,
   Layers,
-  Sparkles,
   RefreshCw,
   ExternalLink,
   ChevronRight,
@@ -115,11 +114,7 @@ const INITIAL_BATCHES: SettlementBatch[] = [
   },
 ];
 
-export function MerchantSettlementReconciliation({
-  className,
-}: {
-  className?: string;
-}) {
+export function MerchantSettlementReconciliation({ className }: { className?: string }) {
   const [category, setCategory] = useState<MerchantCategory>("UMI_MICRO");
   const [batches, setBatches] = useState<SettlementBatch[]>(INITIAL_BATCHES);
   const [disbursingId, setDisbursingId] = useState<string | null>(null);
@@ -157,8 +152,8 @@ export function MerchantSettlementReconciliation({
                 status: "SETTLED",
                 disbursedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
               }
-            : b
-        )
+            : b,
+        ),
       );
       setDisbursingId(null);
       toast.success("BI-FAST Instant Disbursement Completed!", {
@@ -229,17 +224,15 @@ export function MerchantSettlementReconciliation({
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Automated BI QRIS MDR deduction, batch settlement reconciliation, and one-click BI-FAST payouts
+            Automated BI QRIS MDR deduction, batch settlement reconciliation, and one-click BI-FAST
+            payouts
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-lg border border-border">
             <span className="text-xs font-semibold px-2 text-muted-foreground">MDR Tier:</span>
-            <Select
-              value={category}
-              onValueChange={(val) => setCategory(val as MerchantCategory)}
-            >
+            <Select value={category} onValueChange={(val) => setCategory(val as MerchantCategory)}>
               <SelectTrigger className="text-xs h-8 w-44 bg-background">
                 <SelectValue />
               </SelectTrigger>
@@ -328,9 +321,7 @@ export function MerchantSettlementReconciliation({
             <div className="text-2xl font-bold text-foreground font-mono">
               Rp {totalClearing.toLocaleString("id-ID")}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Rp 2,500 per batch clearing
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Rp 2,500 per batch clearing</p>
           </CardContent>
         </Card>
 
@@ -362,7 +353,9 @@ export function MerchantSettlementReconciliation({
         <CardHeader className="p-4 pb-3 border-b border-border/60">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base font-bold">Settlement Batches & Clearance Log</CardTitle>
+              <CardTitle className="text-base font-bold">
+                Settlement Batches & Clearance Log
+              </CardTitle>
               <CardDescription>
                 Audited transaction batches scheduled for automated BI-FAST bank disbursement
               </CardDescription>
@@ -381,7 +374,9 @@ export function MerchantSettlementReconciliation({
                   <TableHead className="text-xs">Clearing Period</TableHead>
                   <TableHead className="text-xs text-center">Tx Count</TableHead>
                   <TableHead className="text-xs text-right">Gross Inbound</TableHead>
-                  <TableHead className="text-xs text-right">MDR Withheld ({mdrPercentage}%)</TableHead>
+                  <TableHead className="text-xs text-right">
+                    MDR Withheld ({mdrPercentage}%)
+                  </TableHead>
                   <TableHead className="text-xs text-right">Net Payout</TableHead>
                   <TableHead className="text-xs">Channel</TableHead>
                   <TableHead className="text-xs">Status</TableHead>
@@ -394,9 +389,7 @@ export function MerchantSettlementReconciliation({
                     <TableCell className="font-mono text-xs font-semibold">
                       {batch.batchNumber}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {batch.period}
-                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{batch.period}</TableCell>
                     <TableCell className="text-xs text-center font-mono font-medium">
                       {batch.txCount}
                     </TableCell>
@@ -417,11 +410,17 @@ export function MerchantSettlementReconciliation({
                     </TableCell>
                     <TableCell className="text-xs">
                       {batch.status === "SETTLED" ? (
-                        <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 gap-1 font-medium">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-emerald-600 border-emerald-300 dark:border-emerald-800 gap-1 font-medium"
+                        >
                           <CheckCircle2 className="h-2.5 w-2.5" /> Settled
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] text-primary border-primary/30 gap-1 font-medium">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] text-primary border-primary/30 gap-1 font-medium"
+                        >
                           <Clock className="h-2.5 w-2.5" /> Ready Payout
                         </Badge>
                       )}

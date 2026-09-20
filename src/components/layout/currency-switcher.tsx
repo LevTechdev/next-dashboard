@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Check, ChevronDown, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,23 +24,25 @@ export function CurrencySwitcher({ className }: { className?: string }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-8 px-2.5 gap-1.5 rounded-lg border border-gray-200 dark:border-gray-800 text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
-            className,
-          )}
-          title={t("switchCurrencyTooltip")}
-        >
-          <span className="font-semibold text-primary">{currentConfig.symbol}</span>
-          <span className="font-mono text-[11px] text-gray-700 dark:text-gray-300">
-            {currentConfig.code}
-          </span>
-          <ChevronDown className="h-3 w-3 text-gray-400 shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip side="bottom" content={t("switchCurrencyTooltip")}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t("switchCurrencyTooltip")}
+            className={cn(
+              "h-8 px-2.5 gap-1.5 rounded-lg border border-gray-200 dark:border-gray-800 text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+              className,
+            )}
+          >
+            <span className="font-semibold text-primary">{currentConfig.symbol}</span>
+            <span className="font-mono text-[11px] text-gray-700 dark:text-gray-300">
+              {currentConfig.code}
+            </span>
+            <ChevronDown className="h-3 w-3 text-gray-400 shrink-0" />
+          </Button>
+        </DropdownMenuTrigger>
+      </Tooltip>
 
       <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl">
         <DropdownMenuLabel className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-2 py-1 flex items-center gap-1.5">

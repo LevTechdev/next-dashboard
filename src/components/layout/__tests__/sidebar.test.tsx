@@ -22,10 +22,12 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "en" }),
 }));
 
-// Mock useAuth
+// Mock useAuth — the sidebar reads user.role directly from the context
+// (real shape: user is the session user, tierFeatures the subscription).
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(() => ({
-    user: { user: { name: "Admin User", email: "admin@test.com", role: "ADMIN" } },
+    user: { name: "Admin User", email: "admin@test.com", role: "ADMIN" },
+    tierFeatures: null,
     isLoading: false,
     error: null,
     isAuthenticated: true,

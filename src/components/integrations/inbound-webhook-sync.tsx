@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface DlqEntry {
   id: string;
@@ -67,6 +68,7 @@ const PLATFORMS = [
 
 export function InboundWebhookSync() {
   const t = useTranslations("inboundWebhooks");
+  const tc = useTranslations("common");
   const [dlqEntries, setDlqEntries] = useState<DlqEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -224,18 +226,22 @@ export function InboundWebhookSync() {
                   value={`https://api.yourdomain.com${plat.endpoint}`}
                   className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-mono text-gray-700 dark:text-gray-300"
                 />
-                <button
-                  type="button"
-                  onClick={() => handleCopy(`https://api.yourdomain.com${plat.endpoint}`, plat.id)}
-                  className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="Copy URL"
-                >
-                  {copiedKey === plat.id ? (
-                    <CheckIcon size={14} className="h-3.5 w-3.5 text-emerald-500" />
-                  ) : (
-                    <CopyIcon size={14} className="h-3.5 w-3.5 text-gray-400" animateOnHover />
-                  )}
-                </button>
+                <Tooltip content={tc("copyUrl")} side="top">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`https://api.yourdomain.com${plat.endpoint}`, plat.id)
+                    }
+                    className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    aria-label={tc("copyUrl")}
+                  >
+                    {copiedKey === plat.id ? (
+                      <CheckIcon size={14} className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <CopyIcon size={14} className="h-3.5 w-3.5 text-gray-400" animateOnHover />
+                    )}
+                  </button>
+                </Tooltip>
               </div>
             </div>
 
@@ -389,35 +395,40 @@ export function InboundWebhookSync() {
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </td>
                     <td className="py-3 px-4 text-right space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedPayload(entry.payload)}
-                        className="h-7 px-2 text-xs hover:text-primary transition-all hover:scale-105"
-                        title={t("viewPayload")}
-                      >
-                        <EyeIcon size={14} className="h-3.5 w-3.5" animateOnHover />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetry(entry.id)}
-                        disabled={entry.status === "RESOLVED"}
-                        className="h-7 px-2 text-xs text-primary border-primary/20 hover:bg-primary/10 transition-all hover:scale-105"
-                        title={t("replayWebhook")}
-                      >
-                        <RotateCcwIcon size={14} className="h-3 w-3 mr-1" animateOnHover />
-                        {t("replay")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePurge(entry.id)}
-                        className="h-7 px-2 text-xs text-red-500 hover:text-red-700 transition-all hover:scale-105"
-                        title={t("purge")}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <Tooltip side="top" content={t("viewPayload")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedPayload(entry.payload)}
+                          aria-label={t("viewPayload")}
+                          className="h-7 px-2 text-xs hover:text-primary transition-all hover:scale-105"
+                        >
+                          <EyeIcon size={14} className="h-3.5 w-3.5" animateOnHover />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip side="top" content={t("replayWebhook")}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRetry(entry.id)}
+                          disabled={entry.status === "RESOLVED"}
+                          className="h-7 px-2 text-xs text-primary border-primary/20 hover:bg-primary/10 transition-all hover:scale-105"
+                        >
+                          <RotateCcwIcon size={14} className="h-3 w-3 mr-1" animateOnHover />
+                          {t("replay")}
+                        </Button>
+                      </Tooltip>
+                      <Tooltip side="top" content={t("purge")}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePurge(entry.id)}
+                          aria-label={t("purge")}
+                          className="h-7 px-2 text-xs text-red-500 hover:text-red-700 transition-all hover:scale-105"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </Tooltip>
                     </td>
                   </tr>
                 ))

@@ -25,6 +25,8 @@ vi.mock("next-intl", () => ({
       invoiceNotes: "Custom Invoice & Receipt Templates",
       invoiceHeaderNote: "Invoice Header Note / Remittance Terms",
       invoiceFooterNote: "Invoice Footer Disclaimer & Tax ID",
+      taxId: "Tax ID / NPWP",
+      invoiceAddress: "Invoice Registered Address",
       saveBranding: "Save Brand Settings",
       saving: "Saving...",
       brandingSaved: "Branding settings saved successfully!",

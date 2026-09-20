@@ -6,9 +6,9 @@ import { useTranslations } from "next-intl";
 import { TransitionLink } from "@/components/transition-link";
 import { cn } from "@/lib/utils";
 import { ScrollContainer } from "@/components/ui/scroll-container";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   LayoutGridIcon,
-  SparklesIcon,
   ChartBarIncreasingIcon,
   CartIcon,
   BoxesIcon,
@@ -40,21 +40,47 @@ import {
   ShopifyBrandIcon,
   ShopeeBrandIcon,
   TokopediaBrandIcon,
-  WhatsAppBrandIcon,
-  LazadaBrandIcon,
 } from "@/components/ui/brand-icons";
 import { Button } from "@/components/ui/button";
-import { canAccessPage } from "@/lib/permissions";
+import { useAuth } from "@/hooks/use-auth";
+import { canAccessPageForTier, type Role, type ClientTier } from "@/lib/permissions";
+import { rolePrefixForRole } from "@/lib/role-routes";
 
 function useLocale() {
   const params = useParams();
   return (params?.locale as string) || "en";
 }
 
+/**
+ * PAGE_ACCESS is keyed by the route's leaf segment (e.g. "/settings/team" →
+ * "team", "/dashboard" → "dashboard"). Resolve the same way so deep links
+ * like /settings/team are permission-checked against the right page.
+ */
+function pageKey(href: string): string {
+  return href.replace(/^\//, "").split("/")[0];
+}
+
+/** Role-scope URL prefixes — every page is reachable at both its canonical
+    (/en/orders) and role-scoped (/en/admin/orders) path. */
+const ROLE_PREFIXES = ["admin", "manager", "staff", "client", "enterprise"] as const;
+
+/**
+ * Nav active state across both URL shapes. The drawer is opened from the
+ * header hamburger at tablet/mobile widths, where the user may have arrived
+ * through a role-scoped link — comparing only the canonical href left the
+ * current page unhighlighted on every one of those pages.
+ */
+function isNavItemActive(pathname: string, locale: string, href: string): boolean {
+  const clean = href.split(/[?#]/)[0];
+  const candidates = [
+    `/${locale}${clean}`,
+    ...ROLE_PREFIXES.map((prefix) => `/${locale}/${prefix}${clean}`),
+  ];
+  return candidates.some((h) => pathname === h || pathname.startsWith(`${h}/`));
+}
+
 const navItems = [
   { label: "dashboard", href: "/dashboard", icon: LayoutGridIcon },
-  { label: "aiGenerator", href: "/dashboard/generate", icon: SparklesIcon },
-  { label: "projects", href: "/dashboard/projects", icon: ArchiveIcon },
   { label: "analytics", href: "/analytics", icon: ChartBarIncreasingIcon },
   { label: "sales", href: "/sales", icon: CartIcon },
   { label: "orders", href: "/orders", icon: BoxesIcon },
@@ -74,13 +100,17 @@ const insightsItems = [
   { label: "auditLog", href: "/audit-log", icon: ClipboardCheckIcon },
 ];
 
-import { Code2 } from "lucide-react";
+import { Code2, Building2, Activity } from "lucide-react";
 
 const adminItems = [
-  { label: "superAdmin", href: "/admin", icon: ShieldCheckIcon },
+  { label: "adminConsole", href: "/admin", icon: ShieldCheckIcon },
+  // Consolidated operations console — admin-only (see PAGE_ACCESS).
+  { label: "systemHealth", href: "/system-health", icon: Activity },
   { label: "roles", href: "/roles", icon: ShieldCheckIcon },
   { label: "integrations", href: "/integrations", icon: EarthIcon },
-  { label: "sso", href: "/sso", icon: KeyIcon },
+  // SSO is an enterprise-building surface — match the Building2 icon used by
+  // the SSO settings page buttons.
+  { label: "sso", href: "/sso", icon: Building2 },
   { label: "apiDocs", href: "/api-docs", icon: Code2 },
 ];
 
@@ -137,18 +167,6 @@ const channelItems = [
     icon: TokopediaBrandIcon,
     color: "text-[#03AC0E]",
   },
-  {
-    name: "whatsapp",
-    href: "/sales?channel=whatsapp",
-    icon: WhatsAppBrandIcon,
-    color: "text-[#25D366]",
-  },
-  {
-    name: "lazada",
-    href: "/sales?channel=lazada",
-    icon: LazadaBrandIcon,
-    color: "text-indigo-600",
-  },
 ];
 
 interface NavSectionProps {
@@ -173,9 +191,11 @@ function NavSection({ title, items, collapsed, locale, t, onNavigate }: NavSecti
       <div className="space-y-0.5">
         {items.map((item) => {
           const fullHref = `/${locale}${item.href}`;
-          const isActive = pathname === fullHref || pathname.startsWith(fullHref + "/");
+          const isActive = isNavItemActive(pathname, locale, item.href);
           const Icon = item.icon;
-          return (
+          // Collapsed rail: boardui-style no-arrow tooltip instead of the
+          // native title (which renders unstyled and is delay-locked).
+          const link = (
             <Link
               key={fullHref}
               href={fullHref}
@@ -186,7 +206,6 @@ function NavSection({ title, items, collapsed, locale, t, onNavigate }: NavSecti
                   ? "sidebar-item-active"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
               )}
-              title={collapsed ? t(item.label) : undefined}
             >
               <Icon size={18} className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && (
@@ -200,6 +219,13 @@ function NavSection({ title, items, collapsed, locale, t, onNavigate }: NavSecti
                 </>
               )}
             </Link>
+          );
+          return collapsed ? (
+            <Tooltip key={fullHref} content={t(item.label)} side="right" delay={0}>
+              {link}
+            </Tooltip>
+          ) : (
+            link
           );
         })}
       </div>
@@ -226,7 +252,16 @@ export function Sidebar({
   const tsales = useTranslations("sales");
   const tApp = useTranslations("app");
   const tcommon = useTranslations("common");
-  const role = "ADMIN" as const;
+  // Real role from the session — the nav must reflect what the user may open,
+  // not a hardcoded ADMIN. Client tiers additionally unlock tier-gated pages.
+  const { user, tierFeatures } = useAuth();
+  const role: Role | null = (user?.role as Role) || null;
+  const clientTier: ClientTier =
+    role === "CLIENT" || role === "CLIENT_ENTERPRISE"
+      ? ((tierFeatures?.tier as ClientTier) ??
+        (role === "CLIENT_ENTERPRISE" ? "ENTERPRISE" : "REGULAR"))
+      : null;
+  const canSee = (page: string) => canAccessPageForTier(page, role, clientTier);
 
   return (
     <aside
@@ -244,7 +279,12 @@ export function Sidebar({
         )}
       >
         <TransitionLink
-          href={`/${locale}/dashboard`}
+          // Hydration-stable: canonical while the session is unresolved (the
+          // server render and the client's hydration pass both see user=null),
+          // upgrading to the role-prefixed scope once the user loads.
+          href={
+            user ? `/${locale}/${rolePrefixForRole(user.role)}/dashboard` : `/${locale}/dashboard`
+          }
           viewTransitionName="nav-logo"
           onClick={() => onNavigate?.()}
           className={cn(
@@ -296,9 +336,7 @@ export function Sidebar({
       <ScrollContainer className="flex-1 px-3 py-4">
         <NavSection
           title="management"
-          items={navItems.filter((i) =>
-            canAccessPage(i.href.replace(/^\//, "") || "dashboard", role),
-          )}
+          items={navItems.filter((i) => canSee(pageKey(i.href) || "dashboard"))}
           collapsed={collapsed}
           locale={locale}
           t={tnav}
@@ -306,7 +344,7 @@ export function Sidebar({
         />
         <NavSection
           title="management"
-          items={managementItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          items={managementItems.filter((i) => canSee(pageKey(i.href)))}
           collapsed={collapsed}
           locale={locale}
           t={tnav}
@@ -314,7 +352,7 @@ export function Sidebar({
         />
         <NavSection
           title="insights"
-          items={insightsItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          items={insightsItems.filter((i) => canSee(pageKey(i.href)))}
           collapsed={collapsed}
           locale={locale}
           t={tnav}
@@ -322,7 +360,7 @@ export function Sidebar({
         />
         <NavSection
           title="account"
-          items={settingsItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          items={settingsItems.filter((i) => canSee(pageKey(i.href)))}
           collapsed={collapsed}
           locale={locale}
           t={tnav}
@@ -330,7 +368,7 @@ export function Sidebar({
         />
         <NavSection
           title="admin"
-          items={adminItems.filter((i) => canAccessPage(i.href.replace(/^\//, ""), role))}
+          items={adminItems.filter((i) => canSee(pageKey(i.href)))}
           collapsed={collapsed}
           locale={locale}
           t={tnav}

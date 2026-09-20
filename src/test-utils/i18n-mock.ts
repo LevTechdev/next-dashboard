@@ -75,6 +75,9 @@ export const dashboardMessages: TranslationMessages = {
   dashboard: {
     title: "Dashboard Overview",
     subtitle: "Welcome back! Here's what's happening today.",
+    greetingMorning: "Good morning,",
+    greetingAfternoon: "Good afternoon,",
+    greetingEvening: "Good evening,",
     totalRevenue: "Total Revenue",
     totalOrders: "Total Orders",
     totalCustomers: "Total Customers",

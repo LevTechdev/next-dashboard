@@ -7,6 +7,7 @@ import { PlusIcon, UploadIcon, ArrowLeftIcon, ArrowRightIcon } from "lucide-anim
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Lightbox } from "@/components/ui/lightbox";
 import { cn } from "@/lib/utils";
@@ -169,7 +170,7 @@ export function ProductImageManager({
                 }}
                 className={cn(
                   "group relative aspect-square rounded-lg overflow-hidden border-2 bg-gray-100 dark:bg-gray-800 transition-all",
-                  idx === 0 ? "border-indigo-500" : "border-transparent",
+                  idx === 0 ? "border-primary" : "border-transparent",
                   canEdit && "cursor-move",
                   dragIndex === idx && "opacity-40",
                   dragOverIndex === idx && dragIndex !== idx && "ring-2 ring-indigo-400 scale-95",
@@ -184,45 +185,53 @@ export function ProductImageManager({
                   onClick={() => setLightboxIdx(idx)}
                 />
                 {idx === 0 && (
-                  <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-indigo-500 text-white text-[10px] font-medium flex items-center gap-0.5">
+                  <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-[10px] font-medium flex items-center gap-0.5">
                     <Star className="h-2.5 w-2.5 fill-current" />
                     {t("cover")}
                   </span>
                 )}
                 {canEdit && (
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                    <button
-                      onClick={() => move(idx, -1)}
-                      disabled={idx === 0}
-                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center disabled:opacity-30"
-                      title={t("moveLeft")}
-                    >
-                      <ArrowLeftIcon size={14} className="h-3.5 w-3.5" />
-                    </button>
-                    {idx !== 0 && (
+                    <Tooltip side="top" content={t("moveLeft")}>
                       <button
-                        onClick={() => setCover(idx)}
-                        className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center"
-                        title={t("setCover")}
+                        onClick={() => move(idx, -1)}
+                        disabled={idx === 0}
+                        aria-label={t("moveLeft")}
+                        className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center disabled:opacity-30"
                       >
-                        <Star className="h-3.5 w-3.5" />
+                        <ArrowLeftIcon size={14} className="h-3.5 w-3.5" />
                       </button>
+                    </Tooltip>
+                    {idx !== 0 && (
+                      <Tooltip side="top" content={t("setCover")}>
+                        <button
+                          onClick={() => setCover(idx)}
+                          aria-label={t("setCover")}
+                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                      </Tooltip>
                     )}
-                    <button
-                      onClick={() => removeAt(idx)}
-                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500 text-white flex items-center justify-center"
-                      title={tcommon("delete")}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => move(idx, 1)}
-                      disabled={idx === images.length - 1}
-                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center disabled:opacity-30"
-                      title={t("moveRight")}
-                    >
-                      <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
-                    </button>
+                    <Tooltip side="top" content={tcommon("delete")}>
+                      <button
+                        onClick={() => removeAt(idx)}
+                        aria-label={tcommon("delete")}
+                        className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500 text-white flex items-center justify-center"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip side="top" content={t("moveRight")}>
+                      <button
+                        onClick={() => move(idx, 1)}
+                        disabled={idx === images.length - 1}
+                        aria-label={t("moveRight")}
+                        className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center disabled:opacity-30"
+                      >
+                        <ArrowRightIcon size={14} className="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 )}
               </div>

@@ -14,7 +14,6 @@ import {
   Maximize2,
   Minimize2,
   Receipt,
-  Sparkles,
   ArrowRight,
   ShieldCheck,
   Building2,
@@ -27,23 +26,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { generateQrisPayload } from "@/lib/qris-engine";
 import { useAppearance } from "@/hooks/use-appearance";
-import {
-  DanaBrandIcon,
-  LinkAjaBrandIcon,
-  QrisBrandIcon,
-} from "@/components/ui/brand-icons";
+import { DanaBrandIcon, LinkAjaBrandIcon, QrisBrandIcon } from "@/components/ui/brand-icons";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface CashierPosNumpadProps {
-  onTransactionComplete?: (tx: {
-    amount: number;
-    invoiceNumber: string;
-    note: string;
-  }) => void;
+  onTransactionComplete?: (tx: { amount: number; invoiceNumber: string; note: string }) => void;
   className?: string;
 }
 
@@ -56,10 +54,7 @@ const PRESET_AMOUNTS = [
   { label: "500K", value: 500000 },
 ];
 
-export function CashierPosNumpad({
-  onTransactionComplete,
-  className,
-}: CashierPosNumpadProps) {
+export function CashierPosNumpad({ onTransactionComplete, className }: CashierPosNumpadProps) {
   const t = useTranslations("qris");
   const { settings: appearance } = useAppearance();
 
@@ -87,51 +82,54 @@ export function CashierPosNumpad({
   const rawAmount = parseInt(amountStr.replace(/\D/g, "") || "0", 10);
 
   // Synthesize pleasant checkout audio chime
-  const playAudioChime = useCallback((type: "key" | "generate" | "paid") => {
-    if (!soundEnabled) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+  const playAudioChime = useCallback(
+    (type: "key" | "generate" | "paid") => {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      if (type === "key") {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(440, now);
-        gain.gain.setValueAtTime(0.04, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.07);
-      } else if (type === "generate") {
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.26);
-      } else if (type === "paid") {
-        // Two-tone cheerful success chord
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.12); // A5
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.46);
+        if (type === "key") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === "generate") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        } else if (type === "paid") {
+          // Two-tone cheerful success chord
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.12); // A5
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.46);
+        }
+      } catch {
+        // Ignore audio restriction
       }
-    } catch {
-      // Ignore audio restriction
-    }
-  }, [soundEnabled]);
+    },
+    [soundEnabled],
+  );
 
   // Numpad key handlers
   const handleDigit = (digit: string) => {
@@ -241,7 +239,7 @@ export function CashierPosNumpad({
       `⚡ LUNAS! Rp ${activeQr.amount.toLocaleString("id-ID")} received via QRIS Bank Transfer`,
       {
         description: `Invoice: ${activeQr.invoiceNumber} | Ref: ${activeQr.note}`,
-      }
+      },
     );
     if (onTransactionComplete) {
       onTransactionComplete({
@@ -286,25 +284,30 @@ export function CashierPosNumpad({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="h-8 px-2.5 text-xs gap-1.5 cursor-pointer"
-            title={soundEnabled ? "Audio chimes enabled" : "Muted"}
+          <Tooltip
+            content={soundEnabled ? t("posAudioChimesEnabled") : t("posAudioMutedTip")}
+            side="bottom"
           >
-            {soundEnabled ? (
-              <>
-                <Volume2 className="h-3.5 w-3.5 text-primary" />
-                <span>Audio On</span>
-              </>
-            ) : (
-              <>
-                <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Audio Muted</span>
-              </>
-            )}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="h-8 px-2.5 text-xs gap-1.5 cursor-pointer"
+              aria-label={soundEnabled ? t("posAudioChimesEnabled") : t("posAudioMutedTip")}
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="h-3.5 w-3.5 text-primary" />
+                  <span>{t("posAudioOn")}</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{t("posAudioMuted")}</span>
+                </>
+              )}
+            </Button>
+          </Tooltip>
 
           {activeQr && (
             <Button
@@ -531,9 +534,7 @@ export function CashierPosNumpad({
               {/* Merchant Title */}
               <div className="text-center pt-3 pb-1">
                 <h5 className="text-sm font-bold tracking-tight">NEXUS COMMERCE STORE</h5>
-                <p className="text-[10px] text-muted-foreground">
-                  NMID: ID1020030040050 • A01
-                </p>
+                <p className="text-[10px] text-muted-foreground">NMID: ID1020030040050 • A01</p>
                 <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-base font-extrabold text-primary border border-primary/20">
                   Rp {activeQr.amount.toLocaleString("id-ID")}
                 </div>
@@ -621,7 +622,8 @@ export function CashierPosNumpad({
               </div>
               <h5 className="text-sm font-semibold text-foreground">Terminal Ready for Billing</h5>
               <p className="text-xs max-w-[220px]">
-                Enter transaction amount on the numpad and press <strong>Charge</strong> to generate dynamic QRIS.
+                Enter transaction amount on the numpad and press <strong>Charge</strong> to generate
+                dynamic QRIS.
               </p>
             </div>
           )}

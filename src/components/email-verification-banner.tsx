@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { MailWarning, X, Loader2, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -10,12 +11,16 @@ import { cn } from "@/lib/utils";
 
 /**
  * Dismissible banner shown at the top of the dashboard when the current user's
- * email has not been verified. Links to the Security Center for verification.
- * Dismissal is persisted in sessionStorage so it only lasts the current tab.
+ * email has not been verified. Fully localized (emailVerification namespace)
+ * with two CTAs: "Send code" fires a fresh OTP, "Verify now" routes to the
+ * Security Center's inline code entry. Dismissal is persisted in sessionStorage
+ * so it only lasts the current tab.
  */
 export default function EmailVerificationBanner() {
   const { user, isLoading } = useAuth();
+  const t = useTranslations("emailVerification");
   const pathname = usePathname();
+  const locale = useLocale();
   const [dismissed, setDismissed] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -56,16 +61,16 @@ export default function EmailVerificationBanner() {
       const res = await fetch("/api/auth/verify-email/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale: "en", from: "security" }),
+        body: JSON.stringify({ locale, from: "security" }),
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Verification email sent! Check your inbox.");
+        toast.success(t("sentToast"));
       } else {
-        toast.error(data.error || "Could not send verification email.");
+        toast.error(data.error || t("sendFailed"));
       }
     } catch {
-      toast.error("Could not send verification email. Please try again.");
+      toast.error(t("sendFailed"));
     } finally {
       setSending(false);
     }
@@ -74,19 +79,21 @@ export default function EmailVerificationBanner() {
   return (
     <div
       className={cn(
-        "mx-3 sm:mx-4 lg:mx-6 mb-4 flex items-center gap-3 rounded-xl border px-4 py-3",
+        "mx-3 sm:mx-4 lg:mx-6 mb-4 flex flex-col gap-3 rounded-xl border px-4 py-3",
+        "sm:flex-row sm:items-center",
         "bg-amber-50 border-amber-200 text-amber-800",
         "dark:bg-amber-950/40 dark:border-amber-800/50 dark:text-amber-200",
       )}
+      data-testid="email-verification-banner"
     >
-      <MailWarning className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">Your email is not verified</p>
-        <p className="text-xs text-amber-700 dark:text-amber-300/70 mt-0.5">
-          Verify your email to secure your account and enable all features.
-        </p>
+      <div className="flex min-w-0 items-start gap-3">
+        <MailWarning className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium">{t("title")}</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300/70 mt-0.5">{t("description")}</p>
+        </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-2 min-[380px]:flex-nowrap">
         <button
           onClick={handleSendVerification}
           disabled={sending}
@@ -97,22 +104,22 @@ export default function EmailVerificationBanner() {
           )}
         >
           {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-          Send code
+          {sending ? t("sending") : t("sendCode")}
         </button>
         <Link
-          href="/en/security"
+          href={`/${locale}/security`}
           className={cn(
             "inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
             "border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300",
             "hover:bg-amber-100 dark:hover:bg-amber-900/40",
           )}
         >
-          Verify now
+          {t("verifyNow")}
         </Link>
         <button
           onClick={handleDismiss}
           className="p-1 rounded-md text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 transition-colors"
-          aria-label="Dismiss"
+          aria-label={t("dismiss")}
         >
           <X className="h-4 w-4" />
         </button>

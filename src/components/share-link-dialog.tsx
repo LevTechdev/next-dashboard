@@ -7,6 +7,13 @@ import { CopyIcon, DownloadIcon, CheckIcon } from "lucide-animated";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
+import {
+  WhatsAppBrandIcon,
+  TelegramBrandIcon,
+  XBrandIcon,
+  FacebookBrandIcon,
+} from "@/components/ui/brand-icons";
 import { toast } from "sonner";
 
 interface ShareLinkDialogProps {
@@ -64,21 +71,25 @@ export function ShareLinkDialog({ open, onClose, url, productName }: ShareLinkDi
   const enc = encodeURIComponent;
   const text = productName ? `${productName} ${url}` : url;
   const shares = [
-    { name: "WhatsApp", color: "#25D366", href: `https://wa.me/?text=${enc(text)}` },
     {
-      name: "Facebook",
-      color: "#1877F2",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`,
-    },
-    {
-      name: "X",
-      color: "#000000",
-      href: `https://twitter.com/intent/tweet?url=${enc(url)}&text=${enc(productName || "")}`,
+      name: "WhatsApp",
+      Icon: WhatsAppBrandIcon,
+      href: `https://wa.me/?text=${enc(text)}`,
     },
     {
       name: "Telegram",
-      color: "#0088cc",
+      Icon: TelegramBrandIcon,
       href: `https://t.me/share/url?url=${enc(url)}&text=${enc(productName || "")}`,
+    },
+    {
+      name: "X",
+      Icon: XBrandIcon,
+      href: `https://twitter.com/intent/tweet?url=${enc(url)}&text=${enc(productName || "")}`,
+    },
+    {
+      name: "Facebook",
+      Icon: FacebookBrandIcon,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`,
     },
   ];
 
@@ -112,18 +123,33 @@ export function ShareLinkDialog({ open, onClose, url, productName }: ShareLinkDi
             )}
           </div>
 
-          {/* URL + copy */}
-          <div className="flex gap-2">
-            <div className="flex-1 min-w-0 flex items-center px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-xs font-mono truncate">
-              {url}
+          {/* URL + copy. The truncation sits on the inner text node, not on the
+              flex row: `truncate` (overflow hidden + ellipsis) does nothing to a
+              flex container, whose anonymous text item refuses to shrink below
+              its content width. That is what let a long affiliate URL widen the
+              row and push the copy button out of the dialog. */}
+          <div className="flex gap-2 min-w-0">
+            <div
+              className="flex-1 min-w-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-800/50 px-3 py-2"
+              title={url}
+            >
+              <p className="text-xs font-mono truncate">{url}</p>
             </div>
-            <Button variant="outline" size="icon" onClick={copy} title={t("linkCopied")}>
-              {copied ? (
-                <CheckIcon size={16} className="h-4 w-4 text-emerald-500" />
-              ) : (
-                <CopyIcon size={16} className="h-4 w-4" />
-              )}
-            </Button>
+            <Tooltip side="top" content={t("linkCopied")}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={copy}
+                aria-label={t("linkCopied")}
+              >
+                {copied ? (
+                  <CheckIcon size={16} className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <CopyIcon size={16} className="h-4 w-4" />
+                )}
+              </Button>
+            </Tooltip>
           </div>
 
           {/* Download QR */}
@@ -132,25 +158,26 @@ export function ShareLinkDialog({ open, onClose, url, productName }: ShareLinkDi
             {t("downloadQr")}
           </Button>
 
-          {/* Social shares */}
-          <div>
+          {/* Social shares — official brand glyphs, buttons contained so
+              long labels never push the row outside the dialog. */}
+          <div className="min-w-0">
             <p className="text-xs text-gray-500 mb-2">{t("shareOn")}</p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-2 min-w-0">
               {shares.map((s) => (
                 <a
                   key={s.name}
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-[10px] text-gray-600 dark:text-gray-300 transition-colors"
+                  title={s.name}
+                  className="flex min-w-0 flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors overflow-hidden"
                 >
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: s.color }}
-                  >
-                    {s.name.charAt(0)}
+                  <span className="flex items-center justify-center w-8 h-8 shrink-0">
+                    <s.Icon size={28} />
                   </span>
-                  {s.name}
+                  <span className="text-[10px] leading-tight text-gray-600 dark:text-gray-300 w-full text-center truncate">
+                    {s.name}
+                  </span>
                 </a>
               ))}
             </div>

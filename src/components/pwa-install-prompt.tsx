@@ -99,10 +99,10 @@ export function PWAInstallPrompt() {
     <>
       {showPrompt && !dismissed && (
         <div className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-4 sm:w-80 animate-in fade-in slide-in-from-bottom-5">
-          <div className="rounded-xl border border-indigo-500/30 bg-card p-4 shadow-xl backdrop-blur-md">
+          <div className="rounded-xl border border-primary/30 bg-card p-4 shadow-xl backdrop-blur-md">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   {isIosDevice ? (
                     <Smartphone className="h-5 w-5" />
                   ) : (

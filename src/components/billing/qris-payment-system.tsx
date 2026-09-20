@@ -79,7 +79,8 @@ import {
   VisaBrandIcon,
   MastercardBrandIcon,
 } from "@/components/ui/brand-icons";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 import type { QrisTransaction, WithdrawalDisbursement, WithdrawalMethod } from "@/lib/qris-engine";
 
 const DEFAULT_POPULAR_BANKS = [
@@ -97,17 +98,28 @@ const DEFAULT_POPULAR_BANKS = [
 ];
 
 const STATIC_BANK_CODES = new Set([
-  "BCA", "014",
-  "MANDIRI", "008",
-  "BRI", "002",
-  "BNI", "009",
-  "BSI", "451",
-  "CIMB", "022",
-  "PERMATA", "013",
-  "542", "JAGO",
-  "535", "SEABANK",
-  "110", "BJB",
-  "114", "JATIM",
+  "BCA",
+  "014",
+  "MANDIRI",
+  "008",
+  "BRI",
+  "002",
+  "BNI",
+  "009",
+  "BSI",
+  "451",
+  "CIMB",
+  "022",
+  "PERMATA",
+  "013",
+  "542",
+  "JAGO",
+  "535",
+  "SEABANK",
+  "110",
+  "BJB",
+  "114",
+  "JATIM",
 ]);
 
 function normalizeBankCode(code: string): string {
@@ -131,6 +143,10 @@ export function QrisPaymentSystem() {
   const t = useTranslations("billing");
   const tqris = useTranslations("qris");
   const tcommon = useTranslations("common");
+  // Ledger amounts are stored in IDR; formatMoney(x, "IDR") renders them in the
+  // user's preferred display currency (header CurrencySwitcher) so receipts,
+  // balances, and the printable standee/receipt layouts follow it.
+  const { formatMoney: fmtMoney } = useCurrency();
 
   // Ledger state
   const [availableBalance, setAvailableBalance] = useState<number>(18750000);
@@ -350,6 +366,17 @@ export function QrisPaymentSystem() {
             if (payload.availableBalance !== undefined) {
               setAvailableBalance(payload.availableBalance);
             }
+            // Live payout notification — same real-time channel as inbound
+            // payments, so any completed withdrawal surfaces in the billing
+            // page the moment the ledger settles it.
+            toast.success(
+              tqris("withdrawalCompletedToast", {
+                amt: payload.disbursement.grossAmount.toLocaleString("id-ID"),
+                method: String(payload.disbursement.method || "")
+                  .replace(/_/g, " ")
+                  .toUpperCase(),
+              }),
+            );
           }
         } catch {
           // ignore
@@ -600,7 +627,7 @@ export function QrisPaymentSystem() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(availableBalance, "IDR")}
+              {fmtMoney(availableBalance, "IDR")}
             </div>
             <p className="mt-1 flex items-center text-xs text-muted-foreground font-medium">
               <CheckCircle2 className="mr-1 h-3 w-3 text-primary" />
@@ -623,7 +650,7 @@ export function QrisPaymentSystem() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(pendingBalance, "IDR")}
+              {fmtMoney(pendingBalance, "IDR")}
             </div>
             <p className="mt-1 flex items-center text-xs text-muted-foreground font-medium">
               <Clock className="mr-1 h-3 w-3 text-primary" />
@@ -646,7 +673,7 @@ export function QrisPaymentSystem() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(totalInbound, "IDR")}
+              {fmtMoney(totalInbound, "IDR")}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{tqris("lifetimeSales")}</p>
           </CardContent>
@@ -666,7 +693,7 @@ export function QrisPaymentSystem() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(totalWithdrawn, "IDR")}
+              {fmtMoney(totalWithdrawn, "IDR")}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{tqris("lifetimePayouts")}</p>
           </CardContent>
@@ -749,7 +776,7 @@ export function QrisPaymentSystem() {
                           "border-primary bg-primary/10 text-primary dark:bg-primary/20",
                       )}
                     >
-                      {formatCurrency(p, "IDR")}
+                      {fmtMoney(p, "IDR")}
                     </Button>
                   ))}
                 </div>
@@ -826,9 +853,7 @@ export function QrisPaymentSystem() {
                       Paid via <strong>{currentTx.sourceBank}</strong>. RRN:{" "}
                       <code className="font-mono">{currentTx.rrn}</code>
                     </span>
-                    <span className="font-bold">
-                      +{formatCurrency(currentTx.amount, "IDR")} Credited
-                    </span>
+                    <span className="font-bold">+{fmtMoney(currentTx.amount, "IDR")} Credited</span>
                   </div>
                 )}
               </div>
@@ -905,11 +930,9 @@ export function QrisPaymentSystem() {
             {/* Merchant Details */}
             <div className="py-3 text-center">
               <h4 className="text-sm font-bold tracking-tight uppercase">NEXUS COMMERCE STORE</h4>
-              <p className="text-[11px] text-muted-foreground">
-                NMID: ID1020030040050 • A01
-              </p>
+              <p className="text-[11px] text-muted-foreground">NMID: ID1020030040050 • A01</p>
               <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 dark:bg-primary/20 px-3 py-1 text-base font-extrabold text-primary">
-                {currentTx ? formatCurrency(currentTx.amount, "IDR") : "Rp 0"}
+                {currentTx ? fmtMoney(currentTx.amount, "IDR") : fmtMoney(0, "IDR")}
               </div>
             </div>
 
@@ -1050,7 +1073,7 @@ export function QrisPaymentSystem() {
                             </span>
                           </TableCell>
                           <TableCell className="font-bold text-sm text-emerald-600">
-                            +{formatCurrency(tx.amount, "IDR")}
+                            +{fmtMoney(tx.amount, "IDR")}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -1147,16 +1170,19 @@ export function QrisPaymentSystem() {
                             </div>
                           </TableCell>
                           <TableCell className="text-xs font-medium">
-                            {formatCurrency(d.grossAmount, "IDR")}
+                            {fmtMoney(d.grossAmount, "IDR")}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {d.fee === 0 ? "Free" : formatCurrency(d.fee, "IDR")}
+                            {d.fee === 0 ? "Free" : fmtMoney(d.fee, "IDR")}
                           </TableCell>
                           <TableCell className="font-bold text-sm text-foreground">
-                            {formatCurrency(d.netAmount, "IDR")}
+                            {fmtMoney(d.netAmount, "IDR")}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[11px]">
+                            <Badge
+                              variant="outline"
+                              className="bg-primary/10 text-primary border-primary/20 text-[11px]"
+                            >
                               {d.status}
                             </Badge>
                           </TableCell>
@@ -1199,7 +1225,8 @@ export function QrisPaymentSystem() {
               Direct payout of available balance to your preferred wallet, bank, or card.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleWithdraw} className="flex flex-col flex-1 overflow-hidden min-h-0">
+
+          <form onSubmit={handleWithdraw} className="flex flex-col flex-1 overflow-hidden min-h-0">
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Balance Badge */}
               <div className="rounded-lg bg-muted/40 p-3 flex items-center justify-between border border-border/70">
@@ -1207,511 +1234,513 @@ export function QrisPaymentSystem() {
                   Available to Withdraw
                 </span>
                 <span className="text-base font-bold text-foreground">
-                  {formatCurrency(availableBalance, "IDR")}
+                  {fmtMoney(availableBalance, "IDR")}
                 </span>
               </div>
 
-            {/* Quick Beneficiary Selection (1-Click Fill) */}
-            {savedBeneficiaries.length > 0 && (
+              {/* Quick Beneficiary Selection (1-Click Fill) */}
+              {savedBeneficiaries.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Penerima Tersimpan (1-Click Fill)
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {savedBeneficiaries.length} kontak
+                    </span>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
+                    {savedBeneficiaries.map((b) => {
+                      const providerLabel =
+                        b.bankName ||
+                        (b.cardType ? b.cardType.toUpperCase() : b.channel.toUpperCase());
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => {
+                            setWithdrawMethod(b.channel as WithdrawalMethod);
+                            setDestAccount(b.accountNumber);
+                            setDestName(b.accountName);
+                            if (b.bankCode) setBankCode(normalizeBankCode(b.bankCode));
+                            if (b.cardType === "visa" || b.cardType === "mastercard") {
+                              setCardType(b.cardType);
+                            }
+                            setInquiryVerified(b.verified);
+                            toast.success(`Dipilih: ${b.accountName} (${providerLabel})`);
+                          }}
+                          className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/70 hover:border-primary/50 bg-muted/30 hover:bg-primary/5 text-left transition-colors"
+                        >
+                          <div className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                            {b.accountName.charAt(0)}
+                          </div>
+                          <div className="text-[11px] leading-tight">
+                            <div className="font-semibold text-foreground truncate max-w-[110px]">
+                              {b.accountName}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[110px]">
+                              {providerLabel} • {b.accountNumber.slice(-4)}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Channel Selection */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Payout Channel
+                </label>
+                <Tabs
+                  value={withdrawMethod}
+                  onValueChange={(v) => setWithdrawMethod(v as WithdrawalMethod)}
+                  className="w-full"
+                >
+                  <TabsList className="grid grid-cols-5 w-full h-auto p-1">
+                    <TabsTrigger value="dana" className="py-2 text-xs gap-1">
+                      <DanaBrandIcon size={14} />
+                      <span>DANA</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="bank_transfer" className="py-2 text-xs gap-1">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>Bank</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="card_oct" className="py-2 text-xs gap-1">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span>Card</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="alipay" className="py-2 text-xs gap-1">
+                      <AlipayBrandIcon size={14} />
+                      <span>Alipay</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="linkaja" className="py-2 text-xs gap-1">
+                      <LinkAjaBrandIcon size={14} />
+                      <span>LinkAja</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Method-Specific Inputs */}
+              {withdrawMethod === "dana" && (
+                <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+                    <DanaBrandIcon size={16} />
+                    DANA Instant Payout (Fee: Free)
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">DANA Mobile Number</label>
+                    <Input
+                      placeholder="e.g. 0812-3456-7890"
+                      value={destAccount}
+                      onChange={(e) => setDestAccount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {activeDetection && activeDetection.type !== "unknown" && (
+                    <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">
+                          {activeDetection.provider}
+                        </span>
+                        {activeDetection.carrier && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({activeDetection.carrier})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {inquiryLoading ? (
+                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Verifikasi...
+                          </span>
+                        ) : inquiryVerified ? (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">
+                            {activeDetection.subText || "Nomor Terdeteksi"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Registered User Name</label>
+                    <Input
+                      placeholder="e.g. Budi Santoso"
+                      value={destName}
+                      onChange={(e) => setDestName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {withdrawMethod === "bank_transfer" && (
+                <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+                      <Building2 className="h-4 w-4" />
+                      Indonesian Bank Transfer (BI-FAST Fee: {fmtMoney(2500, "IDR")})
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBankDirectoryOpen(true)}
+                      className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Globe className="h-3 w-3" />
+                      50+ Bank 4 Wilayah
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Bank</label>
+                      <Select
+                        value={normalizeBankCode(bankCode)}
+                        onValueChange={(val) => setBankCode(normalizeBankCode(val))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {/* If custom or BPD bank selected that is not in defaults, show it */}
+                          {!STATIC_BANK_CODES.has(normalizeBankCode(bankCode)) &&
+                            getBankByCode(bankCode) && (
+                              <SelectItem value={bankCode}>
+                                {getBankByCode(bankCode)?.name} ({bankCode})
+                              </SelectItem>
+                            )}
+                          {DEFAULT_POPULAR_BANKS.map((b) => (
+                            <SelectItem key={b.value} value={b.value}>
+                              {b.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Account Number</label>
+                      <Input
+                        placeholder="Account number"
+                        value={destAccount}
+                        onChange={(e) => setDestAccount(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  {activeDetection && activeDetection.type !== "unknown" && (
+                    <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">
+                          {activeDetection.provider}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {inquiryLoading ? (
+                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Cek BI-FAST...
+                          </span>
+                        ) : inquiryVerified ? (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" /> Rekening Terverifikasi
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">
+                            {activeDetection.subText || "Kliring BI-FAST"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Account Holder Name</label>
+                    <Input
+                      placeholder="As printed on bank passbook"
+                      value={destName}
+                      onChange={(e) => setDestName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {withdrawMethod === "card_oct" && (
+                <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <CreditCard className="h-4 w-4" />
+                      Visa / Mastercard Direct OCT Payout (Fee: {fmtMoney(5000, "IDR")})
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Card Network</label>
+                      <Select value={cardType} onValueChange={(v) => setCardType(v as any)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="visa">Visa Debit / Credit</SelectItem>
+                          <SelectItem value="mastercard">Mastercard Debit / Credit</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">16-Digit Card Number</label>
+                      <Input
+                        placeholder="4000 1234 5678 9010"
+                        value={destAccount}
+                        onChange={(e) => setDestAccount(e.target.value)}
+                        maxLength={19}
+                        required
+                      />
+                    </div>
+                  </div>
+                  {activeDetection && activeDetection.type === "bank_card" && (
+                    <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">
+                          {activeDetection.provider}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {activeDetection.isValid ? (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" /> Luhn Checksum Lolos
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                            Format Kartu Belum Lengkap
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Cardholder Full Name</label>
+                    <Input
+                      placeholder="Name embossed on card"
+                      value={destName}
+                      onChange={(e) => setDestName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs space-y-1 text-blue-800 dark:text-blue-300">
+                    <div className="flex justify-between font-semibold">
+                      <span>Indicative FX Rate:</span>
+                      <span className="font-mono">1 USD = {fmtMoney(15850, "IDR")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Estimated Net Credited:</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        ${Math.max(0, (Number(withdrawAmount) - 5000) / 15850).toFixed(2)} USD
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {withdrawMethod === "alipay" && (
+                <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+                    <AlipayBrandIcon size={16} /> Alipay Cross-Border Settlement (Fee:{" "}
+                    {fmtMoney(3500, "IDR")})
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">
+                      Alipay Account (Email or Phone)
+                    </label>
+                    <Input
+                      placeholder="e.g. merchant@alipay.com"
+                      value={destAccount}
+                      onChange={(e) => setDestAccount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {activeDetection && activeDetection.type === "alipay" && (
+                    <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                      <span className="font-semibold text-foreground">
+                        {activeDetection.provider}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        Cross-border Ready
+                      </span>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">
+                      Account Holder Real Name
+                    </label>
+                    <Input
+                      placeholder="English or Pinyin Full Name"
+                      value={destName}
+                      onChange={(e) => setDestName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs space-y-1 text-blue-800 dark:text-blue-300">
+                    <div className="flex justify-between font-semibold">
+                      <span>Indicative FX Rate:</span>
+                      <span className="font-mono">1 CNY = {fmtMoney(2192, "IDR")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Estimated Net Credited:</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        ¥{Math.max(0, (Number(withdrawAmount) - 3500) / 2192).toFixed(2)} CNY
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {withdrawMethod === "linkaja" && (
+                <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                    <LinkAjaBrandIcon size={16} />
+                    LinkAja Wallet Payout (Fee: Free)
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">LinkAja Mobile Number</label>
+                    <Input
+                      placeholder="e.g. 0811-2345-6789"
+                      value={destAccount}
+                      onChange={(e) => setDestAccount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {activeDetection && activeDetection.type !== "unknown" && (
+                    <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-foreground">
+                          {activeDetection.provider}
+                        </span>
+                        {activeDetection.carrier && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({activeDetection.carrier})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {inquiryVerified ? (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">
+                            {activeDetection.subText || "Nomor Terdeteksi"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Account Holder Name</label>
+                    <Input
+                      placeholder="Full Registered Name"
+                      value={destName}
+                      onChange={(e) => setDestName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Real-Life Visual Preview (Tactile Bank Card or E-Money Pass) */}
+              {(withdrawMethod === "bank_transfer" || withdrawMethod === "card_oct") && (
+                <div className="pt-1 flex flex-col items-center">
+                  <BankCardVisual
+                    cardNumber={
+                      destAccount
+                        ? destAccount
+                            .replace(/\D/g, "")
+                            .replace(/(\d{4})(?=\d)/g, "$1 ")
+                            .trim()
+                        : withdrawMethod === "card_oct"
+                          ? "•••• •••• •••• ••••"
+                          : "•••• ••••••••"
+                    }
+                    cardHolder={destName || "NAMA PEMEGANG REKENING"}
+                    expiry="12/29"
+                    brand={
+                      withdrawMethod === "card_oct"
+                        ? cardType === "mastercard"
+                          ? "mastercard"
+                          : "visa"
+                        : getBankByCode(bankCode)?.supportedNetworks?.[0] || "gpn"
+                    }
+                    tier={withdrawMethod === "card_oct" ? "black_signature" : "gold"}
+                    bankName={
+                      getBankByCode(bankCode)?.name ||
+                      (withdrawMethod === "card_oct"
+                        ? cardType === "visa"
+                          ? "VISA GLOBAL DEBIT"
+                          : "MASTERCARD DIRECT"
+                        : "BANK TRANSFER")
+                    }
+                    isCompact={true}
+                    className="w-full shadow-lg"
+                  />
+                </div>
+              )}
+
+              {(withdrawMethod === "dana" ||
+                withdrawMethod === "linkaja" ||
+                withdrawMethod === "alipay") && (
+                <div className="pt-1 flex flex-col items-center">
+                  <EmoneyWalletPass
+                    brand={withdrawMethod as any}
+                    accountNumber={destAccount || "08xx-xxxx-xxxx"}
+                    accountName={destName || "NAMA PEMILIK AKUN"}
+                    carrier={activeDetection?.carrier || "Indonesian Mobile Network"}
+                    verified={inquiryVerified}
+                    isCompact={true}
+                    className="w-full shadow-lg"
+                  />
+                </div>
+              )}
+
+              {/* Withdrawal Amount */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    Penerima Tersimpan (1-Click Fill)
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {savedBeneficiaries.length} kontak
-                  </span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
-                  {savedBeneficiaries.map((b) => {
-                    const providerLabel =
-                      b.bankName ||
-                      (b.cardType ? b.cardType.toUpperCase() : b.channel.toUpperCase());
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() => {
-                          setWithdrawMethod(b.channel as WithdrawalMethod);
-                          setDestAccount(b.accountNumber);
-                          setDestName(b.accountName);
-                          if (b.bankCode) setBankCode(normalizeBankCode(b.bankCode));
-                          if (b.cardType === "visa" || b.cardType === "mastercard") {
-                            setCardType(b.cardType);
-                          }
-                          setInquiryVerified(b.verified);
-                          toast.success(`Dipilih: ${b.accountName} (${providerLabel})`);
-                        }}
-                        className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/70 hover:border-primary/50 bg-muted/30 hover:bg-primary/5 text-left transition-colors"
-                      >
-                        <div className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
-                          {b.accountName.charAt(0)}
-                        </div>
-                        <div className="text-[11px] leading-tight">
-                          <div className="font-semibold text-foreground truncate max-w-[110px]">
-                            {b.accountName}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground truncate max-w-[110px]">
-                            {providerLabel} • {b.accountNumber.slice(-4)}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Channel Selection */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                Payout Channel
-              </label>
-              <Tabs
-                value={withdrawMethod}
-                onValueChange={(v) => setWithdrawMethod(v as WithdrawalMethod)}
-                className="w-full"
-              >
-                <TabsList className="grid grid-cols-5 w-full h-auto p-1">
-                  <TabsTrigger value="dana" className="py-2 text-xs gap-1">
-                    <DanaBrandIcon size={14} />
-                    <span>DANA</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="bank_transfer" className="py-2 text-xs gap-1">
-                    <Building2 className="h-3.5 w-3.5" />
-                    <span>Bank</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="card_oct" className="py-2 text-xs gap-1">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    <span>Card</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="alipay" className="py-2 text-xs gap-1">
-                    <AlipayBrandIcon size={14} />
-                    <span>Alipay</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="linkaja" className="py-2 text-xs gap-1">
-                    <LinkAjaBrandIcon size={14} />
-                    <span>LinkAja</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {/* Method-Specific Inputs */}
-            {withdrawMethod === "dana" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
-                <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
-                  <DanaBrandIcon size={16} />
-                  DANA Instant Payout (Fee: Free)
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">DANA Mobile Number</label>
-                  <Input
-                    placeholder="e.g. 0812-3456-7890"
-                    value={destAccount}
-                    onChange={(e) => setDestAccount(e.target.value)}
-                    required
-                  />
-                </div>
-                {activeDetection && activeDetection.type !== "unknown" && (
-                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground">
-                        {activeDetection.provider}
-                      </span>
-                      {activeDetection.carrier && (
-                        <span className="text-[10px] text-muted-foreground">
-                          ({activeDetection.carrier})
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {inquiryLoading ? (
-                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Verifikasi...
-                        </span>
-                      ) : inquiryVerified ? (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="h-3 w-3" /> Terverifikasi
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {activeDetection.subText || "Nomor Terdeteksi"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Registered User Name</label>
-                  <Input
-                    placeholder="e.g. Budi Santoso"
-                    value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {withdrawMethod === "bank_transfer" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
-                    <Building2 className="h-4 w-4" />
-                    Indonesian Bank Transfer (BI-FAST Fee: Rp 2,500)
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsBankDirectoryOpen(true)}
-                    className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
-                  >
-                    <Globe className="h-3 w-3" />
-                    50+ Bank 4 Wilayah
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Bank</label>
-                    <Select
-                      value={normalizeBankCode(bankCode)}
-                      onValueChange={(val) => setBankCode(normalizeBankCode(val))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {/* If custom or BPD bank selected that is not in defaults, show it */}
-                        {!STATIC_BANK_CODES.has(normalizeBankCode(bankCode)) &&
-                          getBankByCode(bankCode) && (
-                            <SelectItem value={bankCode}>
-                              {getBankByCode(bankCode)?.name} ({bankCode})
-                            </SelectItem>
-                          )}
-                        {DEFAULT_POPULAR_BANKS.map((b) => (
-                          <SelectItem key={b.value} value={b.value}>
-                            {b.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Account Number</label>
-                    <Input
-                      placeholder="Account number"
-                      value={destAccount}
-                      onChange={(e) => setDestAccount(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                {activeDetection && activeDetection.type !== "unknown" && (
-                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground">
-                        {activeDetection.provider}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {inquiryLoading ? (
-                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Cek BI-FAST...
-                        </span>
-                      ) : inquiryVerified ? (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="h-3 w-3" /> Rekening Terverifikasi
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {activeDetection.subText || "Kliring BI-FAST"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Account Holder Name</label>
-                  <Input
-                    placeholder="As printed on bank passbook"
-                    value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {withdrawMethod === "card_oct" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-                    <CreditCard className="h-4 w-4" />
-                    Visa / Mastercard Direct OCT Payout (Fee: Rp 5,000)
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Card Network</label>
-                    <Select value={cardType} onValueChange={(v) => setCardType(v as any)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="visa">Visa Debit / Credit</SelectItem>
-                        <SelectItem value="mastercard">Mastercard Debit / Credit</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">16-Digit Card Number</label>
-                    <Input
-                      placeholder="4000 1234 5678 9010"
-                      value={destAccount}
-                      onChange={(e) => setDestAccount(e.target.value)}
-                      maxLength={19}
-                      required
-                    />
-                  </div>
-                </div>
-                {activeDetection && activeDetection.type === "bank_card" && (
-                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground">
-                        {activeDetection.provider}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {activeDetection.isValid ? (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="h-3 w-3" /> Luhn Checksum Lolos
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400">
-                          Format Kartu Belum Lengkap
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Cardholder Full Name</label>
-                  <Input
-                    placeholder="Name embossed on card"
-                    value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs space-y-1 text-blue-800 dark:text-blue-300">
-                  <div className="flex justify-between font-semibold">
-                    <span>Indicative FX Rate:</span>
-                    <span className="font-mono">1 USD = Rp 15,850</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Estimated Net Credited:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                      ${Math.max(0, (Number(withdrawAmount) - 5000) / 15850).toFixed(2)} USD
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {withdrawMethod === "alipay" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
-                <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
-                  <AlipayBrandIcon size={16} />
-                  Alipay Cross-Border Settlement (Fee: Rp 3,500)
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">
-                    Alipay Account (Email or Phone)
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Amount to Withdraw (IDR)
                   </label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={() => setWithdrawAmount(availableBalance.toString())}
+                    className="h-auto p-0 text-xs text-primary"
+                  >
+                    Withdraw All
+                  </Button>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-sm font-semibold text-gray-400">
+                    Rp
+                  </span>
                   <Input
-                    placeholder="e.g. merchant@alipay.com"
-                    value={destAccount}
-                    onChange={(e) => setDestAccount(e.target.value)}
-                    required
-                  />
-                </div>
-                {activeDetection && activeDetection.type === "alipay" && (
-                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
-                    <span className="font-semibold text-foreground">
-                      {activeDetection.provider}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                      Cross-border Ready
-                    </span>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Account Holder Real Name</label>
-                  <Input
-                    placeholder="English or Pinyin Full Name"
-                    value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-2.5 text-xs space-y-1 text-blue-800 dark:text-blue-300">
-                  <div className="flex justify-between font-semibold">
-                    <span>Indicative FX Rate:</span>
-                    <span className="font-mono">1 CNY = Rp 2,192</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Estimated Net Credited:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                      ¥{Math.max(0, (Number(withdrawAmount) - 3500) / 2192).toFixed(2)} CNY
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {withdrawMethod === "linkaja" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-gray-50 dark:bg-zinc-900/50">
-                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                  <LinkAjaBrandIcon size={16} />
-                  LinkAja Wallet Payout (Fee: Free)
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">LinkAja Mobile Number</label>
-                  <Input
-                    placeholder="e.g. 0811-2345-6789"
-                    value={destAccount}
-                    onChange={(e) => setDestAccount(e.target.value)}
-                    required
-                  />
-                </div>
-                {activeDetection && activeDetection.type !== "unknown" && (
-                  <div className="flex items-center justify-between text-[11px] px-2.5 py-1.5 rounded bg-muted/60 border border-border/60">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground">
-                        {activeDetection.provider}
-                      </span>
-                      {activeDetection.carrier && (
-                        <span className="text-[10px] text-muted-foreground">
-                          ({activeDetection.carrier})
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {inquiryVerified ? (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="h-3 w-3" /> Terverifikasi
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {activeDetection.subText || "Nomor Terdeteksi"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Account Holder Name</label>
-                  <Input
-                    placeholder="Full Registered Name"
-                    value={destName}
-                    onChange={(e) => setDestName(e.target.value)}
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="pl-9 font-semibold"
+                    placeholder="500000"
                     required
                   />
                 </div>
               </div>
-            )}
 
-            {/* Real-Life Visual Preview (Tactile Bank Card or E-Money Pass) */}
-            {(withdrawMethod === "bank_transfer" || withdrawMethod === "card_oct") && (
-              <div className="pt-1 flex flex-col items-center">
-                <BankCardVisual
-                  cardNumber={
-                    destAccount
-                      ? destAccount
-                          .replace(/\D/g, "")
-                          .replace(/(\d{4})(?=\d)/g, "$1 ")
-                          .trim()
-                      : withdrawMethod === "card_oct"
-                        ? "•••• •••• •••• ••••"
-                        : "•••• ••••••••"
-                  }
-                  cardHolder={destName || "NAMA PEMEGANG REKENING"}
-                  expiry="12/29"
-                  brand={
-                    withdrawMethod === "card_oct"
-                      ? cardType === "mastercard"
-                        ? "mastercard"
-                        : "visa"
-                      : getBankByCode(bankCode)?.supportedNetworks?.[0] || "gpn"
-                  }
-                  tier={withdrawMethod === "card_oct" ? "black_signature" : "gold"}
-                  bankName={
-                    getBankByCode(bankCode)?.name ||
-                    (withdrawMethod === "card_oct"
-                      ? cardType === "visa"
-                        ? "VISA GLOBAL DEBIT"
-                        : "MASTERCARD DIRECT"
-                      : "BANK TRANSFER")
-                  }
-                  isCompact={true}
-                  className="w-full shadow-lg"
-                />
-              </div>
-            )}
-
-            {(withdrawMethod === "dana" ||
-              withdrawMethod === "linkaja" ||
-              withdrawMethod === "alipay") && (
-              <div className="pt-1 flex flex-col items-center">
-                <EmoneyWalletPass
-                  brand={withdrawMethod as any}
-                  accountNumber={destAccount || "08xx-xxxx-xxxx"}
-                  accountName={destName || "NAMA PEMILIK AKUN"}
-                  carrier={activeDetection?.carrier || "Indonesian Mobile Network"}
-                  verified={inquiryVerified}
-                  isCompact={true}
-                  className="w-full shadow-lg"
-                />
-              </div>
-            )}
-
-            {/* Withdrawal Amount */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  Amount to Withdraw (IDR)
-                </label>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  onClick={() => setWithdrawAmount(availableBalance.toString())}
-                  className="h-auto p-0 text-xs text-primary"
-                >
-                  Withdraw All
-                </Button>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-sm font-semibold text-gray-400">
-                  Rp
-                </span>
-                <Input
-                  type="number"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="pl-9 font-semibold"
-                  placeholder="500000"
-                  required
-                />
-              </div>
-            </div>
-
-            {withdrawError && (
-              <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2.5 text-xs text-destructive flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{withdrawError}</span>
-              </div>
-            )}
+              {withdrawError && (
+                <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2.5 text-xs text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{withdrawError}</span>
+                </div>
+              )}
             </div>
 
             <DialogFooter className="p-4 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between sm:justify-between">
@@ -1792,18 +1821,16 @@ export function QrisPaymentSystem() {
                 </div>
                 <div className="flex items-center justify-between border-b pb-2 border-dashed">
                   <span className="text-muted-foreground">Gross Amount</span>
-                  <span>{formatCurrency(receiptDisb.grossAmount, "IDR")}</span>
+                  <span>{fmtMoney(receiptDisb.grossAmount, "IDR")}</span>
                 </div>
                 <div className="flex items-center justify-between border-b pb-2 border-dashed">
                   <span className="text-muted-foreground">Transaction Fee</span>
-                  <span>
-                    {receiptDisb.fee === 0 ? "Free" : formatCurrency(receiptDisb.fee, "IDR")}
-                  </span>
+                  <span>{receiptDisb.fee === 0 ? "Free" : fmtMoney(receiptDisb.fee, "IDR")}</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 font-bold text-sm">
                   <span>Net Amount Received</span>
                   <span className="text-primary font-bold">
-                    {formatCurrency(receiptDisb.netAmount, "IDR")}
+                    {fmtMoney(receiptDisb.netAmount, "IDR")}
                   </span>
                 </div>
                 {receiptDisb.destinationCurrency && receiptDisb.destinationCurrency !== "IDR" && (
@@ -1825,7 +1852,7 @@ export function QrisPaymentSystem() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const receiptText = `TRANSFER PROOF RECEIPT\nRef: ${receiptDisb.referenceNumber}\nAmount: Rp ${receiptDisb.netAmount.toLocaleString("id-ID")}\nTo: ${receiptDisb.destinationName} (${receiptDisb.destinationAccount})\nDate: ${new Date(receiptDisb.timestamp).toLocaleString()}`;
+                    const receiptText = `TRANSFER PROOF RECEIPT\nRef: ${receiptDisb.referenceNumber}\nAmount: ${fmtMoney(receiptDisb.netAmount, "IDR")}\nTo: ${receiptDisb.destinationName} (${receiptDisb.destinationAccount})\nDate: ${new Date(receiptDisb.timestamp).toLocaleString()}`;
                     navigator.clipboard.writeText(receiptText);
                   }}
                   className="gap-1.5 text-xs"
