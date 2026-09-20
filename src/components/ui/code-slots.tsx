@@ -287,21 +287,43 @@ export function CodeSlots({
     if (stepBack) moveActive(i, [i]);
   };
 
-  // eslint-disable-next-line react-hooks/refs -- see the ref mirrors above
-  const busy = disabled || draining.current || status === "success";
+  /**
+   * A rejected code drains its digits for a beat before resetting. Someone who
+   * retypes immediately used to have those keystrokes swallowed (the drain held
+   * the row busy) and then wiped by the fallback reset, so a fast retry typed
+   * into a void. Starting to type now ends the drain and begins a fresh code:
+   * the rejected digits are dropped at once and the new ones land from slot 0.
+   */
+  const startFreshAfterReject = (): boolean => {
+    if (!draining.current) return false;
+    clearTimeout(drainTimer.current);
+    draining.current = false;
+    mvs.forEach((mv) => mv.jump(0));
+    drops.forEach((d) => d.jump(0));
+    jumpActive(0);
+    // Clears the row and tells the consumer the rejected attempt is over, so
+    // its `status` flips back to idle before the new digits animate in.
+    commit(Array.from({ length }, () => ""));
+    return true;
+  };
+
+  const busy = disabled || status === "success";
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key;
     if (/^[0-9]$/.test(k)) {
       e.preventDefault();
-      insert(k);
+      const fresh = startFreshAfterReject();
+      insert(k, fresh ? 0 : active);
     } else if (k === "Backspace") {
       e.preventDefault();
+      startFreshAfterReject();
       if (slots[active]) clearSlot(active);
       else if (active > 0) clearSlot(active - 1, true);
     } else if (k === "Delete") {
       e.preventDefault();
+      startFreshAfterReject();
       clearSlot(active);
     } else if (k === "ArrowLeft") {
       e.preventDefault();
@@ -321,6 +343,7 @@ export function CodeSlots({
   const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     if (busy) return;
     e.preventDefault();
+    startFreshAfterReject();
     insert(e.clipboardData.getData("text"));
   };
 
@@ -328,6 +351,7 @@ export function CodeSlots({
     if (busy) return;
     const d = digitsOf(e.target.value);
     if (!d) return;
+    startFreshAfterReject();
     insert(d, d.length === 1 ? active : 0);
   };
 
