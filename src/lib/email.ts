@@ -13,7 +13,21 @@ export interface EmailPayload {
   text: string;
 }
 
-const EMAIL_FROM = process.env.EMAIL_FROM || "Dashboard <onboarding@resend.dev>";
+/**
+ * Normalize a configured From address: dotenv-style wrapping quotes (a common
+ * misconfiguration that makes Resend reject every send with 422 "Invalid
+ * `from` field") are stripped, and a value with no address part falls back.
+ */
+function sanitizeFromAddress(raw: string | undefined): string | undefined {
+  const value = raw
+    ?.trim()
+    .replace(/^"([\s\S]*)"$/, "$1")
+    .trim();
+  return value && /<[^>]+@[^>]+>|[^\s<]+@[^\s>]+/.test(value) ? value : undefined;
+}
+
+const EMAIL_FROM =
+  sanitizeFromAddress(process.env.EMAIL_FROM) || "Dashboard <onboarding@resend.dev>";
 
 /** Localized subject lines for the four supported locales (en/id/zh/ja). */
 const OTP_SUBJECTS: Record<string, string> = {
@@ -73,8 +87,9 @@ export async function sendEmail(payload: EmailPayload): Promise<{ sent: boolean 
   // OS-level TCP timeout (~30s) — a mailer outage must never block an API
   // response that long. Mirrors the 10s connection/socket budget nodemailer
   // uses for SMTP. The dangling fetch settles on its own and is discarded.
+  const resendFrom = sanitizeFromAddress(process.env.RESEND_FROM) || EMAIL_FROM;
   const sendPromise = resend.emails.send({
-    from: process.env.RESEND_FROM || EMAIL_FROM,
+    from: resendFrom,
     to: payload.to,
     subject: payload.subject,
     html: payload.html,
@@ -135,8 +150,9 @@ async function sendViaSmtp(payload: EmailPayload): Promise<{ sent: boolean }> {
     greetingTimeout: 5_000,
     socketTimeout: 10_000,
   });
+  const smtpFrom = sanitizeFromAddress(process.env.SMTP_FROM) || EMAIL_FROM;
   const sendPromise = transporter.sendMail({
-    from: EMAIL_FROM,
+    from: smtpFrom,
     to: payload.to,
     subject: payload.subject,
     html: payload.html,

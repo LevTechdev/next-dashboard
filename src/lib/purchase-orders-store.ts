@@ -124,6 +124,8 @@ export function createPurchaseOrder(params: {
   }>;
   warehouseId?: string;
   notes?: string;
+  /** DRAFT for auto-generated POs awaiting human review (default ISSUED). */
+  status?: "DRAFT" | "ISSUED";
 }): PurchaseOrder {
   const all = getPurchaseOrders();
   const supplier =
@@ -144,7 +146,7 @@ export function createPurchaseOrder(params: {
     supplierId: supplier.id,
     supplierName: supplier.name,
     supplierEmail: supplier.email,
-    status: "ISSUED",
+    status: params.status ?? "ISSUED",
     items: poItems,
     totalAmount,
     warehouseId: warehouse.id,

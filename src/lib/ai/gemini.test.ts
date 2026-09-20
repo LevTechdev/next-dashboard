@@ -136,12 +136,14 @@ describe("createGeminiReplyStream", () => {
   });
 
   it("throws when the first round fails (HTTP error surfaces before streaming)", async () => {
+    // A factory, not mockResolvedValue: the lib walks candidate models on a
+    // 404, and a single Response instance can't be body-read twice.
     vi.stubGlobal(
       "fetch",
       vi
         .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ error: { message: "nope" } }), { status: 404 }),
+        .mockImplementation(
+          async () => new Response(JSON.stringify({ error: { message: "nope" } }), { status: 404 }),
         ),
     );
 
@@ -157,13 +159,14 @@ describe("createGeminiReplyStream", () => {
   it("throws GeminiRateLimitError with the parsed retry window on a 429", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            error: { message: "Quota exceeded ... Please retry in 30.5s." },
-          }),
-          { status: 429, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: { message: "Quota exceeded ... Please retry in 30.5s." },
+            }),
+            { status: 429, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 
@@ -181,11 +184,12 @@ describe("createGeminiReplyStream", () => {
   it("prefers the Retry-After header over the body text for the retry window", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ error: { message: "Please retry in 999s." } }), {
-          status: 429,
-          headers: { "Content-Type": "application/json", "Retry-After": "15" },
-        }),
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ error: { message: "Please retry in 999s." } }), {
+            status: 429,
+            headers: { "Content-Type": "application/json", "Retry-After": "15" },
+          }),
       ),
     );
 
@@ -275,10 +279,11 @@ describe("createGeminiReplyStream", () => {
   it("does not retry a 503 that is not a high-demand spike", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ error: { message: "Service unavailable" } }), {
-          status: 503,
-        }),
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ error: { message: "Service unavailable" } }), {
+            status: 503,
+          }),
       ),
     );
 

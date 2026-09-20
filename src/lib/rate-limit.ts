@@ -1,0 +1,99 @@
+import { prisma } from "@/lib/db";
+
+/**
+ * Sliding-window rate limiting for auth endpoints.
+ *
+ * Rows live in the SecurityEvent table (type "RATE_LIMITED") — no new Prisma
+ * model or migration. Each attempt writes one row; the limiter counts rows
+ * inside the window and, once over the limit, keeps recording the rejection
+ * (so hammering cannot bypass by refilling the window) until the window
+ * slides past.
+ *
+ * Window state is durable across deploys/instances; the cost is one indexed
+ * query per login attempt, which is exactly where you want to spend it.
+ */
+
+const SECURITY_TYPE = "RATE_LIMITED";
+
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Attempts recorded inside the current window (including rejections). */
+  attempts: number;
+  limit: number;
+  /** Seconds until the oldest attempt exits the window (only when blocked). */
+  retryAfterSeconds: number;
+}
+
+function clientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+/**
+ * Record one attempt and decide whether the caller may proceed.
+ * Call BEFORE expensive work (password hashing), then bail with 429 when
+ * blocked. `keySuffix` distinguishes limits on the same endpoint.
+ */
+export async function checkLoginRateLimit(
+  req: Request,
+  opts?: { limit?: number; windowSeconds?: number; email?: string },
+): Promise<RateLimitResult> {
+  const limit = opts?.limit ?? 10;
+  const windowSeconds = opts?.windowSeconds ?? 120;
+  const since = new Date(Date.now() - windowSeconds * 1000);
+  const ip = clientIp(req);
+
+  const where = {
+    type: SECURITY_TYPE,
+    createdAt: { gte: since },
+    ip,
+  };
+
+  const [attempts, oldest] = await Promise.all([
+    prisma.securityEvent.count({ where }),
+    prisma.securityEvent.findFirst({
+      where,
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+  ]);
+
+  const allowed = attempts < limit;
+
+  // Record every attempt — accepted or rejected — so the window keeps filling
+  // while an attacker hammers the endpoint (no bypass by waiting out the count).
+  try {
+    await prisma.securityEvent.create({
+      data: {
+        type: SECURITY_TYPE,
+        ip,
+        userAgent: req.headers.get("user-agent")?.slice(0, 255) ?? null,
+        metadata: {
+          endpoint: "login",
+          attempt: attempts + 1,
+          limit,
+          // Persist the window so the Security Center telemetry card can show
+          // live pressure (used / limit, retry-after) without hardcoding it.
+          windowSeconds,
+          blocked: !allowed,
+          ...(opts?.email ? { email: opts.email } : {}),
+        },
+      },
+    });
+  } catch {
+    // Never let limiter bookkeeping break the login flow.
+  }
+
+  return {
+    allowed,
+    attempts: attempts + 1,
+    limit,
+    retryAfterSeconds: oldest
+      ? Math.max(
+          1,
+          Math.ceil((oldest.createdAt.getTime() + windowSeconds * 1000 - Date.now()) / 1000),
+        )
+      : windowSeconds,
+  };
+}

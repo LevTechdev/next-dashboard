@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { verifyToken, getTokenFromRequest, getTokenFromCookie } from "@/lib/auth";
 import { isTokenRevoked } from "@/lib/sessions";
-import { can, CRUD_PERMISSIONS, type Role } from "@/lib/permissions";
+import { can, CRUD_PERMISSIONS, normalizeRole, type Role } from "@/lib/permissions";
 import { buildAbacContext, evaluateRule, type AbacRule } from "@/lib/abac";
 
 type Action = "create" | "read" | "update" | "delete";
@@ -21,7 +21,7 @@ type Session = {
 /**
  * Authenticate, then enforce RBAC (and optional ABAC) at the API layer.
  *
- * - SUPER_ADMIN is always allowed; AUDITOR is read-only on every resource.
+ * - ADMIN (merged super-admin) is always allowed; AUDITOR is read-only on every resource.
  * - For resources present in CRUD_PERMISSIONS, the role matrix is enforced.
  * - Unmapped resources preserve prior authenticated-only behavior (non-breaking).
  * - An optional ABAC rule (time/IP/role context) can further restrict access.
@@ -37,11 +37,11 @@ export async function requirePermission(
     return { role: null, response: authResponse };
   }
 
-  const role = session.user.role as Role;
+  const role = normalizeRole(session.user.role) as Role;
   const mapped = Object.prototype.hasOwnProperty.call(CRUD_PERMISSIONS, resource);
 
   let allowed: boolean;
-  if (role === "SUPER_ADMIN") allowed = true;
+  if (role === "ADMIN") allowed = true;
   else if (role === "AUDITOR") allowed = action === "read";
   else if (mapped) allowed = can(role, action, resource);
   else allowed = true; // unmapped resource: authenticated access (unchanged)

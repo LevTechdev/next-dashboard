@@ -58,7 +58,7 @@ describe("Security Telemetry & Compliance Engine", () => {
   });
 
   it("governs granular RBAC actions across all roles", () => {
-    expect(canPerformGranularAction("SUPER_ADMIN", "manage_billing")).toBe(true);
+    expect(canPerformGranularAction("ADMIN", "manage_billing")).toBe(true);
     expect(canPerformGranularAction("ADMIN", "approve_payout")).toBe(true);
     expect(canPerformGranularAction("STAFF", "approve_payout")).toBe(false);
     expect(canPerformGranularAction("AUDITOR", "export")).toBe(true);

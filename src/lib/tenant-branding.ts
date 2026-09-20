@@ -14,6 +14,8 @@ export interface TenantBranding {
   accentColor: string;
   invoiceHeaderNote: string;
   invoiceFooterNote: string;
+  invoiceAddress: string;
+  taxId: string;
   emailDigestSubject: string;
   updatedAt: string;
 }
@@ -33,6 +35,8 @@ export const DEFAULT_BRANDING: Omit<TenantBranding, "tenantId"> = {
   accentColor: "#06b6d4", // Cyan
   invoiceHeaderNote: "Thank you for your business. Please remit payment within terms.",
   invoiceFooterNote: "Registered Enterprise Inc. • Tax ID / NPWP: 01.234.567.8-901.000",
+  invoiceAddress: "Pacific Edge Tower, Level 24, Jakarta 10220, Indonesia",
+  taxId: "01.234.567.8-901.000",
   emailDigestSubject: "Executive Weekly Digest & KPI Report",
   updatedAt: new Date().toISOString(),
 };
@@ -64,9 +68,9 @@ export function getAllTenantBrandings(): Record<string, TenantBranding> {
 
 export function getTenantBranding(tenantId: string): TenantBranding {
   const all = getAllTenantBrandings();
-  if (all[tenantId]) return all[tenantId];
-  if (all["default"]) return { ...all["default"], tenantId };
-  return { tenantId, ...DEFAULT_BRANDING };
+  if (all[tenantId]) return { ...DEFAULT_BRANDING, ...all[tenantId], tenantId };
+  if (all["default"]) return { ...DEFAULT_BRANDING, ...all["default"], tenantId };
+  return { ...DEFAULT_BRANDING, tenantId };
 }
 
 export function saveTenantBranding(

@@ -155,7 +155,7 @@ export async function generateCompliancePack(): Promise<CompliancePack> {
     },
     rbacGovernance: {
       rolesCount: 5,
-      roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF", "AUDITOR"],
+      roles: ["ADMIN", "MANAGER", "STAFF", "AUDITOR"],
       granularActions: [
         "read",
         "create",

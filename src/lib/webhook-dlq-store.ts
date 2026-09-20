@@ -11,6 +11,8 @@ export interface WebhookDlqEntry {
   retryCount: number;
   maxRetries: number;
   status: "FAILED" | "RETRYING" | "RESOLVED";
+  /** True when the failure is transient (timeout/5xx) and auto-retry applies. */
+  transient?: boolean;
   createdAt: string;
   lastAttemptAt: string;
   nextRetryAt?: string;
@@ -94,15 +96,19 @@ export function enqueueDlq(
   >,
 ): WebhookDlqEntry {
   const all = getDlqEntries();
+  const now = new Date();
   const newEntry: WebhookDlqEntry = {
     ...entry,
     id: "dlq-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 6),
     retryCount: 0,
     maxRetries: 5,
-    status: "FAILED",
-    createdAt: new Date().toISOString(),
-    lastAttemptAt: new Date().toISOString(),
-    nextRetryAt: new Date(Date.now() + 5 * 60000).toISOString(), // +5m backoff
+    // TRANSIENT failures (timeouts, 5xx, transient DB errors) are retryable —
+    // schedule the first automatic retry. Permanent failures (bad signature,
+    // malformed payload) stay FAILED until a human replays or discards them.
+    status: entry.transient ? "RETRYING" : "FAILED",
+    createdAt: now.toISOString(),
+    lastAttemptAt: now.toISOString(),
+    nextRetryAt: new Date(now.getTime() + 5 * 60000).toISOString(), // +5m backoff
   };
 
   all.unshift(newEntry);

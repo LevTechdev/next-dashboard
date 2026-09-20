@@ -130,6 +130,4 @@ export const salesChannels = [
   { id: "shopify", name: "Shopify", slug: "shopify", icon: "shopping-bag" },
   { id: "shopee", name: "Shopee", slug: "shopee", icon: "shopping-bag" },
   { id: "tokopedia", name: "Tokopedia", slug: "tokopedia", icon: "shopping-bag" },
-  { id: "whatsapp", name: "WhatsApp", slug: "whatsapp", icon: "message-circle" },
-  { id: "lazada", name: "Lazada", slug: "lazada", icon: "shopping-cart" },
 ];

@@ -6,6 +6,8 @@ import { forwardToSiem } from "@/lib/siem";
 import { tenantWhere } from "@/lib/tenancy";
 
 export type SecurityEventType =
+  | "SIGNIN_ALERT_SENT"
+  | "SIGNIN_ALERT_SUPPRESSED"
   | "LOGIN"
   | "LOGIN_FAILED"
   | "LOGOUT"
@@ -17,15 +19,22 @@ export type SecurityEventType =
   | "SESSION_REVOKED"
   | "SESSIONS_REVOKED_ALL"
   | "REFRESH_REUSE"
+  | "REFRESH_REUSE_GRACE"
   | "STEP_UP_VERIFIED"
   | "MFA_VERIFIED"
   | "EMAIL_VERIFIED"
+  | "EMAIL_DELIVERY_SENT"
+  | "EMAIL_DELIVERY_FAILED"
   | "PASSKEY_ADDED"
   | "PASSKEY_REMOVED"
   | "PASSKEY_LOGIN"
   | "SAML_LOGIN"
   | "APIKEY_CREATED"
-  | "ACCOUNT_LOCKED";
+  | "ACCOUNT_LOCKED"
+  | "ACCOUNT_DELETED"
+  | "SSO_CONNECTION_DELETED"
+  /** Rate-limit rejections from src/lib/rate-limit.ts (per-IP sliding window). */
+  | "RATE_LIMITED";
 
 /**
  * Append a security event. Best-effort: never throws into the caller so a

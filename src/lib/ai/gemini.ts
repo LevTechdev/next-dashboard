@@ -354,6 +354,7 @@ export async function createGeminiReplyStream(
   let round = 0;
   let activeModel = initialModel;
   let response: Response | null = null;
+  let lastResponse: Response | null = null;
   let lastErrorBody = "";
   let lastStatus = 0;
 
@@ -365,6 +366,7 @@ export async function createGeminiReplyStream(
       break;
     }
     lastStatus = res.response.status;
+    lastResponse = res.response;
     lastErrorBody = res.errorBody ?? "";
     // If model not found (404) or rate limit (429) or high demand (503), try next free model
     if (lastStatus === 404 || lastStatus === 429 || lastStatus === 503) {
@@ -379,7 +381,10 @@ export async function createGeminiReplyStream(
     if (lastStatus === 429) {
       throw new GeminiRateLimitError(
         `Gemini API rate limited (429): ${lastErrorBody}`,
-        parseRetryAfterSeconds(lastErrorBody, response?.headers.get("Retry-After") ?? null),
+        // When EVERY candidate 429s, `response` stays null — read the retry
+        // window off the last error response instead, or the Retry-After
+        // header is silently dropped in favor of body-text parsing.
+        parseRetryAfterSeconds(lastErrorBody, lastResponse?.headers.get("Retry-After") ?? null),
       );
     }
     throw new Error(

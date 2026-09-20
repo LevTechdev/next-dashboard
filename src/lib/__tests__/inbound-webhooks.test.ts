@@ -9,6 +9,13 @@ import {
   PLATFORM_SECRETS,
 } from "@/lib/inbound-webhooks";
 import { getDlqEntries, enqueueDlq, retryDlqEntry, purgeDlqEntry } from "@/lib/webhook-dlq-store";
+import {
+  processDueRetries,
+  scheduleRetry,
+  isExhausted,
+  MAX_ATTEMPTS,
+  backoffDelay,
+} from "@/lib/webhook-retry";
 
 describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
   it("verifies valid and rejects invalid Shopify HMAC-SHA256 signatures", () => {
@@ -93,5 +100,112 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
 
     const purged = purgeDlqEntry(entry.id);
     expect(purged).toBe(true);
+  });
+
+  describe("delivery health: automatic retry scheduling", () => {
+    const cleanup = (id: string) => purgeDlqEntry(id);
+
+    it("marks transient failures RETRYING and permanent ones FAILED", () => {
+      const transient = enqueueDlq({
+        platform: "shopify",
+        event: "order.inbound",
+        headers: {},
+        payload: { ok: 1 },
+        errorMessage: "Timeout connecting to upstream",
+        transient: true,
+      });
+      expect(transient.status).toBe("RETRYING");
+      expect(transient.nextRetryAt).toBeDefined();
+      cleanup(transient.id);
+
+      const permanent = enqueueDlq({
+        platform: "shopify",
+        event: "order.inbound",
+        headers: {},
+        payload: { ok: 2 },
+        errorMessage: "Bad HMAC signature",
+      });
+      expect(permanent.status).toBe("FAILED");
+      cleanup(permanent.id);
+    });
+
+    it("resolves due entries when the dispatcher succeeds", async () => {
+      const entry = enqueueDlq({
+        platform: "shopee",
+        event: "order.inbound",
+        headers: {},
+        payload: { sweep: true },
+        errorMessage: "Transient DB error",
+        transient: true,
+      });
+      // Force due: nextRetryAt in the past.
+      const due = new Date(Date.now() - 1000);
+      const { saveDlqEntries } = await import("@/lib/webhook-dlq-store");
+      saveDlqEntries(
+        getDlqEntries().map((e) =>
+          e.id === entry.id ? { ...e, nextRetryAt: due.toISOString() } : e,
+        ),
+      );
+
+      const result = await processDueRetries(async () => true);
+      const after = getDlqEntries().find((e) => e.id === entry.id);
+      expect(result.attempted).toBeGreaterThanOrEqual(1);
+      expect(after?.status).toBe("RESOLVED");
+      cleanup(entry.id);
+    });
+
+    it("schedules capped exponential backoff and promotes to terminal FAILED after MAX_ATTEMPTS", async () => {
+      expect(backoffDelay(1)).toBe(5 * 60_000);
+      expect(backoffDelay(2)).toBe(10 * 60_000);
+      expect(backoffDelay(9)).toBe(30 * 60_000); // capped
+
+      const entry = enqueueDlq({
+        platform: "woocommerce",
+        event: "order.inbound",
+        headers: {},
+        payload: { exhaust: true },
+        errorMessage: "Upstream 503",
+        transient: true,
+      });
+      const { saveDlqEntries } = await import("@/lib/webhook-dlq-store");
+      // Fast-forward: retryCount already at the last attempt and due now.
+      saveDlqEntries(
+        getDlqEntries().map((e) =>
+          e.id === entry.id
+            ? {
+                ...e,
+                retryCount: MAX_ATTEMPTS - 1,
+                nextRetryAt: new Date(Date.now() - 1000).toISOString(),
+              }
+            : e,
+        ),
+      );
+
+      await processDueRetries(async () => false);
+      const after = getDlqEntries().find((e) => e.id === entry.id);
+      expect(after?.retryCount).toBe(MAX_ATTEMPTS);
+      expect(after?.status).toBe("FAILED");
+      expect(isExhausted(after!)).toBe(true);
+      expect(after?.nextRetryAt).toBeUndefined();
+      cleanup(entry.id);
+    });
+
+    it("scheduleRetry re-arms a FAILED entry for the next sweep", async () => {
+      const entry = enqueueDlq({
+        platform: "tiktok",
+        event: "order.inbound",
+        headers: {},
+        payload: { rearm: true },
+        errorMessage: "Wants a manual replay",
+      });
+      const result = scheduleRetry(entry.id);
+      expect(result.success).toBe(true);
+      expect(result.entry?.status).toBe("RETRYING");
+      // Due immediately — a sweep dispatches it right away.
+      expect(new Date(result.entry!.nextRetryAt!).getTime()).toBeLessThanOrEqual(Date.now());
+      cleanup(entry.id);
+
+      expect(scheduleRetry("missing-id").success).toBe(false);
+    });
   });
 });

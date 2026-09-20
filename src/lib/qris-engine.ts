@@ -15,6 +15,16 @@ export const qrisEmitter = globalForEmitter.qrisEmitterSingleton ?? new EventEmi
 qrisEmitter.setMaxListeners(100);
 if (process.env.NODE_ENV !== "production") globalForEmitter.qrisEmitterSingleton = qrisEmitter;
 
+// Server-side persistence hook, registered from instrumentation via
+// qris-ledger-store. The engine itself stays fs-free because client components
+// import its pure QR helpers; the hook is a no-op when unset (unit tests).
+type PersistHook = (state: QrisLedgerState) => void;
+let persistHook: PersistHook | null = null;
+
+export function setQrisLedgerPersistHook(hook: PersistHook | null): void {
+  persistHook = hook;
+}
+
 export interface QrisTransaction {
   id: string;
   invoiceNumber: string;
@@ -273,6 +283,21 @@ class QrisLedger {
     };
   }
 
+  /** Replace the whole ledger state (disk hydration at server startup). */
+  public hydrate(state: QrisLedgerState): void {
+    this.availableBalance = state.availableBalance;
+    this.pendingBalance = state.pendingBalance;
+    this.totalWithdrawn = state.totalWithdrawn;
+    this.totalInbound = state.totalInbound;
+    this.transactions = Array.isArray(state.transactions) ? state.transactions : [];
+    this.disbursements = Array.isArray(state.disbursements) ? state.disbursements : [];
+  }
+
+  /** Fire the persistence hook (server-only; no-op when unset). */
+  private persist(): void {
+    persistHook?.(this.getState());
+  }
+
   public createTransaction(
     amount: number,
     customerName: string = "Walk-in Customer",
@@ -298,6 +323,7 @@ class QrisLedger {
     this.pendingBalance += amount;
     this.transactions.unshift(tx);
     qrisEmitter.emit("transaction_created", tx);
+    this.persist();
     return tx;
   }
 
@@ -321,7 +347,7 @@ class QrisLedger {
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
     });
-
+    this.persist();
     return tx;
   }
 
@@ -348,7 +374,7 @@ class QrisLedger {
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
     });
-
+    this.persist();
     return tx;
   }
 
@@ -369,7 +395,7 @@ class QrisLedger {
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
     });
-
+    this.persist();
     return tx;
   }
 
@@ -462,7 +488,7 @@ class QrisLedger {
       disbursement,
       availableBalance: this.availableBalance,
     });
-
+    this.persist();
     return disbursement;
   }
 }

@@ -106,6 +106,10 @@ export function convertCurrency(
 ): number {
   if (!amount || isNaN(amount)) return 0;
   if (sourceCurrency === targetCurrency) return amount;
+  // USD is the base currency: an explicitly-USD target never converts, even
+  // when the source is untyped (the >1000 IDR heuristic below is reserved
+  // for untyped amounts rendered in a non-USD target).
+  if (!sourceCurrency && targetCurrency === "USD") return amount;
   if (!sourceCurrency && targetCurrency === "IDR" && amount > 1000) return amount;
 
   const usdAmount = toBaseUsd(amount, sourceCurrency);
