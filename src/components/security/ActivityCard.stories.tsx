@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ActivityCard } from "./activity-card";
 import type { SecurityData } from "./use-security-data";
 
@@ -40,6 +40,8 @@ const createMockSecurityData = (overrides: Partial<SecurityData> = {}): Security
   sessions: [],
   events: [],
   mfaVerifiedRecently: true,
+  mfaLastVerifiedAt: "2026-09-10T09:00:00.000Z",
+  mfaDaysSince: 9,
   loading: false,
   refresh: async () => {},
   ...overrides,

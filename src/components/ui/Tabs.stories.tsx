@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 
 /**
@@ -62,7 +62,11 @@ export const Scrollable: Story = {
         ))}
       </TabsList>
       {Array.from({ length: 10 }, (_, i) => (
-        <TabsContent key={`tab${i + 1}`} value={`tab${i + 1}`} className="mt-4 p-4 border rounded-lg">
+        <TabsContent
+          key={`tab${i + 1}`}
+          value={`tab${i + 1}`}
+          className="mt-4 p-4 border rounded-lg"
+        >
           <p className="text-sm">Content for Tab {i + 1}</p>
         </TabsContent>
       ))}

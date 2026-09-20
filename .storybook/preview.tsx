@@ -1,4 +1,4 @@
-import type { Preview, Decorator } from "@storybook/react";
+import type { Preview, Decorator } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { Toaster } from "sonner";
 
