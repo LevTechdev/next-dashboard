@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { HelpCircle, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 
 export interface StratusFaqItem {
   id: string;
@@ -105,49 +106,52 @@ export function StratusFaq({
               transition={{ duration: 0.5, delay: index * 0.06 }}
               className="flex flex-col"
             >
+              {/* The trigger is a real button (aria-expanded/aria-controls) and
+                  the answer stays mounted through a grid-rows clip — the FAQ
+                  has to be keyboard-operable and its answers present in the
+                  initial HTML for SEO. */}
               <div
-                onClick={() => setOpenIndex(isOpen ? null : index)}
                 className={cn(
-                  "flex flex-col gap-2 cursor-pointer p-4 sm:p-5 rounded-2xl border transition-all duration-200 select-none",
+                  "rounded-2xl border transition-all duration-200 select-none",
                   isOpen
                     ? "bg-muted/70 dark:bg-zinc-900/80 border-primary/30 shadow-sm"
                     : "bg-background/80 dark:bg-zinc-950/60 border-border/70 hover:bg-muted/40 hover:border-border",
                 )}
               >
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-[15px] sm:text-base font-semibold text-foreground leading-snug">
-                    {item.question}
-                  </h3>
-                  <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={cn(
-                      "shrink-0 rounded-lg p-1.5 transition-colors",
-                      isOpen
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted dark:bg-zinc-800 text-foreground",
-                    )}
-                  >
-                    {isOpen ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                  </motion.div>
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      key="content"
-                      initial={{ height: 0, opacity: 0, filter: "blur(6px)" }}
-                      animate={{ height: "auto", opacity: 1, filter: "blur(0px)" }}
-                      exit={{ height: 0, opacity: 0, filter: "blur(6px)" }}
-                      transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pt-3 border-t border-border/50 text-sm text-muted-foreground leading-relaxed">
-                        {item.answer}
-                      </div>
-                    </motion.div>
+                <AnimatedDisclosure
+                  keepMounted
+                  open={isOpen}
+                  onToggle={() => setOpenIndex(isOpen ? null : index)}
+                  contentId={`faq-panel-${item.id}`}
+                  triggerClassName="w-full flex items-center justify-between gap-4 cursor-pointer p-4 sm:p-5 text-left"
+                  trigger={({ open }) => (
+                    <>
+                      <span className="text-[15px] sm:text-base font-semibold text-foreground leading-snug">
+                        {item.question}
+                      </span>
+                      <motion.span
+                        animate={{ rotate: open ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={cn(
+                          "shrink-0 rounded-lg p-1.5 transition-colors",
+                          open
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted dark:bg-zinc-800 text-foreground",
+                        )}
+                      >
+                        {open ? (
+                          <Minus className="h-3.5 w-3.5" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5" />
+                        )}
+                      </motion.span>
+                    </>
                   )}
-                </AnimatePresence>
+                >
+                  <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-3 border-t border-border/50 text-sm text-muted-foreground leading-relaxed">
+                    {item.answer}
+                  </div>
+                </AnimatedDisclosure>
               </div>
             </motion.div>
           );
