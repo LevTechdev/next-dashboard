@@ -18,7 +18,11 @@ if (!process.env.DATABASE_URL) {
   try {
     const env = readFileSync(".env.local", "utf8");
     const line = env.split("\n").find((l) => l.startsWith("DATABASE_URL="));
-    if (line) process.env.DATABASE_URL = line.replace("DATABASE_URL=", "").replace(/^\"|\"$/g, "").trim();
+    if (line)
+      process.env.DATABASE_URL = line
+        .replace("DATABASE_URL=", "")
+        .replace(/^\"|\"$/g, "")
+        .trim();
   } catch {
     // fall through — prisma will error with a clear message
   }
@@ -40,9 +44,7 @@ async function main() {
 
   // One-to-one relation: any ACTIVE subscription counts; non-ACTIVE rows are
   // replaced by the upsert below.
-  const missing = users.filter(
-    (u) => !u.subscription || u.subscription.status !== "ACTIVE",
-  );
+  const missing = users.filter((u) => !u.subscription || u.subscription.status !== "ACTIVE");
   console.log(`Users scanned: ${users.length}`);
   console.log(`Users missing an ACTIVE subscription: ${missing.length}`);
 
@@ -74,7 +76,9 @@ async function main() {
 
   console.log(`Backfilled ${created} user(s) onto the Starter plan.`);
   if (missing.length > 0 && created < missing.length) {
-    console.warn(`${missing.length - created} user(s) could not be provisioned (see errors above).`);
+    console.warn(
+      `${missing.length - created} user(s) could not be provisioned (see errors above).`,
+    );
   }
 }
 

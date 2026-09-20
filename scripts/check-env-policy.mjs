@@ -34,7 +34,15 @@ const DB_URL_KEYS = ["DATABASE_URL", "DIRECT_URL"];
  *  Prose docs (.md) are excluded — mentioning the remote host in a runbook is
  *  legitimate; only files that get executed or loaded matter. */
 const SCAN_EXTENSIONS = new Set([
-  ".ts", ".tsx", ".js", ".mjs", ".cjs", ".json", ".yml", ".yaml", ".sh",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".json",
+  ".yml",
+  ".yaml",
+  ".sh",
 ]);
 
 // Tokens identifying the production-only remote (Supabase pooler/direct).

@@ -87,9 +87,7 @@ async function main() {
       if (existing) {
         if (existing.value === orderCount) {
           skipped += 1;
-          console.log(
-            `  ${start.toISOString().slice(0, 7)}: orders=${orderCount} (up to date)`,
-          );
+          console.log(`  ${start.toISOString().slice(0, 7)}: orders=${orderCount} (up to date)`);
           continue;
         }
         if (!dryRun) {

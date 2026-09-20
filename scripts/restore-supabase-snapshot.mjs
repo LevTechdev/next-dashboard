@@ -33,7 +33,9 @@ const envLine = existsSync(join(ROOT, ".env.remote-supabase.bak"))
       .split(/\r?\n/)
       .find((l) => l.startsWith("DATABASE_URL="))
   : null;
-const rawUrl = process.env.REMOTE_SUPABASE_DATABASE_URL ?? (envLine ? envLine.slice("DATABASE_URL=".length).trim() : null);
+const rawUrl =
+  process.env.REMOTE_SUPABASE_DATABASE_URL ??
+  (envLine ? envLine.slice("DATABASE_URL=".length).trim() : null);
 if (!rawUrl) {
   console.error("[restore] missing REMOTE_SUPABASE_DATABASE_URL / .env.remote-supabase.bak");
   process.exit(2);

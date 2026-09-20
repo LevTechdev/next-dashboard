@@ -17,7 +17,9 @@ try {
   const deleted = await prisma.user.deleteMany({
     where: { email: { endsWith: "@codebuff-test.local" } },
   });
-  console.log(JSON.stringify({ deletedUsers: deleted.count, deletedApiKeys: deletedKeys.count }, null, 2));
+  console.log(
+    JSON.stringify({ deletedUsers: deleted.count, deletedApiKeys: deletedKeys.count }, null, 2),
+  );
 } catch (e) {
   console.error("CLEANUP_ERROR:", e.message);
   process.exitCode = 1;

@@ -139,7 +139,11 @@ function insertMissing(url, table, file) {
 }
 
 function firstLine(err) {
-  return String(err.stderr ?? err.message).split("\n").find((l) => l.trim()) ?? "unknown error";
+  return (
+    String(err.stderr ?? err.message)
+      .split("\n")
+      .find((l) => l.trim()) ?? "unknown error"
+  );
 }
 
 function runDirection(label, fromName, toName) {
@@ -148,7 +152,9 @@ function runDirection(label, fromName, toName) {
     try {
       const file = copyPath(table, toName);
       if (dryRun) {
-        console.log(`  ${table}: ${rowCount(urls[fromName], table)} source row(s), nothing written`);
+        console.log(
+          `  ${table}: ${rowCount(urls[fromName], table)} source row(s), nothing written`,
+        );
         continue;
       }
       copyOut(urls[fromName], table, file);

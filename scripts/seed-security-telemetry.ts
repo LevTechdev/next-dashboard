@@ -32,7 +32,9 @@ async function main() {
     process.exit(1);
   }
   if (!admin.tenantId) {
-    console.error("[telemetry] admin has no tenantId — rows would be invisible to the tenant-scoped feed");
+    console.error(
+      "[telemetry] admin has no tenantId — rows would be invisible to the tenant-scoped feed",
+    );
     process.exit(1);
   }
 
@@ -74,7 +76,12 @@ async function main() {
           type: "RATE_LIMITED",
           ip: offenderIp,
           userAgent: ua,
-          metadata: { endpoint: DEMO_ENDPOINT, attempt: row.attempt, limit: row.limit, blocked: row.blocked },
+          metadata: {
+            endpoint: DEMO_ENDPOINT,
+            attempt: row.attempt,
+            limit: row.limit,
+            blocked: row.blocked,
+          },
           createdAt: minutesAgo(row.minsAgo),
         },
       });
@@ -85,8 +92,9 @@ async function main() {
         tenantId: admin.tenantId,
         type: "ACCOUNT_LOCKED",
         ip: offenderIp,
-        userAgent: ua,          metadata: { endpoint: DEMO_ENDPOINT, attempt: 5, failed: 5 },
-          createdAt: minutesAgo(50),
+        userAgent: ua,
+        metadata: { endpoint: DEMO_ENDPOINT, attempt: 5, failed: 5 },
+        createdAt: minutesAgo(50),
       },
     });
     console.log("[telemetry] inserted 4 RATE_LIMITED + 1 ACCOUNT_LOCKED attributed to admin");

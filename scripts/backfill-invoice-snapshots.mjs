@@ -60,9 +60,7 @@ async function main() {
     (invoice) => invoice.snapshotJson === null || invoice.snapshotJson === undefined,
   );
 
-  console.log(
-    `Invoices: ${invoices.length} total — ${missing.length} without a frozen snapshot.`,
-  );
+  console.log(`Invoices: ${invoices.length} total — ${missing.length} without a frozen snapshot.`);
 
   if (missing.length === 0) {
     console.log("\nNothing to backfill: every invoice already carries an issue-time snapshot.");
@@ -101,8 +99,7 @@ async function main() {
   );
   if (byStatus.size > 0) {
     console.log(
-      "By status: " +
-        [...byStatus.entries()].map(([status, n]) => `${status}=${n}`).join(", "),
+      "By status: " + [...byStatus.entries()].map(([status, n]) => `${status}=${n}`).join(", "),
     );
   }
 }

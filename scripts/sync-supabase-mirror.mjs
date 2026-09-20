@@ -67,7 +67,9 @@ const remoteUrl = cleanUrl(
 );
 
 if (!localUrl || !remoteUrl) {
-  console.error("[sync] missing DATABASE_URL (local) or REMOTE_SUPABASE_DATABASE_URL / .env.remote-supabase.bak");
+  console.error(
+    "[sync] missing DATABASE_URL (local) or REMOTE_SUPABASE_DATABASE_URL / .env.remote-supabase.bak",
+  );
   process.exit(2);
 }
 
@@ -81,11 +83,15 @@ function run(cmd, args, opts = {}) {
 }
 
 function listTables(url) {
-  const out = run(
-    "psql",
-    [url, "-tAc", "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"],
-  );
-  return out.split("\n").map((s) => s.trim()).filter(Boolean);
+  const out = run("psql", [
+    url,
+    "-tAc",
+    "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename",
+  ]);
+  return out
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function tableCounts(url, tables) {
@@ -130,7 +136,12 @@ function normalizedSchemaSql(url) {
     .filter((l) => {
       const s = l.trim();
       if (!s || s.startsWith("--")) return false;
-      if (/^(SET |SELECT pg_catalog\.set_config|\\restrict|\\unrestrict|GRANT |REVOKE |ALTER .* OWNER TO )/.test(s)) return false;
+      if (
+        /^(SET |SELECT pg_catalog\.set_config|\\restrict|\\unrestrict|GRANT |REVOKE |ALTER .* OWNER TO )/.test(
+          s,
+        )
+      )
+        return false;
       return true;
     })
     .join("\n");
@@ -153,7 +164,9 @@ if (DRY_RUN) {
     const onlyLocal = a.filter((l) => !setB.has(l));
     const onlyRemote = b.filter((l) => !setA.has(l));
     ddlDrift = [...onlyLocal, ...onlyRemote];
-    console.log(`[dry-run] DDL drift: ${onlyLocal.length} local-only + ${onlyRemote.length} remote-only DDL line(s)`);
+    console.log(
+      `[dry-run] DDL drift: ${onlyLocal.length} local-only + ${onlyRemote.length} remote-only DDL line(s)`,
+    );
     for (const l of onlyLocal.slice(0, 20)) console.log(`  local-only: ${l.slice(0, 140)}`);
     for (const l of onlyRemote.slice(0, 20)) console.log(`  remote-only: ${l.slice(0, 140)}`);
   }
@@ -162,8 +175,14 @@ if (DRY_RUN) {
   const remoteTables = new Set(listTables(remoteUrl));
   const missingRemote = tables.filter((t) => !remoteTables.has(t));
   const extraRemote = [...remoteTables].filter((t) => !tables.includes(t));
-  const localCounts = tableCounts(localUrl, tables.filter((t) => remoteTables.has(t) && t !== "_prisma_migrations"));
-  const remoteCounts = tableCounts(remoteUrl, [...remoteTables].filter((t) => tables.includes(t) && t !== "_prisma_migrations"));
+  const localCounts = tableCounts(
+    localUrl,
+    tables.filter((t) => remoteTables.has(t) && t !== "_prisma_migrations"),
+  );
+  const remoteCounts = tableCounts(
+    remoteUrl,
+    [...remoteTables].filter((t) => tables.includes(t) && t !== "_prisma_migrations"),
+  );
   const drift = [...remoteTables]
     .filter((t) => tables.includes(t) && t !== "_prisma_migrations")
     .filter((t) => (localCounts[t] ?? 0) !== (remoteCounts[t] ?? 0));
@@ -173,14 +192,24 @@ if (DRY_RUN) {
   // _prisma_migrations lives only on the remote (it tracks applied migrations
   // there) — expected, not drift.
   const meaningfulExtra = extraRemote.filter((t) => t !== "_prisma_migrations");
-  if (meaningfulExtra.length) console.log(`[dry-run] extra on remote: ${meaningfulExtra.join(", ")}`);
+  if (meaningfulExtra.length)
+    console.log(`[dry-run] extra on remote: ${meaningfulExtra.join(", ")}`);
   if (drift.length) {
     console.log("[dry-run] row-count drift:");
-    for (const t of drift) console.log(`  ${t}: local ${localCounts[t] ?? 0} → remote ${remoteCounts[t] ?? 0}`);
+    for (const t of drift)
+      console.log(`  ${t}: local ${localCounts[t] ?? 0} → remote ${remoteCounts[t] ?? 0}`);
   }
 
-  const clean = ddlDrift.length === 0 && missingRemote.length === 0 && meaningfulExtra.length === 0 && drift.length === 0;
-  console.log(clean ? "[dry-run] OK — full sync would be a no-op ✓" : "[dry-run] drift found — a full sync would rewrite the remote ✗");
+  const clean =
+    ddlDrift.length === 0 &&
+    missingRemote.length === 0 &&
+    meaningfulExtra.length === 0 &&
+    drift.length === 0;
+  console.log(
+    clean
+      ? "[dry-run] OK — full sync would be a no-op ✓"
+      : "[dry-run] drift found — a full sync would rewrite the remote ✗",
+  );
   process.exit(clean ? 0 : 1);
 }
 
@@ -223,7 +252,9 @@ const remoteOnly = [];
     console.error("[sync] REFUSED — remote has rows local lacks (full sync would delete them):");
     for (const r of remoteOnly) console.error(`  ${r}`);
     if (!FORCE) {
-      console.error("[sync] Re-run with --force to overwrite, or sync after backing up the remote.");
+      console.error(
+        "[sync] Re-run with --force to overwrite, or sync after backing up the remote.",
+      );
       process.exit(1);
     }
     console.error("[sync] --force given: proceeding anyway (rollback snapshot still taken first).");

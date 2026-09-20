@@ -73,7 +73,9 @@ check("renders the device row", () => {
   if (!/Device/i.test(html)) throw new Error("no Device row rendered");
 });
 
-console.log(failed === 0 ? "\n✅ All sign-in email checks passed" : `\n❌ ${failed} check(s) failed`);
+console.log(
+  failed === 0 ? "\n✅ All sign-in email checks passed" : `\n❌ ${failed} check(s) failed`,
+);
 // Only force a non-zero code on failure: calling process.exit(0) right after
 // top-level-await fetches trips a libuv assertion on Windows (win/async.c)
 // that corrupts the exit code — falling off the end exits cleanly with 0.

@@ -17,24 +17,24 @@ also be triggered manually through admin API routes or a small script.
 
 ## Jobs
 
-| Job             | Schedule                        | Engine                          | Side effects |
-|-----------------|---------------------------------|---------------------------------|--------------|
-| `usage-digest`  | Daily at 02:00 server time      | `src/lib/usage-digest.ts`       | In-app notification + email (Resend) to workspace owners when any metric crosses 80%/100% |
-| `auto-payout`   | Hourly evaluation, monthly execution | `src/lib/affiliate-auto-payout.ts` | Creates one SCHEDULED payout per calendar cycle when available commission ≥ threshold |
-| `webhook-retry` | Every 5-minute tick (due sweep) | `src/lib/webhook-retry.ts`      | Re-dispatches RETRYING DLQ entries; promotes to terminal FAILED after 5 attempts |
-| `auto-reorder`  | Hourly (with auto-payout)       | `src/lib/inventory-auto-reorder.ts` | Drafts DRAFT purchase orders for active products at/below their velocity-based reorder point (cooldown 7 days per product) |
+| Job             | Schedule                             | Engine                              | Side effects                                                                                                               |
+| --------------- | ------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `usage-digest`  | Daily at 02:00 server time           | `src/lib/usage-digest.ts`           | In-app notification + email (Resend) to workspace owners when any metric crosses 80%/100%                                  |
+| `auto-payout`   | Hourly evaluation, monthly execution | `src/lib/affiliate-auto-payout.ts`  | Creates one SCHEDULED payout per calendar cycle when available commission ≥ threshold                                      |
+| `webhook-retry` | Every 5-minute tick (due sweep)      | `src/lib/webhook-retry.ts`          | Re-dispatches RETRYING DLQ entries; promotes to terminal FAILED after 5 attempts                                           |
+| `auto-reorder`  | Hourly (with auto-payout)            | `src/lib/inventory-auto-reorder.ts` | Drafts DRAFT purchase orders for active products at/below their velocity-based reorder point (cooldown 7 days per product) |
 
 ## Configuration
 
-| Env var                     | Default        | Meaning |
-|-----------------------------|----------------|---------|
-| `SCHEDULER_ENABLED`         | off in dev     | `1` enables the in-app loop outside production |
-| `CRON_SECRET`               | —              | Required by `/api/usage/digest?secret=…`; generate with `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"` |
-| `AUTO_PAYOUT_THRESHOLD_USD` | `500`          | Available-commission level that triggers the monthly payout |
-| `AUTO_PAYOUT_RATIO`         | `1`            | Fraction of available balance committed (0.1–1, clamped); e.g. `0.5` pays half |
-| `AUTO_REORDER_MIN_RISK`     | `WARNING`      | Minimum stockout risk that triggers a draft PO (`CRITICAL` drafts only for critical items) |
-| `AUTO_REORDER_COOLDOWN_DAYS`| `7`            | Minimum days between auto-drafted POs for the same product |
-| `RESEND_API_KEY`            | —              | When absent, digest emails log instead of sending |
+| Env var                      | Default    | Meaning                                                                                                                            |
+| ---------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `SCHEDULER_ENABLED`          | off in dev | `1` enables the in-app loop outside production                                                                                     |
+| `CRON_SECRET`                | —          | Required by `/api/usage/digest?secret=…`; generate with `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"` |
+| `AUTO_PAYOUT_THRESHOLD_USD`  | `500`      | Available-commission level that triggers the monthly payout                                                                        |
+| `AUTO_PAYOUT_RATIO`          | `1`        | Fraction of available balance committed (0.1–1, clamped); e.g. `0.5` pays half                                                     |
+| `AUTO_REORDER_MIN_RISK`      | `WARNING`  | Minimum stockout risk that triggers a draft PO (`CRITICAL` drafts only for critical items)                                         |
+| `AUTO_REORDER_COOLDOWN_DAYS` | `7`        | Minimum days between auto-drafted POs for the same product                                                                         |
+| `RESEND_API_KEY`             | —          | When absent, digest emails log instead of sending                                                                                  |
 
 ## Manual runs
 
@@ -76,8 +76,8 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 ```ts
 import { runSchedulerJob } from "@/lib/scheduler";
 
-await runSchedulerJob("usage-digest");  // { owners, sent }
-await runSchedulerJob("auto-payout");   // { triggered, reason, payout? }
+await runSchedulerJob("usage-digest"); // { owners, sent }
+await runSchedulerJob("auto-payout"); // { triggered, reason, payout? }
 await runSchedulerJob("webhook-retry"); // { processed, retried, promoted }
 ```
 

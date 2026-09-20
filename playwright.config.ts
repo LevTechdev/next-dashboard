@@ -54,9 +54,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: process.env.E2E_PORT
-      ? `npx next dev -p ${e2ePort}`
-      : "npm run dev",
+    command: process.env.E2E_PORT ? `npx next dev -p ${e2ePort}` : "npm run dev",
     url: `http://localhost:${e2ePort}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

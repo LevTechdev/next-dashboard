@@ -96,18 +96,15 @@ function tableCounts(url, tables) {
 
 /** Newest createdAt across the leaf tables (ISO string, or null when empty). */
 function readWatermarkFromDb(url) {
-  const out = run(
-    "psql",
-    [
-      url,
-      "-tAc",
-      `SELECT max(w) FROM (
+  const out = run("psql", [
+    url,
+    "-tAc",
+    `SELECT max(w) FROM (
          SELECT max("createdAt") AS w FROM public."Session"
          UNION ALL SELECT max("createdAt") FROM public."RefreshToken"
          UNION ALL SELECT max("createdAt") FROM public."SecurityEvent"
        ) w`,
-    ],
-  ).trim();
+  ]).trim();
   return out && out !== "NULL" ? out : null;
 }
 
