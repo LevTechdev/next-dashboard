@@ -287,6 +287,7 @@ export function NotificationPanel() {
           {/* Type filter pills */}
           <div
             ref={filterRowRef}
+            data-notification-pill-row=""
             className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100 dark:border-gray-800 scrollbar-none"
           >
             {(
@@ -332,7 +333,7 @@ export function NotificationPanel() {
           </div>
 
           {/* Notifications List */}
-          <ScrollContainer className="flex-1 min-h-[200px] max-h-[400px]">
+          <ScrollContainer data-notification-list="" className="flex-1 min-h-[200px] max-h-[400px]">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                 <BellIcon size={40} className="h-10 w-10 mb-3 opacity-30" />

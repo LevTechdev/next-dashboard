@@ -62,17 +62,17 @@ test.describe("Integrations developer portal", () => {
       const row = apiKeyRow(page, keyName);
 
       // Revoke → REVOKED badge (gates on the refetch round-trip).
-      await row.getByTitle("Revoke key").click();
+      await row.getByRole("button", { name: "Revoke key" }).click();
       await expect(row.getByText("REVOKED", { exact: true })).toBeVisible(FETCH_GATED);
 
       // Reactivate → ACTIVE badge again.
-      await row.getByTitle("Reactivate key").click();
+      await row.getByRole("button", { name: "Reactivate key" }).click();
       await expect(row.getByText("ACTIVE", { exact: true })).toBeVisible(FETCH_GATED);
 
       // Delete requires confirmation, then the row disappears. The shared
       // ConfirmProvider renders the Sora AlertDialog (role="alertdialog"),
       // not a shadcn Dialog (role="dialog").
-      await row.getByTitle("Delete key").click();
+      await row.getByRole("button", { name: "Delete key" }).click();
       const confirmDialog = page.getByRole("alertdialog");
       await expect(
         confirmDialog.getByText(
@@ -147,14 +147,14 @@ test.describe("Integrations developer portal", () => {
       await expect(row.getByText("https://example.com/hook")).toBeVisible(FETCH_GATED);
 
       // Pause → PAUSED badge; activate → ACTIVE.
-      await row.getByTitle("Pause webhook").click();
+      await row.getByRole("button", { name: "Pause webhook" }).click();
       await expect(row.getByText("PAUSED", { exact: true })).toBeVisible(FETCH_GATED);
-      await row.getByTitle("Activate webhook").click();
+      await row.getByRole("button", { name: "Activate webhook" }).click();
       await expect(row.getByText("ACTIVE", { exact: true })).toBeVisible(FETCH_GATED);
 
       // Edit → rename persists.
       const renamed = `${hookName}-renamed`;
-      await row.getByTitle("Edit webhook").click();
+      await row.getByRole("button", { name: "Edit webhook" }).click();
       const editDialog = page.getByRole("dialog");
       await expect(editDialog.getByText("Edit Webhook")).toBeVisible();
       await editDialog.getByPlaceholder("e.g., Slack Notifications").fill(renamed);
@@ -166,7 +166,7 @@ test.describe("Integrations developer portal", () => {
       // Delete requires confirmation, then the row disappears — Sora
       // AlertDialog (role="alertdialog") via ConfirmProvider.
       const renamedRow = webhookRow(page, renamed);
-      await renamedRow.getByTitle("Delete webhook").click();
+      await renamedRow.getByRole("button", { name: "Delete webhook" }).click();
       const confirmDialog = page.getByRole("alertdialog");
       await expect(
         confirmDialog.getByText("Are you sure you want to delete this webhook endpoint?"),

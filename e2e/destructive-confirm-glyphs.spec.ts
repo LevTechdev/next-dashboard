@@ -207,7 +207,7 @@ test.describe("Destructive confirm dialogs — Sora media glyphs + Escape safety
       .filter({ has: page.getByRole("heading", { name: keyName, exact: true }) });
     await expect(row).toBeVisible(FETCH_GATED);
 
-    await row.getByTitle("Delete key").click();
+    await row.getByRole("button", { name: "Delete key" }).click();
     await openConfirmAndWaitForCopy(
       page,
       "Are you sure you want to delete this API key? This cannot be undone.",
@@ -221,7 +221,7 @@ test.describe("Destructive confirm dialogs — Sora media glyphs + Escape safety
     await expect(confirmDialog(page)).not.toBeVisible();
     await expect(row).toBeVisible(FETCH_GATED);
 
-    await row.getByTitle("Delete key").click();
+    await row.getByRole("button", { name: "Delete key" }).click();
     await openConfirmAndWaitForCopy(
       page,
       "Are you sure you want to delete this API key? This cannot be undone.",
@@ -263,7 +263,7 @@ test.describe("Destructive confirm dialogs — Sora media glyphs + Escape safety
       .filter({ has: page.getByRole("heading", { name: hookName, exact: true }) });
     await expect(row).toBeVisible(FETCH_GATED);
 
-    await row.getByTitle("Delete webhook").click();
+    await row.getByRole("button", { name: "Delete webhook" }).click();
     await openConfirmAndWaitForCopy(page, "Are you sure you want to delete this webhook endpoint?");
     expect(await confirmGlyphClass(page)).toContain("lucide-trash2");
 
@@ -271,7 +271,7 @@ test.describe("Destructive confirm dialogs — Sora media glyphs + Escape safety
     await expect(confirmDialog(page)).not.toBeVisible();
     await expect(row).toBeVisible(FETCH_GATED);
 
-    await row.getByTitle("Delete webhook").click();
+    await row.getByRole("button", { name: "Delete webhook" }).click();
     await openConfirmAndWaitForCopy(page, "Are you sure you want to delete this webhook endpoint?");
     await confirmDialog(page).getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(confirmDialog(page)).not.toBeVisible();

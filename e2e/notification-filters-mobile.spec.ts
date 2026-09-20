@@ -51,7 +51,7 @@ test.describe("Notification panel filter pills on mobile", () => {
   };
 
   test("tab focus scrolls the last filter pill into view", async ({ page }) => {
-    const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
+    const pillRow = page.locator("[data-notification-pill-row]");
     const lastPill = pillRow.locator("button").last();
 
     // Open the panel through the avatar dropdown (the bell is lg-only).
@@ -93,7 +93,7 @@ test.describe("Notification panel filter pills on mobile", () => {
   });
 
   test("close button is keyboard-reachable and Enter closes the popover", async ({ page }) => {
-    const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
+    const pillRow = page.locator("[data-notification-pill-row]");
     const closeButton = page.getByRole("button", { name: "Close notifications" });
 
     // Open the panel through the avatar dropdown (the bell is lg-only).
@@ -121,7 +121,7 @@ test.describe("Notification panel filter pills on mobile", () => {
   /** Open the notification popover (hydration-safe retry, shared by the
       hidden-scrollbar tests). */
   const openPanel = async (page: Page) => {
-    const pillRow = page.locator("header div.overflow-x-auto.scrollbar-none");
+    const pillRow = page.locator("[data-notification-pill-row]");
     await openBellMobile(page);
     await expect(pillRow).toBeVisible({ timeout: 15_000 });
     return pillRow;
@@ -139,7 +139,7 @@ test.describe("Notification panel filter pills on mobile", () => {
     // surface the dark test asserts. Toggle in-page in BOTH directions and
     // prove the thumb color follows: light -> dark changes it, dark -> light
     // restores the exact light value.
-    const list = page.locator("header div.overflow-y-auto.scrollbar-thin");
+    const list = page.locator("[data-notification-list]");
     await expect(list).toBeVisible();
     await expectThinScrollbarStyles(page, list, "notification list");
 
@@ -166,7 +166,7 @@ test.describe("Notification panel filter pills on mobile", () => {
     // The panel's notification list is its visible thin scrollbar — assert
     // the dark theme re-colors ITS thumb (the pill row's own thumb is
     // display:none, so there is nothing to recolor there).
-    const list = page.locator("header div.overflow-y-auto.scrollbar-thin");
+    const list = page.locator("[data-notification-list]");
     await expect(list).toBeVisible();
     await expectThinScrollbarStyles(page, list, "notification list (dark)");
     await assertThumbRecolorsInDarkMode(page, list, "notification list");
