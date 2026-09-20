@@ -1,17 +1,19 @@
-import { registerOTel } from "@vercel/otel";
 import { registerQrisLedgerPersistence } from "./lib/qris-ledger-store";
+import { startScheduler } from "./lib/scheduler";
 
 /**
- * Next.js instrumentation hook — Node.js runtime variant.
- * Runs once at server startup in the Node.js runtime. Registers OpenTelemetry
- * and hydrates the QRIS income ledger from disk, attaching the persistence
- * hook so transactions/disbursements survive server restarts. Kept separate
- * from instrumentation.ts (which also builds for Edge) so the Edge build never
- * traces the fs/path imports in qris-ledger-store.
+ * Node.js-runtime startup, called from instrumentation.ts.
+ *
+ * Never reached by the Edge build: instrumentation.ts imports this module
+ * dynamically, only after checking NEXT_RUNTIME, so the Edge bundle does not
+ * trace the fs-backed store or the scheduler.
+ *
+ * - QRIS ledger persistence: the income ledger hydrates from storage and
+ *   transactions/disbursements survive a restart.
+ * - Scheduler: the periodic jobs (auto-payout, auto-reorder, usage digest,
+ *   trial sweep).
  */
-export function register() {
-  registerOTel({
-    serviceName: process.env.OTEL_SERVICE_NAME || "next-dashboard",
-  });
+export async function registerNodeInstrumentation() {
   registerQrisLedgerPersistence();
+  await startScheduler();
 }
