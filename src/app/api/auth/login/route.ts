@@ -13,6 +13,13 @@ import { getRequestMeta } from "@/lib/request-meta";
 import { checkLoginRateLimit } from "@/lib/rate-limit";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
 import { verifyOtp, isOtpExpired, MAX_OTP_ATTEMPTS } from "@/lib/email-otp";
+import {
+  findTrustedDevice,
+  issueTrustToken,
+  trustCookieOptions,
+  TRUST_COOKIE,
+} from "@/lib/trusted-devices";
+import { consumeSecondFactorMarker, PASSKEY_2FA_COOKIE } from "@/lib/passkey-second-factor";
 
 export const dynamic = "force-dynamic";
 
@@ -90,8 +97,17 @@ export async function POST(req: Request) {
   try {
     console.log("parsing body");
     const body = await req.json();
-    const { email, password, totpToken, backupCode, emailOtpCode, challengeEmailOtp, locale } =
-      body;
+    const {
+      email,
+      password,
+      totpToken,
+      backupCode,
+      emailOtpCode,
+      challengeEmailOtp,
+      passkeyAsserted,
+      trustDevice,
+      locale,
+    } = body;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -169,6 +185,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
+    // ── Trusted device ──
+    // A device the user trusted for 30 days while completing a second factor
+    // skips the second factor entirely (GitHub/Google model). The check is
+    // bound to the current device+browser profile inside findTrustedDevice,
+    // so a stolen cookie does nothing on other machines. Trust never applies
+    // to the email-challenge issuance below — that requests a factor, it does
+    // not verify one.
+    const trusted = await findTrustedDevice(req, user.id);
+    const trustRequested = trustDevice === true;
+    if (trusted && user.totpEnabled) {
+      await logSecurityEvent({
+        userId: user.id,
+        type: "MFA_VERIFIED",
+        req,
+        metadata: { method: "trusted_device", trustedDeviceId: trusted.device.id },
+        tenantId: user.tenantId,
+      });
+      // Fall through to session issuance with the second factor satisfied.
+    }
+
     // ── Verification-method chooser ──
     // A user with 2FA enabled may authenticate the second factor either with
     // their authenticator app (TOTP / backup code) or with an emailed OTP.
@@ -201,18 +237,47 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2FA: accept a TOTP code, a single-use backup code, or an emailed OTP.
-    if (user.totpEnabled && user.totpSecret) {
-      if (!totpToken && !backupCode && !emailOtpCode) {
+    // 2FA: accept a TOTP code, a single-use backup code, an emailed OTP, or a
+    // passkey assertion verified by the WebAuthn endpoint in second-factor
+    // mode. Skipped entirely when the request came from a trusted device.
+    if (user.totpEnabled && user.totpSecret && !trusted) {
+      if (!totpToken && !backupCode && !emailOtpCode && !passkeyAsserted) {
+        // Report whether the user has registered passkeys so the chooser can
+        // offer the passkey card (phishing-resistant, cheapest second factor).
+        const passkeyCount = await prisma.webAuthnCredential.count({
+          where: { userId: user.id },
+        });
         return NextResponse.json(
-          { requires2FA: true, method: "totp", message: "TOTP verification code required" },
+          {
+            requires2FA: true,
+            method: "totp",
+            message: "TOTP verification code required",
+            hasPasskeys: passkeyCount > 0,
+          },
           { status: 200 },
         );
       }
       // Emailed-OTP path: same hashed comparison + attempt caps as the
       // verify-email flow, but it authenticates the sign-in (MFA_VERIFIED)
       // instead of marking the address verified.
-      if (emailOtpCode) {
+      // Passkey-as-second-factor: the assertion was already cryptographically
+      // verified by /api/auth/webauthn/authenticate/verify in second-factor
+      // mode, which stashed a short-lived signed marker cookie. Verify and
+      // consume it here — one marker, one sign-in.
+      if (passkeyAsserted) {
+        const marker = await consumeSecondFactorMarker(req, user.id);
+        if (!marker.ok) {
+          return NextResponse.json({ error: marker.error }, { status: 401 });
+        }
+        await logSecurityEvent({
+          userId: user.id,
+          type: "MFA_VERIFIED",
+          req,
+          metadata: { method: "passkey" },
+          tenantId: user.tenantId,
+        });
+        // Fall through to session issuance.
+      } else if (emailOtpCode) {
         const emailPassed = await verifyLoginEmailOtp(user, emailOtpCode, req);
         if (!emailPassed.ok) {
           return NextResponse.json(
@@ -333,6 +398,23 @@ export async function POST(req: Request) {
     });
 
     setAuthCookies(response, token, refreshToken);
+
+    // Grant device trust only when the user asked for it while COMPLETING a
+    // second factor (or signing in on an already-trusted device, where the
+    // cookie simply gets its lifetime extended by a fresh token). Password-
+    // only sign-ins never create trust.
+    if (trustRequested && (trusted || user.totpEnabled)) {
+      try {
+        const { token: trustToken, expiresAt } = await issueTrustToken(user.id, req);
+        response.cookies.set(TRUST_COOKIE, trustToken, trustCookieOptions(expiresAt));
+      } catch (err) {
+        console.error("trust-token issue failed:", err);
+      }
+    }
+    // The passkey marker is single-use: clear it once the session is issued.
+    if (passkeyAsserted) {
+      response.cookies.set(PASSKEY_2FA_COOKIE, "", { path: "/", maxAge: 0 });
+    }
 
     return response;
   } catch (error) {

@@ -28,6 +28,7 @@ export type SecurityEventType =
   | "PASSKEY_ADDED"
   | "PASSKEY_REMOVED"
   | "PASSKEY_LOGIN"
+  | "TRUSTED_DEVICE_REVOKED"
   | "SAML_LOGIN"
   | "APIKEY_CREATED"
   | "ACCOUNT_LOCKED"

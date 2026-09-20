@@ -35,6 +35,7 @@ type Story = StoryObj<typeof ActivityCard>;
 const createMockSecurityData = (overrides: Partial<SecurityData> = {}): SecurityData => ({
   totpEnabled: true,
   passkeys: [],
+  trustedDevices: [],
   backupRemaining: 5,
   emailVerified: "2026-01-15T10:00:00Z",
   sessions: [],

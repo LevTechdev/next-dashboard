@@ -2478,7 +2478,10 @@
     "emailOtpDesc": "Kami mengirim kode 6 digit ke {email}. Masukkan di bawah untuk melanjutkan.",
     "emailOtpSentToast": "Kode verifikasi terkirim — cek kotak masuk Anda.",
     "resendEmailCode": "Kirim ulang kode",
-    "chooseOtherMethod": "Coba metode lain"
+    "chooseOtherMethod": "Coba metode lain",
+    "usePasskey": "Gunakan passkey",
+    "usePasskeyDesc": "Masuk dengan sidik jari, wajah, atau PIN yang terdaftar di perangkat ini.",
+    "trustDeviceLabel": "Percayai perangkat ini selama 30 hari — lewati verifikasi dua faktor untuk masuk berikutnya dari perangkat ini."
   },
   "csvImport": {
     "importCsv": "Impor CSV",
@@ -2815,7 +2818,16 @@
     "copySecret": "Salin kunci rahasia",
     "manualEntryHint": "Tidak bisa memindai? Masukkan kunci ini secara manual:",
     "verifyButton": "Verifikasi",
-    "scoreComplete": "Semua perlindungan aktif — akun Anda sudah aman sepenuhnya."
+    "scoreComplete": "Semua perlindungan aktif — akun Anda sudah aman sepenuhnya.",
+    "trustedDevicesTitle": "Perangkat terpercaya",
+    "trustedDevicesEmpty": "Belum ada perangkat terpercaya. Saat Anda masuk dan mencentang \"Percayai perangkat ini 30 hari\", perangkat akan muncul di sini dan melewati verifikasi dua faktor sampai kedaluwarsa atau dicabut.",
+    "trustedDeviceMeta": "Terakhir digunakan {lastUsed} lalu · lewati 2FA selama {days} hari lagi",
+    "trustedDeviceRevokeLabel": "Cabut perangkat terpercaya: {device}",
+    "trustedDeviceRevoked": "Perangkat dicabut — verifikasi dua faktor akan diminta lagi pada masuk berikutnya.",
+    "trustedRevokeAllTitle": "Cabut semua perangkat terpercaya?",
+    "trustedRevokeAllDesc": "Semua perangkat terpercaya langsung kehilangan akses lewati-2FA. Anda perlu verifikasi dua faktor di masing-masing perangkat pada masuk berikutnya.",
+    "trustedRevokeAll": "Cabut semua perangkat",
+    "trustedRevokedCount": "{count} perangkat dicabut."
   },
   "sso": {
     "title": "SSO / Perusahaan",

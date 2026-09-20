@@ -61,6 +61,10 @@ interface AuthContextType {
     emailOtpCode?: string,
     /** Ask the server to email a login-challenge OTP (method chooser). */
     challengeEmailOtp?: boolean,
+    /** Complete the second factor with an already-verified passkey marker. */
+    passkeyAsserted?: boolean,
+    /** Trust this device for 30 days (skip 2FA on future sign-ins). */
+    trustDevice?: boolean,
   ) => Promise<{
     success: boolean;
     requires2FA?: boolean;
@@ -69,6 +73,8 @@ interface AuthContextType {
     emailSent?: boolean;
     /** Dev-mode inline OTP (no mailer configured). */
     devOtp?: string;
+    /** Whether the account has registered passkeys (chooser option). */
+    hasPasskeys?: boolean;
     error?: string;
     attemptsLeft?: number;
   }>;
@@ -223,13 +229,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       totpToken?: string,
       emailOtpCode?: string,
       challengeEmailOtp?: boolean,
+      passkeyAsserted?: boolean,
+      trustDevice?: boolean,
     ) => {
       setError(null);
       try {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, totpToken, emailOtpCode, challengeEmailOtp }),
+          body: JSON.stringify({
+            email,
+            password,
+            totpToken,
+            emailOtpCode,
+            challengeEmailOtp,
+            passkeyAsserted,
+            trustDevice,
+          }),
         });
 
         const data = await res.json();
@@ -249,6 +265,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             method: data.method,
             emailSent: data.emailSent,
             devOtp: data.devOtp,
+            /** Whether the account has registered passkeys (chooser option). */
+            hasPasskeys: data.hasPasskeys,
           };
         }
 

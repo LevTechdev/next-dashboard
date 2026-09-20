@@ -43,11 +43,22 @@ export interface PasskeyRow {
   lastUsedAt: string | null;
 }
 
+export interface TrustedDeviceRow {
+  id: string;
+  label: string | null;
+  device: string;
+  browser: string;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
 export interface SecurityData {
   sessions: SessionRow[];
   events: SecurityEventRow[];
   backupRemaining: number | null;
   passkeys: PasskeyRow[];
+  trustedDevices: TrustedDeviceRow[];
   /** null while loading / unknown */
   totpEnabled: boolean | null;
   /** ISO timestamp when the email was verified, or null. */
@@ -93,6 +104,7 @@ export function useSecurityData(): SecurityData {
   const [events, setEvents] = useState<SecurityEventRow[]>([]);
   const [backupRemaining, setBackupRemaining] = useState<number | null>(null);
   const [passkeys, setPasskeys] = useState<PasskeyRow[]>([]);
+  const [trustedDevices, setTrustedDevices] = useState<TrustedDeviceRow[]>([]);
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
   const [emailVerified, setEmailVerified] = useState<string | null>(null);
   const [mfaVerifiedRecently, setMfaVerifiedRecently] = useState(false);
@@ -100,7 +112,7 @@ export function useSecurityData(): SecurityData {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [s, e, b, p, pr] = await Promise.allSettled([
+    const [s, e, b, p, pr, td] = await Promise.allSettled([
       fetch("/api/auth/sessions").then((r) => json<SessionRow[]>(r, [])),
       // 30 events (not 20) so the telemetry panel has enough RATE_LIMITED /
       // ACCOUNT_LOCKED rows to summarize even on busy accounts.
@@ -114,6 +126,7 @@ export function useSecurityData(): SecurityData {
       fetch("/api/profile").then((r) =>
         json<{ totpEnabled?: boolean; emailVerified?: string | null }>(r, {}),
       ),
+      fetch("/api/auth/trusted-devices").then((r) => json<TrustedDeviceRow[]>(r, [])),
     ]);
     if (s.status === "fulfilled" && Array.isArray(s.value)) setSessions(s.value);
     if (e.status === "fulfilled" && Array.isArray(e.value)) {
@@ -134,6 +147,7 @@ export function useSecurityData(): SecurityData {
     }
     if (b.status === "fulfilled" && typeof b.value === "number") setBackupRemaining(b.value);
     if (p.status === "fulfilled" && Array.isArray(p.value)) setPasskeys(p.value);
+    if (td.status === "fulfilled" && Array.isArray(td.value)) setTrustedDevices(td.value);
     if (pr.status === "fulfilled" && typeof pr.value?.totpEnabled === "boolean") {
       setTotpEnabled(pr.value.totpEnabled);
     }
@@ -155,6 +169,7 @@ export function useSecurityData(): SecurityData {
     events,
     backupRemaining,
     passkeys,
+    trustedDevices,
     totpEnabled,
     emailVerified,
     mfaVerifiedRecently,

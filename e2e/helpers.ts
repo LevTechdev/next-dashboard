@@ -40,6 +40,14 @@ const sessionTokens = new Map<string, string>();
 // re-discovering the limit with more attempts.
 
 const THROTTLE_FALLBACK_SECONDS = 30;
+/**
+ * Full sliding-window length of /api/auth/login (10 attempts / 120s). The
+ * Retry-After header only reports when the OLDEST attempt exits the window —
+ * but every 429'd probe is itself recorded, so retrying on Retry-After alone
+ * keeps the window saturated forever. A saturated window needs one full
+ * window-length purge with zero probes inside it.
+ */
+const LOGIN_WINDOW_SECONDS = 130;
 let throttledUntil = 0;
 
 /** Seconds to wait, preferring the response's Retry-After header. */
@@ -51,9 +59,28 @@ function retryAfterSecondsFrom(res: { headers: () => Record<string, string> }): 
 
 /** Wait out a throttle window (with a small clock-skew buffer). */
 async function waitOutThrottle(seconds: number): Promise<void> {
-  const ms = Math.max(seconds, 1) * 1000 + 500;
+  // A rejected attempt is itself recorded, so a Retry-After-length sleep only
+  // frees one slot while our probe refills another — purge the full window.
+  const ms = Math.max(seconds, LOGIN_WINDOW_SECONDS) * 1000 + 500;
   throttledUntil = Math.max(throttledUntil, Date.now() + ms);
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Public: observe a login POST and absorb a 429 into the shared backoff, so
+ * every later `waitForLoginThrottleWindow()` in this worker waits the window
+ * out. Specs that drive the login form manually (the TOTP flow) wrap their
+ * `waitForResponse("…/api/auth/login")` in this instead of reading the
+ * response once and losing the signal.
+ */
+export async function observeLoginResponse(
+  pending: Promise<{ status: () => number; headers: () => Record<string, string> } | null>,
+): Promise<{ status: () => number; headers: () => Record<string, string> } | null> {
+  const res = await pending;
+  if (res && res.status() === 429) {
+    await waitOutThrottle(retryAfterSecondsFrom(res));
+  }
+  return res;
 }
 
 /**

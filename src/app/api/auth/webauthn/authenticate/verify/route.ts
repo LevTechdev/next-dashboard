@@ -12,17 +12,28 @@ import { createSession } from "@/lib/sessions";
 import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
+import {
+  issueSecondFactorMarker,
+  markerCookieOptions,
+  PASSKEY_2FA_COOKIE,
+} from "@/lib/passkey-second-factor";
 
 export const dynamic = "force-dynamic";
 
-/** POST: finish passkey login — verify the assertion and issue a session. */
+/**
+ * POST: finish passkey login — verify the assertion and either issue a
+ * session (passwordless first factor, the default) or, in `second_factor`
+ * mode, hand back a short-lived marker the login route consumes as the second
+ * factor (the password step already happened in the browser).
+ */
 export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const secondFactorMode = body.mode === "second_factor";
   const expectedChallenge = readChallengeCookie(req, AUTH_CHALLENGE_COOKIE);
   if (!expectedChallenge) {
     return NextResponse.json({ error: "Challenge expired. Try again." }, { status: 400 });
   }
 
-  const body = await req.json();
   const credential = body.credential as { id?: string } | undefined;
   if (!credential?.id) {
     return NextResponse.json({ error: "Invalid credential" }, { status: 400 });
@@ -65,6 +76,17 @@ export async function POST(req: Request) {
     where: { id: stored.id },
     data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() },
   });
+
+  // ── Second-factor mode: no session here. ──
+  // The login route still holds the verified-password context; hand back a
+  // short-lived signed marker it can verify and consume server-side.
+  if (secondFactorMode) {
+    const marker = await issueSecondFactorMarker(user.id);
+    const res = NextResponse.json({ secondFactorVerified: true });
+    res.cookies.set(PASSKEY_2FA_COOKIE, marker, markerCookieOptions());
+    res.cookies.set(AUTH_CHALLENGE_COOKIE, "", { path: "/", maxAge: 0 });
+    return res;
+  }
 
   // Issue a session exactly like password login (Phase 2 rotation).
   const authUser: AuthUser = {

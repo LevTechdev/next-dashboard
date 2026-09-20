@@ -58,6 +58,12 @@ function LoginForm() {
   const [emailOtpHint, setEmailOtpHint] = useState<string | null>(null);
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
+  // Whether the account has registered passkeys — revealed by the first
+  // requires-2FA response and used to render the chooser's passkey card.
+  const [hasPasskeys, setHasPasskeys] = useState(false);
+  // "Trust this device for 30 days" — granted only while completing a second
+  // factor; the server skips 2FA for the TTL on the matching device profile.
+  const [trustDevice, setTrustDevice] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,9 +105,11 @@ function LoginForm() {
         setTotpRequired(true);
         // Fresh challenge → always land on the method chooser.
         setVerifyMethod("choose");
+        setHasPasskeys(result.hasPasskeys ?? false);
         setEmailOtpSent(false);
         setEmailOtpDevCode(null);
         setEmailOtpHint(null);
+        setTrustDevice(false);
         setIsLoading(false);
         return;
       }
@@ -153,7 +161,15 @@ function LoginForm() {
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await login(savedEmail, savedPassword, undefined, code);
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        code,
+        undefined,
+        undefined,
+        trustDevice,
+      );
       if (result.success) {
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
@@ -190,7 +206,15 @@ function LoginForm() {
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await login(savedEmail, savedPassword, code);
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        code,
+        undefined,
+        undefined,
+        undefined,
+        trustDevice,
+      );
       if (result.success) {
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
@@ -201,6 +225,63 @@ function LoginForm() {
     } catch {
       setTotpRejected(true);
       toast.error(t("errorGeneric"));
+    } finally {
+      totpSubmittingRef.current = false;
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Passkey as the second factor: run the WebAuthn ceremony in second-factor
+   * mode (the endpoint verifies the assertion but issues no session), then
+   * complete the login with the marker it set. The password step already
+   * happened, so this only satisfies the second factor.
+   */
+  const handlePasskeySecondFactor = async () => {
+    if (totpSubmittingRef.current) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: savedEmail }),
+      });
+      if (!optionsRes.ok) {
+        const data = await optionsRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      const options = await optionsRes.json();
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: assertion, mode: "second_factor" }),
+      });
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        trustDevice,
+      );
+      if (result.success) {
+        toast.success(t("welcomeBackToast"));
+        router.push(redirect);
+      } else {
+        toast.error(result.error || t("loginFailed"));
+      }
+    } catch {
+      // User dismissed the browser's passkey prompt — not a failure toast.
     } finally {
       totpSubmittingRef.current = false;
       setIsLoading(false);
@@ -367,7 +448,46 @@ function LoginForm() {
                         </span>
                         <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
                       </button>
+
+                      {/* Passkey — phishing-resistant, offered when registered */}
+                      {hasPasskeys && (
+                        <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => void handlePasskeySecondFactor()}
+                          className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                        >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                            {isLoading ? (
+                              <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Fingerprint className="h-5 w-5" />
+                            )}
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                              {t("usePasskey")}
+                            </span>
+                            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              {t("usePasskeyDesc")}
+                            </span>
+                          </span>
+                          <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      )}
                     </div>
+
+                    <label className="mt-5 flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={trustDevice}
+                        onChange={(e) => setTrustDevice(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                      />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("trustDeviceLabel")}
+                      </span>
+                    </label>
 
                     <button
                       type="button"
@@ -451,6 +571,18 @@ function LoginForm() {
                       </Button>
                     </form>
 
+                    <label className="mt-4 flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={trustDevice}
+                        onChange={(e) => setTrustDevice(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                      />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("trustDeviceLabel")}
+                      </span>
+                    </label>
+
                     <div className="mt-4 flex flex-col gap-2">
                       <button
                         type="button"
@@ -529,6 +661,18 @@ function LoginForm() {
                           t("verifyAndLogin")
                         )}
                       </Button>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={trustDevice}
+                          onChange={(e) => setTrustDevice(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                        />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                          {t("trustDeviceLabel")}
+                        </span>
+                      </label>
 
                       <button
                         type="button"

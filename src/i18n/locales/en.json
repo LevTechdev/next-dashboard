@@ -2478,7 +2478,10 @@
     "emailOtpDesc": "We sent a 6-digit code to {email}. Enter it below to continue.",
     "emailOtpSentToast": "Verification code sent — check your inbox.",
     "resendEmailCode": "Resend code",
-    "chooseOtherMethod": "Try another method"
+    "chooseOtherMethod": "Try another method",
+    "usePasskey": "Use a passkey",
+    "usePasskeyDesc": "Sign in with the fingerprint, face, or PIN registered on this device.",
+    "trustDeviceLabel": "Trust this device for 30 days — skip two-factor on future sign-ins from it."
   },
   "csvImport": {
     "importCsv": "Import CSV",
@@ -2815,7 +2818,16 @@
     "copySecret": "Copy secret key",
     "manualEntryHint": "Can't scan? Enter this key manually:",
     "verifyButton": "Verify",
-    "scoreComplete": "All protections are active — your account is fully secured."
+    "scoreComplete": "All protections are active — your account is fully secured.",
+    "trustedDevicesTitle": "Trusted devices",
+    "trustedDevicesEmpty": "No trusted devices. When you sign in and check \"Trust this device for 30 days\", it appears here and skips two-factor until it expires or you revoke it.",
+    "trustedDeviceMeta": "Last used {lastUsed} ago · skips 2FA for {days} more days",
+    "trustedDeviceRevokeLabel": "Revoke trusted device: {device}",
+    "trustedDeviceRevoked": "Device revoked — it will need two-factor on next sign-in.",
+    "trustedRevokeAllTitle": "Revoke all trusted devices?",
+    "trustedRevokeAllDesc": "Every trusted device loses its skip-2FA grant immediately. You will need a second factor on each of them at next sign-in.",
+    "trustedRevokeAll": "Revoke all devices",
+    "trustedRevokedCount": "{count} device(s) revoked."
   },
   "sso": {
     "title": "SSO / Enterprise",

@@ -18,6 +18,7 @@ import { ActivityCard } from "@/components/security/activity-card";
 import { TelemetryCard } from "@/components/security/telemetry-card";
 import { TotpCard } from "@/components/security/totp-card";
 import { PasskeysCard } from "@/components/security/passkeys-card";
+import { TrustedDevicesCard } from "@/components/security/trusted-devices-card";
 import { BackupCodesCard } from "@/components/security/backup-codes-card";
 import { EmailVerificationCard } from "@/components/security/email-verification-card";
 import { Soc2ComplianceCard } from "@/components/security/soc2-compliance-card";
@@ -324,6 +325,7 @@ export function SecurityCenter() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
         <div className="lg:col-span-3 space-y-6">
           <SessionsCard data={data} />
+          <TrustedDevicesCard data={data} />
           <ActivityCard data={data} />
         </div>
         <div className="lg:col-span-2 space-y-6">

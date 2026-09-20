@@ -2412,7 +2412,10 @@
     "emailOtpDesc": "我们已向 {email} 发送 6 位验证码。请在下方输入以继续。",
     "emailOtpSentToast": "验证码已发送 — 请查收您的收件箱。",
     "resendEmailCode": "重新发送验证码",
-    "chooseOtherMethod": "尝试其他方式"
+    "chooseOtherMethod": "尝试其他方式",
+    "usePasskey": "使用通行密钥",
+    "usePasskeyDesc": "使用本设备上注册的指纹、面容或 PIN 登录。",
+    "trustDeviceLabel": "信任此设备 30 天 — 之后从该设备登录时跳过两步验证。"
   },
   "csvImport": {
     "importCsv": "导入 CSV",
@@ -2749,7 +2752,16 @@
     "copySecret": "复制密钥",
     "manualEntryHint": "无法扫描？手动输入此密钥：",
     "verifyButton": "验证",
-    "scoreComplete": "所有保护均已启用 — 账户已受到全面保护。"
+    "scoreComplete": "所有保护均已启用 — 账户已受到全面保护。",
+    "trustedDevicesTitle": "受信任的设备",
+    "trustedDevicesEmpty": "暂无受信任的设备。登录时勾选“信任此设备 30 天”后会显示在这里，并在到期或撤销前跳过两步验证。",
+    "trustedDeviceMeta": "上次使用于 {lastUsed} 前 · 还可跳过两步验证 {days} 天",
+    "trustedDeviceRevokeLabel": "撤销受信任设备：{device}",
+    "trustedDeviceRevoked": "设备已撤销 — 下次登录将需要两步验证。",
+    "trustedRevokeAllTitle": "撤销所有受信任的设备？",
+    "trustedRevokeAllDesc": "所有受信任的设备将立即失去跳过两步验证的资格。下次在每台设备上登录时都需要两步验证。",
+    "trustedRevokeAll": "撤销所有设备",
+    "trustedRevokedCount": "已撤销 {count} 台设备。"
   },
   "sso": {
     "title": "SSO / 企业",

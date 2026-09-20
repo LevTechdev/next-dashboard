@@ -50,6 +50,7 @@ model User {
   refreshTokens            RefreshToken[]
   webauthnCredentials      WebAuthnCredential[]
   pushSubscriptions        PushSubscription[]
+  trustedDevices           TrustedDevice[]
   tenantId                 String?
   tenant                   Tenant?                 @relation(fields: [tenantId], references: [id])
 }
@@ -145,6 +146,28 @@ model WebAuthnCredential {
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// A device the user marked "trust for 30 days" while completing a second
+/// factor. Trust SKIPS 2FA on sign-in (GitHub/Google model): the random token
+/// rides in an httpOnly cookie and is only honored when the current
+/// device+browser profile matches the row, so a stolen cookie is useless on
+/// another machine. Revocable per-device from the Security Center.
+model TrustedDevice {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique // SHA-256 of the random 32-byte trust token
+  device     String // parsed UA OS — same strings as Session.device
+  browser    String // parsed UA browser — same strings as Session.browser
+  ipHash     String? // SHA-256 of the IP at trust time (display only)
+  label      String? // human-readable, e.g. "Windows · Chrome"
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

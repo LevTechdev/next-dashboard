@@ -32,6 +32,7 @@ const baseData = (overrides: Partial<SecurityData> = {}): SecurityData => ({
   events: [],
   backupRemaining: null,
   passkeys: [],
+  trustedDevices: [],
   totpEnabled: null,
   emailVerified: null,
   mfaVerifiedRecently: false,

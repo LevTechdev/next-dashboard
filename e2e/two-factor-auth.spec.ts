@@ -1,6 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { generateSync } from "otplib";
-import { registerFreshUser, TEST_PASSWORD, waitForLoginThrottleWindow } from "./helpers";
+import {
+  observeLoginResponse,
+  registerFreshUser,
+  TEST_PASSWORD,
+  waitForLoginThrottleWindow,
+} from "./helpers";
 
 /**
  * Two-Factor Authentication E2E (pw6).
@@ -59,7 +64,15 @@ async function loginWithTotp(page: Page) {
   // 10-attempts/120s limit, and a throttled submit simply bounces back to
   // /en/login instead of reaching the TOTP step.
   await waitForLoginThrottleWindow();
+  // Observe the password POST so a 429 lands in the shared backoff and the
+  // retry below inherits the window instead of burning more attempts.
+  const passwordPost = observeLoginResponse(
+    page
+      .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+      .catch(() => null),
+  );
   await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await passwordPost;
 
   // The chooser replaces the login card; pick the authenticator app.
   await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
@@ -124,6 +137,100 @@ test.describe("Two-Factor Authentication", () => {
     ).toBeVisible();
   });
 
+  test("trusts a device for 30 days, skips the chooser next time, and revokes it", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(240_000); // A mid-test 429 backoff can sleep ~2 min.
+    // 1. Sign in via the chooser WITHOUT trust (serial tests above already
+    //    did that once — this run re-establishes the flow, then a second
+    //    sign-in WITH trust demonstrates the skip).
+    await page.goto("/en/login");
+    await page.waitForLoadState("networkidle");
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await waitForLoginThrottleWindow();
+    const firstTrustPost = observeLoginResponse(
+      page
+        .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+        .catch(() => null),
+    );
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    const firstTrust = await firstTrustPost;
+    if (firstTrust && firstTrust.status() === 429) {
+      await waitForLoginThrottleWindow();
+      await page.getByRole("button", { name: "Log in", exact: true }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+    // The trust checkbox is offered on the chooser.
+    await expect(page.getByRole("checkbox")).toBeVisible();
+    await page.getByRole("button", { name: /Use authenticator app/ }).click();
+    await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
+    // ... and again on the TOTP step. Check it there.
+    await page.getByRole("checkbox").check();
+    await fillLoginTotp(page, await freshCode(totpSecret));
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
+
+    // 2. Fresh sign-in on the SAME browser context: the trust cookie skips
+    //    the second factor entirely — password → dashboard, no chooser.
+    //    (goto + wait for the form, not networkidle: the authenticated app
+    //    keeps background traffic alive so networkidle can never settle.)
+    await page.goto("/en/login");
+    await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await waitForLoginThrottleWindow();
+    const trustedPost = observeLoginResponse(
+      page
+        .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+        .catch(() => null),
+    );
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    const trustedRes = await trustedPost;
+    if (trustedRes && trustedRes.status() === 429) {
+      await waitForLoginThrottleWindow();
+      await page.getByRole("button", { name: "Log in", exact: true }).click();
+    }
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).not.toBeVisible();
+
+    // 3. The device shows up in the Security Center's Trusted devices card.
+    await page.goto("/en/security");
+    await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
+    const trustedCard = page.getByRole("main").getByText("Trusted devices").first();
+    await expect(trustedCard).toBeVisible();
+
+    // 4. Revoke it → the next sign-in needs a second factor again.
+    await page
+      .getByRole("main")
+      .getByRole("button", { name: /Revoke trusted device: Windows · Chrome/ })
+      .first()
+      .click();
+    await expect(page.getByText("Device revoked", { exact: false }).first()).toBeVisible();
+
+    await page.goto("/en/login");
+    await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
+    await page.locator('input[type="email"]').fill(email);
+    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    await waitForLoginThrottleWindow();
+    const reTrustPost = observeLoginResponse(
+      page
+        .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+        .catch(() => null),
+    );
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    const reTrustRes = await reTrustPost;
+    if (reTrustRes && reTrustRes.status() === 429) {
+      await waitForLoginThrottleWindow();
+      await page.getByRole("button", { name: "Log in", exact: true }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+    // Leave the account in a clean state for the final disable test.
+    await page.getByRole("button", { name: /Use authenticator app/ }).click();
+    await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
+    await fillLoginTotp(page, await freshCode(totpSecret));
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
+  });
+
   test("requires a TOTP code at sign-in and rejects an invalid code", async ({ page }) => {
     // 1. Logged-out sign-in with 2FA-enabled account → the verification-method
     //    chooser appears first (new UX: 2FA users pick app vs. email code).
@@ -154,14 +261,28 @@ test.describe("Two-Factor Authentication", () => {
 
   test("signs in with an emailed code chosen from the verification-method chooser", async ({
     page,
-  }) => {
-    // 1. Sign-in with the 2FA account → chooser.
+  }, testInfo) => {
+    testInfo.setTimeout(240_000); // The 429 backoff itself can sleep ~2 min.
+    // 1. Sign-in with the 2FA account → chooser. The throttle backoff waits
+    //    the shared window out (earlier tests' attempts count toward the
+    //    same per-IP limit), and a still-open window is absorbed below.
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
     await page.locator('input[type="email"]').fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await waitForLoginThrottleWindow();
+    const passwordPost = observeLoginResponse(
+      page
+        .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+        .catch(() => null),
+    );
     await page.getByRole("button", { name: "Log in", exact: true }).click();
+    const first = await passwordPost;
+    // Throttled → wait out the window and submit once more.
+    if (first && first.status() === 429) {
+      await waitForLoginThrottleWindow();
+      await page.getByRole("button", { name: "Log in", exact: true }).click();
+    }
     await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
 
     // 2. Pick "Email me a code" → the challenge request fires (password was
@@ -182,12 +303,29 @@ test.describe("Two-Factor Authentication", () => {
     expect(devCode).toMatch(/^\d{6}$/);
 
     // 3. Enter the emailed code → the chooser grants the same session as the
-    //    TOTP path.
+    //    TOTP path. The verify POST is another attempt against the same
+    //    per-IP window as every earlier test in this serial run, so a 429
+    //    here is throttle pressure, not a rejected code: wait out the
+    //    Retry-After window (the rejected attempt drains the CodeSlots row)
+    //    and re-enter the code once.
+    const otpPost = observeLoginResponse(
+      page
+        .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+        .catch(() => null),
+    );
     await page.locator('input[inputmode="numeric"]').fill(devCode);
+    const otpRes = await otpPost;
+    if (otpRes && otpRes.status() === 429) {
+      await waitForLoginThrottleWindow();
+      const otpRetry = observeLoginResponse(
+        page
+          .waitForResponse((res) => res.url().includes("/api/auth/login"), { timeout: 60_000 })
+          .catch(() => null),
+      );
+      await page.locator('input[inputmode="numeric"]').fill(devCode);
+      await otpRetry;
+    }
     await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
-
-    // Leave 2FA enabled for the serial tests that follow? No — the final test
-    // asserts 2FA-off sign-in; disabling happens in the next test.
   });
 
   test("disables 2FA from the Security Center with password confirmation", async ({ page }) => {

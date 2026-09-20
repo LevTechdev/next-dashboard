@@ -2412,7 +2412,10 @@
     "emailOtpDesc": "{email} に 6 桁のコードを送信しました。下に入力して続行してください。",
     "emailOtpSentToast": "認証コードを送信しました — 受信箱をご確認ください。",
     "resendEmailCode": "コードを再送",
-    "chooseOtherMethod": "別の方法を試す"
+    "chooseOtherMethod": "別の方法を試す",
+    "usePasskey": "パスキーを使用",
+    "usePasskeyDesc": "この端末に登録した指紋・顔・PIN でサインインします。",
+    "trustDeviceLabel": "この端末を 30 日間信頼する — 以降のサインインで二要素認証を省略します。"
   },
   "csvImport": {
     "importCsv": "CSV インポート",
@@ -2749,7 +2752,16 @@
     "copySecret": "シークレットキーをコピー",
     "manualEntryHint": "スキャンできない場合は、このキーを手動で入力：",
     "verifyButton": "認証",
-    "scoreComplete": "すべての保護が有効です。アカウントは完全に保護されています。"
+    "scoreComplete": "すべての保護が有効です。アカウントは完全に保護されています。",
+    "trustedDevicesTitle": "信頼済み端末",
+    "trustedDevicesEmpty": "信頼済み端末はありません。サインイン時に「この端末を 30 日間信頼する」にチェックするとここに表示され、期限切れまたは取り消しまで二要素認証が省略されます。",
+    "trustedDeviceMeta": "最終使用 {lastUsed} 前 · あと {days} 日間 2FA を省略",
+    "trustedDeviceRevokeLabel": "信頼済み端末を取り消す: {device}",
+    "trustedDeviceRevoked": "端末を取り消しました — 次回のサインインから二要素認証が必要になります。",
+    "trustedRevokeAllTitle": "すべての信頼済み端末を取り消しますか？",
+    "trustedRevokeAllDesc": "すべての信頼済み端末は直ちに 2FA 省略を失います。次回のサインイン時にそれぞれで二要素認証が必要です。",
+    "trustedRevokeAll": "すべての端末を取り消す",
+    "trustedRevokedCount": "{count} 台の端末を取り消しました。"
   },
   "sso": {
     "title": "SSO / エンタープライズ",
