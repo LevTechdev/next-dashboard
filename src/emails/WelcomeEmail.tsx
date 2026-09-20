@@ -13,7 +13,8 @@ export default function WelcomeEmail({ name = "User" }: WelcomeEmailProps) {
         Welcome, {name}!
       </Heading>
       <Text className="text-zinc-700 text-[14px] leading-[24px]">
-        We're excited to have you on board. Next Dashboard helps you manage your projects, users, and subscriptions in one beautiful interface.
+        We&apos;re excited to have you on board. Next Dashboard helps you manage your projects,
+        users, and subscriptions in one beautiful interface.
       </Text>
       <Section className="mt-[32px] mb-[32px]">
         <Button

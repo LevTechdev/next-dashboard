@@ -8,14 +8,18 @@ interface ResetPasswordEmailProps {
   resetLink?: string;
 }
 
-export default function ResetPasswordEmail({ resetLink = "https://example.com", url }: ResetPasswordEmailProps) {
+export default function ResetPasswordEmail({
+  resetLink = "https://example.com",
+  url,
+}: ResetPasswordEmailProps) {
   return (
     <EmailLayout previewText="Reset your password">
       <Heading className="text-zinc-900 text-[24px] font-bold p-0 my-[30px] mx-0">
         Reset Password
       </Heading>
       <Text className="text-zinc-700 text-[14px] leading-[24px]">
-        We received a request to reset your password. Click the button below to choose a new password.
+        We received a request to reset your password. Click the button below to choose a new
+        password.
       </Text>
       <Section className="mt-[32px] mb-[32px]">
         <Button
@@ -26,7 +30,8 @@ export default function ResetPasswordEmail({ resetLink = "https://example.com", 
         </Button>
       </Section>
       <Text className="text-zinc-500 text-[14px] leading-[24px]">
-        If you didn't request a password reset, you can safely ignore this email. The link will expire in 1 hour.
+        If you didn&apos;t request a password reset, you can safely ignore this email. The link will
+        expire in 1 hour.
       </Text>
     </EmailLayout>
   );
