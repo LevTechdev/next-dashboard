@@ -13,14 +13,24 @@ import {
   Save,
   Inbox,
   MessageSquare,
+  Bell,
+  Info,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { ChatAlertsHub } from "@/components/integrations/chat-alerts-hub";
+import {
+  notificationStatusForType,
+  typeLabelKey,
+  NOTIFICATION_TYPES,
+} from "@/lib/notification-taxonomy";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -68,17 +78,7 @@ interface NotificationPreferences {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const NOTIFICATION_TYPES = [
-  "order",
-  "customer",
-  "product",
-  "revenue",
-  "inventory",
-  "discount",
-  "campaign",
-  "milestone",
-  "alert",
-] as const;
+const NOTIFICATION_TYPES_LOCAL = NOTIFICATION_TYPES;
 
 const TYPE_ICONS: Record<string, string> = {
   order: "🛒",
@@ -92,6 +92,48 @@ const TYPE_ICONS: Record<string, string> = {
   alert: "🔔",
 };
 
+/**
+ * boardui-style status chip — mapped through the SHARED taxonomy
+ * (src/lib/notification-taxonomy.ts) so the feed, bell panel, and toasts
+ * always agree on each type's status.
+ */
+function typeStatus(type: string): "neutral" | "information" | "success" | "error" {
+  return notificationStatusForType(type);
+}
+
+const STATUS_CHIP: Record<
+  "neutral" | "information" | "success" | "error",
+  { classes: string; Icon: typeof Bell }
+> = {
+  neutral: { classes: "bg-muted text-muted-foreground", Icon: Bell },
+  information: {
+    classes: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    Icon: Info,
+  },
+  success: {
+    classes: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+    Icon: CheckCircle2,
+  },
+  error: {
+    classes: "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300",
+    Icon: XCircle,
+  },
+};
+
+/** Derived initials avatar for customer-flavored notifications. */
+function AvatarChip({ name }: { name: string }) {
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join("");
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+      {initials || "?"}
+    </span>
+  );
+}
+
 function formatDate(dateStr: string | null, t: (key: string, params?: any) => string) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
@@ -103,8 +145,9 @@ function formatDate(dateStr: string | null, t: (key: string, params?: any) => st
 
   if (mins < 1) return t("justNow");
   if (mins < 60) return t("minsAgo", { count: mins });
-  if (hrs < 24) return t("hoursAgo", { count: hrs });
-  if (days < 7) return t("daysAgo", { count: days });
+  // Key vars match the messages: {h} for hoursAgo, {d} for daysAgo.
+  if (hrs < 24) return t("hoursAgo", { h: hrs });
+  if (days < 7) return t("daysAgo", { d: days });
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -285,6 +328,7 @@ function InboxTab() {
       title: tcommon("delete"),
       description: tnotif("deleteConfirmToast", { count: selectedIds.size }),
       confirmLabel: tcommon("delete"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -404,14 +448,16 @@ function InboxTab() {
             <option value="read">{tnotif("filterRead")}</option>
           </select>
           <div className="flex-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setRefreshKey((k) => k + 1)}
-            title={tcommon("refresh")}
-          >
-            <RefreshCwIcon size={16} className="h-4 w-4" />
-          </Button>
+          <Tooltip content={tcommon("refresh")} side="bottom">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRefreshKey((k) => k + 1)}
+              aria-label={tcommon("refresh")}
+            >
+              <RefreshCwIcon size={16} className="h-4 w-4" />
+            </Button>
+          </Tooltip>
           {data && data.unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="text-xs gap-1">
               <CheckCheckIcon size={16} className="h-4 w-4" /> {tnotif("markAllRead")}
@@ -444,7 +490,7 @@ function InboxTab() {
                 {tnotif("notifCount")}
               </span>
               <span>
-                <strong className="text-indigo-600 dark:text-indigo-400">{data.unreadCount}</strong>{" "}
+                <strong className="text-primary">{data.unreadCount}</strong>{" "}
                 {tnotif("unreadCountLabel")}
               </span>
               {selectedIds.size > 0 && (
@@ -499,93 +545,126 @@ function InboxTab() {
                 <span className="text-xs text-gray-500">{tnotif("selectAll")}</span>
               </div>
 
-              {notifications.map((n) => (
-                <Card
-                  key={n.id}
-                  className={cn(
-                    "transition-all duration-150",
-                    !n.read &&
-                      "border-primary/25 dark:border-primary/25 bg-primary/5 dark:bg-primary/10",
-                    selectedIds.has(n.id) && "ring-2 ring-primary/60",
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex items-center pt-0.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(n.id)}
-                          onChange={() => toggleSelect(n.id)}
-                          className="rounded border-gray-300 text-primary focus:ring-ring"
-                        />
-                      </div>
-                      <span className="text-lg shrink-0 pt-0.5">{TYPE_ICONS[n.type] || "🔔"}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4
+              {notifications.map((n) => {
+                const status = typeStatus(n.type);
+                const { Icon: StatusIcon } = STATUS_CHIP[status];
+                const isCustomerFlavored = n.type === "customer";
+                return (
+                  <Card
+                    key={n.id}
+                    data-testid="notification-row"
+                    className={cn(
+                      "transition-all duration-150",
+                      !n.read &&
+                        "border-primary/25 dark:border-primary/25 bg-primary/5 dark:bg-primary/10",
+                      selectedIds.has(n.id) && "ring-2 ring-primary/60",
+                    )}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex items-center pt-0.5">
+                          <input
+                            type="checkbox"
+                            aria-label={`${tnotif("selectAll")} ${n.title}`}
+                            checked={selectedIds.has(n.id)}
+                            onChange={() => toggleSelect(n.id)}
+                            className="rounded border-gray-300 text-primary focus:ring-ring"
+                          />
+                        </div>
+                        {/* Leading visual — avatar beats status chip (boardui precedence) */}
+                        {isCustomerFlavored ? (
+                          <AvatarChip name={n.title} />
+                        ) : (
+                          <span
                             className={cn(
-                              "text-sm",
-                              !n.read
-                                ? "font-semibold"
-                                : "font-medium text-gray-600 dark:text-gray-400",
+                              "flex size-10 shrink-0 items-center justify-center rounded-full",
+                              STATUS_CHIP[status].classes,
                             )}
                           >
-                            {n.title}
-                          </h4>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
-                            {tnotif(`type${n.type.charAt(0).toUpperCase() + n.type.slice(1)}`)}
-                          </Badge>
-                          {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
-                        </div>
-                        {n.description && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                            {n.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-[10px] text-gray-400">
-                            {formatDate(n.createdAt, tnotif)}
+                            <StatusIcon className="h-5 w-5" aria-hidden />
                           </span>
-                          {n.link && (
-                            <a
-                              href={n.link}
-                              className="text-[10px] text-indigo-500 hover:underline"
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <h4
+                              className={cn(
+                                "text-sm",
+                                !n.read
+                                  ? "font-semibold text-foreground"
+                                  : "font-medium text-muted-foreground",
+                              )}
                             >
-                              {tnotif("viewDetails")}
-                            </a>
+                              {n.title}
+                            </h4>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {formatDate(n.createdAt, tnotif)}
+                            </span>
+                            {!n.read && (
+                              <span
+                                aria-label={tnotif("filterUnread")}
+                                className="size-1.5 rounded-full bg-primary"
+                              />
+                            )}
+                          </div>
+                          {n.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {n.description}
+                            </p>
                           )}
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
+                              {tnotif(`type${n.type.charAt(0).toUpperCase() + n.type.slice(1)}`)}
+                            </Badge>
+                            {n.link && (
+                              <Button
+                                asChild
+                                variant="secondary"
+                                size="sm"
+                                className="h-6 text-[11px] px-2.5"
+                              >
+                                <a href={n.link}>{tnotif("viewDetails")}</a>
+                              </Button>
+                            )}
+                            {!n.read && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-[11px] px-2.5"
+                                onClick={() => handleMarkRead(n.id)}
+                              >
+                                <CheckCheckIcon size={12} className="h-3 w-3 mr-1" />
+                                {tnotif("markAsRead")}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {n.read && (
+                            <Tooltip content={tnotif("markAsUnread")} side="top">
+                              <button
+                                onClick={() => handleMarkUnread(n.id)}
+                                className="p-1 text-gray-400 hover:text-primary transition-colors"
+                                aria-label={tnotif("markAsUnread")}
+                              >
+                                <BellRing className="h-3.5 w-3.5" />
+                              </button>
+                            </Tooltip>
+                          )}
+                          <Tooltip content={tnotif("deleteTitle")} side="top">
+                            <button
+                              onClick={() => handleDelete(n.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                              aria-label={tnotif("deleteTitle")}
+                            >
+                              <XIcon size={14} className="h-3.5 w-3.5" />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {n.read ? (
-                          <button
-                            onClick={() => handleMarkUnread(n.id)}
-                            className="p-1 text-gray-400 hover:text-indigo-500 transition-colors"
-                            title={tnotif("markAsUnread")}
-                          >
-                            <BellRing className="h-3.5 w-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMarkRead(n.id)}
-                            className="p-1 text-gray-400 hover:text-indigo-500 transition-colors"
-                            title={tnotif("markAsRead")}
-                          >
-                            <CheckCheckIcon size={14} className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(n.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                          title={tnotif("deleteTitle")}
-                        >
-                          <XIcon size={14} className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </>
@@ -707,7 +786,6 @@ function AlertRulesTab() {
     }
   };
 
-
   const updatePref = async (field: string, value: boolean | number) => {
     const res = await fetch("/api/notifications/preferences", {
       method: "PUT",
@@ -752,7 +830,9 @@ function AlertRulesTab() {
             checked={pushEnabled}
             onChange={handleTogglePush}
             label={tnotif("enablePushLabel") || "Enable Push Notifications"}
-            description={tnotif("enablePushDesc") || "Allow the dashboard to send you web push notifications."}
+            description={
+              tnotif("enablePushDesc") || "Allow the dashboard to send you web push notifications."
+            }
           />
         </CardContent>
       </Card>
@@ -825,9 +905,7 @@ function AlertRulesTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshStockLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                {localLowStock} units
-              </span>
+              <span className="text-sm font-bold text-primary">{localLowStock} units</span>
             </div>
             <input
               type="range"
@@ -849,9 +927,7 @@ function AlertRulesTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshPendingLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                {localPendingThreshold} orders
-              </span>
+              <span className="text-sm font-bold text-primary">{localPendingThreshold} orders</span>
             </div>
             <input
               type="range"
@@ -873,9 +949,7 @@ function AlertRulesTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">{tnotif("threshBudgetLabel")}</label>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                {localBudgetPercent}%
-              </span>
+              <span className="text-sm font-bold text-primary">{localBudgetPercent}%</span>
             </div>
             <input
               type="range"

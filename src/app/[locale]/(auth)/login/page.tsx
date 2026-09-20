@@ -3,21 +3,21 @@
 import { useState, Suspense, useRef, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
-import { Fingerprint, Building2, Sun, Moon, Eye, EyeOff, Timer } from "lucide-react";
+import { Fingerprint, Building2, Eye, EyeOff, Timer } from "lucide-react";
 import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CodeSlots } from "@/components/ui/code-slots";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 import {
   FORGOT_PASSWORD_COOLDOWN_KEY,
   useResendCooldown,
 } from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 import { useTranslations } from "next-intl";
 
@@ -35,12 +35,28 @@ function LoginForm() {
   useEffect(() => setMounted(true), []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const [totpCode, setTotpCode] = useState("");
+  // Drives the CodeSlots error treatment: true while the rejected code drains,
+  // cleared by the component's own reset (onChange("") after the drain) so the
+  // row returns to the idle treatment ready for the next attempt.
+  const [totpRejected, setTotpRejected] = useState(false);
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || `/${locale}/dashboard`;
+  const sessionNotice = searchParams.get("reason");
+
+  // A dead session force-closes the dashboard onto this form with
+  // ?reason=expired (or reason=session-changed when another tab signed in as a
+  // different account). Say why, so the reappearing login form doesn't read as
+  // a random ejection.
+  useEffect(() => {
+    if (sessionNotice !== "expired" && sessionNotice !== "session-changed") return;
+    toast.info(sessionNotice === "expired" ? t("sessionExpired") : t("sessionChanged"), {
+      id: "session-notice",
+    });
+  }, [sessionNotice, t]);
 
   // ── Inline forgot-password state (styled like the 2FA step) ──
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -96,9 +112,11 @@ function LoginForm() {
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
+        setTotpRejected(true);
         toast.error(result.error || t("invalidCode"));
       }
     } catch {
+      setTotpRejected(true);
       toast.error(t("errorGeneric"));
     } finally {
       totpSubmittingRef.current = false;
@@ -149,19 +167,55 @@ function LoginForm() {
     window.location.href = "/api/auth/google";
   };
 
-  const { theme, setTheme } = useTheme();
+  // Passkey login: request authentication options for the entered email, run
+  // the WebAuthn ceremony, then let the verify endpoint set the session
+  // cookies exactly like a password login.
+  const handlePasskeyLogin = async () => {
+    if (!email.trim()) {
+      toast.error(t("enterEmailPassword"));
+      return;
+    }
+    try {
+      const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (!optionsRes.ok) {
+        const data = await optionsRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      const options = await optionsRes.json();
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: assertion }),
+      });
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      toast.success(t("welcomeBackToast"));
+      router.push(redirect);
+      router.refresh();
+    } catch {
+      // User cancelled the authenticator prompt or the ceremony failed.
+      toast.error(t("loginFailed"));
+    }
+  };
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {mounted && (
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-zinc-900 dark:text-white shadow-sm z-50"
-          aria-label="Toggle theme"
-        >
-          <Sun className="h-5 w-5 hidden dark:block" />
-          <Moon className="h-5 w-5 block dark:hidden" />
-        </button>
+        <ThemeToggleButton
+          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 backdrop-blur-md text-zinc-900 dark:text-white shadow-sm z-50"
+          iconClassName="h-5 w-5"
+          side="bottom"
+        />
       )}
 
       <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/20 dark:border-zinc-800 transition-colors">
@@ -188,37 +242,26 @@ function LoginForm() {
                 >
                   <div className="space-y-2">
                     <Label className="text-zinc-700">{t("verificationCode")}</Label>
-                    <div className="relative flex justify-between gap-2 w-full">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
-                            totpCode.length === i
-                              ? "border-primary ring-1 ring-primary"
-                              : "border-zinc-200 dark:border-zinc-700",
-                            totpCode[i] ? "text-zinc-900 dark:text-zinc-100" : "text-transparent",
-                          )}
-                        >
-                          {totpCode[i] || ""}
-                        </div>
-                      ))}
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
+                    {/* CodeSlots: six animated slots, a gliding caret, and the
+                        real verification state — a rejected code drains the row
+                        and flashes the destructive treatment, an accepted one
+                        washes it with the accent before the redirect. */}
+                    <div className="flex w-full justify-center pt-1">
+                      <CodeSlots
                         value={totpCode}
-                        onChange={(e) => {
-                          const next = e.target.value.replace(/\D/g, "").slice(0, 6);
-                          setTotpCode(next);
-                          if (next.length === 6) {
-                            void handleTotpVerification(next);
-                          }
+                        onChange={(code) => {
+                          setTotpCode(code);
+                          if (code.length === 0 && totpRejected) setTotpRejected(false);
                         }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
-                        autoFocus
+                        onComplete={(code) => {
+                          void handleTotpVerification(code);
+                        }}
+                        status={totpRejected ? "error" : "idle"}
                         disabled={isLoading}
+                        autoFocus
+                        ariaLabel={t("verificationCode")}
+                        slotSize={48}
+                        gap={6}
                       />
                     </div>
                   </div>
@@ -364,6 +407,24 @@ function LoginForm() {
                 </h1>
                 <p className="text-sm text-zinc-500 mb-8">{t("loginDescription")}</p>
 
+                {/* Persistent counterpart to the session toast: a dead session
+                    force-closed the dashboard onto this form, and the banner
+                    stays until it is dismissed by navigation — the toast alone
+                    vanished too fast to read (and gave e2e nothing to assert). */}
+                {(sessionNotice === "expired" || sessionNotice === "session-changed") && (
+                  <div
+                    id="session-expired-notice"
+                    data-testid="session-expired-notice"
+                    role="alert"
+                    className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+                  >
+                    <Timer className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                    <span>
+                      {sessionNotice === "expired" ? t("sessionExpired") : t("sessionChanged")}
+                    </span>
+                  </div>
+                )}
+
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-zinc-700">{t("email")}</Label>
@@ -462,7 +523,9 @@ function LoginForm() {
                     </svg>
                   </button>
                   <button
+                    onClick={() => void handlePasskeyLogin()}
                     type="button"
+                    aria-label={t("passkeySignIn")}
                     className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
                   >
                     <Fingerprint className="h-5 w-5 text-zinc-700" />

@@ -126,6 +126,7 @@ export default function DiscountsPage() {
       title: tcommon("delete"),
       description: tdiscounts("confirmDelete"),
       confirmLabel: tcommon("delete"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -373,8 +374,11 @@ export default function DiscountsPage() {
                 ))}
                 {discounts.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                      <Tag className="h-8 w-8 mx-auto mb-2 opacity-50" /> {tcommon("noData")}
+                    <TableCell colSpan={9} className="py-10">
+                      <div className="flex flex-col items-center gap-2 text-gray-500">
+                        <Tag className="h-8 w-8 opacity-50" />
+                        <span>{tcommon("noData")}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -386,4 +390,3 @@ export default function DiscountsPage() {
     </div>
   );
 }
-

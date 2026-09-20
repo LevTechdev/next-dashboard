@@ -55,6 +55,20 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+// The settings page consumes the onboarding context for the tour replay
+// action (reset + restart); the test harness renders without the provider.
+vi.mock("@/components/onboarding/onboarding-provider", () => ({
+  useOnboarding: () => ({
+    steps: [],
+    completeStep: vi.fn(),
+    progress: 0,
+    dismiss: vi.fn(),
+    isDismissed: true,
+    isComplete: false,
+    reset: vi.fn(),
+  }),
+}));
+
 // Mock fetch globally
 vi.stubGlobal(
   "fetch",

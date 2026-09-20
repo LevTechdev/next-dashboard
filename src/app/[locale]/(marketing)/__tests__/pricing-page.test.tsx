@@ -56,7 +56,9 @@ beforeEach(() => {
 describe("Pricing Page", () => {
   it("renders the header section with badge and title", () => {
     expect(screen.getByText("Simple Pricing")).toBeInTheDocument();
-    expect(screen.getByText("Pricing that")).toBeInTheDocument();
+    // The hero prefix renders as per-word animated spans (AnimatedHeading),
+    // so the exact string is only reachable via the aria-label.
+    expect(screen.getByLabelText("Pricing that")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
@@ -104,7 +106,9 @@ describe("Pricing Page", () => {
   });
 
   it("renders the comparison table with semantic table structure", () => {
-    expect(screen.getByText("Frequently Asked Questions")).toBeInTheDocument();
+    // FAQ now uses the homepage's Stratus design: dual-tone split heading
+    expect(screen.getByText("Frequently")).toBeInTheDocument();
+    expect(screen.getByText("Asked Questions")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
 
     const table = document.querySelector("table");

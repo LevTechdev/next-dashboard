@@ -1,10 +1,12 @@
 ﻿"use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlusIcon, UsersRoundIcon, SearchIcon, ClockIcon, ShieldCheckIcon } from "lucide-animated";
 import { Mail } from "lucide-react";
-import { Edit2, Trash2, Check } from "lucide-react";
+import { Edit2, Check, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { DeleteButton } from "@/components/ui/delete-button";
+import { MemberActivityGrid } from "@/components/profile/member-activity-grid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,8 +38,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials, getStatusColor, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { can } from "@/lib/permissions";
+import { can, type ClientLevel } from "@/lib/permissions";
+import { SalesChannelIcon } from "@/components/ui/brand-icons";
+import { useShowUpgrade } from "@/components/billing/tier-gate";
+import { Sparkles } from "lucide-react";
 import { DataExportButton } from "@/components/data-export-button";
 
 // Mock activity data
@@ -79,51 +85,55 @@ const MOCK_ACTIVITY = [
   },
 ];
 
-// Permission matrix data
+// Permission matrix data — SUPER_ADMIN merged into ADMIN (single all-access role)
 const PERMISSIONS_MATRIX = [
   {
     resource: "Dashboard",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
+    roles: { ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
   },
   {
     resource: "Orders",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
+    roles: { ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
   },
   {
     resource: "Products",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
+    roles: { ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
   },
   {
     resource: "Customers",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
+    roles: { ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
   },
   {
     resource: "Team",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
+    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
   },
   {
     resource: "Settings",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
+    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
   },
   {
     resource: "Billing",
-    roles: { SUPER_ADMIN: true, ADMIN: false, MANAGER: false, STAFF: false, AUDITOR: false },
+    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
   },
   {
     resource: "Audit Log",
-    roles: { SUPER_ADMIN: true, ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: true },
+    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: true },
   },
 ];
 
 export default function TeamPage() {
   const tteam = useTranslations("team");
   const tcommon = useTranslations("common");
-  const { user } = useAuth();
+  const { user, tierFeatures } = useAuth();
   const role = (user as any)?.role;
+  const showUpgrade = useShowUpgrade();
 
   const [members, setMembers] = useState<any[]>([]);
   const [, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  /** Sort field + direction for the members list (persisted per session). */
+  const [sortKey, setSortKey] = useState<"name" | "date" | "type" | "author">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editMember, setEditMember] = useState<any>(null);
@@ -172,7 +182,35 @@ export default function TeamPage() {
     loadInvitations();
   }, []);
 
-  const filtered = members.filter((m: any) => m.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = useMemo(() => {
+    const rows = members.filter((m: any) => m.name?.toLowerCase().includes(search.toLowerCase()));
+    const ROLE_RANK: Record<string, number> = {
+      ADMIN: 0,
+      MANAGER: 1,
+      STAFF: 2,
+      AUDITOR: 3,
+      CLIENT: 4,
+      CLIENT_ENTERPRISE: 5,
+    };
+    const dir = sortDir === "asc" ? 1 : -1;
+    const cmp = (a: any, b: any): number => {
+      switch (sortKey) {
+        case "date":
+          return (
+            (new Date(a.createdAt || a.joinedAt || 0).getTime() -
+              new Date(b.createdAt || b.joinedAt || 0).getTime()) *
+            dir
+          );
+        case "type":
+          return ((ROLE_RANK[a.role] ?? 99) - (ROLE_RANK[b.role] ?? 99)) * dir;
+        case "author":
+          return String(a.position || "").localeCompare(String(b.position || "")) * dir;
+        default:
+          return String(a.name || "").localeCompare(String(b.name || "")) * dir;
+      }
+    };
+    return [...rows].sort(cmp);
+  }, [members, search, sortKey, sortDir]);
 
   const handleSave = async () => {
     const method = editMember ? "PUT" : "POST";
@@ -200,6 +238,7 @@ export default function TeamPage() {
       title: tteam("removeBtn"),
       description: tteam("confirmRemove"),
       confirmLabel: tteam("removeBtn"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -238,6 +277,10 @@ export default function TeamPage() {
           expiresInDays: 7,
         });
         loadInvitations();
+      } else if (res.status === 402) {
+        // Plan seat limit reached — open the shared upgrade dialog.
+        setInviteDialogOpen(false);
+        showUpgrade("seatLimit");
       } else {
         toast.error("Failed to send invitation");
       }
@@ -293,6 +336,7 @@ export default function TeamPage() {
       title: tteam("revokeInviteTitle"),
       description: tteam("revokeInviteConfirm"),
       confirmLabel: tteam("removeBtn"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -385,11 +429,14 @@ export default function TeamPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SUPER_ADMIN">{tteam("superAdmin")}</SelectItem>
                         <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
                         <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
                         <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
                         <SelectItem value="AUDITOR">{tteam("auditor")}</SelectItem>
+                        <SelectItem value="CLIENT">{tteam("client")}</SelectItem>
+                        <SelectItem value="CLIENT_ENTERPRISE">
+                          {tteam("clientEnterprise")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     {!editMember && (
@@ -480,6 +527,7 @@ export default function TeamPage() {
                         }}
                         className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
                       />
+                      <SalesChannelIcon name={ch} size={13} />
                       <span>{ch}</span>
                     </label>
                   );
@@ -597,6 +645,7 @@ export default function TeamPage() {
                           }}
                           className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
                         />
+                        <SalesChannelIcon name={ch} size={13} />
                         <span>{ch}</span>
                       </label>
                     );
@@ -657,17 +706,55 @@ export default function TeamPage() {
         <TabsContent value="members">
           <Card>
             <CardHeader className="pb-3">
-              <div className="relative max-w-sm">
-                <SearchIcon
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                />
-                <Input
-                  placeholder={tcommon("search")}
-                  className="pl-10"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative max-w-sm flex-1 min-w-48">
+                  <SearchIcon
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                  />
+                  <Input
+                    placeholder={tcommon("search")}
+                    className="pl-10"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                {/* Sort: field + direction, matching file-manager conventions
+                    (Name / Date modified / Type / Author, asc / desc). */}
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                  <Select value={sortKey} onValueChange={(v) => setSortKey(v as typeof sortKey)}>
+                    <SelectTrigger className="w-40 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">{tteam("sortName")}</SelectItem>
+                      <SelectItem value="date">{tteam("sortDateModified")}</SelectItem>
+                      <SelectItem value="type">{tteam("sortType")}</SelectItem>
+                      <SelectItem value="author">{tteam("sortAuthor")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Tooltip
+                    content={sortDir === "asc" ? tteam("sortAscending") : tteam("sortDescending")}
+                    side="top"
+                  >
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label={
+                        sortDir === "asc" ? tteam("sortAscending") : tteam("sortDescending")
+                      }
+                      onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                    >
+                      {sortDir === "asc" ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </Tooltip>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0 sm:p-6">
@@ -677,7 +764,8 @@ export default function TeamPage() {
                     <TableRow>
                       <TableHead>{tteam("name")}</TableHead>
                       <TableHead>{tteam("role")}</TableHead>
-                      <TableHead>{tteam("position")}</TableHead>
+                      <TableHead className="hidden xl:table-cell">{tteam("activityCol")}</TableHead>
+                      <TableHead className="hidden md:table-cell">{tteam("position")}</TableHead>
                       <TableHead>{tcommon("status")}</TableHead>
                       <TableHead>{tteam("joinedDate")}</TableHead>
                       <TableHead className="text-right">{tcommon("actions")}</TableHead>
@@ -689,7 +777,7 @@ export default function TeamPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
                                 {getInitials(m.name)}
                               </AvatarFallback>
                             </Avatar>
@@ -700,9 +788,34 @@ export default function TeamPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(m.role)}>{m.role}</Badge>
+                          {m.role === "CLIENT" || m.role === "CLIENT_ENTERPRISE" ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <Badge className={getStatusColor(m.role)}>{m.role}</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] font-semibold border-primary/30 text-primary"
+                              >
+                                {tteam(
+                                  `clientLevel_${
+                                    (m.role === "CLIENT_ENTERPRISE"
+                                      ? "ENTERPRISE"
+                                      : tierFeatures?.tier === "PRO"
+                                        ? "PROFESSIONAL"
+                                        : "STARTER") as ClientLevel
+                                  }`,
+                                )}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <Badge className={getStatusColor(m.role)}>{m.role}</Badge>
+                          )}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">{m.position || "-"}</TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          <MemberActivityGrid userId={m.id} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-gray-500">
+                          {m.position || "-"}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={m.isActive ? "success" : "danger"}>
                             {m.isActive ? tcommon("active") : tcommon("inactive")}
@@ -733,24 +846,21 @@ export default function TeamPage() {
                             </Button>
                           )}
                           {can(role, "delete", "team") && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <DeleteButton
+                              label={tteam("removeBtn")}
                               onClick={() => handleDelete(m.id)}
-                              className="text-red-500"
-                            >
-                              <Trash2 size={14} className="h-3.5 w-3.5 mr-1" />
-                              {tteam("removeBtn")}
-                            </Button>
+                            />
                           )}
                         </TableCell>
                       </TableRow>
                     ))}
                     {filtered.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          <UsersRoundIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
-                          {tteam("noMembers")}
+                        <TableCell colSpan={6} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-gray-500">
+                            <UsersRoundIcon size={32} className="h-8 w-8 opacity-50" />
+                            <span>{tteam("noMembers")}</span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -841,15 +951,10 @@ export default function TeamPage() {
                                   <Edit2 size={14} className="h-3.5 w-3.5 mr-1 text-sky-500" />
                                   {tteam("editInviteBtn")}
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                <DeleteButton
+                                  label={tteam("removeBtn")}
                                   onClick={() => handleRevokeInvite(inv.id)}
-                                >
-                                  <Trash2 size={14} className="h-3.5 w-3.5 mr-1" />
-                                  {tteam("removeBtn")}
-                                </Button>
+                                />
                               </div>
                             )}
                           </TableCell>
@@ -877,7 +982,7 @@ export default function TeamPage() {
                     key={item.id}
                     className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
                   >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold shrink-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
                       {getInitials(item.user)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -908,7 +1013,7 @@ export default function TeamPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{tteam("permissions")}</TableHead>
-                      {["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
+                      {["ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
                         <TableHead key={r} className="text-center text-xs">
                           {r.replace("_", " ")}
                         </TableHead>
@@ -919,7 +1024,7 @@ export default function TeamPage() {
                     {PERMISSIONS_MATRIX.map((row) => (
                       <TableRow key={row.resource}>
                         <TableCell className="text-sm font-medium">{row.resource}</TableCell>
-                        {["SUPER_ADMIN", "ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
+                        {["ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
                           <TableCell key={r} className="text-center">
                             {row.roles[r as keyof typeof row.roles] ? (
                               <Check size={16} className="h-4 w-4 text-emerald-500 mx-auto" />
@@ -940,4 +1045,3 @@ export default function TeamPage() {
     </div>
   );
 }
-

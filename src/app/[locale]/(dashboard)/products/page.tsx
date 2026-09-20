@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
@@ -21,10 +21,19 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/sora-ui/base/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/sora-ui/base/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -34,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Sparkline } from "@/components/ui/sparkline";
 import { formatCurrency, cn, shortenName, sanitizeInteger } from "@/lib/utils";
 import { useCurrency } from "@/components/currency-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -76,13 +86,14 @@ export default function ProductsPage() {
     loading,
     isRefreshing,
     refresh,
-  } = useRealtimeData<{ products: any[]; categories: any[] }>(
+  } = useRealtimeData<{ products: any[]; categories: any[]; trends?: Record<string, number[]> }>(
     "/api/products?includeCategories=true",
     { interval: 30000, realtime: { table: "Product", event: "*" } },
   );
 
   const products = productsData?.products || [];
   const categories = productsData?.categories || [];
+  const trends = productsData?.trends;
 
   const role = (user as any)?.role;
 
@@ -135,6 +146,7 @@ export default function ProductsPage() {
       title: tcommon("delete"),
       description: tproducts("bulkDeleteConfirm", { count: selected.size }),
       confirmLabel: tcommon("delete"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -287,30 +299,35 @@ export default function ProductsPage() {
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             {can(role, "create", "products") && (
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => {
-                    setEditProduct(null);
-                    setForm({
-                      name: "",
-                      description: "",
-                      price: "",
-                      costPrice: "",
-                      stock: "",
-                      sku: "",
-                      categoryId: "",
-                    });
-                  }}
-                >
-                  <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
-                </Button>
-              </DialogTrigger>
+              <DialogTrigger
+                render={
+                  <Button
+                    onClick={() => {
+                      setEditProduct(null);
+                      setForm({
+                        name: "",
+                        description: "",
+                        price: "",
+                        costPrice: "",
+                        stock: "",
+                        sku: "",
+                        categoryId: "",
+                      });
+                    }}
+                  >
+                    <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tproducts("addProduct")}
+                  </Button>
+                }
+              />
             )}
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
                   {editProduct ? tproducts("editProduct") : tproducts("addProduct")}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {editProduct ? tproducts("editProduct") : tproducts("addProduct")}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <Input
@@ -391,12 +408,13 @@ export default function ProductsPage() {
             icon: Package,
             color: "text-blue-600 dark:text-blue-400",
             bg: "bg-blue-50 dark:bg-blue-900/20",
+            spark: trends?.products,
           },
           {
             label: tproducts("category") || "Categories",
             end: categoryCount,
             icon: LayersIcon,
-            color: "text-indigo-600 dark:text-indigo-400",
+            color: "text-primary",
             bg: "bg-indigo-50 dark:bg-indigo-900/20",
           },
           {
@@ -414,6 +432,7 @@ export default function ProductsPage() {
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
             format: (v: number) => formatMoney(v),
+            spark: trends?.value,
           },
         ].map((stat, i) => (
           <motion.div
@@ -442,6 +461,11 @@ export default function ProductsPage() {
                     {...(stat.format ? { formatter: stat.format } : {})}
                   />
                 </p>
+                {"spark" in stat && stat.spark && stat.spark.length > 1 && (
+                  <div className="mt-2">
+                    <Sparkline data={stat.spark} width={120} height={28} className="text-primary" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -639,7 +663,15 @@ export default function ProductsPage() {
                                 label: tproducts("addProduct"),
                                 onClick: () => {
                                   setEditProduct(null);
-                                  setForm({ name: "", description: "", price: "", costPrice: "", stock: "", sku: "", categoryId: "" });
+                                  setForm({
+                                    name: "",
+                                    description: "",
+                                    price: "",
+                                    costPrice: "",
+                                    stock: "",
+                                    sku: "",
+                                    categoryId: "",
+                                  });
                                   setDialogOpen(true);
                                 },
                                 icon: PlusIcon,
@@ -668,17 +700,20 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      {/* Delete product confirmation */}
-      <Dialog open={!!deleteProduct} onOpenChange={(o) => !o && setDeleteProduct(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+      {/* Delete product confirmation using Sora UI AlertDialog */}
+      <AlertDialog open={!!deleteProduct} onOpenChange={(o) => !o && setDeleteProduct(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertTriangle className="h-5 w-5" />
               {tproducts("deleteProduct")}
-            </DialogTitle>
-          </DialogHeader>
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+              {tproducts("deleteProductWarning")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           {deleteProduct && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 {deleteProduct.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -700,24 +735,19 @@ export default function ProductsPage() {
                   <p className="text-xs text-gray-500">{formatMoney(deleteProduct.price)}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {tproducts("deleteProductWarning")}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDeleteProduct(null)}>
-                  {tcommon("cancel")}
-                </Button>
-                <Button variant="destructive" onClick={confirmDeleteProduct} disabled={deleting}>
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  {deleting ? tcommon("loading") : tcommon("delete")}
-                </Button>
-              </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProduct(null)}>
+              {tcommon("cancel")}
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteProduct} disabled={deleting}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              {deleting ? tcommon("loading") : tcommon("delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
-
-

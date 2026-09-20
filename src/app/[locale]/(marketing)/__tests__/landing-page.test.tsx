@@ -14,7 +14,11 @@ beforeEach(() => {
 
 describe("Marketing Landing Page", () => {
   it("renders the cinematic preloader", () => {
-    expect(screen.getByText("Initializing secure workspace")).toBeInTheDocument();
+    // The boot status is announced via the status region's accessible name;
+    // the live status line renders inside the ThinkingOrbs pill.
+    expect(
+      screen.getByRole("status", { name: "Initializing secure workspace" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Booting LevTech Unified Engine")).toBeInTheDocument();
   });
 
@@ -68,10 +72,12 @@ describe("Marketing Landing Page", () => {
   });
 
   it("renders the scroll-driven product story", () => {
-    expect(screen.getByText("The Journey")).toBeInTheDocument();
-    expect(screen.getAllByText("From Cosmos,").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("to Control Room").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Four systems working as one constellation/)).toBeInTheDocument();
+    // The journey header now sits ABOVE the stacking deck, with regenerated copy.
+    expect(screen.getByText("Product journey")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Four chapters,\s*one workspace/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Stack through the product/)).toBeInTheDocument();
     expect(screen.getByText("Orders that never drift")).toBeInTheDocument();
     expect(screen.getByText("Payments in any orbit")).toBeInTheDocument();
     expect(screen.getByText("Analytics with gravity")).toBeInTheDocument();
@@ -85,9 +91,12 @@ describe("Marketing Landing Page", () => {
   });
 
   it("renders bento grid feature cards", () => {
-    expect(screen.getByText("Revenue Overview")).toBeInTheDocument();
+    // "Revenue Overview" and "Recent Orders" also appear in the live
+    // dashboard preview's chrome (section headings), so assert presence —
+    // the unique feature-card titles stay strict getByText.
+    expect(screen.getAllByText("Revenue Overview").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Multi-Channel Commerce")).toBeInTheDocument();
-    expect(screen.getByText("Recent Orders")).toBeInTheDocument();
+    expect(screen.getAllByText("Recent Orders").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Top Products")).toBeInTheDocument();
     expect(screen.getByText("Dual Payment Gateway")).toBeInTheDocument();
     expect(screen.getByText("Enterprise Security")).toBeInTheDocument();

@@ -43,12 +43,14 @@ describe("Changelog Page", () => {
   });
 
   it("renders the latest version badge", () => {
-    expect(screen.getByText("2.5.0")).toBeInTheDocument();
+    expect(screen.getByText("2.6.0")).toBeInTheDocument();
     expect(screen.getByText("Latest version:")).toBeInTheDocument();
-    expect(screen.getByText("Released April 14, 2026")).toBeInTheDocument();
+    // The date appears in the badge and on the timeline entry
+    expect(screen.getAllByText("September 8, 2026").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders all version entries in the timeline", () => {
+    expect(screen.getByText("v2.6.0")).toBeInTheDocument();
     expect(screen.getByText("v2.5.0")).toBeInTheDocument();
     expect(screen.getByText("v2.4.0")).toBeInTheDocument();
     expect(screen.getByText("v2.3.0")).toBeInTheDocument();
@@ -58,7 +60,7 @@ describe("Changelog Page", () => {
   });
 
   it("renders version tags", () => {
-    expect(screen.getByText("Latest Release")).toBeInTheDocument();
+    expect(screen.getAllByText("Latest Release").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Feature Release").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Improvement").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Major Release")).toBeInTheDocument();

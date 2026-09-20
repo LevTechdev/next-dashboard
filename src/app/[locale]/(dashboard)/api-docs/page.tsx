@@ -32,7 +32,7 @@ const MethodBadge = ({ method }: { method: string }) => {
     <span
       className={cn(
         "px-2 py-0.5 rounded-md text-xs font-bold border",
-        colors[method] || "bg-gray-500/15 text-gray-600 border-gray-500/20"
+        colors[method] || "bg-gray-500/15 text-gray-600 border-gray-500/20",
       )}
     >
       {method}
@@ -40,7 +40,42 @@ const MethodBadge = ({ method }: { method: string }) => {
   );
 };
 
+/**
+ * Localized endpoint copy: the data file ships English source strings keyed by
+ * a stable slug; locale files under `apiDocs.endpoints.<slug>` override them.
+ * Falls back to the source copy when a locale lacks an entry (or a new
+ * endpoint lands before translations catch up).
+ */
+function useEndpointCopy(endpoint: ApiEndpoint, t: ReturnType<typeof useTranslations>) {
+  return useMemo(() => {
+    // t.raw() reads the string without ICU parsing — locale copy like
+    // "Array { productId, quantity, price }" would otherwise be treated as an
+    // ICU argument and throw INVALID_ARGUMENT_TYPE. Non-strings fall back.
+    const raw = (fullKey: string, fallback: string) => {
+      if (!t.has(fullKey)) return fallback;
+      const value = t.raw(fullKey);
+      return typeof value === "string" && value.length > 0 ? value : fallback;
+    };
+    const description = raw(`endpoints.${endpoint.slug}.description`, endpoint.description);
+    const entry = (kind: "params" | "fields", key: string, fallback: string) =>
+      raw(`endpoints.${endpoint.slug}.${kind}.${key}`, fallback);
+    return {
+      description,
+      param: (k: string, fb: string) => entry("params", k, fb),
+      field: (k: string, fb: string) => entry("fields", k, fb),
+    };
+  }, [endpoint, t]);
+}
+
+/** Localized sidebar group label. */
+function groupLabel(group: string, t: ReturnType<typeof useTranslations>): string {
+  if (!t.has(`groups.${group}`)) return group;
+  const value = t.raw(`groups.${group}`);
+  return typeof value === "string" && value.length > 0 ? value : group;
+}
+
 const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
+  const copy = useEndpointCopy(endpoint, t);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [tryIt, setTryIt] = useState(false);
@@ -84,7 +119,7 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <span className="text-sm text-muted-foreground hidden md:block truncate max-w-xs">
-            {endpoint.description}
+            {copy.description}
           </span>
           {expanded ? (
             <ChevronDown className="w-5 h-5 text-muted-foreground" />
@@ -103,7 +138,7 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
             className="overflow-hidden border-t border-border bg-muted/20"
           >
             <div className="p-4 space-y-6">
-              <p className="text-sm md:hidden text-foreground">{endpoint.description}</p>
+              <p className="text-sm md:hidden text-foreground">{copy.description}</p>
 
               <div className="flex items-center justify-end gap-2">
                 <Button
@@ -139,8 +174,10 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
               {tryIt && (
                 <div className="p-4 rounded-lg bg-background border border-border space-y-4">
                   <h4 className="text-sm font-semibold">{t("send")}</h4>
-                  <p className="text-xs text-muted-foreground">Interactive demo functionality would go here.</p>
-                  <Button size="sm" className="w-full sm:w-auto">{t("send")}</Button>
+                  <p className="text-xs text-muted-foreground">{t("tryItHint")}</p>
+                  <Button size="sm" className="w-full sm:w-auto">
+                    {t("send")}
+                  </Button>
                 </div>
               )}
 
@@ -159,7 +196,9 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
                         {Object.entries(endpoint.queryParams).map(([key, desc], i) => (
                           <tr key={key} className={i !== 0 ? "border-t border-border" : ""}>
                             <td className="px-4 py-2 font-mono text-xs">{key}</td>
-                            <td className="px-4 py-2 text-muted-foreground">{desc}</td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {copy.param(key, desc)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -183,7 +222,9 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
                         {Object.entries(endpoint.requestBody).map(([key, desc], i) => (
                           <tr key={key} className={i !== 0 ? "border-t border-border" : ""}>
                             <td className="px-4 py-2 font-mono text-xs">{key}</td>
-                            <td className="px-4 py-2 text-muted-foreground">{desc}</td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {copy.field(key, desc)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -191,7 +232,6 @@ const EndpointCard = ({ endpoint, t }: { endpoint: ApiEndpoint; t: any }) => {
                   </div>
                 </div>
               )}
-
             </div>
           </motion.div>
         )}
@@ -206,14 +246,21 @@ export default function ApiDocsPage() {
   const [activeGroup, setActiveGroup] = useState<string>("All");
 
   const filteredEndpoints = useMemo(() => {
+    const q = search.toLowerCase();
     return API_ENDPOINTS.filter((ep) => {
+      // Search across path, English source description, and the active locale's
+      // description so users can find endpoints in their own language.
+      const localized = t.has(`endpoints.${ep.slug}.description`)
+        ? t(`endpoints.${ep.slug}.description`)
+        : "";
       const matchesSearch =
-        ep.path.toLowerCase().includes(search.toLowerCase()) ||
-        ep.description.toLowerCase().includes(search.toLowerCase());
+        ep.path.toLowerCase().includes(q) ||
+        ep.description.toLowerCase().includes(q) ||
+        localized.toLowerCase().includes(q);
       const matchesGroup = activeGroup === "All" || ep.group === activeGroup;
       return matchesSearch && matchesGroup;
     });
-  }, [search, activeGroup]);
+  }, [search, activeGroup, t]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -233,7 +280,7 @@ export default function ApiDocsPage() {
                 "px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
                 activeGroup === "All"
                   ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground",
               )}
             >
               {t("allGroups")}
@@ -246,10 +293,10 @@ export default function ApiDocsPage() {
                   "px-3 py-2 text-sm font-medium rounded-md transition-colors text-left",
                   activeGroup === group
                     ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    : "hover:bg-muted text-muted-foreground hover:text-foreground",
                 )}
               >
-                {group}
+                {groupLabel(group, t)}
               </button>
             ))}
           </nav>
@@ -270,7 +317,7 @@ export default function ApiDocsPage() {
 
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground font-medium mb-4">
-                {filteredEndpoints.length} {t("endpoints")}
+                {filteredEndpoints.length} {t("endpointCount")}
               </p>
 
               {filteredEndpoints.length === 0 ? (

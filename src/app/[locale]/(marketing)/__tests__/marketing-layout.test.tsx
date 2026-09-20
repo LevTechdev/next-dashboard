@@ -1,6 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import MarketingLayout from "../layout";
+
+// Signed-out, fully-loaded session so the header renders its auth CTAs
+// (the real hook defaults to isLoading=true, which shows a skeleton).
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: null,
+    isLoading: false,
+    error: null,
+    isAuthenticated: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+    updateUser: vi.fn(),
+  })),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 // Helper to render the layout with mock children
 function renderLayout() {
@@ -14,24 +31,22 @@ function renderLayout() {
 describe("Marketing Layout", () => {
   it("renders the logo and brand name with accessible home link", () => {
     renderLayout();
-    // "Dashboard" appears in both nav and footer
-    expect(screen.getAllByText("Dashboard").length).toBeGreaterThanOrEqual(1);
+    // "Dashboard" appears in both the header and footer brand lockups
+    expect(screen.getAllByText("Dashboard").length).toBeGreaterThanOrEqual(2);
 
-    // Logo link should point to the locale root
-    const logoLinks = screen.getAllByText("Dashboard")[0].closest("a");
-    expect(logoLinks).toHaveAttribute("href");
-    expect(logoLinks?.getAttribute("href")).toBe("/en");
+    // Logo links point to the locale root
+    const logoLink = screen.getAllByText("Dashboard")[0].closest("a");
+    expect(logoLink).toHaveAttribute("href");
+    expect(logoLink?.getAttribute("href")).toBe("/en");
   });
 
   it("renders all desktop nav links with proper hrefs", () => {
     renderLayout();
-    // These appear in both nav bar AND footer, so use getAllByText
     expect(screen.getAllByText("Features").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Integrations").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Pricing").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Changelog").length).toBeGreaterThanOrEqual(1);
 
-    // Verify nav links have correct href attributes
     const featuresLink = screen.getAllByText("Features")[0].closest("a");
     expect(featuresLink).toHaveAttribute("href", "/en/features");
 
@@ -45,15 +60,13 @@ describe("Marketing Layout", () => {
     expect(changelogLink).toHaveAttribute("href", "/en/changelog");
   });
 
-  it("renders the Dashboard CTA button with accessible link", () => {
+  it("renders auth CTAs for signed-out visitors", () => {
     renderLayout();
-    // "Dashboard" appears in both the logo (href=/en) and the CTA button (href=/en/dashboard)
-    const dashboardElements = screen.getAllByText("Dashboard");
-    expect(dashboardElements.length).toBeGreaterThanOrEqual(2);
+    const signIn = screen.getByText("Sign in");
+    expect(signIn.closest("a")).toHaveAttribute("href", "/en/login");
 
-    // "Dashboard" appears in both the logo link (/en) and the CTA button (/en/dashboard)
-    const allLinks = document.querySelectorAll('a[href="/en/dashboard"]');
-    expect(allLinks.length).toBeGreaterThanOrEqual(1);
+    const signUp = screen.getByText("Sign up");
+    expect(signUp.closest("a")).toHaveAttribute("href", "/en/register");
   });
 
   it("renders mobile menu button with proper aria-label", () => {
@@ -69,52 +82,47 @@ describe("Marketing Layout", () => {
     expect(screen.getByText("Page Content")).toBeInTheDocument();
   });
 
-  it("renders footer brand section", () => {
-    renderLayout();
-    // Footer brand is rendered twice (once in nav logo, once in footer)
-    const brandElements = screen.getAllByText("Dashboard");
-    expect(brandElements.length).toBeGreaterThanOrEqual(2);
-  });
-
   it("renders footer description", () => {
     renderLayout();
-    expect(screen.getByText(/A comprehensive business management platform/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Empowering businesses with reliable, scalable, and innovative solutions/),
+    ).toBeInTheDocument();
   });
 
   it("renders footer Product links with proper hrefs", () => {
     renderLayout();
-    expect(screen.getByText("Product")).toBeInTheDocument();
-    expect(screen.getAllByText("Features").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("Integrations").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Solutions")).toBeInTheDocument();
+    expect(screen.getByText("Resources")).toBeInTheDocument();
+    expect(screen.getAllByText("Features").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Integrations").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Changelog").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Pricing").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Pricing").length).toBeGreaterThanOrEqual(1);
+
+    const featuresLinks = document.querySelectorAll('a[href="/en/features"]');
+    expect(featuresLinks.length).toBeGreaterThanOrEqual(1);
+    const integrationsLinks = document.querySelectorAll('a[href="/en/integrations-overview"]');
+    expect(integrationsLinks.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders footer Company section with links", () => {
     renderLayout();
     expect(screen.getByText("Company")).toBeInTheDocument();
 
-    // Footer Dashboard link
-    const allDashboardLinks = screen.getAllByText("Dashboard");
-    const footerDashboard = allDashboardLinks[allDashboardLinks.length - 1];
-    const dashboardAnchor = footerDashboard.closest("a");
-    expect(dashboardAnchor).toHaveAttribute("href", "/en/dashboard");
+    const aboutLink = document.querySelector('a[href="/en/about"]');
+    expect(aboutLink).toBeInTheDocument();
 
-    // Footer Features link
-    const allFeaturesLinks = screen.getAllByText("Features");
-    // The last one should be in the footer
-    const footerFeatures = allFeaturesLinks[allFeaturesLinks.length - 1];
-    const featuresAnchor = footerFeatures.closest("a");
-    expect(featuresAnchor).toHaveAttribute("href", "/en/features");
+    // Careers is a real page now, not a placeholder.
+    const careersLink = [...document.querySelectorAll("a")].find(
+      (a) => a.textContent === "Careers",
+    );
+    expect(careersLink).toHaveAttribute("href", "/en/careers");
   });
 
   it("renders copyright notice with current year", () => {
     renderLayout();
     const currentYear = new Date().getFullYear().toString();
     expect(
-      screen.getByText(
-        new RegExp(`© ${currentYear} Dashboard Management System.*All rights reserved.`),
-      ),
+      screen.getByText(new RegExp(`© ${currentYear} Next Dashboard\\. All rights reserved\\.`)),
     ).toBeInTheDocument();
   });
 });

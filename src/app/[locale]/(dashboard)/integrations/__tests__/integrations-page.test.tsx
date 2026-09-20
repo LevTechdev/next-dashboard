@@ -17,6 +17,7 @@ vi.mock("next/navigation", () => ({
 // Tabs use useConfirm for destructive actions; provide a no-op confirm
 vi.mock("@/components/ui/confirm-provider", () => ({
   useConfirm: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
 }));
 
 // sonner renders nothing without a <Toaster>; capture toast calls instead

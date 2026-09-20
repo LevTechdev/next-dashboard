@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -8,7 +8,7 @@
     --foreground: 225 25% 7%;
     --card: 0 0% 100%;
     --card-foreground: 225 25% 7%;
-    /* Base/brand color — light mode: green oklch(0.84 0.21 124.02) */
+    /* Base/brand color â€” light mode: green oklch(0.84 0.21 124.02) */
     --primary: 73 100% 44%;
     --primary-foreground: 80 45% 10%;
     --secondary: 210 20% 96%;
@@ -35,15 +35,15 @@
     --glow-emerald: 160 84% 39%;
     --glow-purple: 271 81% 56%;
     --glow-blue: 221 83% 53%;
-    /* AI accent green — oklch(0.78 0.22 147.35) */
+    /* AI accent green â€” oklch(0.78 0.22 147.35) */
     --glow-green: 152 82% 46%;
     --ai-green: oklch(0.78 0.22 147.35);
 
-    /* AI copilot + order-tracking accent — light mode: lime.
+    /* AI copilot + order-tracking accent â€” light mode: lime.
        Consumed via hsl(var(--ai-accent)) so the accent-color scheme in
-       Settings → Appearance can override both at once. */
-    --ai-accent: 84 81% 44%; /* ≈ lime-500 #84cc16 */
-    --ai-accent-strong: 84 85% 35%; /* ≈ lime-600 #65a30d */
+       Settings â†’ Appearance can override both at once. */
+    --ai-accent: 84 81% 44%; /* â‰ˆ lime-500 #84cc16 */
+    --ai-accent-strong: 84 85% 35%; /* â‰ˆ lime-600 #65a30d */
     --ai-accent-soft: 84 55% 93%; /* light lime tint (avatars, chips) */
     --ai-accent-soft-2: 84 65% 96%; /* paler lime tint (header wash) */
 
@@ -67,7 +67,7 @@
     --foreground: 210 40% 98%;
     --card: 225 20% 12%;
     --card-foreground: 210 40% 98%;
-    /* Base/brand color — dark mode: purple */
+    /* Base/brand color â€” dark mode: purple */
     --primary: 265 77% 66%;
     --primary-foreground: 0 0% 100%;
     --secondary: 224 18% 14%;
@@ -97,9 +97,9 @@
     --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
     --gradient-premium: linear-gradient(135deg, #818cf8, #c084fc, #f472b6);
 
-    /* AI copilot + order-tracking accent — dark mode: indigo (#5046e5). */
-    --ai-accent: 245 77% 58%; /* #5046e5 — brand indigo-violet */
-    --ai-accent-strong: 239 84% 67%; /* ≈ indigo-400 #818cf8 */
+    /* AI copilot + order-tracking accent â€” dark mode: indigo (#5046e5). */
+    --ai-accent: 245 77% 58%; /* #5046e5 â€” brand indigo-violet */
+    --ai-accent-strong: 239 84% 67%; /* â‰ˆ indigo-400 #818cf8 */
     --ai-accent-soft: 245 45% 20%; /* dark indigo tint (avatars, chips) */
     --ai-accent-soft-2: 245 40% 15%; /* deeper indigo tint (header wash) */
   }
@@ -150,14 +150,26 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /*
+   * Hardening: the UA default `[hidden] { display: none }` loses to any
+   * `display` utility (Tailwind emits utilities after preflight with equal
+   * specificity, and base-layer rules lose to utility-layer rules). Base UI
+   * keeps closed popups mounted with a `hidden` attribute, so a popup styled
+   * with `grid`/`flex` otherwise stays a click-blocking invisible overlay.
+   * `!important` in the base layer beats normal utility declarations.
+   */
+  [hidden] {
+    display: none !important;
+  }
 }
 
 /* ===== 21st.dev Premium Component Layers ===== */
 
 @layer components {
-  /* ═══════════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      VENGEANCE UI: Premium Surface & Glass System
-     ═══════════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   /* Premium glass card - Vengeance style */
   .vengeance-card {
@@ -438,9 +450,9 @@
     box-shadow: 0 4px 20px hsl(var(--glow-indigo) / 0.08);
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      FEATUREBASE DESIGN TOKENS
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   /* Surface layers */
   .fb-surface-base {
@@ -469,9 +481,9 @@
     color: hsl(var(--text-inverse));
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      DOUBLE-BEZEL NESTED CARD
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .double-bezel {
     @apply relative;
@@ -499,9 +511,9 @@
     background: hsl(var(--surface-raised));
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      PREMIUM MOTION UTILITIES
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .motion-spring {
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -524,9 +536,9 @@
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      GLASSMORPHISM
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .glass-panel {
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.55));
@@ -546,13 +558,13 @@
       0 8px 32px rgba(0, 0, 0, 0.35);
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      APPLE HIG FROSTED-GLASS NAV MATERIAL
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   /* The translucent "material": backdrop-filter samples the pixels painted
-     BEHIND the bar, blurs them (blur 20px ≈ Tailwind backdrop-blur-xl) and
-     boosts saturation (180%) so colors stay vivid through the frost — the
+     BEHIND the bar, blurs them (blur 20px â‰ˆ Tailwind backdrop-blur-xl) and
+     boosts saturation (180%) so colors stay vivid through the frost â€” the
      signature macOS/iOS toolbar look. -webkit- prefix is required for Safari.
      A semi-opaque background tint sits on top so text stays legible. */
   .apple-glass {
@@ -560,7 +572,7 @@
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    /* 1px inset specular highlight — light catching the top rim of the glass */
+    /* 1px inset specular highlight â€” light catching the top rim of the glass */
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
     transition:
       background-color 0.3s ease,
@@ -573,7 +585,7 @@
   }
   /* Gradient accent hairline over the bottom rim (the ::before "design").
      Sits on top of the 1px border so the bar keeps its frosted blur while
-     getting a subtle indigo→violet→indigo glow. */
+     getting a subtle indigoâ†’violetâ†’indigo glow. */
   .apple-glass::before {
     content: "";
     position: absolute;
@@ -616,9 +628,9 @@
       0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      AMBIENT BACKGROUND EFFECTS
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .dark .mesh-gradient-dark {
     background:
@@ -650,9 +662,9 @@
     );
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      MICRO-INTERACTION UTILITIES
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   /* Glow border effect for cards */
   .glow-border {
@@ -770,9 +782,9 @@
     background: currentColor;
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      GRID & LAYOUT HELPERS
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .bento-grid {
     display: grid;
@@ -780,9 +792,9 @@
     gap: 0.75rem;
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      SCROLLBAR STYLING
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -808,6 +820,54 @@
   }
 
   .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border-muted) / 0.6);
+  }
+
+  /* Auto-hide scroll container: the thin 4px thumb fades in only while the
+     user is actively scrolling (or hovering on devices with a cursor), then
+     fades out. The container always keeps its overflow so content stays
+     reachable. Firefox gets the same effect via the opacity transitions on
+     the container's scrollbar-width: none + thumb color trick below. */
+  .scrollbar-auto-hide {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.25s ease;
+  }
+
+  .scrollbar-auto-hide:hover,
+  .scrollbar-auto-hide:focus-within,
+  .scrollbar-auto-hide.scrolling {
+    scrollbar-color: hsl(var(--border-muted)) transparent;
+  }
+
+  .scrollbar-auto-hide::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-auto-hide::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-auto-hide::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 2px;
+    transition: background-color 0.25s ease;
+  }
+
+  .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb,
+  .scrollbar-auto-hide:focus-within::-webkit-scrollbar-thumb,
+  .scrollbar-auto-hide.scrolling::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border-muted));
+  }
+
+  .dark .scrollbar-auto-hide.scrolling,
+  .dark .scrollbar-auto-hide:hover {
+    scrollbar-color: hsl(var(--border-muted) / 0.6) transparent;
+  }
+
+  .dark .scrollbar-auto-hide.scrolling::-webkit-scrollbar-thumb,
+  .dark .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
     background-color: hsl(var(--border-muted) / 0.6);
   }
 
@@ -837,9 +897,9 @@
     display: none;
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      21st.dev: Premium Sidebar Styles
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .sidebar-item {
     position: relative;
@@ -904,15 +964,15 @@
     background: hsl(var(--primary));
   }
 
-  /* Brand-tinted avatar fallback — follows the accent/base color */
+  /* Brand-tinted avatar fallback â€” follows the accent/base color */
   .avatar-brand {
     background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.72));
     color: hsl(var(--primary-foreground));
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      21st.dev: Premium Badge Styles
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .badge-premium {
     display: inline-flex;
@@ -935,9 +995,9 @@
     border-color: hsl(var(--glow-indigo) / 0.3);
   }
 
-  /* ═══════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      21st.dev: Animated Pulse Dot
-     ═══════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   .pulse-dot {
     position: relative;
@@ -971,9 +1031,9 @@
   }
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    21st.dev Premium Keyframes
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @keyframes glow-shimmer {
   0%,
@@ -1003,9 +1063,9 @@
   }
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SMOOTH THEME TRANSITIONS
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Theme transitions activate only during user-initiated theme switches
    via the .theme-transitioning class added by ThemeTransitionWatcher.
@@ -1025,9 +1085,9 @@ html.theme-transitioning *::after {
   transition-delay: 0s !important;
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PWA Support
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @supports (padding-top: env(safe-area-inset-top)) {
   .safe-area-top {
@@ -1050,9 +1110,9 @@ html.theme-transitioning *::after {
   }
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    VIEW TRANSITION API
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 ::view-transition-old(page-content) {
   animation: vt-old 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1139,6 +1199,93 @@ html.theme-transitioning *::after {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   THEME SWITCH REVEAL
+
+   The light/dark switch reveals the incoming theme from the control that was
+   pressed, instead of swapping every colour token in one frame. Driven by
+   use-theme-reveal.ts, which sets `data-theme-reveal="<variant>"` plus the
+   `--theme-reveal-*` geometry on <html> for the duration of the transition.
+
+   EVERY rule here is scoped to that attribute on purpose: the app also uses
+   named view transitions (page-content, nav-logo) for navigation, and an
+   unscoped `::view-transition-new(root)` animation would hijack those with a
+   clip-path wipe. ═══════════════════════════════════════════════════════ */
+
+html[data-theme-reveal]::view-transition-old(root) {
+  /* The outgoing theme stays put underneath and is wiped over. */
+  animation: none;
+  z-index: -1;
+}
+
+html[data-theme-reveal]::view-transition-new(root) {
+  z-index: 0;
+  animation-duration: 620ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+  animation-name: theme-reveal-circle;
+}
+
+html[data-theme-reveal="circle-blur"]::view-transition-new(root) {
+  animation-name: theme-reveal-blur;
+}
+
+html[data-theme-reveal="rectangle"]::view-transition-new(root) {
+  animation-name: theme-reveal-rectangle;
+}
+
+html[data-theme-reveal="polygon"]::view-transition-new(root) {
+  animation-name: theme-reveal-polygon;
+}
+
+@keyframes theme-reveal-circle {
+  from {
+    clip-path: circle(0% at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+  }
+}
+
+@keyframes theme-reveal-blur {
+  from {
+    clip-path: circle(0% at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+    filter: blur(12px);
+  }
+  55% {
+    filter: blur(4px);
+  }
+  to {
+    clip-path: circle(150% at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+    filter: blur(0px);
+  }
+}
+
+@keyframes theme-reveal-rectangle {
+  from {
+    clip-path: inset(var(--theme-reveal-rect, 50% 50% 50% 50%));
+  }
+  to {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+}
+
+@keyframes theme-reveal-polygon {
+  from {
+    clip-path: polygon(var(--theme-reveal-polygon, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%));
+  }
+  to {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-reveal]::view-transition-old(root),
+  html[data-theme-reveal]::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+  }
+}
+
 @theme inline {
   @keyframes shimmer-slide {
     to {
@@ -1182,12 +1329,12 @@ html.theme-transitioning *::after {
   }
 }
 
-/* ═══════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    APPEARANCE PREFERENCES
-   (Settings → Appearance; applied as data attributes on <html>)
-   ═══════════════════════════════════ */
+   (Settings â†’ Appearance; applied as data attributes on <html>)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* — Accent color themes: override --primary (buttons, controls) — */
+/* â€” Accent color themes: override --primary (buttons, controls) â€” */
 html[data-accent="green"],
 html[data-accent="green"].dark {
   --primary: 152 82% 40%;
@@ -1229,7 +1376,7 @@ html[data-accent="amber"].dark {
   --ai-accent-soft-2: 40 95% 97%;
 }
 
-/* — Text size (root font-size scales all rem-based type) — */
+/* â€” Text size (root font-size scales all rem-based type) â€” */
 html[data-text="sm"] {
   font-size: 14.5px;
 }
@@ -1237,7 +1384,7 @@ html[data-text="lg"] {
   font-size: 17.5px;
 }
 
-/* — Density / spacing (compact | regular | large) — */
+/* â€” Density / spacing (compact | regular | large) â€” */
 html[data-density="compact"] .dashboard-card .p-6 {
   padding: 1rem;
 }
@@ -1257,11 +1404,11 @@ html[data-density="large"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
   margin-top: 2rem;
 }
 
-/* ═══════════════════════════════════════
-   BRAND ACCENT GRADIENTS (follow Settings → Appearance)
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   BRAND ACCENT GRADIENTS (follow Settings â†’ Appearance)
    Gradient versions of --primary, so auth CTAs and hero accent words
    stay in the custom accent color with depth instead of flat fills.
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .bg-accent-gradient {
   background-image: linear-gradient(
@@ -1294,7 +1441,7 @@ html[data-density="large"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
   color: transparent;
 }
 
-/* Auth page side-panel wash — translucent accent gradient. */
+/* Auth page side-panel wash â€” translucent accent gradient. */
 .auth-panel-gradient {
   background-image: linear-gradient(
     135deg,
@@ -1304,12 +1451,12 @@ html[data-density="large"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
   );
 }
 
-/* ═══════════════════════════════════════
-   BROWSER AUTOFILL — match the active theme
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   BROWSER AUTOFILL â€” match the active theme
    Chrome/Safari/Edge paint autofilled inputs with a pale blue/yellow
    background + black text by default. These overrides restyle them so
    autofill looks native in both light and dark mode. The "5000s" box-
-   shadow trick keeps the fill from flashing back on focus.   ═══════════════ */
+   shadow trick keeps the fill from flashing back on focus.   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -1342,10 +1489,10 @@ select:-webkit-autofill:focus {
   background-color: #1f2937;
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    LENIS SMOOTH SCROLL
-   https://lenis.darkroom.engineering — recommended base styles.
-   ═══════════════════════════════════════ */
+   https://lenis.darkroom.engineering â€” recommended base styles.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 html.lenis,
 html.lenis body {
@@ -1364,9 +1511,9 @@ html.lenis body {
   overflow: hidden;
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    HOMEPAGE MOTION (3D hero + marquee)
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Infinite integration marquee used under the 3D hero */
 @keyframes hero-marquee {
@@ -1417,12 +1564,12 @@ html.lenis body {
   }
 }
 
-/* ═══════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ANIMATED BRAND LOGO (auth pages)
    Gentle logo life for entry surfaces: pulsing accent halo behind the tile,
    slow vertical float, and a soft icon pulse. Reduced-motion users get a
    static lockup (the motion-reduce:animate-none utilities handle that).
-   ═══════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @keyframes brand-logo-glow {
   0%,
@@ -1455,5 +1602,165 @@ html.lenis body {
   50% {
     transform: scale(1.07);
     opacity: 0.82;
+  }
+}
+
+/* Thesvg brand icons — the injected markup keeps its own viewBox;
+   only normalize the rendered box to the requested size. */
+[data-thesvg-icon] > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Liquid Glass (Apple-style refractive surfaces) ──────────────────── */
+
+@keyframes moveBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.liquid-glass-surface {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--glass-tint, rgba(255, 255, 255, 0.12));
+  backdrop-filter: blur(var(--glass-blur, 8px)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 8px)) saturate(1.6);
+  filter: var(--glass-filter, none);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.liquid-glass-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.25)
+  );
+  background-size: 200% 200%;
+  animation: moveBackground 12s ease-in-out infinite;
+  z-index: -1;
+}
+
+.dark .liquid-glass-surface {
+  background-color: var(--glass-tint, rgba(10, 11, 16, 0.35));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.dark .liquid-glass-surface::before {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.08)
+  );
+  background-size: 200% 200%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SORA-STYLE DIALOG CHOREOGRAPHY
+   3D perspective rise + blur-to-sharp entrance, quick swing-back exit.
+   Mirrors src/components/sora-ui/base/dialog.tsx (Base UI + Motion) but
+   implemented as CSS keyframes so the plain Radix dialogs used across the
+   dashboard get the same motion language. Reduced-motion users get a plain
+   fade handled by the block below.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes sora-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) perspective(500px) translateZ(-100px) rotateY(25deg)
+      rotateX(5deg);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) perspective(500px) translateZ(0) rotateY(0deg) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes sora-dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) perspective(500px) translateZ(0) rotateY(0deg) rotateX(0deg);
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) perspective(500px) translateZ(-100px) rotateY(25deg)
+      rotateX(5deg);
+    filter: blur(10px);
+  }
+}
+
+/* Command palette (and any dialog anchored to a non-center offset) can't use
+   the default choreography: the keyframes above hard-bake translate(-50%,-50%)
+   into transform, which yanks a top-anchored dialog to screen center and back.
+   These variants preserve the element's real offset (x centered, y at 0) so the
+   palette rises in place. Swapped in via tailwind-merge on the animate-
+   arbitrary classes, so the base utilities never reach the DOM. */
+
+@keyframes sora-dialog-in-top {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0) perspective(500px) translateZ(-100px) rotateY(25deg) rotateX(5deg);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) perspective(500px) translateZ(0) rotateY(0deg) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes sora-dialog-out-top {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) perspective(500px) translateZ(0) rotateY(0deg) rotateX(0deg);
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, 0) perspective(500px) translateZ(-100px) rotateY(25deg) rotateX(5deg);
+    filter: blur(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="dialog-content"][data-state="open"] {
+    animation: sora-dialog-fade-in 0.15s ease-out !important;
+  }
+  [data-slot="dialog-content"][data-state="closed"] {
+    animation: none !important;
+  }
+}
+
+@keyframes sora-dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

@@ -38,7 +38,9 @@ beforeEach(() => {
 describe("Integrations Overview Page", () => {
   it("renders the header section", () => {
     expect(screen.getByText("Seamless Connections")).toBeInTheDocument();
-    expect(screen.getByText("Connect with")).toBeInTheDocument();
+    // The hero prefix renders as per-word animated spans (AnimatedHeading),
+    // so the exact string is only reachable via the aria-label.
+    expect(screen.getByLabelText("Connect with")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
@@ -89,8 +91,13 @@ describe("Integrations Overview Page", () => {
   });
 
   it("renders a Connect link on each card", () => {
-    const connectLinks = screen.getAllByText("Connect");
-    expect(connectLinks.length).toBe(9);
+    // Scoped to the card links: the hero headline is also split into per-word
+    // animated spans, one of which is the word "Connect" — a bare
+    // getAllByText would count it too.
+    const cardLinks = screen
+      .getAllByRole("link", { name: /connect/i })
+      .filter((a) => a.getAttribute("href")?.includes("/register"));
+    expect(cardLinks.length).toBe(9);
   });
 
   it("renders bottom CTA with accessible link", () => {

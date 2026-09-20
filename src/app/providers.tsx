@@ -7,20 +7,12 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { RealtimeProvider } from "@/components/realtime-provider";
 import { AuthProvider } from "@/hooks/use-auth";
+import { TierSyncWatcher } from "@/components/billing/tier-sync-watcher";
+import { VerificationSuccessToaster } from "@/components/security/verification-success-toaster";
 import { PWARegister } from "@/components/pwa-register";
 import { PostHogProvider } from "@/components/analytics/posthog-provider";
 import { ThemeTransitionWatcher } from "@/components/theme-transition-watcher";
-import enMessages from "../i18n/locales/en.json";
-import idMessages from "../i18n/locales/id.json";
-import zhMessages from "../i18n/locales/zh.json";
-import jaMessages from "../i18n/locales/ja.json";
-
-const LOCALE_MESSAGES: Record<string, Record<string, any>> = {
-  en: enMessages,
-  id: idMessages,
-  zh: zhMessages,
-  ja: jaMessages,
-};
+import { LOCALE_MESSAGES } from "@/lib/locale-messages";
 
 function LocaleProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -66,6 +58,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   would otherwise be dropped before the Toaster subscribes. */}
               <Toaster richColors position="top-right" />
               {children}
+              <VerificationSuccessToaster />
+              <TierSyncWatcher />
               <ThemeTransitionWatcher />
               <PWARegister />
             </RealtimeProvider>

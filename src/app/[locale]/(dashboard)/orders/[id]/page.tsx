@@ -13,7 +13,8 @@ import {
   ArrowLeftIcon,
   TruckIcon,
 } from "lucide-animated";
-import { ShoppingBag, Store, RotateCcw, PackageSearch, Loader2 } from "lucide-react";
+import { ShoppingBag, Store, RotateCcw, PackageSearch, Loader2, Printer } from "lucide-react";
+import { SalesChannelBadge } from "@/components/ui/brand-icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import {
 } from "@/components/order-tracking-timeline";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { useCurrency } from "@/components/currency-provider";
 
 interface FulfillmentStamp {
   label: string;
@@ -39,6 +41,7 @@ export default function OrderDetailPage() {
   const id = params?.id as string;
   const torders = useTranslations("orders");
   const tcommon = useTranslations("common");
+  const { currency } = useCurrency();
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -242,6 +245,21 @@ export default function OrderDetailPage() {
               {nextAction.label}
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() =>
+              window.open(
+                `/api/orders/${id}/invoice?currency=${currency}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            <Printer className="h-4 w-4" />
+            {torders("invoiceBtn")}
+          </Button>
           {!terminal && (
             <Button
               size="sm"
@@ -280,7 +298,7 @@ export default function OrderDetailPage() {
                 {order.customer ? (
                   <Link
                     href={`/${locale}/customers/${order.customer.id}`}
-                    className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-sm font-medium text-primary hover:underline"
                   >
                     {order.customer.name}
                   </Link>
@@ -298,7 +316,11 @@ export default function OrderDetailPage() {
                   <Store className="h-3.5 w-3.5" />
                   {torders("orderChannel")}
                 </div>
-                <p className="text-sm font-medium">{order.channel?.name || torders("na")}</p>
+                {order.channel ? (
+                  <SalesChannelBadge channel={order.channel} />
+                ) : (
+                  <p className="text-sm font-medium">{torders("na")}</p>
+                )}
               </CardContent>
             </Card>
             <Card>

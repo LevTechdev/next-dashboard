@@ -46,6 +46,7 @@ import { MarketingFooter } from "@/components/layout/marketing-footer";
 import SmoothScroll from "@/components/home/smooth-scroll";
 import ScrollProgress from "@/components/home/scroll-progress";
 import { BackToTop } from "@/components/ui/back-to-top";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -64,6 +65,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   return (
     <ViewTransitionProvider>
       <UnsupportedBrowserBanner />
+      <JsonLd locale={locale} />
       <div className="min-h-screen bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 transition-colors motion-spring">
         <MarketingHeader scrolled={scrolled} />
         {/* Reading progress — 3D-scroll feedback on every marketing page */}
@@ -72,7 +74,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         {/* Buttery-smooth scrolling via Lenis (GSAP-ticker synced) */}
         <SmoothScroll>
           {/* ═══ MAIN CONTENT with animated page transitions ═══ */}
-          <main className="overflow-x-hidden">
+          <main className="overflow-x-clip">
             <PageTransition>{children}</PageTransition>
           </main>
 

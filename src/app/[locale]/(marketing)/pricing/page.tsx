@@ -9,8 +9,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
-import { FaqAccordion } from "@/components/ui/faq-accordion";
+import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
+import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
+import { StratusFaq } from "@/components/home/stratus-faq";
 
 const PLAN_META = [
   { key: "starter", popular: false, monthly: 29, yearly: 23 },
@@ -89,17 +90,29 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            {t("heroPrefix")} <br className="hidden sm:block" />
+            <AnimatedHeading text={t("heroPrefix")} delay={0.15} />
+            <br className="hidden sm:block" />
             <span className="text-primary inline-flex">
-              <FlipFadeText
-                words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
-                interval={2500}
+              {/* Real hero copy, revealed by the chromatic sweep. */}
+              <DiaTextReveal
+                text={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                repeat
+                fixedWidth
+                duration={1.1}
+                holdDuration={1.9}
+                colors={[
+                  "hsl(var(--primary))",
+                  "color-mix(in oklab, hsl(var(--primary)) 45%, #fff)",
+                  "hsl(var(--primary))",
+                ]}
+                textColor="hsl(var(--primary))"
+                className="text-4xl font-bold sm:text-5xl md:text-6xl"
               />
             </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
-            {t("heroSubtitle")}
+            <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
           </p>
 
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
@@ -235,7 +248,10 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       </section>
 
       {/* ──────── COMPARISON TABLE ──────── */}
-      <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
+      <section
+        id="comparison"
+        className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border"
+      >
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
             {t("compareTitle")}
@@ -284,23 +300,22 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
-      {/* ──────── FAQ ──────── */}
-      <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
-            {t("faqTitle")}
-          </h2>
-        </div>
-        <FaqAccordion
+      {/* ──────── FAQ — same Stratus design as the homepage, pricing items ──────── */}
+      <div className="border-t border-border">
+        <StratusFaq
+          t={t}
+          defaultOpenIndex={null}
           items={[
-            { question: t("faqQ1"), answer: t("faqA1") },
-            { question: t("faqQ2"), answer: t("faqA2") },
-            { question: t("faqQ3"), answer: t("faqA3") },
-            { question: t("faqQ4"), answer: t("faqA4") },
+            { id: "pricing-faq-1", question: t("faqQ1"), answer: t("faqA1") },
+            { id: "pricing-faq-2", question: t("faqQ2"), answer: t("faqA2") },
+            { id: "pricing-faq-3", question: t("faqQ3"), answer: t("faqA3") },
+            { id: "pricing-faq-4", question: t("faqQ4"), answer: t("faqA4") },
           ]}
-          title=""
+          badgeKey="faqBadge"
+          titlePart1Key="faqTitlePart1"
+          titlePart2Key="faqTitlePart2"
         />
-      </section>
+      </div>
 
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">

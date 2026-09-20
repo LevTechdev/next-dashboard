@@ -31,11 +31,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { ThinkingOrbs } from "@/components/ui/thinking-orbs";
+import { StratusFaq } from "@/components/home/stratus-faq";
 import HeroOverview from "@/components/home/hero-overview";
+import { LiveDashboardPreview } from "@/components/home/live-dashboard-preview";
 import { ProductStory } from "@/components/home/product-story";
 import { RevenueChart } from "@/components/charts/revenue-chart";
 import {
   StripeBrandIcon,
+  StripeMonoIcon,
   MidtransBrandIcon,
   ShopifyBrandIcon,
   TokopediaBrandIcon,
@@ -121,7 +125,6 @@ const INTEGRATIONS = [
     descKey: "marquee.d3",
     color: "#42B549",
     Icon: TokopediaBrandIcon,
-    lockup: true, // wide official wordmark — rendered without the text label
   },
   { name: "Instagram", descKey: "marquee.d4", color: "#E1306C", Icon: InstagramBrandIcon },
   {
@@ -229,16 +232,29 @@ const HOME_PLANS = [
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
-/** Bento tiles rise with a soft scale + de-blur instead of the flat y-only fade. */
+/**
+ * Bento tiles rise with a soft scale + de-blur instead of the flat y-only
+ * fade. The cascade is driven by the GRID container (one transition with
+ * staggerChildren) instead of per-tile whileInView thresholds: with per-tile
+ * viewports the 12-column desktop wave, the 2-column tablet wave and the
+ * 1-column stacked reveal all fired on different scroll offsets, so the same
+ * section never "ran" the same way twice. One container reveal keeps the
+ * choreography identical at every breakpoint.
+ */
+const bentoContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.055, delayChildren: 0.04 } },
+};
+
 const bentoEntrance = {
-  hidden: { opacity: 0, y: 28, scale: 0.95, filter: "blur(4px)" },
-  visible: (i: number) => ({
+  hidden: { opacity: 0, y: 28, scale: 0.96, filter: "blur(4px)" },
+  visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     filter: "blur(0px)",
-    transition: { duration: 0.55, delay: i * 0.05, ease: easeSmooth },
-  }),
+    transition: { duration: 0.5, ease: easeSmooth },
+  },
 };
 
 /** Testimonial cards fade in with a subtle 3D flip for depth. */
@@ -318,7 +334,7 @@ function StarRating({ value }: { value: number }) {
 
 // ─── Mini Bar Chart ──────────────────────────────────────────────────────────
 
-function MiniBarChart({ data, color = "#6366f1" }: { data: number[]; color?: string }) {
+function MiniBarChart({ data, color = "hsl(var(--primary))" }: { data: number[]; color?: string }) {
   const max = Math.max(...data);
   return (
     <div className="flex items-end gap-0.5 h-12 w-full">
@@ -709,26 +725,30 @@ function CinematicPreloader({ t, onDone }: { t: (key: string) => string; onDone:
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full bg-primary/15 blur-[130px] pointer-events-none"
       />
 
-      {/* Orbit ring + brand mark (spin is disabled under prefers-reduced-motion) */}
-      <div className="relative w-24 h-24" aria-hidden>
-        <div
-          className="absolute inset-0 rounded-full border border-primary/30 border-t-primary animate-spin motion-reduce:animate-none"
-          style={{ animationDuration: "1.6s" }}
+      {/* MetalForge Thinking Orbs (burst style with #53fd56 accent) */}
+      <div className="relative flex flex-col items-center justify-center">
+        <ThinkingOrbs
+          size={160}
+          speed={1}
+          reverse={true}
+          accent="#53fd56"
+          dotColor="#F4F1EA"
+          showsPill={false}
+          className="mb-1"
         />
-        <div
-          className="absolute inset-2 rounded-full border border-white/10 border-b-sky-400/60 animate-spin motion-reduce:animate-none"
-          style={{ animationDuration: "2.4s", animationDirection: "reverse" }}
+        <ThinkingOrbs
+          size={32}
+          speed={1}
+          reverse={true}
+          accent="#53fd56"
+          dotColor="#F4F1EA"
+          pillColor="#1B1B1D"
+          labelColor="#F4F1EA"
+          showsPill={true}
+          showsLabel={true}
+          label={t("preloader.status") || "Generating..."}
+          className="shadow-2xl shadow-emerald-500/10"
         />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-sky-400 flex items-center justify-center shadow-lg shadow-primary/30">
-            <Zap className="h-6 w-6 text-white" />
-          </div>
-        </div>
-      </div>
-
-      <div className="text-center relative">
-        <p className="text-sm font-semibold tracking-wide">{t("preloader.label")}</p>
-        <p className="text-xs text-muted-foreground mt-1.5 font-mono">{t("preloader.status")}</p>
       </div>
 
       {/* Progress bar + counter */}
@@ -779,7 +799,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
   const previewFloatY = useTransform(scrollYProgress, [0, 1], [44, -44]);
 
   return (
-    <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden">
+    <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-clip">
       {/* ── Cinematic preloader overlay (fades out once booted) ── */}
       <AnimatePresence>
         {!booted && <CinematicPreloader t={t} onDone={handleBoot} />}
@@ -820,7 +840,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                       style={{ color: intg.color }}
                       className="shrink-0"
                     />
-                    {!intg.lockup && <span className="text-foreground">{intg.name}</span>}
+                    <span className="text-foreground">{intg.name}</span>
                     <span className="hidden text-xs text-muted-foreground/80 md:inline">
                       {t(intg.descKey)}
                     </span>
@@ -836,7 +856,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
       <section
         ref={previewWrapRef}
         id="preview"
-        className="relative scroll-mt-24 px-4 sm:px-6 lg:px-12 py-16 sm:py-24 max-w-7xl mx-auto"
+        className="relative px-4 sm:px-6 lg:px-12 py-16 sm:py-24 max-w-7xl mx-auto"
       >
         {/* Ambient glow behind the frame */}
         <div
@@ -867,22 +887,18 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
             viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.85, ease: easeSmooth }}
           >
-            <LazyFrame minHeight={560}>
-              {ogFailed ? (
-                <DashboardPreviewMock t={t} />
-              ) : (
-                <DashboardOgFrame t={t} onError={() => setOgFailed(true)} />
-              )}
-            </LazyFrame>
+            {/* The product shot itself: a browser-framed dashboard mockup
+                whose KPIs/sparkline/orders animate like the real SSE feed. */}
+            <LiveDashboardPreview />
           </motion.div>
 
           {/* Floating CTA chip */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.8, x: "-50%" }}
+            whileInView={{ opacity: 1, scale: 1, x: "-50%" }}
             viewport={{ once: true }}
             transition={{ delay: 0.35, duration: 0.5, ease: easeSmooth }}
-            className="absolute -bottom-5 left-1/2 -translate-x-1/2"
+            className="absolute -bottom-5 left-1/2 z-20"
           >
             <Link
               href={`/${locale}/login`}
@@ -917,17 +933,17 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("bento.sub")}</p>
         </motion.div>
 
-        {/* Bento grid — 12-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-auto">
+        {/* Bento grid — 12-column layout. Single container reveal so the
+            entrance cascade is identical on 1-, 2- and 12-column layouts. */}
+        <motion.div
+          variants={bentoContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 auto-rows-auto"
+        >
           {/* ── Revenue Chart (large, 7 cols) */}
-          <motion.div
-            custom={0}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-7"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-7">
             <BentoCard className="h-full min-h-[280px]">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -961,14 +977,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Sales by Channel (5 cols) */}
-          <motion.div
-            custom={1}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-5"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-5">
             <BentoCard className="h-full min-h-[280px]">
               <p className="text-xs text-muted-foreground font-medium mb-1">
                 {t("bento.channelEyebrow")}
@@ -997,14 +1006,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Recent Orders (7 cols) */}
-          <motion.div
-            custom={2}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-7"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-7">
             <BentoCard className="h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -1058,14 +1060,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Top Products (5 cols) */}
-          <motion.div
-            custom={3}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-5"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-5">
             <BentoCard className="h-full">
               <div className="flex items-center gap-2 mb-4">
                 <Package className="h-5 w-5 text-amber-500" />
@@ -1100,14 +1095,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Payment Systems (4 cols) */}
-          <motion.div
-            custom={4}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-4"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-4">
             <BentoCard className="h-full gradient" gradient>
               <CreditCard className="h-8 w-8 text-primary mb-3" />
               <p className="text-lg font-bold text-foreground mb-1">{t("bento.gatewayTitle")}</p>
@@ -1131,16 +1119,21 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                     key={gw.name}
                     className="flex items-center gap-3 p-2.5 rounded-xl bg-background border border-border"
                   >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0"
-                      style={{ background: gw.color }}
-                    >
-                      {gw.name === "Stripe" ? (
-                        <StripeBrandIcon size={13} className="text-white" />
-                      ) : (
-                        <MidtransBrandIcon size={13} className="text-white" />
-                      )}
-                    </div>
+                    {/* Stripe keeps its branded tile — the wordmark's own
+                        artwork is hard-coded #635BFF, so it must render
+                        through the currentColor variant or it disappears into
+                        the identical purple tile. Midtrans now renders the
+                        official self-colored badge artwork directly. */}
+                    {gw.name === "Stripe" ? (
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0"
+                        style={{ background: gw.color }}
+                      >
+                        <StripeMonoIcon size={13} />
+                      </div>
+                    ) : (
+                      <MidtransBrandIcon size={28} className="shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-foreground">{gw.name}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{t(gw.descKey)}</p>
@@ -1155,14 +1148,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── 2FA Security (4 cols) */}
-          <motion.div
-            custom={5}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-4"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-4">
             <BentoCard className="h-full">
               <Shield className="h-8 w-8 text-emerald-500 mb-3" />
               <p className="text-lg font-bold text-foreground mb-1">{t("security.title")}</p>
@@ -1190,14 +1176,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── AI Assistant (4 cols) */}
-          <motion.div
-            custom={6}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-4"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-4">
             <BentoCard className="h-full bg-foreground text-background dark:bg-zinc-900 dark:text-zinc-100">
               <Bot className="h-8 w-8 mb-3 opacity-80" />
               <p className="text-lg font-bold mb-1">{t("bento.aiTitle")}</p>
@@ -1217,14 +1196,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Integrations (8 cols) */}
-          <motion.div
-            custom={7}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-8"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-8">
             <BentoCard className="h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -1241,20 +1213,14 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                     key={intg.name}
                     className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/50 hover:bg-muted transition group cursor-default"
                   >
-                    {intg.lockup ? (
-                      <intg.Icon size={13} className="mb-1.5" style={{ color: intg.color }} />
-                    ) : (
-                      <intg.Icon
-                        size={Math.round(20 * (intg.iconScale ?? 1))}
-                        className="mb-1.5 group-hover:scale-110 transition-transform"
-                        style={{ color: intg.color }}
-                      />
-                    )}
-                    {!intg.lockup && (
-                      <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition">
-                        {intg.name}
-                      </p>
-                    )}
+                    <intg.Icon
+                      size={Math.round(20 * (intg.iconScale ?? 1))}
+                      className="mb-1.5 group-hover:scale-110 transition-transform"
+                      style={{ color: intg.color }}
+                    />
+                    <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition">
+                      {intg.name}
+                    </p>
                     <p className="text-[9px] text-muted-foreground">{t(intg.descKey)}</p>
                   </div>
                 ))}
@@ -1263,14 +1229,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── API / Webhooks (4 cols) */}
-          <motion.div
-            custom={8}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-4"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-4">
             <BentoCard className="h-full">
               <Webhook className="h-8 w-8 text-violet-500 mb-3" />
               <p className="text-lg font-bold text-foreground mb-1">{t("bento.apiTitle")}</p>
@@ -1293,14 +1252,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
 
           {/* ── Real-time (full width) */}
-          <motion.div
-            custom={9}
-            variants={bentoEntrance}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="lg:col-span-12"
-          >
+          <motion.div variants={bentoEntrance} className="lg:col-span-12">
             <BentoCard className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -1326,7 +1278,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
               </div>
             </BentoCard>
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ──────── FEATURES LIST ──────── */}
@@ -1488,7 +1440,7 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
                       <h3 className="text-xl font-bold mb-1">{t(plan.nameKey)}</h3>
                       {plan.popular && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wide mb-1">
-                          <Sparkles className="h-3 w-3" /> {t("plans.popular")}
+                          <Star className="h-3 w-3 fill-current" /> {t("plans.popular")}
                         </span>
                       )}
                     </div>
@@ -1570,6 +1522,9 @@ export default function MarketingPage({ params }: { params: Promise<{ locale: st
           </motion.div>
         </div>
       </section>
+
+      {/* ──────── STRATUS FAQ ──────── */}
+      <StratusFaq t={t} />
 
       {/* ──────── TESTIMONIALS (auto-scrolling carousel) ──────── */}
       <section className="py-20 max-w-7xl mx-auto overflow-hidden">

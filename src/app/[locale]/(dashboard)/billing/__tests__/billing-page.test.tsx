@@ -14,10 +14,12 @@ vi.mock("@/components/ui/confirm-provider", () => ({
   ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
 }));
 
-// Mock next/navigation
+// Mock next/navigation (useSearchParams backs the ?tab= deep link)
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/billing",
   useParams: () => ({ locale: "en" }),
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
 describe("Billing Page", () => {

@@ -19,6 +19,25 @@ vi.mock("@/hooks/use-realtime-data", () => ({
   useRealtimeData: vi.fn(),
 }));
 
+// OnboardingChecklist requires OnboardingProvider context — it is decorative
+// on the dashboard, so stub it out for the page-level test.
+vi.mock("@/components/onboarding/onboarding-checklist", () => ({
+  __esModule: true,
+  default: () => null,
+  OnboardingChecklist: () => null,
+}));
+
+// The data hero greets the signed-in user via useAuth.
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: () => ({
+    user: { id: "u1", name: "Admin", email: "a@b.c", role: "ADMIN", totpEnabled: false },
+    tierFeatures: null,
+    isLoading: false,
+    error: null,
+    isAuthenticated: true,
+  }),
+}));
+
 // Mock realtime provider
 vi.mock("@/components/realtime-provider", () => ({
   useRealtime: vi.fn(() => ({
@@ -33,6 +52,7 @@ vi.mock("@/components/realtime-provider", () => ({
     addNotification: vi.fn(),
     triggerRefresh: vi.fn(),
     connectionStatus: "connected",
+    reconnectInfo: { attempt: 0, retryAt: null },
   })),
   RealtimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -117,11 +137,12 @@ describe("Dashboard Page", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("renders the page heading with data", () => {
+  it("renders the data hero greeting with data", () => {
     (useRealtimeData as any).mockReturnValue(loadedState);
     render(<DashboardPage />);
-    expect(screen.getByText("Dashboard Overview")).toBeInTheDocument();
-    expect(screen.getByText(/Welcome back/)).toBeInTheDocument();
+    // Time-of-day greeting line + the signed-in user's name as the headline.
+    expect(screen.getByText(/Good (morning|afternoon|evening),/)).toBeInTheDocument();
+    expect(screen.getByText("Admin")).toBeInTheDocument();
   });
 
   it("renders stat cards with formatted values", () => {

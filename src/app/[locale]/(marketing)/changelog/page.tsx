@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 import { FlipRevealText } from "@/components/ui/flip-reveal-text";
 
 interface ChangelogEntry {
@@ -52,11 +53,17 @@ export const typeConfig = {
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
+// The hero-heading choreography (word-by-word rise + de-blur) now lives in the
+// shared AnimatedHeading primitive, so every marketing page runs the same
+// type-in animation as the about page.
+
 export default function ChangelogPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   const t = useTranslations("changelogPage");
   const changelog = t.raw("entries") as ChangelogEntry[];
   const ctaHref = `/${locale}/dashboard`;
+  // The release badge mirrors the newest entry so it can never drift from the data.
+  const latest = changelog[0];
 
   return (
     <div className="relative overflow-hidden bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 min-h-screen">
@@ -96,16 +103,16 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
 
             <motion.h1
               variants={{
-                hidden: { opacity: 0, y: 30 },
+                hidden: { opacity: 0 },
                 visible: {
                   opacity: 1,
-                  y: 0,
                   transition: { duration: 0.6, ease: easeSmooth },
                 },
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-4 max-w-4xl mx-auto"
             >
-              {t("heroPrefix")}&nbsp;
+              <AnimatedHeading text={t("heroPrefix")} delay={0.2} />
+              <br className="hidden sm:block" />
               <span className="inline-flex text-primary">
                 <FlipRevealText
                   words={[t("word1"), t("word2"), t("word3"), t("word4")]}
@@ -127,7 +134,7 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
               }}
               className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             >
-              {t("heroSubtitle")}
+              <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
             </motion.p>
           </motion.div>
         </div>
@@ -141,10 +148,13 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-medium text-muted-foreground">
-              {t("latestVersion")} <span className="text-foreground font-semibold">2.5.0</span>
+              {t("latestVersion")}{" "}
+              <span className="text-foreground font-semibold">{latest?.version ?? "2.6.0"}</span>
             </span>
             <span className="text-[10px] text-muted-foreground/50">—</span>
-            <span className="text-[10px] text-muted-foreground">{t("released")}</span>
+            <span className="text-[10px] text-muted-foreground">
+              {latest?.date ?? t("released")}
+            </span>
           </div>
         </div>
       </section>

@@ -35,6 +35,7 @@ import {
   Power,
   PowerOff,
   Pencil,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -52,22 +53,43 @@ import {
 } from "@/components/ui/select";
 
 import { cn, formatLocaleNumber } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { useThemeReveal } from "@/hooks/use-theme-reveal";
+import { Switch } from "@/components/ui/switch";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/sora-ui/base/alert-dialog";
 import { useRealtime } from "@/components/realtime-provider";
-import { useAppearance } from "@/hooks/use-appearance";
+import { restartTour } from "@/components/ui/onboarding-tour";
+import { useOnboarding } from "@/components/onboarding/onboarding-provider";
+import { DEFAULT_APPEARANCE, useAppearance, type ThemeSwitchKey } from "@/hooks/use-appearance";
 import { WhiteLabelBranding } from "@/components/settings/white-label-branding";
-import { PaymentGatewayWebhookSimulator } from "@/components/billing/payment-gateway-webhook-simulator";
+import { SchedulerStatusCard } from "@/components/settings/scheduler-status-card";
+import { DigestPreviewCard } from "@/components/settings/digest-preview-card";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const tsettings = useTranslations("settings");
   const tcommon = useTranslations("common");
-  const { theme, setTheme } = useTheme();
+  const tprofile = useTranslations("profile");
+  const { reset: resetOnboarding } = useOnboarding();
+  const { theme } = useTheme();
+  const { select: selectTheme } = useThemeReveal();
   const pathname = usePathname();
   const router = useRouter();
   const { push: pushWithTransition } = useViewTransition();
@@ -76,7 +98,43 @@ export default function SettingsPage() {
   const { budgetThreshold, setBudgetThreshold } = useRealtime();
   const [localThreshold, setLocalThreshold] = useState(budgetThreshold);
   const { settings: appearance, update: updateAppearance } = useAppearance();
+  // Older saved settings predate this field, so fall back to the default.
+  const activeThemeSwitch: ThemeSwitchKey =
+    appearance.themeSwitch ?? DEFAULT_APPEARANCE.themeSwitch;
   const confirm = useConfirm();
+  const { logout } = useAuth();
+
+  // ── Delete Account (Danger Zone) — password-confirmed, mirrors the
+  // profile page flow: DELETE /api/profile then hard-redirect home.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error(tcommon("error"));
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tsettings("deleteAccountConfirm"));
+        return;
+      }
+      toast.success(tprofile("accountDeleted"));
+      await logout();
+      window.location.href = "/";
+    } catch {
+      toast.error(tcommon("error"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // -- Notifications --
   const [notifPrefs, setNotifPrefs] = useState<any>(null);
@@ -101,6 +159,25 @@ export default function SettingsPage() {
       // ignore
     }
   };
+
+  // ── Two-Factor Authentication state ──
+  // Mirrors the profile/security 2FA toggle: ON when TOTP is active, and
+  // clicking it routes to the profile page's setup/disable flow.
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d: { totpEnabled?: boolean }) => {
+        if (!cancelled) setTotpEnabled(d?.totpEnabled === true);
+      })
+      .catch(() => {
+        if (!cancelled) setTotpEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // ── API Keys ──
   interface ApiKey {
@@ -191,6 +268,7 @@ export default function SettingsPage() {
       title: tsettings("apiKeyRevoke"),
       description: tsettings("apiKeyRevokeConfirm"),
       confirmLabel: tsettings("apiKeyRevoke"),
+      icon: "key",
       destructive: true,
     });
     if (!ok) return;
@@ -344,6 +422,7 @@ export default function SettingsPage() {
       title: tsettings("webhookDelete"),
       description: tsettings("webhookConfirmDelete"),
       confirmLabel: tcommon("delete"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -464,7 +543,7 @@ export default function SettingsPage() {
                 return (
                   <button
                     key={key}
-                    onClick={() => setTheme(key)}
+                    onClick={(event) => selectTheme(key, { origin: event.currentTarget })}
                     className={cn(
                       "relative p-4 rounded-xl border-2 transition-all duration-200 text-center group",
                       isSelected
@@ -538,11 +617,36 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+
+            {/* Replay the guided product tour — language-aware: restarts in
+                whichever language the user picks here (or the UI locale). */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/60">
+              <p className="text-sm text-gray-500">{tsettings("tourReplayDesc")}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="restart-tour"
+                className="shrink-0 gap-1.5"
+                onClick={() => {
+                  // Reset the checklist too, so "replay the tour" restores the
+                  // full first-run experience instead of only the spotlight.
+                  resetOnboarding();
+                  restartTour(locale);
+                  toast.success(tsettings("tourReplayToast"));
+                }}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                {tsettings("tourReplay")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* White-Labeling & Custom Branding */}
         <WhiteLabelBranding />
+
+        {/* Scheduler health — enabled flag + last run per job (admins only). */}
+        <SchedulerStatusCard />
 
         {/* Accent Color */}
         <Card>
@@ -585,13 +689,17 @@ export default function SettingsPage() {
                       }
                     }}
                     className={cn(
-                      "relative p-3 rounded-xl border-2 transition-all duration-200 text-center group",
+                      "relative p-3 rounded-xl border-2 transition-colors duration-200 text-center group cursor-pointer",
                       isSelected
                         ? "border-primary bg-primary/10 shadow-sm"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm",
-                      "active:scale-[0.97] hover:scale-[1.02]",
+                      "active:scale-[0.97]",
                     )}
                   >
+                    {/* Hover feedback lives on the swatch ICON only — the card
+                        and its label stay put, so a row of colors can be
+                        scanned without the whole tile jumping under the
+                        pointer. */}
                     {key === "custom" && isSelected ? (
                       <input
                         type="color"
@@ -599,12 +707,13 @@ export default function SettingsPage() {
                         onChange={(e) =>
                           updateAppearance({ accent: "custom", customColor: e.target.value })
                         }
-                        className="w-6 h-6 p-0 border-0 rounded mx-auto mb-1.5 block cursor-pointer"
+                        className="w-6 h-6 p-0 border-0 rounded-full mx-auto mb-1.5 block cursor-pointer transition-transform duration-200 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/40"
                       />
                     ) : (
                       <span
                         className={cn(
-                          "w-6 h-6 rounded-full mx-auto mb-1.5 block shadow-inner",
+                          "w-6 h-6 rounded-full mx-auto mb-1.5 block shadow-inner cursor-pointer",
+                          "transition-transform duration-200 group-hover:scale-110 group-hover:ring-2 group-hover:ring-primary/40",
                           key === "custom" && appearance.customColor ? "" : swatch,
                         )}
                         style={
@@ -734,6 +843,76 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Theme Switch reveal — the variant is read by use-theme-reveal.ts at
+            click time, so the very next toggle uses the new effect. */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              <CardTitle>{tsettings("themeSwitch")}</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-500">{tsettings("themeSwitchDesc")}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {(
+                [
+                  { key: "circle", labelKey: "themeSwitchCircle", shape: "circle" },
+                  { key: "circle-blur", labelKey: "themeSwitchCircleBlur", shape: "blur" },
+                  { key: "rectangle", labelKey: "themeSwitchRectangle", shape: "frame" },
+                  { key: "polygon", labelKey: "themeSwitchPolygon", shape: "diamond" },
+                  { key: "none", labelKey: "themeSwitchNone", shape: "plain" },
+                ] as const
+              ).map(({ key, labelKey, shape }) => {
+                const isSelected = activeThemeSwitch === key;
+                const label = tsettings(labelKey);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => updateAppearance({ themeSwitch: key })}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "relative p-4 rounded-xl border-2 transition-all duration-200 text-center group",
+                      isSelected
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm",
+                      "active:scale-[0.97] hover:scale-[1.02]",
+                    )}
+                  >
+                    <span className="mx-auto mb-2 flex h-7 w-7 items-center justify-center">
+                      {shape === "circle" && <span className="h-4 w-4 rounded-full bg-primary" />}
+                      {shape === "blur" && (
+                        <span className="h-4 w-4 rounded-full bg-primary/80 blur-[3px]" />
+                      )}
+                      {shape === "frame" && (
+                        <span className="h-4 w-4 rounded-[4px] border-2 border-primary" />
+                      )}
+                      {shape === "diamond" && (
+                        <span className="h-4 w-4 rotate-45 rounded-[2px] bg-primary/70" />
+                      )}
+                      {shape === "plain" && (
+                        <span className="h-4 w-[3px] rounded-full bg-gray-400 dark:bg-gray-500" />
+                      )}
+                    </span>
+                    <span className={cn("text-sm font-medium block", isSelected && "text-primary")}>
+                      {label}
+                    </span>
+                    {isSelected && (
+                      <span className="absolute top-2 right-2">
+                        <CheckIcon
+                          size={16}
+                          className="h-4 w-4 text-primary animate-in zoom-in-50 duration-200"
+                        />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Dashboard Widgets */}
         <Card>
           <CardHeader>
@@ -827,6 +1006,9 @@ export default function SettingsPage() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
+
+            {/* Daily digest — what the cron email will contain, computed live */}
+            <DigestPreviewCard />
           </CardContent>
         </Card>
 
@@ -896,10 +1078,20 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">{tsettings("twoFactorAuth")}</p>
                 <p className="text-xs text-gray-500">{tsettings("twoFactorAuthDesc")}</p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
+              {/* Reflects the real TOTP state — auto-ON when 2FA is active.
+                  Toggling routes to the profile page where setup/disable runs. */}
+              <Switch
+                checked={totpEnabled === true}
+                disabled={totpEnabled === null}
+                onCheckedChange={(next) => {
+                  if (next) {
+                    pushWithTransition(`/${locale}/profile?setup2fa=1#two-factor`);
+                  } else {
+                    pushWithTransition(`/${locale}/profile?disable2fa=1#two-factor`);
+                  }
+                }}
+                aria-label={tsettings("twoFactorAuth")}
+              />
             </div>
             <div className="flex items-center justify-between py-2">
               <div>
@@ -917,7 +1109,7 @@ export default function SettingsPage() {
         {/* API Keys */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
                 <div>
@@ -948,15 +1140,15 @@ export default function SettingsPage() {
               apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
                       <Key className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{key.name}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium truncate">{key.name}</p>
                         <Badge variant={key.status === "ACTIVE" ? "success" : "danger"}>
                           {key.status === "ACTIVE"
                             ? tsettings("webhookActive")
@@ -970,51 +1162,63 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-gray-400">
+                  <div className="flex items-center gap-2 shrink-0 max-sm:self-end">
+                    <span className="text-xs text-gray-400 hidden md:inline">
                       {key.lastUsedAt ? key.lastUsedAt : tsettings("apiKeyNeverUsed")}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      onClick={() => handleCopyKey(key)}
-                      title="Copy prefix"
-                      aria-label="Copy prefix"
-                    >
-                      {copiedKeyId === key.id ? (
-                        <Check className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+                    <Tooltip content={tcommon("copyPrefix")} side="top">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        onClick={() => handleCopyKey(key)}
+                        aria-label={tcommon("copyPrefix")}
+                      >
+                        {copiedKeyId === key.id ? (
+                          <Check className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      content={
                         key.status === "ACTIVE"
-                          ? "text-amber-500 hover:text-amber-600"
-                          : "text-emerald-500 hover:text-emerald-600",
-                      )}
-                      onClick={() => handleRevokeApiKey(key.id)}
-                      title={key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"}
-                      aria-label={
-                        key.status === "ACTIVE" ? tsettings("apiKeyRevoke") : "Reactivate"
+                          ? tsettings("apiKeyRevoke")
+                          : tsettings("apiKeyReactivate")
                       }
+                      side="top"
                     >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
-                      onClick={() => handleDeleteApiKey(key.id)}
-                      title={tsettings("apiKeyRevoke")}
-                      aria-label={tsettings("apiKeyRevoke")}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+                          key.status === "ACTIVE"
+                            ? "text-amber-500 hover:text-amber-600"
+                            : "text-emerald-500 hover:text-emerald-600",
+                        )}
+                        onClick={() => handleRevokeApiKey(key.id)}
+                        aria-label={
+                          key.status === "ACTIVE"
+                            ? tsettings("apiKeyRevoke")
+                            : tsettings("apiKeyReactivate")
+                        }
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content={tsettings("apiKeyRevoke")} side="top">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                        onClick={() => handleDeleteApiKey(key.id)}
+                        aria-label={tsettings("apiKeyRevoke")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               ))
@@ -1025,7 +1229,7 @@ export default function SettingsPage() {
         {/* Webhooks */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
                 <div>
@@ -1033,17 +1237,14 @@ export default function SettingsPage() {
                   <p className="text-xs text-gray-500 mt-0.5">{tsettings("webhooksDesc")}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <PaymentGatewayWebhookSimulator onSimulationSuccess={fetchWebhooks} />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-2 h-9 px-3.5 text-xs font-semibold"
-                  onClick={openCreateWebhook}
-                >
-                  <Plus className="h-4 w-4" /> {tsettings("webhookAdd")}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 h-9 px-3.5 text-xs font-semibold"
+                onClick={openCreateWebhook}
+              >
+                <Plus className="h-4 w-4" /> {tsettings("webhookAdd")}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -1061,7 +1262,7 @@ export default function SettingsPage() {
                   key={wh.id}
                   className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-2"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={cn(
@@ -1083,65 +1284,72 @@ export default function SettingsPage() {
                         <p className="text-xs text-gray-500 font-mono truncate">{wh.url}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-                        onClick={() => handleTestWebhook(wh.id)}
-                        disabled={testingWebhook === wh.id}
-                        title={tsettings("webhookTest")}
-                        aria-label={tsettings("webhookTest")}
-                      >
-                        <FlaskConical className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
-                          wh.status === "ACTIVE"
-                            ? "text-amber-500 hover:text-amber-600"
-                            : "text-emerald-500 hover:text-emerald-600",
-                        )}
-                        onClick={() => handleToggleWebhook(wh)}
-                        title={
+                    <div className="flex items-center gap-1.5 shrink-0 max-sm:self-end">
+                      <Tooltip content={tsettings("webhookTest")} side="top">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                          onClick={() => handleTestWebhook(wh.id)}
+                          disabled={testingWebhook === wh.id}
+                          aria-label={tsettings("webhookTest")}
+                        >
+                          <FlaskConical className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content={
                           wh.status === "ACTIVE"
                             ? tsettings("webhookPaused")
                             : tsettings("webhookActivated")
                         }
-                        aria-label={
-                          wh.status === "ACTIVE"
-                            ? tsettings("webhookPaused")
-                            : tsettings("webhookActivated")
-                        }
+                        side="top"
                       >
-                        {wh.status === "ACTIVE" ? (
-                          <PowerOff className="h-4 w-4" />
-                        ) : (
-                          <Power className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        onClick={() => openEditWebhook(wh)}
-                        title="Edit"
-                        aria-label="Edit webhook"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
-                        onClick={() => handleDeleteWebhook(wh.id)}
-                        title="Delete"
-                        aria-label="Delete webhook"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={cn(
+                            "h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800",
+                            wh.status === "ACTIVE"
+                              ? "text-amber-500 hover:text-amber-600"
+                              : "text-emerald-500 hover:text-emerald-600",
+                          )}
+                          onClick={() => handleToggleWebhook(wh)}
+                          aria-label={
+                            wh.status === "ACTIVE"
+                              ? tsettings("webhookPaused")
+                              : tsettings("webhookActivated")
+                          }
+                        >
+                          {wh.status === "ACTIVE" ? (
+                            <PowerOff className="h-4 w-4" />
+                          ) : (
+                            <Power className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={tcommon("edit")} side="top">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                          onClick={() => openEditWebhook(wh)}
+                          aria-label={tcommon("edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content={tcommon("delete")} side="top">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 min-w-9 min-h-9 shrink-0 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          onClick={() => handleDeleteWebhook(wh.id)}
+                          aria-label={tcommon("delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-gray-400 pl-5">
@@ -1204,12 +1412,63 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">{tsettings("deleteAccountDesc")}</p>
               </div>
             </div>
-            <Button variant="destructive" size="sm">
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-3.5 w-3.5 mr-1.5" /> {tsettings("deleteAccount")}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Account — password-confirmed destructive action */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent size="default">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-red-500/10 text-red-600 dark:text-red-400">
+              <AlertTriangle className="size-5" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>{tsettings("deleteAccount")}</AlertDialogTitle>
+            <AlertDialogDescription>{tsettings("deleteAccountConfirm")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {tprofile("enterPasswordConfirm")}
+            </label>
+            <Input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder={tprofile("yourCurrentPassword")}
+              className="border-red-300 dark:border-red-700 focus:ring-red-500"
+              autoComplete="current-password"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteOpen(false);
+                setDeletePassword("");
+              }}
+            >
+              {tcommon("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={!deletePassword || deleting}
+            >
+              {deleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> {tprofile("deleting")}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" /> {tsettings("deleteAccount")}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Created API Key Reveal */}
       {createdKeyValue && (

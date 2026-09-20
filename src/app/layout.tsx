@@ -1,33 +1,59 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PWARegister } from "@/components/pwa-register";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { OfflineIndicator } from "@/components/offline-indicator";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site-config";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Absolute URL for the dashboard OG capture (/api/og/dashboard serves the
+// persisted 1200×630 PNG generated at build time — social crawlers need an
+// absolute image URL to embed it).
+const ogImageUrl = `${SITE_URL}/api/og/dashboard`;
+
 export const metadata: Metadata = {
-  title: "Dashboard - All-in-One Business Management Platform",
-  description:
-    "Comprehensive business management platform with real-time analytics, multi-channel order management, team collaboration, and powerful reporting. Run your business with real-time intelligence.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Dashboard",
+    title: SITE_NAME,
   },
   other: {
     "mobile-web-app-capable": "yes",
   },
   openGraph: {
-    title: "Dashboard - Business Management Platform",
-    description:
-      "Run your business with real-time intelligence. Analytics, orders, customers, and team management in one place.",
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
     type: "website",
-    siteName: "Dashboard",
+    siteName: SITE_NAME,
+    url: "/",
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "Dashboard preview — analytics, orders, customers and products in one view",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [ogImageUrl],
   },
 };
 

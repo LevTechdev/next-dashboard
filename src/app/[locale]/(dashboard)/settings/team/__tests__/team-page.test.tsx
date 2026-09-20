@@ -119,7 +119,9 @@ describe("Team Page", () => {
   it("renders table headers", async () => {
     render(<TeamPage />);
     await waitFor(() => {});
-    expect(screen.getByText("Name")).toBeInTheDocument();
+    // "Name" now appears twice (sort dropdown + table header) — assert on
+    // the header cell specifically.
+    expect(screen.getAllByText("Name").length).toBeGreaterThan(0);
     expect(screen.getByText("Role")).toBeInTheDocument();
     expect(screen.getByText("Position")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();

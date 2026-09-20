@@ -19,7 +19,8 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FlipFadeText } from "@/components/ui/flip-fade-text";
+import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
+import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
@@ -177,17 +178,29 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            {t("heroPrefix")} <br className="hidden sm:block" />
+            <AnimatedHeading text={t("heroPrefix")} delay={0.15} />
+            <br className="hidden sm:block" />
             <span className="text-primary inline-flex">
-              <FlipFadeText
-                words={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
-                interval={2500}
+              {/* Real hero copy, revealed by the chromatic sweep. */}
+              <DiaTextReveal
+                text={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                repeat
+                fixedWidth
+                duration={1.1}
+                holdDuration={1.9}
+                colors={[
+                  "hsl(var(--primary))",
+                  "color-mix(in oklab, hsl(var(--primary)) 45%, #fff)",
+                  "hsl(var(--primary))",
+                ]}
+                textColor="hsl(var(--primary))"
+                className="text-4xl font-bold sm:text-5xl md:text-6xl"
               />
             </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {t("heroSubtitle")}
+            <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
           </p>
         </motion.div>
       </section>

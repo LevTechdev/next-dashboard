@@ -28,6 +28,8 @@ import {
   Building,
   Loader2,
   DollarSign,
+  Pencil,
+  Send,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -43,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +66,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { Sparkline } from "@/components/ui/sparkline";
 import { motion } from "framer-motion";
 import { DataExportButton } from "@/components/data-export-button";
 import { toast } from "sonner";
@@ -93,7 +97,17 @@ interface InventoryData {
   lowStockCount: number;
   outOfStockCount: number;
   inStockCount: number;
+  trends?: { products: number[]; units: number[]; value: number[]; valuation?: number[] };
 }
+
+/** Purchase-order status filter chips (DRAFT = auto-drafted, awaiting review). */
+const PO_STATUS_FILTERS = [
+  { value: "ALL", label: "All" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "ISSUED", label: "Issued" },
+  { value: "RECEIVED", label: "Received" },
+  { value: "CANCELLED", label: "Cancelled" },
+] as const;
 
 // â”€â”€â”€ Category Breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -143,9 +157,7 @@ function CategoryBreakdown({
                 transition={{ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className={cn(
                   "h-full rounded-full",
-                  name === "Uncategorized"
-                    ? "bg-gray-400 dark:bg-gray-600"
-                    : "bg-indigo-400 dark:bg-indigo-500",
+                  name === "Uncategorized" ? "bg-gray-400 dark:bg-gray-600" : "bg-primary",
                 )}
               />
             </div>
@@ -167,6 +179,7 @@ export default function InventoryPage() {
   const tproducts = useTranslations("products");
   const tcommon = useTranslations("common");
   const { formatMoney } = useCurrency();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("stock");
 
@@ -187,9 +200,17 @@ export default function InventoryPage() {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [poSummary, setPoSummary] = useState<any>(null);
   const [loadingPOs, setLoadingPOs] = useState(false);
+  const [poStatusFilter, setPoStatusFilter] =
+    useState<(typeof PO_STATUS_FILTERS)[number]["value"]>("ALL");
+  // Bulk issue: DRAFT POs selected for a one-pass review-and-send.
+  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
+  const [bulkIssuing, setBulkIssuing] = useState(false);
 
   // Warehouses Data
   const [warehouses, setWarehouses] = useState<WarehouseAllocation[]>(DEFAULT_WAREHOUSES);
+
+  // Monthly issued-capital trend for the Open PO Capital card sparkline.
+  const [poTrends, setPoTrends] = useState<number[]>([]);
 
   // Create PO Dialog
   const [createPoOpen, setCreatePoOpen] = useState(false);
@@ -230,6 +251,7 @@ export default function InventoryPage() {
         const d = await res.json();
         setPurchaseOrders(d.orders || []);
         setPoSummary(d.summary || null);
+        setPoTrends(d.trends?.issued || []);
       }
     } catch {
       // Ignore
@@ -258,6 +280,7 @@ export default function InventoryPage() {
 
   const products = data?.products || [];
   const categories = data?.categories || [];
+  const trends = data?.trends;
   const totalValue = data?.totalValue || 0;
   const lowStockCount = products.filter((p) => p.stock > 0 && p.stock < 10).length;
   const outOfStockCount = products.filter((p) => p.stock <= 0).length;
@@ -378,7 +401,78 @@ export default function InventoryPage() {
     }
   };
 
+  /** Auto-drafted POs stay DRAFT until a human reviews and issues them. */
+  const handleIssuePo = async (poId: string) => {
+    try {
+      const res = await fetch(`/api/inventory/purchase-orders/${poId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ISSUED" }),
+      });
+      if (res.ok) {
+        toast.success(tinventory("poIssueSuccess"));
+        await fetchPOs();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || tcommon("error"));
+      }
+    } catch {
+      toast.error(tcommon("error"));
+    }
+  };
+
+  /** Bulk issue: sequentially PATCH each selected DRAFT to ISSUED. */
+  const handleBulkIssue = async () => {
+    const ids = Array.from(selectedDraftIds);
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: tinventory("poBulkIssueTitle", { count: ids.length }),
+      description: tinventory("poBulkIssueDesc", { count: ids.length }),
+      confirmLabel: tinventory("poIssueAction"),
+      icon: "warning",
+    });
+    if (!ok) return;
+    setBulkIssuing(true);
+    let succeeded = 0;
+    let failed = 0;
+    try {
+      for (const id of ids) {
+        try {
+          const res = await fetch(`/api/inventory/purchase-orders/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "ISSUED" }),
+          });
+          if (res.ok) succeeded++;
+          else failed++;
+        } catch {
+          failed++;
+        }
+      }
+      if (failed === 0) {
+        toast.success(tinventory("poBulkIssueSuccess", { count: succeeded }));
+      } else {
+        toast.error(tinventory("poBulkIssuePartial", { ok: succeeded, failed }));
+      }
+      setSelectedDraftIds(new Set());
+      await fetchPOs();
+    } finally {
+      setBulkIssuing(false);
+    }
+  };
+
   const totalPoAmount = poLineItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+
+  /** DRAFT PO ids in the filtered view — the selectable universe for bulk issue. */
+  const draftIdsInView = useMemo(
+    () =>
+      purchaseOrders
+        .filter(
+          (po) => po.status === "DRAFT" && (poStatusFilter === "ALL" || poStatusFilter === "DRAFT"),
+        )
+        .map((po) => po.id),
+    [purchaseOrders, poStatusFilter],
+  );
 
   return (
     <motion.div
@@ -391,7 +485,7 @@ export default function InventoryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Package className="h-7 w-7 text-indigo-600" />
+            <Package className="h-7 w-7 text-primary" />
             {tinventory("title")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tinventory("subtitle")}</p>
@@ -402,7 +496,7 @@ export default function InventoryPage() {
               setPoLineItems([]);
               setCreatePoOpen(true);
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-semibold shadow-sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-semibold shadow-sm"
           >
             <Plus className="h-4 w-4" />
             {tinventory("createPo")}
@@ -433,7 +527,7 @@ export default function InventoryPage() {
         <Card className="group hover:shadow-md transition-all duration-300">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400">
+              <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
                 <Package className="h-5 w-5" />
               </div>
               <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
@@ -444,13 +538,23 @@ export default function InventoryPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
               <AnimatedCounter end={inStockCount} duration={1200} />
             </p>
+            {trends?.products && trends.products.length > 1 && (
+              <div className="mt-2">
+                <Sparkline
+                  data={trends.products}
+                  width={120}
+                  height={28}
+                  className="text-primary"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="group hover:shadow-md transition-all duration-300">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400">
+              <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded-full">
@@ -469,11 +573,13 @@ export default function InventoryPage() {
         <Card className="group hover:shadow-md transition-all duration-300">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+              <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                 <Truck className="h-5 w-5" />
               </div>
-              <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full">
-                {purchaseOrders.filter((p) => p.status === "ISSUED").length} Active POs
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {tinventory("activePosBadge", {
+                  count: purchaseOrders.filter((p) => p.status === "ISSUED").length,
+                })}
               </span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
@@ -482,17 +588,22 @@ export default function InventoryPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
               {formatMoney(poSummary?.totalIssued || 32750000)}
             </p>
+            {poTrends.length > 1 && (
+              <div className="mt-2">
+                <Sparkline data={poTrends} width={120} height={28} className="text-primary" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="group hover:shadow-md transition-all duration-300">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+              <div className="p-2.5 rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
                 <BarChart3 className="h-5 w-5" />
               </div>
-              <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
-                Valuation
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {tinventory("valuationBadge")}
               </span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
@@ -501,6 +612,16 @@ export default function InventoryPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
               {formatMoney(totalValue)}
             </p>
+            {trends?.valuation && trends.valuation.length > 1 && (
+              <div className="mt-2">
+                <Sparkline
+                  data={trends.valuation}
+                  width={120}
+                  height={28}
+                  className="text-primary"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -513,30 +634,30 @@ export default function InventoryPage() {
             {tinventory("tabStock")}
           </TabsTrigger>
           <TabsTrigger value="replenishment" className="gap-1.5 text-xs font-semibold">
-            <Sparkles className="h-4 w-4 text-amber-500" />
+            <Sparkles className="h-4 w-4" />
             {tinventory("tabReplenishment")}
             {Boolean(
               replenishmentData?.summary?.reorderRequiredCount &&
               replenishmentData.summary.reorderRequiredCount > 0,
             ) && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px]">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground text-[10px]">
                 {replenishmentData?.summary?.reorderRequiredCount}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="purchaseOrders" className="gap-1.5 text-xs font-semibold">
-            <FileText className="h-4 w-4 text-indigo-500" />
+            <FileText className="h-4 w-4" />
             {tinventory("tabPurchaseOrders")}
-            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-indigo-500 text-white text-[10px]">
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground text-[10px]">
               {purchaseOrders.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="warehouses" className="gap-1.5 text-xs font-semibold">
-            <Warehouse className="h-4 w-4 text-emerald-500" />
+            <Warehouse className="h-4 w-4" />
             {tinventory("tabWarehouses")}
           </TabsTrigger>
           <TabsTrigger value="logistics" className="gap-1.5 text-xs font-semibold">
-            <Truck className="h-4 w-4 text-sky-500" />
+            <Truck className="h-4 w-4" />
             {tinventory("tabLogistics")}
           </TabsTrigger>
         </TabsList>
@@ -646,7 +767,7 @@ export default function InventoryPage() {
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-amber-500" />
+                  <Sparkles className="h-5 w-5 text-primary" />
                   {tinventory("replenishmentTitle")}
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -666,7 +787,7 @@ export default function InventoryPage() {
             <CardContent>
               {loadingReplenishment ? (
                 <div className="p-12 text-center text-gray-400">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-500" />
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
                   Computing sales velocities & days of inventory...
                 </div>
               ) : (
@@ -703,7 +824,7 @@ export default function InventoryPage() {
                             <TableCell className="text-right text-xs font-bold">
                               {item.stock.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                            <TableCell className="text-right text-xs font-semibold text-primary">
                               {item.salesVelocity} u/d
                             </TableCell>
                             <TableCell className="text-right text-xs font-mono font-bold">
@@ -739,7 +860,7 @@ export default function InventoryPage() {
                             </TableCell>
                             <TableCell className="text-right text-xs font-bold text-gray-900 dark:text-gray-100">
                               {item.suggestedReorderQty > 0 ? (
-                                <span className="text-indigo-600 dark:text-indigo-400">
+                                <span className="text-primary">
                                   +{item.suggestedReorderQty.toLocaleString()}
                                 </span>
                               ) : (
@@ -762,7 +883,7 @@ export default function InventoryPage() {
                                 className={cn(
                                   "h-7 text-xs px-2.5 font-semibold gap-1",
                                   item.reorderNeeded
-                                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
                                     : "text-gray-600",
                                 )}
                               >
@@ -787,7 +908,7 @@ export default function InventoryPage() {
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-indigo-600" />
+                  <FileText className="h-5 w-5 text-primary" />
                   {tinventory("purchaseOrdersTitle")}
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -797,17 +918,92 @@ export default function InventoryPage() {
               <Button
                 onClick={() => setCreatePoOpen(true)}
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs font-semibold"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-xs font-semibold"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {tinventory("newPurchaseOrder")}
               </Button>
             </CardHeader>
             <CardContent>
+              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                {PO_STATUS_FILTERS.map((f) => {
+                  const count =
+                    f.value === "ALL"
+                      ? purchaseOrders.length
+                      : purchaseOrders.filter((p) => p.status === f.value).length;
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      onClick={() => setPoStatusFilter(f.value)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer",
+                        poStatusFilter === f.value
+                          ? "bg-primary/10 border-primary/40 text-primary"
+                          : "border-border text-muted-foreground hover:bg-muted/60",
+                      )}
+                    >
+                      {f.label}
+                      <span className="ml-1 opacity-60">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Bulk-issue toolbar — appears only when DRAFT rows are selected. */}
+              {selectedDraftIds.size > 0 && (
+                <div
+                  data-testid="po-bulk-toolbar"
+                  className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl border border-primary/30 bg-primary/5"
+                >
+                  <span className="text-xs font-semibold text-primary">
+                    {tinventory("poBulkSelected", { count: selectedDraftIds.size })}
+                  </span>
+                  <div className="flex-1" />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => setSelectedDraftIds(new Set())}
+                    disabled={bulkIssuing}
+                  >
+                    {tcommon("cancel")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleBulkIssue}
+                    disabled={bulkIssuing}
+                    className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {bulkIssuing ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <Send className="h-3 w-3 mr-1" />
+                    )}
+                    {tinventory("poBulkIssueAction")}
+                  </Button>
+                </div>
+              )}
               <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-50 dark:bg-gray-900/50">
+                      <TableHead className="w-9 pr-0">
+                        <input
+                          type="checkbox"
+                          aria-label={tinventory("poBulkSelectAll")}
+                          data-testid="po-select-all"
+                          checked={
+                            draftIdsInView.length > 0 &&
+                            draftIdsInView.every((id) => selectedDraftIds.has(id))
+                          }
+                          onChange={(e) =>
+                            setSelectedDraftIds(
+                              e.target.checked ? new Set(draftIdsInView) : new Set(),
+                            )
+                          }
+                          className="rounded border-gray-300 text-primary focus:ring-ring cursor-pointer align-middle"
+                        />
+                      </TableHead>
                       <TableHead className="text-xs">PO Number</TableHead>
                       <TableHead className="text-xs">Supplier</TableHead>
                       <TableHead className="text-xs">Destination</TableHead>
@@ -819,74 +1015,116 @@ export default function InventoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {purchaseOrders.map((po) => {
-                      const isReceived = po.status === "RECEIVED";
-                      return (
-                        <TableRow key={po.id}>
-                          <TableCell className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                            {po.poNumber}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            <div className="font-semibold">{po.supplierName}</div>
-                            <div className="text-[10px] text-gray-400">{po.supplierEmail}</div>
-                          </TableCell>
-                          <TableCell className="text-xs text-gray-600 dark:text-gray-300">
-                            {po.warehouseName}
-                          </TableCell>
-                          <TableCell>
-                            {po.status === "ISSUED" ? (
-                              <Badge variant="warning" className="gap-1 text-[10px] font-bold">
-                                <Clock className="h-3 w-3" />
-                                ISSUED
-                              </Badge>
-                            ) : po.status === "RECEIVED" ? (
-                              <Badge variant="success" className="gap-1 text-[10px] font-bold">
-                                <CheckCircle2 className="h-3 w-3" />
-                                RECEIVED
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">
-                                {po.status}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-semibold">
-                            {po.items.reduce((s, i) => s + i.quantity, 0).toLocaleString()} u
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-bold text-gray-900 dark:text-gray-100">
-                            {formatMoney(po.totalAmount)}
-                          </TableCell>
-                          <TableCell className="text-xs text-gray-500">
-                            {new Date(po.expectedDeliveryDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <a
-                                href={`/api/inventory/purchase-orders/${po.id}/pdf`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                              >
-                                <Download className="h-3 w-3" />
-                                <span>PDF</span>
-                              </a>
-
-                              {!isReceived && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleMarkReceived(po.id)}
-                                  className="h-7 text-xs px-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                >
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Receive
-                                </Button>
+                    {purchaseOrders
+                      .filter((po) => poStatusFilter === "ALL" || po.status === poStatusFilter)
+                      .map((po) => {
+                        const isReceived = po.status === "RECEIVED";
+                        const isDraft = po.status === "DRAFT";
+                        return (
+                          <TableRow key={po.id} data-testid="po-row" data-po-status={po.status}>
+                            <TableCell className="pr-0">
+                              {isDraft ? (
+                                <input
+                                  type="checkbox"
+                                  aria-label={`${tinventory("poBulkSelect")} ${po.poNumber}`}
+                                  checked={selectedDraftIds.has(po.id)}
+                                  onChange={() =>
+                                    setSelectedDraftIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(po.id)) next.delete(po.id);
+                                      else next.add(po.id);
+                                      return next;
+                                    })
+                                  }
+                                  className="rounded border-gray-300 text-primary focus:ring-ring cursor-pointer align-middle"
+                                />
+                              ) : (
+                                <span className="inline-block w-4" />
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs font-bold text-primary">
+                              {po.poNumber}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <div className="font-semibold">{po.supplierName}</div>
+                              <div className="text-[10px] text-gray-400">{po.supplierEmail}</div>
+                            </TableCell>
+                            <TableCell className="text-xs text-gray-600 dark:text-gray-300">
+                              {po.warehouseName}
+                            </TableCell>
+                            <TableCell>
+                              {po.status === "ISSUED" ? (
+                                <Badge variant="warning" className="gap-1 text-[10px] font-bold">
+                                  <Clock className="h-3 w-3" />
+                                  ISSUED
+                                </Badge>
+                              ) : po.status === "RECEIVED" ? (
+                                <Badge variant="success" className="gap-1 text-[10px] font-bold">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  RECEIVED
+                                </Badge>
+                              ) : po.status === "DRAFT" ? (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[10px] font-bold text-muted-foreground"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  DRAFT
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">
+                                  {po.status}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-semibold">
+                              {po.items.reduce((s, i) => s + i.quantity, 0).toLocaleString()} u
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-bold text-gray-900 dark:text-gray-100">
+                              {formatMoney(po.totalAmount)}
+                            </TableCell>
+                            <TableCell className="text-xs text-gray-500">
+                              {new Date(po.expectedDeliveryDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {po.status === "DRAFT" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleIssuePo(po.id)}
+                                    className="h-7 text-xs px-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                                  >
+                                    <Send className="h-3 w-3 mr-1" />
+                                    {tinventory("poIssueAction")}
+                                  </Button>
+                                )}
+
+                                <a
+                                  href={`/api/inventory/purchase-orders/${po.id}/pdf`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                >
+                                  <Download className="h-3 w-3" />
+                                  <span>PDF</span>
+                                </a>
+
+                                {!isReceived && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleMarkReceived(po.id)}
+                                    className="h-7 text-xs px-2 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                  >
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Receive
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                   </TableBody>
                 </Table>
               </div>
@@ -901,7 +1139,7 @@ export default function InventoryPage() {
               <Card key={wh.id} className="border-gray-200 dark:border-gray-800">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
                       <Warehouse className="h-5 w-5" />
                     </div>
                     <Badge variant="outline" className="font-mono text-[10px]">
@@ -925,7 +1163,7 @@ export default function InventoryPage() {
                     </div>
                     <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full"
+                        className="h-full bg-primary rounded-full"
                         style={{ width: `${wh.utilizationRate}%` }}
                       />
                     </div>
@@ -978,7 +1216,7 @@ export default function InventoryPage() {
           <form onSubmit={handleCreatePoSubmit}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-indigo-600" />
+                <FileText className="h-5 w-5 text-primary" />
                 {tinventory("newPurchaseOrder")}
               </DialogTitle>
               <DialogDescription className="text-xs text-gray-500">
@@ -1106,11 +1344,11 @@ export default function InventoryPage() {
               </div>
 
               {/* Total Calculation */}
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg flex items-center justify-between">
-                <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+              <div className="p-3 bg-primary/10 rounded-lg flex items-center justify-between">
+                <span className="text-xs font-bold text-primary">
                   Total Purchase Order Capital:
                 </span>
-                <span className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                <span className="text-sm font-extrabold text-primary">
                   {formatMoney(totalPoAmount)}
                 </span>
               </div>
@@ -1123,7 +1361,7 @@ export default function InventoryPage() {
               <Button
                 type="submit"
                 disabled={submittingPo || poLineItems.length === 0}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
               >
                 {submittingPo && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {tinventory("issuePurchaseOrder")}
@@ -1135,4 +1373,3 @@ export default function InventoryPage() {
     </motion.div>
   );
 }
-

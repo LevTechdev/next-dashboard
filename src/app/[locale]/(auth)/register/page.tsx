@@ -6,17 +6,21 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon, XIcon } from "lucide-animated";
-import { Loader2, Sun, Moon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AuthTestimonial } from "@/components/auth/auth-testimonial";
-import { useResendCooldown } from "@/components/security/use-resend-cooldown";
+import {
+  useResendCooldown,
+  SIGNUP_OTP_COOLDOWN_KEY,
+} from "@/components/security/use-resend-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CodeSlots } from "@/components/ui/code-slots";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useTheme } from "next-themes";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
 
 import { toast } from "sonner";
 
@@ -36,12 +40,19 @@ export default function RegisterPage() {
   const [otp, setOtp] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
-  const { theme, setTheme } = useTheme();
+  // CodeSlots destructive treatment on a rejected signup code; cleared by the
+  // component's post-drain reset.
+  const [otpRejected, setOtpRejected] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [devOtp, setDevOtp] = useState<string | null>(null);
-  const { cooldownLeft, startCooldown } = useResendCooldown();
-  const { register } = useAuth();
+  // Own storage key: the signup auto-send must not start the shared
+  // email-verify cooldown, or the profile / Security-Center "Send
+  // Verification Email" button greets a fresh user mid-countdown.
+  const { cooldownLeft, startCooldown } = useResendCooldown({
+    storageKey: SIGNUP_OTP_COOLDOWN_KEY,
+  });
+  const { register, refreshUser } = useAuth();
   const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -64,17 +75,39 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const result = await register(name, email, password);
+      const result = await register(
+        name,
+        email,
+        password,
+        Array.isArray(locale) ? locale[0] : locale,
+      );
       if (result.success) {
-        if (result.emailOtpRequired) {
-          // Verify identity with the emailed 6-digit code before entering.
+        if (result.emailOtpRequired && result.emailSent) {
+          // The transport accepted the message — hold the user on the code
+          // entry step and start the resend cooldown.
           setOtpRequired(true);
           setDevOtp(result.devOtp ?? null);
           setOtpError(null);
+          startCooldown();
+          toast.success(t("accountCreatedCheckEmail"));
+        } else if (result.emailOtpRequired && !result.emailSent && !result.devOtp) {
+          // Production send failure with no inline fallback: don't wall the
+          // user behind an email that will never arrive. The account is
+          // created; verification can be completed later from Security.
+          toast.info(t("accountCreatedNoEmail"));
+          router.push(`/${locale}/dashboard`);
+          router.refresh();
+        } else if (result.emailOtpRequired) {
+          // Dev fallback (no mailer configured): the OTP step runs as before
+          // with the inline code so the flow stays testable.
+          setOtpRequired(true);
+          setDevOtp(result.devOtp ?? null);
+          setOtpError(null);
+          startCooldown();
           toast.success(t("accountCreatedCheckEmail"));
         } else {
           toast.success(t("accountCreated"));
-          router.push("/en/dashboard");
+          router.push(`/${locale}/dashboard`);
         }
       } else {
         toast.error(result.error || t("errorGeneric"));
@@ -98,6 +131,7 @@ export default function RegisterPage() {
   const submitOtp = async (code: string) => {
     if (!/^\d{6}$/.test(code)) {
       setOtpError(t("otpFormatError"));
+      setOtpRejected(true);
       return;
     }
     if (otpSubmittingRef.current) return;
@@ -124,15 +158,21 @@ export default function RegisterPage() {
               : t("otpIncorrect"),
           );
         }
+        setOtpRejected(true);
         return;
       }
       toast.success(t("emailVerifiedToast"));
+      // Re-pull /api/auth/me BEFORE navigating so the auth context carries
+      // emailVerified into the dashboard — without this the banner would show
+      // "verify your email" until a hard reload.
+      await refreshUser();
       // Stay in the registering locale — pushing a hard-coded /en/dashboard
       // would drop an id/ja user onto the English dashboard.
       router.push(`/${locale}/dashboard`);
       router.refresh();
     } catch {
       setOtpError(t("otpGenericError"));
+      setOtpRejected(true);
     } finally {
       otpSubmittingRef.current = false;
       setVerifying(false);
@@ -172,12 +212,11 @@ export default function RegisterPage() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {/* Theme Toggle */}
       {mounted && (
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-black/5 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700/80 transition-all"
-        >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
+        <ThemeToggleButton
+          className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-black/5 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
+          iconClassName="h-5 w-5"
+          side="bottom"
+        />
       )}
 
       <motion.div
@@ -223,16 +262,24 @@ export default function RegisterPage() {
                   <Label className="text-gray-700 dark:text-zinc-300 font-medium mb-1.5 block">
                     {t("confirmationCode")}
                   </Label>
-                  <Input
-                    value={otp}
-                    onChange={(e) => {
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                      setOtpError(null);
-                    }}
-                    placeholder="000000"
-                    disabled={verifying}
-                    className="w-full h-11 text-center tracking-[0.5em] text-lg font-semibold rounded-xl border-gray-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-950 text-gray-900 dark:text-white"
-                  />
+                  {/* CodeSlots — animated six-digit entry. The explicit
+                      "Verify & Continue" button submits (no auto-submit here),
+                      matching the signup step's contract. */}
+                  <div className="flex w-full justify-center pt-1">
+                    <CodeSlots
+                      value={otp}
+                      onChange={(code) => {
+                        setOtp(code);
+                        setOtpError(null);
+                        if (code.length === 0 && otpRejected) setOtpRejected(false);
+                      }}
+                      status={otpRejected ? "error" : "idle"}
+                      disabled={verifying}
+                      ariaLabel={t("confirmationCode")}
+                      slotSize={46}
+                      gap={6}
+                    />
+                  </div>
                   {otpError && (
                     <div className="text-sm text-red-500 mt-2 flex items-center gap-1">
                       <XIcon className="h-4 w-4" /> {otpError}

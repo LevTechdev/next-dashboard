@@ -9,7 +9,7 @@ import {
   Users,
   Globe,
   TrendingUp,
-  Sparkles,
+  BookOpen,
   ArrowRight,
   Target,
   Shield,
@@ -123,7 +123,7 @@ const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 export default function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   const t = useTranslations("aboutPage");
-  
+
   return (
     <div className="relative overflow-hidden bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 min-h-screen">
       {/* ═══ HERO ═══ */}
@@ -139,7 +139,9 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
             transition={{ duration: 0.6, ease: easeSmooth }}
           >
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
-              <Sparkles size={14} className="h-3.5 w-3.5" />
+              {/* "Our Story" reads as a book — the sparkle/AI glyph was a
+                  mismatch for the story badge. */}
+              <BookOpen size={14} className="h-3.5 w-3.5" />
               {t("badge")}
             </div>
           </motion.div>
@@ -231,10 +233,7 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
               {t("missionBadge")}
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6 leading-tight">
-              {t("missionTitle")}{" "}
-              <span className="text-primary">
-                {t("missionTitleGradient")}
-              </span>
+              {t("missionTitle")} <span className="text-primary">{t("missionTitleGradient")}</span>
             </h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>{t("missionP1")}</p>
@@ -262,12 +261,8 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
                   className="relative"
                 >
                   <div className="absolute -left-[37px] w-4 h-4 rounded-full bg-primary border-4 border-background" />
-                  <p className="text-xs font-mono font-semibold text-primary mb-1">
-                    {m.year}
-                  </p>
-                  <p className="text-base font-bold text-foreground mb-1">
-                    {t(m.titleKey)}
-                  </p>
+                  <p className="text-xs font-mono font-semibold text-primary mb-1">{m.year}</p>
+                  <p className="text-base font-bold text-foreground mb-1">{t(m.titleKey)}</p>
                   <p className="text-sm text-muted-foreground">{t(m.descKey)}</p>
                 </motion.div>
               ))}
@@ -292,9 +287,7 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               {t("valuesTitle")}
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              {t("valuesSubtitle")}
-            </p>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t("valuesSubtitle")}</p>
           </motion.div>
 
           <motion.div
@@ -312,17 +305,10 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
                   variants={itemVariants}
                   className="p-6 rounded-2xl bg-background border border-border hover:border-primary/50 transition-colors group"
                 >
-                  <div
-                    className={cn(
-                      "p-3 w-fit rounded-xl mb-4",
-                      value.bg,
-                    )}
-                  >
+                  <div className={cn("p-3 w-fit rounded-xl mb-4", value.bg)}>
                     <Icon size={20} className={cn("h-5 w-5", value.color)} />
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">
-                    {t(value.titleKey)}
-                  </h3>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{t(value.titleKey)}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {t(value.descKey)}
                   </p>
@@ -345,9 +331,7 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
             <Users size={14} className="h-3.5 w-3.5" />
             {t("teamBadge")}
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            {t("teamTitle")}
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t("teamTitle")}</h2>
           <p className="text-muted-foreground max-w-xl mx-auto">{t("teamSubtitle")}</p>
         </motion.div>
 
@@ -392,19 +376,19 @@ export default function AboutPage({ params }: { params: Promise<{ locale: string
       {/* ═══ CTA ═══ */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           transition={{ duration: 0.6, ease: easeSmooth }}
           className="rounded-3xl bg-foreground text-background p-12 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
+
           <div className="relative z-10">
             <LayoutDashboard className="h-10 w-10 mx-auto mb-6 opacity-80 text-background" />
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              {t("ctaDesc")}
-            </p>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/dashboard`}

@@ -1,10 +1,10 @@
 import { registerOTel } from "@vercel/otel";
 
 /**
- * Next.js instrumentation hook — runs once at server startup.
- * Registers OpenTelemetry. Traces are exported via OTLP when
- * OTEL_EXPORTER_OTLP_ENDPOINT is set (e.g. an OpenTelemetry Collector that
- * fans out to a SIEM/APM); otherwise spans are created but not exported.
+ * Next.js instrumentation hook — Edge runtime variant.
+ * Runs once at server startup in the Edge runtime; registers OpenTelemetry.
+ * Node-only concerns (fs-backed stores) live in instrumentation.node.ts so
+ * this Edge build never traces Node.js modules.
  */
 export function register() {
   registerOTel({

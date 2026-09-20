@@ -12,6 +12,7 @@ import { formatCurrency, formatCompactCurrency, getStatusColor, cn } from "@/lib
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { Sparkline } from "@/components/ui/sparkline";
 import { RevenueChart, SalesChannelChart } from "@/components/charts";
 import { DataExportButton } from "@/components/data-export-button";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
@@ -38,15 +39,15 @@ export default function ReportsPage() {
   // Filter orders by date range and selected channel
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    
+
     let result = orders;
-    
+
     if (selectedChannel) {
       result = result.filter((o: any) => o.channel?.name === selectedChannel);
     }
-    
+
     if (!dateRange.from && !dateRange.to) return result;
-    
+
     return result.filter((o: any) => {
       const d = new Date(o.createdAt);
       if (dateRange.from && d < new Date(dateRange.from)) return false;
@@ -126,7 +127,7 @@ export default function ReportsPage() {
       grouped[channel] = (grouped[channel] || 0) + (o.grandTotal || 0);
     });
 
-    const colors = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+    const colors = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#ef4444", "#14b8a6", "#ec4899"];
     return Object.entries(grouped)
       .sort(([, a], [, b]) => b - a)
       .map(([name, value], i) => ({
@@ -219,6 +220,7 @@ export default function ReportsPage() {
                 bg: "bg-emerald-50 dark:bg-emerald-900/20",
                 format: (v: number) => formatCompactCurrency(v),
                 vs: data?.stats?.totalRevenue,
+                sparkData: (data?.revenueData || []).slice(-7).map((d: any) => d.revenue),
               },
               {
                 label: treports("ordersInRange"),
@@ -227,6 +229,7 @@ export default function ReportsPage() {
                 color: "text-blue-600 dark:text-blue-400",
                 bg: "bg-blue-50 dark:bg-blue-900/20",
                 vs: data?.stats?.totalOrders,
+                sparkData: data?.sparklines?.orders || [],
               },
               {
                 label: treports("avgOrderInRange"),
@@ -236,6 +239,11 @@ export default function ReportsPage() {
                 bg: "bg-purple-50 dark:bg-purple-900/20",
                 format: (v: number) => formatCompactCurrency(v),
                 vs: data?.stats?.totalRevenue / (data?.stats?.totalOrders || 1),
+                sparkData: (data?.revenueData || [])
+                  .slice(-7)
+                  .map(
+                    (d: any, i: number) => d.revenue / ((data?.sparklines?.orders || [])[i] || 1),
+                  ),
               },
               {
                 label: treports("customersInRange"),
@@ -244,6 +252,7 @@ export default function ReportsPage() {
                 color: "text-amber-600 dark:text-amber-400",
                 bg: "bg-amber-50 dark:bg-amber-900/20",
                 vs: data?.stats?.totalCustomers,
+                sparkData: data?.sparklines?.customers || [],
               },
             ].map((stat, i) => {
               const hasFilter = dateRange.from || dateRange.to;
@@ -298,6 +307,17 @@ export default function ReportsPage() {
                           {...(stat.format ? { formatter: stat.format } : {})}
                         />
                       </p>
+                      {"sparkData" in stat && stat.sparkData && stat.sparkData.length > 1 && (
+                        <div className="mt-2">
+                          <Sparkline
+                            data={stat.sparkData}
+                            width={120}
+                            height={28}
+                            strokeColor={diff >= 0 ? "#10b981" : "#ef4444"}
+                            strokeWidth={1.5}
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -312,17 +332,21 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base">{treports("revenueByChannel")}</CardTitle>
                   {selectedChannel && (
-                    <Badge variant="outline" className="text-xs font-normal cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedChannel(null)}>
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-normal cursor-pointer hover:bg-secondary/80"
+                      onClick={() => setSelectedChannel(null)}
+                    >
                       Filtered: {selectedChannel} <Minus className="ml-1 h-3 w-3 inline" />
                     </Badge>
                   )}
                 </div>
               </CardHeader>
               <CardContent>
-                <SalesChannelChart 
-                  data={revenueByChannel} 
-                  height={280} 
-                  onClick={(name) => setSelectedChannel(name === selectedChannel ? null : name)} 
+                <SalesChannelChart
+                  data={revenueByChannel}
+                  height={280}
+                  onClick={(name) => setSelectedChannel(name === selectedChannel ? null : name)}
                 />
               </CardContent>
             </Card>
@@ -450,7 +474,11 @@ export default function ReportsPage() {
               <div className="flex items-center gap-3">
                 <CardTitle className="text-base">{treports("revenueByPeriod")}</CardTitle>
                 {dateRange.from && dateRange.to && (
-                  <Badge variant="outline" className="text-xs font-normal cursor-pointer" onClick={() => setDateRange({ from: "", to: "" })}>
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal cursor-pointer"
+                    onClick={() => setDateRange({ from: "", to: "" })}
+                  >
                     Filtered by Date <Minus className="ml-1 h-3 w-3 inline" />
                   </Badge>
                 )}
@@ -575,16 +603,20 @@ export default function ReportsPage() {
                   {data?.salesByChannel ? treports("revenueByChannel") : treports("totalRevenue")}
                 </CardTitle>
                 {selectedChannel && (
-                  <Badge variant="outline" className="text-xs font-normal cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedChannel(null)}>
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-normal cursor-pointer hover:bg-secondary/80"
+                    onClick={() => setSelectedChannel(null)}
+                  >
                     Filtered: {selectedChannel} <Minus className="ml-1 h-3 w-3 inline" />
                   </Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent>
-              <SalesChannelChart 
-                data={data?.salesByChannel || revenueByChannel} 
-                height={300} 
+              <SalesChannelChart
+                data={data?.salesByChannel || revenueByChannel}
+                height={300}
                 onClick={(name) => setSelectedChannel(name === selectedChannel ? null : name)}
               />
             </CardContent>
