@@ -24,6 +24,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      - name: Database env policy
+        # No .env files exist in CI (gitignored) — the guard's tracked-files
+        # layer still runs, blocking any committed remote-DB URL.
+        run: node scripts/check-env-policy.mjs
       - run: npm run lint
       - run: npm run format:check
 
