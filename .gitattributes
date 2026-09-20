@@ -1,0 +1,28 @@
+# Line-ending policy.
+#
+# The repo's blobs are LF, but a Windows checkout materialises them as CRLF
+# (core.autocrlf=true), which makes `npm run format:check` report every file as
+# unformatted and `prettier --write` churn the whole tree. These rules pin the
+# working copy to LF so local formatting matches what CI (Linux) sees.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending-converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+
+# Windows-only scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

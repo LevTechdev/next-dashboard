@@ -68,11 +68,33 @@ next-env.d.ts
 /replace_hooks.js
 /test-results.json
 
-# local verification / audit screenshots (never commit)
-/test-results/icon-check*/
-/test-results/visual-qa-*/
+# dev-server stdout/stderr dumps captured while probing ports (never commit)
+/server-out.txt
+/server-p4.txt
+/dev-*.log
+dev-live.log
+
+# Playwright artifacts (generated on every run — never commit)
+/playwright-report/
+/test-results/
+
+# file-backed runtime ledgers: local state the app rewrites at runtime, so a
+# commit would just be whichever dev session ran last (never commit)
+/data/auto-payout-cycle.json
+/data/auto-payouts.json
+/data/auto-reorder-ledger.json
+/data/inventory-snapshots.json
+/data/leaf-sync-watermark.json
+/data/qris-ledger.json
+/data/qris-ledger.json.bak
+/data/report-schedule.json
+/data/scheduler-runs.json
+
 scripts/dev-idp/
+supabase/.temp/
 .next-prod/
-.freebuff/
+.next-e2e/
+.next-live/
+.next-dev-live/
 .freebuff/
 .qa/

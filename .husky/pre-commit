@@ -1,6 +1,11 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Env policy: local env files must point DATABASE_URL at the local Postgres
+# mirror — a leaked remote Supabase URL silently splits the app (website vs
+# scripts) across two databases.
+node scripts/check-env-policy.mjs || exit 1
+
 # Detect if TypeScript/JavaScript files are staged
 STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -cE '\.(ts|tsx)$' || true)
 

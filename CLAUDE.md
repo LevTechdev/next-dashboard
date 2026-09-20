@@ -4,13 +4,14 @@
 Next.js 16 (App Router, React 19) multi-tenant commercial analytics, billing, and enterprise operations dashboard with 100% full internationalization across English, Indonesian, Japanese, and Chinese.
 
 ## Core Commands
-- `npm run dev`: Start Next.js development server on **port 3010** (`http://localhost:3010`)
+- `npm run dev`: Start Next.js development server on **port 3010** (`http://localhost:3010`) against the **local Postgres mirror** (`localhost:5432/nextdashboard`)
 - `npm run build`: Production build with Turbopack
 - `npm run test:i18n`: Verify 100% namespace and key parity across all 4 locales (`en`, `id`, `ja`, `zh`)
 - `npx vitest run src/i18n/__tests__/ src/components/billing/__tests__/`: Run core component tests
 - `npm run test:api`: Run API test suite
 - `npm run test:all`: Run complete test suite across unit, component, and API tests
 - `node scripts/production-smoke-test.mjs`: Execute production endpoint smoke tests
+- **Database policy**: local development, seeding, and all CI run against the local Postgres mirror (`db:provision:local` provisions it). The remote Supabase Postgres is reserved for production deploys only — never point `.env.local` at the pooler for day-to-day dev (transaction-mode PgBouncer stalls Prisma introspection and brownouts break seeds).
 
 ## Architecture & Conventions
 
@@ -56,3 +57,8 @@ Next.js 16 (App Router, React 19) multi-tenant commercial analytics, billing, an
 - `src/lib/account-validator.ts`: Real-time phone carrier detection (DANA, OVO, GoPay, LinkAja) and card BIN/Luhn check (Visa, Mastercard, GPN, JCB).
 - `src/components/ui/bank-card-visual.tsx` & `src/components/ui/emoney-wallet-pass.tsx`: Tactile EMV physical card and mobile wallet pass design system.
 
+
+### 9. Context7 (Up-to-Date API Reference) — Mandatory for Library Work
+- The Context7 MCP server is configured in `.vscode/mcp.json` (`context7` server, run via `npx -y @upstash/context7-mcp@latest`). It resolves library IDs (`resolve-library-id`) and pulls version-matched docs/code samples (`query-docs`, e.g. libraryId `/vercel/next.js`, `/prisma/prisma`, `/tailwindcss/tailwindcss`).
+- BEFORE writing code against any framework/package API (Next.js, Prisma, next-intl, Radix UI, framer-motion, recharts, stripe, midtrans, @react-pdf/renderer…), query Context7 to confirm the current signature instead of relying on training memory. If Context7 is unavailable, prefer reading `node_modules/<pkg>/README.md` and `*.d.ts` over guessing.
+- Never invent icons/APIs that do not exist: brand artwork comes from the installed `thesvg` package (`node_modules/thesvg/dist/*.js`, verified slugs only); icon components live in `src/components/ui/brand-icons.tsx`.
