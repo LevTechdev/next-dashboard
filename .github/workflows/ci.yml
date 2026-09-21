@@ -73,6 +73,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # Fast, named gate: a service worker must never register outside a
+      # production build (in dev it serves the previous build's chunks
+      # cache-first, so edits look ignored), and nothing may await
+      # navigator.serviceWorker.ready (it never settles without a
+      # registration). Also runs inside the full component suite below —
+      # this step just fails fast with an obvious job name.
+      - name: Service worker contract
+        run: npx vitest run --config vitest.components.config.ts src/components/__tests__/service-worker-contract.test.ts src/components/__tests__/pwa-register.test.tsx
       - run: npx vitest run --config vitest.components.config.ts --coverage
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

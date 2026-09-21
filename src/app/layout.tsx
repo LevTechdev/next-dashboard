@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { PWARegister } from "@/components/pwa-register";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site-config";
@@ -147,7 +146,9 @@ export default async function RootLayout({
         />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <PWARegister />
+        {/* PWARegister mounts once, in Providers (alongside the other
+            mount-time watchers). Mounting it here as well registered the
+            service worker twice per page. */}
         <Providers>
           <OfflineIndicator />
           {children}

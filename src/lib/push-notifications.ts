@@ -1,3 +1,5 @@
+import { getActiveServiceWorker } from "@/lib/service-worker";
+
 export async function requestPushPermission(): Promise<string | null> {
   if (
     !("Notification" in window) ||
@@ -15,7 +17,14 @@ export async function requestPushPermission(): Promise<string | null> {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    // Never `navigator.serviceWorker.ready`: with no registration it hangs
+    // forever, so the toggle would spin with nothing to catch. Registration is
+    // production-only, which makes "no worker" the normal dev case.
+    const registration = await getActiveServiceWorker();
+    if (!registration) {
+      console.error("Push unavailable: no active service worker");
+      return null;
+    }
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlB64ToUint8Array(
