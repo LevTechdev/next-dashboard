@@ -190,6 +190,26 @@ function LoginForm() {
 
   const totpSubmittingRef = useRef(false);
 
+  /**
+   * Latched the moment the second factor is ACCEPTED.
+   *
+   * Every second-factor handler below ends the same way: on success it toasts,
+   * pushes to the dashboard, and releases `totpSubmittingRef` in its `finally` —
+   * while the redirect is still in flight. The code field also auto-submits the
+   * moment six digits land, so an impatient click on top of it produced a SECOND
+   * request with a code the server had already spent.
+   *
+   * That second request is now refused (RFC 6238 §5.2 replay guard, and backup
+   * codes were always single-use), which turned a real defect into a visible one:
+   * a successful sign-in could show "That code was already used" next to
+   * "Welcome back!". Once the factor is accepted there is nothing left to
+   * submit, so every handler bows out instead.
+   */
+  const secondFactorSettledRef = useRef(false);
+
+  /** True while a second-factor request is in flight or already accepted. */
+  const secondFactorLocked = () => secondFactorSettledRef.current || totpSubmittingRef.current;
+
   /** Send (or re-send) the email login challenge and switch to its entry step. */
   const requestEmailOtp = async () => {
     setIsLoading(true);
@@ -219,7 +239,7 @@ function LoginForm() {
       toast.error(t("invalidCodeLength"));
       return;
     }
-    if (totpSubmittingRef.current) return;
+    if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
@@ -233,6 +253,7 @@ function LoginForm() {
         trustDevice,
       );
       if (result.success) {
+        secondFactorSettledRef.current = true;
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
@@ -254,8 +275,12 @@ function LoginForm() {
       setTotpRejected(true);
       toast.error(t("errorGeneric"));
     } finally {
-      totpSubmittingRef.current = false;
-      setIsLoading(false);
+      // A settled sign-in keeps the spinner: the redirect is in flight, and a
+      // re-enabled button is what invited the second submit in the first place.
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
     }
   };
 
@@ -279,7 +304,7 @@ function LoginForm() {
       toast.error(t("invalidBackupCodeLength"));
       return;
     }
-    if (totpSubmittingRef.current) return;
+    if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
@@ -294,6 +319,7 @@ function LoginForm() {
         clean,
       );
       if (result.success) {
+        secondFactorSettledRef.current = true;
         toast.success(t("welcomeBackToast"));
         // Recovery codes are finite and each sign-in burns one. Say so while
         // the user is still on the recovery step — it is the last moment the
@@ -315,8 +341,10 @@ function LoginForm() {
       setBackupRejected(true);
       toast.error(t("errorGeneric"));
     } finally {
-      totpSubmittingRef.current = false;
-      setIsLoading(false);
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
     }
   };
 
@@ -325,7 +353,7 @@ function LoginForm() {
       toast.error(t("invalidCodeLength"));
       return;
     }
-    if (totpSubmittingRef.current) return;
+    if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
@@ -339,6 +367,7 @@ function LoginForm() {
         trustDevice,
       );
       if (result.success) {
+        secondFactorSettledRef.current = true;
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
@@ -354,8 +383,10 @@ function LoginForm() {
       setTotpRejected(true);
       toast.error(t("errorGeneric"));
     } finally {
-      totpSubmittingRef.current = false;
-      setIsLoading(false);
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
     }
   };
 
@@ -366,7 +397,7 @@ function LoginForm() {
    * happened, so this only satisfies the second factor.
    */
   const handlePasskeySecondFactor = async () => {
-    if (totpSubmittingRef.current) return;
+    if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
@@ -403,6 +434,9 @@ function LoginForm() {
         trustDevice,
       );
       if (result.success) {
+        // The marker cookie is single-use, so a second completion would fail
+        // with a bare "login failed" on a sign-in that already worked.
+        secondFactorSettledRef.current = true;
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
@@ -411,8 +445,10 @@ function LoginForm() {
     } catch {
       // User dismissed the browser's passkey prompt — not a failure toast.
     } finally {
-      totpSubmittingRef.current = false;
-      setIsLoading(false);
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
     }
   };
 
