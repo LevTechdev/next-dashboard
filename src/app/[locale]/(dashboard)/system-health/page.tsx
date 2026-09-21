@@ -89,6 +89,7 @@ const JOB_LABEL_KEYS: Record<string, string> = {
   "trial-sweep": "jobTrialSweep",
   "scheduled-reports": "jobScheduledReports",
   "backup-verify": "jobBackupVerify",
+  "recovery-drift": "jobRecoveryDrift",
 };
 
 /** Locale-aware "3 minutes ago" formatting (no extra translation keys needed). */

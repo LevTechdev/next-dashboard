@@ -63,6 +63,7 @@ model User {
   accountRecoveryTokens    AccountRecoveryToken[]
   backupAuthenticator      BackupAuthenticator?
   securityAlertTokens      SecurityAlertToken[]
+  readinessSnapshots       RecoveryReadinessSnapshot[]
   tenantId                 String?
   tenant                   Tenant?                 @relation(fields: [tenantId], references: [id])
 }
@@ -238,6 +239,36 @@ model SecurityAlertToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// One day's recovery-readiness verdict for one user.
+///
+/// Readiness is a snapshot by nature — codes burn down, a spare gets used, an
+/// email verification lapses — so the interesting story is the drift, not the
+/// current value. One row per user per calendar day (a second capture on the
+/// same day updates the row rather than appending noise), which is what the
+/// Security Center's 30-day sparkline reads and what a drop alert compares
+/// against.
+model RecoveryReadinessSnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// UTC calendar day (YYYY-MM-DD) — the series key.
+  day       String
+  /// unknown | unprotected | locked-out | thin | ready (lib/recovery-readiness).
+  level     String
+  /// Paths known to work at capture time (excludes unknown).
+  availableCount Int  @default(0)
+  /// Codes are running out but a weaker path still exists.
+  codesLow  Boolean  @default(false)
+  /// Per-path states at capture time — lets a surprising verdict be explained
+  /// later instead of guessed at (one afternoon's flaky fetch, say).
+  paths     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, day])
+  @@index([userId, day])
 }
 
 /// Single-use hashed backup recovery codes for 2FA fallback.

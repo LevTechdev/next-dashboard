@@ -38,6 +38,9 @@ export type SecurityEventType =
   | "SECURITY_ALERT_SENT"
   | "SECURITY_ALERT_REVERTED"
   | "TRUSTED_DEVICE_REVOKED"
+  /** The account's recovery readiness moved DOWN the ladder (covered →
+   *  fragile → locked out) — recorded the day the daily sweep noticed it. */
+  | "RECOVERY_READINESS_DROPPED"
   /** Last-resort recovery (authenticator AND backup codes lost). */
   | "ACCOUNT_RECOVERY_REQUESTED"
   | "ACCOUNT_RECOVERY_COMPLETED"

@@ -174,6 +174,89 @@ export function recoveryImpactOf(
   };
 }
 
+// ─── Drift: readiness across days ────────────────────────────────────────────
+
+/**
+ * Days of history kept in view. Declared here (not in the server-only drift
+ * module) because the Security Center sparkline is a client component and must
+ * not import a `server-only` file to learn the window width.
+ */
+export const READINESS_HISTORY_DAYS = 30;
+
+/**
+ * Ordering used to compare two verdicts. Higher is better protected.
+ *
+ * `unknown` is ranked below everything and is never compared against: it means
+ * "not measured yet", not "bad", and reading it as a drop would fire the
+ * alert the first time the page loaded.
+ */
+export const READINESS_RANK: Record<ReadinessLevel, number> = {
+  unknown: -1,
+  unprotected: 0,
+  "locked-out": 1,
+  thin: 2,
+  ready: 3,
+};
+
+/**
+ * The levels that exist while a second factor is on — the axis a "drop" is
+ * measured along.
+ *
+ * `unprotected` (2FA switched off) is deliberately outside it: it is a change
+ * on the *protection* axis, not the recovery one, and it already raises its own
+ * much louder alert (`SECURITY_ALERT_SENT`, "2FA was turned off"). Firing a
+ * second "your recovery got weaker" alert next to it would describe the same
+ * event twice in different words.
+ */
+const LADDER_LEVELS: readonly ReadinessLevel[] = ["locked-out", "thin", "ready"];
+
+export function onRecoveryLadder(level: ReadinessLevel): boolean {
+  return LADDER_LEVELS.includes(level);
+}
+
+/** A move down the recovery ladder. */
+export interface ReadinessDrop {
+  from: ReadinessLevel;
+  to: ReadinessLevel;
+}
+
+/**
+ * Detect the transition worth telling the user about: the account was covered
+ * and is not any more (or was fragile and is now locked out).
+ *
+ * Returns null for every other change — improvements, the first observation,
+ * anything involving `unknown`, and moves that leave the ladder.
+ */
+export function readinessDrop(
+  previous: ReadinessLevel | null | undefined,
+  current: ReadinessLevel,
+): ReadinessDrop | null {
+  if (!previous) return null;
+  if (!onRecoveryLadder(previous) || !onRecoveryLadder(current)) return null;
+  if (READINESS_RANK[current] >= READINESS_RANK[previous]) return null;
+  return { from: previous, to: current };
+}
+
+export type ReadinessTrend = "up" | "down" | "flat";
+
+/**
+ * Where the account started vs where it is now, over a window of measured
+ * days. Only ladder verdicts count (an unprotected stretch says nothing about
+ * recoverability), and a window with fewer than two of them is `flat` — one
+ * point is a fact, not a trend.
+ */
+export function readinessTrend(
+  levels: readonly (ReadinessLevel | null | undefined)[],
+): ReadinessTrend {
+  const measured = levels.filter((l): l is ReadinessLevel => !!l && onRecoveryLadder(l));
+  if (measured.length < 2) return "flat";
+  const first = READINESS_RANK[measured[0]];
+  const last = READINESS_RANK[measured[measured.length - 1]];
+  if (last > first) return "up";
+  if (last < first) return "down";
+  return "flat";
+}
+
 export function recoveryReadiness(facts: RecoveryFacts): RecoveryReadiness {
   const path = (id: RecoveryPathId, state: RecoveryPathState, remaining?: number) =>
     remaining === undefined ? { id, state } : { id, state, remaining };

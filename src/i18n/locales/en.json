@@ -19,6 +19,7 @@
     "jobTrialSweep": "Trial expiry sweep",
     "jobScheduledReports": "Scheduled reports",
     "jobBackupVerify": "Backup verification",
+    "jobRecoveryDrift": "Recovery readiness sweep",
     "dlqTitle": "Webhook dead-letter queue",
     "dlqDesc": "Inbound deliveries that failed signature or processing and are waiting on a replay.",
     "dlqEmpty": "No failed deliveries — the queue is empty.",
@@ -996,6 +997,7 @@
       "jobSupabaseSync": "Supabase mirror sync",
       "jobSupabaseLeafSync": "Supabase leaf sync (30 min)",
       "jobBackupVerify": "Backup restore verify",
+      "jobRecoveryDrift": "Recovery readiness sweep",
       "snapshotsTitle": "Rollback snapshots",
       "snapshotsEmpty": "No snapshots yet — they are created on every Supabase mirror sync.",
       "restore": "Restore",
@@ -2967,13 +2969,20 @@
     "trustedRevokeAll": "Revoke all devices",
     "trustedRevokedCount": "{count} device(s) revoked.",
     "evt_MFA_CODE_REPLAYED": "Two-factor code replayed",
+    "evt_RECOVERY_READINESS_DROPPED": "Recovery readiness dropped",
     "recoveryGuard_disable2fa_title": "This removes your second factor",
     "recoveryGuard_disable2fa_body": "Two-factor authentication is the only thing standing between your password and your account. Turning it off leaves sign-in protected by the password alone — anyone who learns it gets in.",
     "recoveryGuard_disable2fa_ack": "I understand my account will be protected by my password alone.",
     "recoveryGuard_removeSpare_title": "This removes your last way back in",
     "recoveryGuard_removeSpare_body": "You have no recovery codes, no passkey and no verified email. Once this device is removed, losing your phone means losing your account — with no way to recover it from here.",
     "recoveryGuard_removeSpare_ack": "I understand I could be permanently locked out if I lose my phone.",
-    "recoveryGuardAfter": "Recovery readiness after this: {level}"
+    "recoveryGuardAfter": "Recovery readiness after this: {level}",
+    "recoveryHistoryLabel": "Last {days} days",
+    "recoveryTrend_up": "Improving",
+    "recoveryTrend_down": "Weaker than before",
+    "recoveryTrend_flat": "Holding steady",
+    "recoveryHistoryHint": "Measured once a day. You are alerted the day this drops a rung — so a spent recovery code never goes unnoticed.",
+    "recoveryHistoryEmpty": "No history yet — measurement starts today."
   },
   "sso": {
     "title": "SSO / Enterprise",
@@ -3503,15 +3512,55 @@
       }
     },
     "perMonth": "/month",
-    "compareCols": ["Features", "Starter", "Professional", "Enterprise"],
+    "compareCols": [
+      "Features",
+      "Starter",
+      "Professional",
+      "Enterprise"
+    ],
     "compareRows": [
-      ["Monthly Orders", "100", "1,000", "Unlimited"],
-      ["Team Members", "3", "10", "Unlimited"],
-      ["Analytics", "Basic", "Advanced", "Advanced"],
-      ["Support", "Email", "Priority", "24/7 Dedicated"],
-      ["API Access", "-", "Full", "Full"],
-      ["Custom Exports", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "Monthly Orders",
+        "100",
+        "1,000",
+        "Unlimited"
+      ],
+      [
+        "Team Members",
+        "3",
+        "10",
+        "Unlimited"
+      ],
+      [
+        "Analytics",
+        "Basic",
+        "Advanced",
+        "Advanced"
+      ],
+      [
+        "Support",
+        "Email",
+        "Priority",
+        "24/7 Dedicated"
+      ],
+      [
+        "API Access",
+        "-",
+        "Full",
+        "Full"
+      ],
+      [
+        "Custom Exports",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "Plan not found. Please try again.",
     "toastCheckoutFailed": "Checkout failed",

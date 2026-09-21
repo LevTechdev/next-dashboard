@@ -19,6 +19,7 @@
     "jobTrialSweep": "试用到期清理",
     "jobScheduledReports": "定时报告",
     "jobBackupVerify": "备份校验",
+    "jobRecoveryDrift": "恢复准备度扫描",
     "dlqTitle": "Webhook 死信队列",
     "dlqDesc": "签名或处理失败、等待重放的入站投递。",
     "dlqEmpty": "没有失败的投递——队列为空。",
@@ -996,6 +997,7 @@
       "jobSupabaseSync": "Supabase 镜像同步",
       "jobSupabaseLeafSync": "Supabase 叶子表同步（30 分钟）",
       "jobBackupVerify": "备份恢复验证",
+      "jobRecoveryDrift": "恢复准备度扫描",
       "snapshotsTitle": "回滚快照",
       "snapshotsEmpty": "暂无快照 — 每次 Supabase 镜像同步时都会生成。",
       "restore": "恢复",
@@ -2901,13 +2903,20 @@
     "trustedRevokeAll": "撤销所有设备",
     "trustedRevokedCount": "已撤销 {count} 台设备。",
     "evt_MFA_CODE_REPLAYED": "双重验证码被重复使用",
+    "evt_RECOVERY_READINESS_DROPPED": "恢复准备度下降",
     "recoveryGuard_disable2fa_title": "这将移除您的第二重验证",
     "recoveryGuard_disable2fa_body": "双重验证是密码与账号之间唯一的屏障。关闭后，登录仅由密码保护——任何知道密码的人都能进入。",
     "recoveryGuard_disable2fa_ack": "我明白我的账号将仅由密码保护。",
     "recoveryGuard_removeSpare_title": "这将移除您最后的找回途径",
     "recoveryGuard_removeSpare_body": "您没有恢复码、没有通行密钥、也没有已验证的邮箱。删除此设备后，一旦手机丢失，账号也将无法从任何地方找回。",
     "recoveryGuard_removeSpare_ack": "我明白如果手机丢失，我可能被永久锁定。",
-    "recoveryGuardAfter": "此操作后的恢复就绪度：{level}"
+    "recoveryGuardAfter": "此操作后的恢复就绪度：{level}",
+    "recoveryHistoryLabel": "最近 {days} 天",
+    "recoveryTrend_up": "正在改善",
+    "recoveryTrend_down": "比之前更弱",
+    "recoveryTrend_flat": "保持稳定",
+    "recoveryHistoryHint": "每天测量一次。等级下降的当天即提醒您，因此已使用的恢复码不会被忽略。",
+    "recoveryHistoryEmpty": "暂无历史——从今天开始测量。"
   },
   "sso": {
     "title": "SSO / 企业",
@@ -3464,7 +3473,13 @@
       "starter": {
         "name": "入门版",
         "desc": "适合刚刚起步的小型企业。",
-        "features": ["每月最多 100 个订单", "最多 3 名团队成员", "基础分析", "标准导出", "邮件支持"]
+        "features": [
+          "每月最多 100 个订单",
+          "最多 3 名团队成员",
+          "基础分析",
+          "标准导出",
+          "邮件支持"
+        ]
       },
       "professional": {
         "name": "专业版",
@@ -3497,15 +3512,55 @@
       }
     },
     "perMonth": "/月",
-    "compareCols": ["功能", "入门版", "专业版", "企业版"],
+    "compareCols": [
+      "功能",
+      "入门版",
+      "专业版",
+      "企业版"
+    ],
     "compareRows": [
-      ["每月订单", "100", "1,000", "无限"],
-      ["团队成员", "3", "10", "无限"],
-      ["分析", "基础", "高级", "高级"],
-      ["支持", "邮件", "优先", "24/7 专属"],
-      ["API 访问", "-", "完整", "完整"],
-      ["自定义导出", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "每月订单",
+        "100",
+        "1,000",
+        "无限"
+      ],
+      [
+        "团队成员",
+        "3",
+        "10",
+        "无限"
+      ],
+      [
+        "分析",
+        "基础",
+        "高级",
+        "高级"
+      ],
+      [
+        "支持",
+        "邮件",
+        "优先",
+        "24/7 专属"
+      ],
+      [
+        "API 访问",
+        "-",
+        "完整",
+        "完整"
+      ],
+      [
+        "自定义导出",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "未找到套餐，请重试。",
     "toastCheckoutFailed": "结账失败",

@@ -8,6 +8,8 @@
  *  - "auto-payout": monthly affiliate auto-payout evaluation, idempotent
  *    per calendar cycle via data/auto-payout-cycle.json.
  *  - "webhook-retry": frequent sweep of due DLQ retries (5 min backoff base).
+ *  - "recovery-drift": daily capture of every account's recovery-readiness
+ *    verdict; alerts the owner the day it drops a rung.
  *
  * Jobs are skipped in development unless SCHEDULER_ENABLED=1 so `npm run dev`
  * doesn't email anyone or move money; set the env to exercise them locally.
@@ -44,6 +46,7 @@ const lastSyncRun: { day: string | null } = { day: null };
 const lastLeafSyncRun: { at: number | null } = { at: null };
 const lastSweepRun: { day: string | null } = { day: null };
 const lastReportsRun: { day: string | null } = { day: null };
+const lastDriftRun: { day: string | null } = { day: null };
 
 /** Last execution per job — surfaced by GET /api/scheduler/status. */
 export interface JobRunInfo {
@@ -92,7 +95,8 @@ export type SchedulerJobName =
   | "supabase-leaf-sync"
   | "trial-sweep"
   | "scheduled-reports"
-  | "backup-verify";
+  | "backup-verify"
+  | "recovery-drift";
 
 /**
  * Record a run triggered outside the in-app loop (e.g. the Vercel cron hit on
@@ -129,6 +133,7 @@ export function schedulerStatus(): {
       "trial-sweep": runs["trial-sweep"] ?? null,
       "scheduled-reports": runs["scheduled-reports"] ?? null,
       "backup-verify": runs["backup-verify"] ?? null,
+      "recovery-drift": runs["recovery-drift"] ?? null,
     },
   };
 }
@@ -186,6 +191,11 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
     case "backup-verify": {
       const { runBackupVerify } = await import("@/lib/backup-verify");
       const result = await runBackupVerify();
+      return { job: name, ...result };
+    }
+    case "recovery-drift": {
+      const { runRecoveryDriftSweep } = await import("@/lib/recovery-drift");
+      const result = await runRecoveryDriftSweep();
       return { job: name, ...result };
     }
     case "supabase-leaf-sync": {
@@ -285,6 +295,14 @@ export async function startScheduler(): Promise<void> {
         console.log("[scheduler] scheduled-reports", await runJob("scheduled-reports"));
       }
 
+      // Nightly recovery-readiness capture. Runs at 03:00 — an hour after the
+      // digest, so its "your recovery got weaker" alert is not competing with
+      // the daily report for the same inbox moment.
+      if (now.getHours() === SYNC_HOUR && lastDriftRun.day !== today) {
+        lastDriftRun.day = today;
+        console.log("[scheduler] recovery-drift", await runJob("recovery-drift"));
+      }
+
       // Hourly auto-payout evaluation (monthly-idempotent inside the job).
       if (now.getTime() % PAYOUT_CHECK_MS < TICK_MS) {
         console.log("[scheduler] auto-payout", await runJob("auto-payout"));
@@ -329,7 +347,7 @@ export async function startScheduler(): Promise<void> {
   timer.current.unref?.();
 
   console.log(
-    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, supabase-sync=03:30, leaf-sync=30m)",
+    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00)",
   );
 }
 

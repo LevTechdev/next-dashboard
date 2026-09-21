@@ -23,6 +23,8 @@ import {
 } from "@/lib/recovery-readiness";
 import { BACKUP_CODE_LOW_THRESHOLD } from "@/lib/backup-code-status";
 import { requestRecoveryAction } from "@/components/security/use-recovery-action";
+import { ReadinessSparkline } from "@/components/security/readiness-sparkline";
+import { useRecoveryHistory } from "@/components/security/use-recovery-history";
 import type { SecurityData } from "@/components/security/use-security-data";
 
 /**
@@ -54,6 +56,9 @@ const ACTION_TARGETS = {
 
 export function RecoveryReadinessCard({ data }: { data: SecurityData }) {
   const t = useTranslations("security");
+  // The series records today's verdict on the way in (see the hook), so this
+  // panel is the one place the history is guaranteed to include now.
+  const history = useRecoveryHistory();
 
   // Shared with the destructive-action guards, so the panel and the dialogs
   // read the account's recovery ladder identically.
@@ -185,6 +190,42 @@ export function RecoveryReadinessCard({ data }: { data: SecurityData }) {
             <span>{t("recoveryCodesLowNote", { threshold: BACKUP_CODE_LOW_THRESHOLD })}</span>
           </p>
         )}
+
+        <div
+          data-testid="recovery-history"
+          data-trend={history.trend}
+          className="space-y-2 rounded-lg border border-border bg-muted/30 p-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("recoveryHistoryLabel", { days: history.days })}
+            </p>
+            <span
+              data-testid="recovery-history-trend"
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                history.trend === "down"
+                  ? "bg-destructive/10 text-destructive"
+                  : history.trend === "up"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {t(`recoveryTrend_${history.trend}`)}
+            </span>
+          </div>
+
+          {history.loading ? (
+            <div className="h-11 w-full animate-pulse rounded bg-muted" />
+          ) : history.points.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">{t("recoveryHistoryEmpty")}</p>
+          ) : (
+            <ReadinessSparkline points={history.points} days={history.days} />
+          )}
+
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {t("recoveryHistoryHint")}
+          </p>
+        </div>
 
         {nextAction ? (
           <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">

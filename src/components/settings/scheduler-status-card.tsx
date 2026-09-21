@@ -57,6 +57,7 @@ const JOB_LABEL_KEYS: Record<string, string> = {
   "backup-verify": "jobBackupVerify",
   "trial-sweep": "jobTrialSweep",
   "scheduled-reports": "jobScheduledReports",
+  "recovery-drift": "jobRecoveryDrift",
 };
 
 /**

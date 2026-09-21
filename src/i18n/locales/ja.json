@@ -17,6 +17,7 @@
     "jobAutoReorder": "在庫自動発注",
     "jobSupabaseSync": "Supabaseミラー同期",
     "jobBackupVerify": "バックアップ復元検証",
+    "jobRecoveryDrift": "復旧準備度スキャン",
     "jobTrialSweep": "トライアル期限スイープ",
     "jobScheduledReports": "定期レポート",
     "dlqTitle": "Webhookデッドレターキュー",
@@ -996,6 +997,7 @@
       "jobSupabaseSync": "Supabase ミラー同期",
       "jobSupabaseLeafSync": "Supabaseリーフ同期（30分）",
       "jobBackupVerify": "バックアップ復元検証",
+      "jobRecoveryDrift": "復旧準備度スキャン",
       "snapshotsTitle": "ロールバックスナップショット",
       "snapshotsEmpty": "スナップショットはまだありません — Supabase ミラー同期のたびに作成されます。",
       "restore": "復元",
@@ -2901,13 +2903,20 @@
     "trustedRevokeAll": "すべての端末を取り消す",
     "trustedRevokedCount": "{count} 台の端末を取り消しました。",
     "evt_MFA_CODE_REPLAYED": "二要素コードの再利用",
+    "evt_RECOVERY_READINESS_DROPPED": "復旧準備度が低下",
     "recoveryGuard_disable2fa_title": "第二要素が失われます",
     "recoveryGuard_disable2fa_body": "二要素認証は、パスワードとアカウントの間にある唯一の壁です。これを無効にすると、サインインはパスワードだけで守られ、それを知った人は誰でも入れてしまいます。",
     "recoveryGuard_disable2fa_ack": "アカウントがパスワードのみで守られることを理解しました。",
     "recoveryGuard_removeSpare_title": "最後の復帰手段が失われます",
     "recoveryGuard_removeSpare_body": "復旧コードもパスキーも確認済みメールもありません。この端末を削除すると、スマートフォンを失った時点でアカウントも失われ、ここから復旧する方法はありません。",
     "recoveryGuard_removeSpare_ack": "スマートフォンを失うと永久にロックアウトされる可能性を理解しました。",
-    "recoveryGuardAfter": "この後の復旧準備状況: {level}"
+    "recoveryGuardAfter": "この後の復旧準備状況: {level}",
+    "recoveryHistoryLabel": "直近{days}日間",
+    "recoveryTrend_up": "改善",
+    "recoveryTrend_down": "以前より弱くなっています",
+    "recoveryTrend_flat": "横ばい",
+    "recoveryHistoryHint": "1日1回測定します。段階が下がった当日に通知するため、使用済みのリカバリーコードを見落としません。",
+    "recoveryHistoryEmpty": "履歴はまだありません — 測定は本日から始まります。"
   },
   "sso": {
     "title": "SSO / エンタープライズ",
@@ -3503,15 +3512,55 @@
       }
     },
     "perMonth": "/月",
-    "compareCols": ["機能", "スターター", "プロフェッショナル", "エンタープライズ"],
+    "compareCols": [
+      "機能",
+      "スターター",
+      "プロフェッショナル",
+      "エンタープライズ"
+    ],
     "compareRows": [
-      ["月間注文数", "100", "1,000", "無制限"],
-      ["チームメンバー", "3", "10", "無制限"],
-      ["分析", "基本", "高度", "高度"],
-      ["サポート", "メール", "優先", "24時間専任"],
-      ["APIアクセス", "-", "フル", "フル"],
-      ["カスタムエクスポート", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "月間注文数",
+        "100",
+        "1,000",
+        "無制限"
+      ],
+      [
+        "チームメンバー",
+        "3",
+        "10",
+        "無制限"
+      ],
+      [
+        "分析",
+        "基本",
+        "高度",
+        "高度"
+      ],
+      [
+        "サポート",
+        "メール",
+        "優先",
+        "24時間専任"
+      ],
+      [
+        "APIアクセス",
+        "-",
+        "フル",
+        "フル"
+      ],
+      [
+        "カスタムエクスポート",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "プランが見つかりません。もう一度お試しください。",
     "toastCheckoutFailed": "チェックアウトに失敗しました",

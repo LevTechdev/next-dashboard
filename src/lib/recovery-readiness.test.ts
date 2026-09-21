@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  readinessDrop,
+  readinessTrend,
   recoveryCodesLow,
   recoveryFactsFrom,
   recoveryImpactOf,
   recoveryReadiness,
+  type ReadinessLevel,
   type RecoveryFacts,
   type RecoveryPathId,
   type RecoveryPathState,
@@ -258,5 +261,61 @@ describe("recoveryImpactOf", () => {
     const impact = recoveryImpactOf(factsFromLoading, "removeSpare");
     expect(impact.after.level).toBe("locked-out");
     expect(impact.requiresAcknowledgement).toBe(true);
+  });
+});
+
+/**
+ * Drift — which changes between two days deserve an alert, and which would be
+ * noise. The alert is only useful if it stays rare, so every "no" here is as
+ * load-bearing as the "yes".
+ */
+describe("readiness drift", () => {
+  const LADDER: ReadinessLevel[] = ["ready", "thin", "locked-out"];
+
+  it("flags every step down the ladder", () => {
+    expect(readinessDrop("ready", "thin")).toEqual({ from: "ready", to: "thin" });
+    expect(readinessDrop("ready", "locked-out")).toEqual({ from: "ready", to: "locked-out" });
+    expect(readinessDrop("thin", "locked-out")).toEqual({ from: "thin", to: "locked-out" });
+  });
+
+  it("stays quiet on improvements and repeats", () => {
+    for (const from of LADDER) {
+      expect(readinessDrop(from, from)).toBeNull();
+      for (const to of LADDER) {
+        if (to === from) continue;
+        const drop = readinessDrop(from, to);
+        const improved = readinessDrop(to, from);
+        // Exactly one direction of any pair is a drop.
+        expect([drop !== null, improved !== null].filter(Boolean)).toHaveLength(1);
+      }
+    }
+  });
+
+  it("never reads an unmeasured day as a collapse", () => {
+    expect(readinessDrop(null, "thin")).toBeNull();
+    expect(readinessDrop(undefined, "locked-out")).toBeNull();
+    expect(readinessDrop("unknown", "thin")).toBeNull();
+  });
+
+  it("leaves the 2FA-protection axis to its own alert", () => {
+    // Turning 2FA off raises SECURITY_ALERT_SENT / the disable warning; a
+    // second "your recovery got weaker" alert would describe the same event.
+    expect(readinessDrop("ready", "unprotected")).toBeNull();
+    expect(readinessDrop("unprotected", "locked-out")).toBeNull();
+  });
+
+  it("summarizes a window by where it started and where it ended", () => {
+    expect(readinessTrend(["ready", "thin", "locked-out"])).toBe("down");
+    expect(readinessTrend(["locked-out", "thin", "ready"])).toBe("up");
+    expect(readinessTrend(["thin", "thin", "thin"])).toBe("flat");
+    // A dip that recovered is not a decline.
+    expect(readinessTrend(["ready", "locked-out", "ready"])).toBe("flat");
+  });
+
+  it("ignores unmeasured and off-ladder days when trending", () => {
+    expect(readinessTrend(["unprotected", "ready", "thin"])).toBe("down");
+    expect(readinessTrend(["ready", null, undefined])).toBe("flat");
+    expect(readinessTrend(["ready"])).toBe("flat");
+    expect(readinessTrend([])).toBe("flat");
   });
 });

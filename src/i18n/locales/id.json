@@ -17,6 +17,7 @@
     "jobAutoReorder": "Pemesanan ulang stok otomatis",
     "jobSupabaseSync": "Sinkronisasi mirror Supabase",
     "jobBackupVerify": "Verifikasi pemulihan cadangan",
+    "jobRecoveryDrift": "Pemindaian kesiapan pemulihan",
     "jobTrialSweep": "Sapuan masa uji",
     "jobScheduledReports": "Laporan terjadwal",
     "dlqTitle": "Antrean surat mati webhook",
@@ -996,6 +997,7 @@
       "jobSupabaseSync": "Sinkronisasi cermin Supabase",
       "jobSupabaseLeafSync": "Sinkronisasi leaf Supabase (30 mnt)",
       "jobBackupVerify": "Verifikasi pemulihan cadangan",
+      "jobRecoveryDrift": "Pemindaian kesiapan pemulihan",
       "snapshotsTitle": "Snapshot rollback",
       "snapshotsEmpty": "Belum ada snapshot — dibuat pada setiap sinkronisasi mirror Supabase.",
       "restore": "Pulihkan",
@@ -2967,13 +2969,20 @@
     "trustedRevokeAll": "Cabut semua perangkat",
     "trustedRevokedCount": "{count} perangkat dicabut.",
     "evt_MFA_CODE_REPLAYED": "Kode dua faktor digunakan ulang",
+    "evt_RECOVERY_READINESS_DROPPED": "Kesiapan pemulihan menurun",
     "recoveryGuard_disable2fa_title": "Ini menghapus faktor kedua Anda",
     "recoveryGuard_disable2fa_body": "Autentikasi dua faktor adalah satu-satunya penghalang antara kata sandi Anda dan akun Anda. Mematikannya membuat proses masuk hanya dilindungi kata sandi — siapa pun yang mengetahuinya bisa masuk.",
     "recoveryGuard_disable2fa_ack": "Saya paham akun saya hanya akan dilindungi oleh kata sandi.",
     "recoveryGuard_removeSpare_title": "Ini menghapus satu-satunya jalan masuk Anda",
     "recoveryGuard_removeSpare_body": "Anda tidak memiliki kode pemulihan, passkey, maupun email terverifikasi. Setelah perangkat ini dihapus, kehilangan ponsel berarti kehilangan akun Anda — tanpa cara memulihkannya dari sini.",
     "recoveryGuard_removeSpare_ack": "Saya paham saya bisa terkunci permanen jika kehilangan ponsel saya.",
-    "recoveryGuardAfter": "Kesiapan pemulihan setelah ini: {level}"
+    "recoveryGuardAfter": "Kesiapan pemulihan setelah ini: {level}",
+    "recoveryHistoryLabel": "{days} hari terakhir",
+    "recoveryTrend_up": "Membaik",
+    "recoveryTrend_down": "Lebih lemah dari sebelumnya",
+    "recoveryTrend_flat": "Stabil",
+    "recoveryHistoryHint": "Diukur sekali sehari. Anda diberi tahu pada hari penurunannya — sehingga kode pemulihan yang terpakai tidak luput dari perhatian.",
+    "recoveryHistoryEmpty": "Belum ada riwayat — pengukuran dimulai hari ini."
   },
   "sso": {
     "title": "SSO / Perusahaan",
@@ -3503,15 +3512,55 @@
       }
     },
     "perMonth": "/bulan",
-    "compareCols": ["Fitur", "Starter", "Profesional", "Enterprise"],
+    "compareCols": [
+      "Fitur",
+      "Starter",
+      "Profesional",
+      "Enterprise"
+    ],
     "compareRows": [
-      ["Pesanan Bulanan", "100", "1.000", "Tanpa batas"],
-      ["Anggota Tim", "3", "10", "Tanpa batas"],
-      ["Analitik", "Dasar", "Lanjutan", "Lanjutan"],
-      ["Dukungan", "Email", "Prioritas", "Khusus 24/7"],
-      ["Akses API", "-", "Penuh", "Penuh"],
-      ["Ekspor Kustom", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "Pesanan Bulanan",
+        "100",
+        "1.000",
+        "Tanpa batas"
+      ],
+      [
+        "Anggota Tim",
+        "3",
+        "10",
+        "Tanpa batas"
+      ],
+      [
+        "Analitik",
+        "Dasar",
+        "Lanjutan",
+        "Lanjutan"
+      ],
+      [
+        "Dukungan",
+        "Email",
+        "Prioritas",
+        "Khusus 24/7"
+      ],
+      [
+        "Akses API",
+        "-",
+        "Penuh",
+        "Penuh"
+      ],
+      [
+        "Ekspor Kustom",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "Paket tidak ditemukan. Silakan coba lagi.",
     "toastCheckoutFailed": "Pembayaran gagal",

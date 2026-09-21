@@ -37,6 +37,7 @@ const JOB_ROWS = [
   "trial-sweep",
   "scheduled-reports",
   "backup-verify",
+  "recovery-drift",
 ];
 
 test.describe("Scheduler status card", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 
 import { RecoveryReadinessCard } from "@/components/security/recovery-readiness-card";
 import type { SecurityData } from "@/components/security/use-security-data";
@@ -35,9 +35,24 @@ function renderCard(over: Partial<SecurityData> = {}, loading = false) {
 const pathState = (id: string) =>
   screen.getByTestId(`recovery-path-${id}`).getAttribute("data-state");
 
+/**
+ * The panel loads its own 30-day series. Stub it per test: a pending promise by
+ * default, so the verdict tests below are not racing an unrelated state update.
+ */
+function history(payload: { snapshots?: unknown[]; trend?: string }) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({ ok: true, json: async () => payload })),
+  );
+}
+
 describe("RecoveryReadinessCard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    );
   });
 
   it("says Covered once a spare is enrolled, and asks for nothing", () => {
@@ -139,5 +154,46 @@ describe("RecoveryReadinessCard", () => {
       backupRemaining: 0,
     });
     expect(screen.getByTestId("recovery-next-action")).toHaveTextContent("Generate codes");
+  });
+
+  it("plots the measured days and labels a decline", async () => {
+    history({
+      snapshots: [
+        { day: "2026-09-10", level: "ready", availableCount: 3, codesLow: false },
+        { day: "2026-09-11", level: "ready", availableCount: 3, codesLow: false },
+        { day: "2026-09-12", level: "thin", availableCount: 1, codesLow: false },
+      ],
+      trend: "down",
+    });
+    renderCard();
+
+    const sparkline = await screen.findByTestId("recovery-sparkline");
+    // One marker per measured day — gaps are gaps, not interpolated days.
+    expect(sparkline.getAttribute("data-points")).toBe("3");
+    expect(sparkline.querySelectorAll("circle[data-level]")).toHaveLength(3);
+    expect(sparkline.querySelector('circle[data-level="thin"]')).not.toBeNull();
+
+    expect(screen.getByTestId("recovery-history")).toHaveAttribute("data-trend", "down");
+    expect(screen.getByTestId("recovery-history-trend")).toHaveTextContent("Weaker than before");
+  });
+
+  it("says the history starts today when nothing has been measured", async () => {
+    history({ snapshots: [], trend: "flat" });
+    renderCard();
+
+    await waitFor(() => expect(screen.queryByTestId("recovery-sparkline")).not.toBeInTheDocument());
+    expect(screen.getByTestId("recovery-history")).toHaveAttribute("data-trend", "flat");
+    expect(screen.getByTestId("recovery-history")).toHaveTextContent(/measurement starts today/i);
+  });
+
+  it("asks the API to record today's verdict and to stay inside the window", async () => {
+    history({ snapshots: [], trend: "flat" });
+    renderCard();
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const url = String((global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+    expect(url).toContain("/api/auth/recovery-history");
+    expect(url).toContain("capture=1");
+    expect(url).toContain("days=30");
   });
 });
