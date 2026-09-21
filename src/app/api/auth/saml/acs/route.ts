@@ -71,6 +71,19 @@ export async function POST(req: Request) {
     });
   } else if (!user.isActive) {
     return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+  } else if (user.passwordResetRequired) {
+    // A "this wasn't me" revoke paused sign-in until the password is replaced.
+    // SSO must not be a side door around that: whoever completed the account
+    // recovery used the password, and an IdP assertion would let them straight
+    // back in. Same refusal as the credentials login route.
+    await logSecurityEvent({
+      userId: user.id,
+      type: "LOGIN_FAILED",
+      req,
+      metadata: { reason: "password_reset_required", via: "saml" },
+      tenantId: user.tenantId,
+    });
+    return NextResponse.json({ error: "PASSWORD_RESET_REQUIRED" }, { status: 403 });
   }
 
   // Tier system: JIT-provisioned SSO users get the same Starter subscription

@@ -21,6 +21,10 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || "en";
   const token = searchParams.get("token") || "";
+  // Set when the user arrived from the alert email's "this wasn't me" link:
+  // their sessions were revoked and this reset is what reopens sign-in, so say
+  // so plainly rather than dropping them on a bare password form.
+  const securedByAlert = searchParams.get("alert") === "reverted";
   const tauth = useTranslations("auth");
 
   const [password, setPassword] = useState("");
@@ -83,6 +87,21 @@ function ResetPasswordForm() {
               <CardDescription>{tauth("resetPasswordSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="px-6 pb-8">
+              {securedByAlert && (
+                <div
+                  role="status"
+                  data-testid="alert-secured-notice"
+                  className="mb-4 flex items-start gap-2.5 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-snug"
+                >
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{tauth("alertSecuredTitle")}</span>
+                    <span className="mt-0.5 block text-muted-foreground">
+                      {tauth("alertSecuredDesc")}
+                    </span>
+                  </span>
+                </div>
+              )}
               {!token ? (
                 <div className="space-y-4 text-center">
                   <p className="text-sm text-red-500">{tauth("invalidResetToken")}</p>
@@ -96,11 +115,15 @@ function ResetPasswordForm() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <label
+                      htmlFor="new-password"
+                      className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    >
                       {tauth("newPassword")}
                     </label>
                     <div className="relative group">
                       <Input
+                        id="new-password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -112,6 +135,7 @@ function ResetPasswordForm() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? tauth("hidePassword") : tauth("showPassword")}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                       >
                         {showPassword ? (
@@ -125,17 +149,37 @@ function ResetPasswordForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <label
+                      htmlFor="confirm-password"
+                      className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    >
                       {tauth("confirmPassword")}
                     </label>
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-primary"
-                      disabled={isLoading}
-                      autoComplete="new-password"
-                    />
+                    <div className="relative group">
+                      <Input
+                        id="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                        className="pr-10 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border-zinc-200 dark:border-zinc-700 focus:border-primary"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={
+                          showConfirmPassword ? tauth("hidePassword") : tauth("showPassword")
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOffIcon size={16} className="h-4 w-4" />
+                        ) : (
+                          <EyeIcon size={16} className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <Button

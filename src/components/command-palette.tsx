@@ -92,119 +92,6 @@ interface NavMenuItem {
   iconColor: string;
 }
 
-const DASHBOARD_MENUS: NavMenuItem[] = [
-  {
-    id: "nav-dashboard",
-    label: "Dashboard",
-    subtitle: "Real-time metrics, regional telemetry & financial overview",
-    href: "/dashboard",
-    keywords: ["home", "main", "metrics", "stats", "telemetry", "revenue"],
-    icon: LayoutGridIcon,
-    iconBg: "bg-indigo-50 dark:bg-indigo-900/30",
-    iconColor: "text-primary",
-  },
-  {
-    id: "nav-analytics",
-    label: "Analytics",
-    subtitle: "Conversion funnels, cohort retention & revenue projections",
-    href: "/analytics",
-    keywords: ["funnel", "cohort", "retention", "sankey", "traffic", "growth"],
-    icon: ChartBarIncreasingIcon,
-    iconBg: "bg-blue-50 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    id: "nav-sales",
-    label: "Sales Management",
-    subtitle: "Multi-channel orders, settlement streams & transactions",
-    href: "/sales",
-    keywords: ["sales", "revenue", "channels", "shopee", "tiktok", "instagram", "store"],
-    icon: CartIcon,
-    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    id: "nav-orders",
-    label: "Orders",
-    subtitle: "Fulfillment workflows, shipments & order management",
-    href: "/orders",
-    keywords: ["orders", "purchase", "invoice", "receipt", "tracking", "status"],
-    icon: BoxesIcon,
-    iconBg: "bg-sky-50 dark:bg-sky-900/30",
-    iconColor: "text-sky-600 dark:text-sky-400",
-  },
-  {
-    id: "nav-customers",
-    label: "Customers",
-    subtitle: "Directory, customer lifetime value & segments",
-    href: "/customers",
-    keywords: ["customers", "users", "clients", "buyers", "profiles", "ltv"],
-    icon: UsersIcon,
-    iconBg: "bg-purple-50 dark:bg-purple-900/30",
-    iconColor: "text-purple-600 dark:text-purple-400",
-  },
-  {
-    id: "nav-products",
-    label: "Products",
-    subtitle: "Catalog inventory, pricing, variants & catalog",
-    href: "/products",
-    keywords: ["products", "items", "inventory", "stock", "sku", "catalog"],
-    icon: BoxIcon,
-    iconBg: "bg-orange-50 dark:bg-orange-900/30",
-    iconColor: "text-orange-600 dark:text-orange-400",
-  },
-  {
-    id: "nav-inventory",
-    label: "Inventory & Logistics",
-    subtitle: "Stock levels, fleet tracking & supplier orders",
-    href: "/inventory",
-    keywords: ["inventory", "fleet", "shipping", "carriers", "stock", "warehouse", "logistics"],
-    icon: ArchiveIcon,
-    iconBg: "bg-amber-50 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    id: "nav-security",
-    label: "Security Center",
-    subtitle: "Fraud risk radar, active sessions & 2FA / Passkeys",
-    href: "/security",
-    keywords: ["security", "fraud", "radar", "sessions", "passkeys", "totp", "audit", "compliance"],
-    icon: ShieldCheckIcon,
-    iconBg: "bg-rose-50 dark:bg-rose-900/30",
-    iconColor: "text-rose-600 dark:text-rose-400",
-  },
-  {
-    id: "nav-team",
-    label: "Team Management",
-    subtitle: "Team members, roles, invitations & permissions",
-    href: "/settings/team",
-    keywords: ["team", "members", "invites", "roles", "rbac", "staff", "admin"],
-    icon: UsersRoundIcon,
-    iconBg: "bg-teal-50 dark:bg-teal-900/30",
-    iconColor: "text-teal-600 dark:text-teal-400",
-  },
-  {
-    id: "nav-billing",
-    label: "Billing & Subscriptions",
-    subtitle: "Invoices, tax nexus, payment methods & plans",
-    href: "/billing",
-    keywords: ["billing", "tax", "nexus", "invoices", "payment", "subscription", "stripe"],
-    icon: CreditCardIcon,
-    iconBg: "bg-violet-50 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    id: "nav-settings",
-    label: "Settings",
-    subtitle: "Workspace preferences, appearance & notifications",
-    href: "/settings",
-    keywords: ["settings", "preferences", "appearance", "dark", "light", "theme", "color"],
-    icon: SettingsIcon,
-    iconBg: "bg-slate-50 dark:bg-slate-800",
-    iconColor: "text-slate-600 dark:text-slate-400",
-  },
-];
-
 interface QuickActionItem {
   id: string;
   label: string;
@@ -217,75 +104,6 @@ interface QuickActionItem {
   href?: string;
   inlineAction?: string;
 }
-
-const QUICK_ACTIONS: QuickActionItem[] = [
-  {
-    id: "qa-create-product",
-    label: "Create Product",
-    subtitle: "Add a new product to your catalog",
-    icon: PlusCircle,
-    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-    keywords: ["create", "add", "new", "product"],
-    action: "navigate",
-    href: "/products?action=create",
-  },
-  {
-    id: "qa-create-order",
-    label: "Create Order",
-    subtitle: "Start a new order manually",
-    icon: CartIcon,
-    iconBg: "bg-blue-50 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    keywords: ["create", "add", "new", "order"],
-    action: "navigate",
-    href: "/orders?action=create",
-  },
-  {
-    id: "qa-invite-member",
-    label: "Invite Team Member",
-    subtitle: "Send an invitation to join your workspace",
-    icon: UsersRoundIcon,
-    iconBg: "bg-teal-50 dark:bg-teal-900/30",
-    iconColor: "text-teal-600 dark:text-teal-400",
-    keywords: ["invite", "team", "member", "add", "staff"],
-    action: "navigate",
-    href: "/settings/team?action=invite",
-  },
-  {
-    id: "qa-toggle-theme",
-    label: "Toggle Theme",
-    subtitle: "Switch between light, dark, and system theme",
-    icon: Palette,
-    iconBg: "bg-violet-50 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
-    keywords: ["theme", "dark", "light", "mode", "appearance", "color"],
-    action: "inline",
-    inlineAction: "toggle-theme",
-  },
-  {
-    id: "qa-ai-copilot",
-    label: "Open AI Copilot",
-    subtitle: "Ask AI to help with tasks and analysis",
-    icon: Sparkles,
-    iconBg: "bg-amber-50 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-    keywords: ["ai", "copilot", "assistant", "help", "chat"],
-    action: "inline",
-    inlineAction: "open-copilot",
-  },
-  {
-    id: "qa-install-app",
-    label: "Install App",
-    subtitle: "Install this dashboard as a desktop/mobile app",
-    icon: Download,
-    iconBg: "bg-pink-50 dark:bg-pink-900/30",
-    iconColor: "text-pink-600 dark:text-pink-400",
-    keywords: ["install", "pwa", "app", "download", "desktop"],
-    action: "inline",
-    inlineAction: "install-pwa",
-  },
-];
 
 // ── Helpers ──
 
@@ -313,6 +131,212 @@ export function CommandPalette() {
   const params = useParams();
   const locale = (params?.locale as string) || "en";
   const t = useTranslations("common");
+
+  // ── Localized navigation + quick-action copy ──
+  //
+  // Built inside the component so every label is a literal `t()` call: the
+  // referenced-keys i18n guard resolves keys statically, so a data-driven
+  // `t(item.labelKey)` would leave them permanently unchecked. Static metadata
+  // (route, keywords, icon, accents) is the only thing that travels by value —
+  // a locale switch re-derives the labels, and `keywords` keeps the English
+  // synonyms searchable in every locale.
+
+  const navMenus = useMemo<NavMenuItem[]>(
+    () => [
+      {
+        id: "nav-dashboard",
+        label: t("commandNavDashboardLabel"),
+        subtitle: t("commandNavDashboardSubtitle"),
+        href: "/dashboard",
+        keywords: ["home", "main", "metrics", "stats", "telemetry", "revenue"],
+        icon: LayoutGridIcon,
+        iconBg: "bg-indigo-50 dark:bg-indigo-900/30",
+        iconColor: "text-primary",
+      },
+      {
+        id: "nav-analytics",
+        label: t("commandNavAnalyticsLabel"),
+        subtitle: t("commandNavAnalyticsSubtitle"),
+        href: "/analytics",
+        keywords: ["funnel", "cohort", "retention", "sankey", "traffic", "growth"],
+        icon: ChartBarIncreasingIcon,
+        iconBg: "bg-blue-50 dark:bg-blue-900/30",
+        iconColor: "text-blue-600 dark:text-blue-400",
+      },
+      {
+        id: "nav-sales",
+        label: t("commandNavSalesLabel"),
+        subtitle: t("commandNavSalesSubtitle"),
+        href: "/sales",
+        keywords: ["sales", "revenue", "channels", "shopee", "tiktok", "instagram", "store"],
+        icon: CartIcon,
+        iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+        iconColor: "text-emerald-600 dark:text-emerald-400",
+      },
+      {
+        id: "nav-orders",
+        label: t("commandNavOrdersLabel"),
+        subtitle: t("commandNavOrdersSubtitle"),
+        href: "/orders",
+        keywords: ["orders", "purchase", "invoice", "receipt", "tracking", "status"],
+        icon: BoxesIcon,
+        iconBg: "bg-sky-50 dark:bg-sky-900/30",
+        iconColor: "text-sky-600 dark:text-sky-400",
+      },
+      {
+        id: "nav-customers",
+        label: t("commandNavCustomersLabel"),
+        subtitle: t("commandNavCustomersSubtitle"),
+        href: "/customers",
+        keywords: ["customers", "users", "clients", "buyers", "profiles", "ltv"],
+        icon: UsersIcon,
+        iconBg: "bg-purple-50 dark:bg-purple-900/30",
+        iconColor: "text-purple-600 dark:text-purple-400",
+      },
+      {
+        id: "nav-products",
+        label: t("commandNavProductsLabel"),
+        subtitle: t("commandNavProductsSubtitle"),
+        href: "/products",
+        keywords: ["products", "items", "inventory", "stock", "sku", "catalog"],
+        icon: BoxIcon,
+        iconBg: "bg-orange-50 dark:bg-orange-900/30",
+        iconColor: "text-orange-600 dark:text-orange-400",
+      },
+      {
+        id: "nav-inventory",
+        label: t("commandNavInventoryLabel"),
+        subtitle: t("commandNavInventorySubtitle"),
+        href: "/inventory",
+        keywords: ["inventory", "fleet", "shipping", "carriers", "stock", "warehouse", "logistics"],
+        icon: ArchiveIcon,
+        iconBg: "bg-amber-50 dark:bg-amber-900/30",
+        iconColor: "text-amber-600 dark:text-amber-400",
+      },
+      {
+        id: "nav-security",
+        label: t("commandNavSecurityLabel"),
+        subtitle: t("commandNavSecuritySubtitle"),
+        href: "/security",
+        keywords: [
+          "security",
+          "fraud",
+          "radar",
+          "sessions",
+          "passkeys",
+          "totp",
+          "audit",
+          "compliance",
+        ],
+        icon: ShieldCheckIcon,
+        iconBg: "bg-rose-50 dark:bg-rose-900/30",
+        iconColor: "text-rose-600 dark:text-rose-400",
+      },
+      {
+        id: "nav-team",
+        label: t("commandNavTeamLabel"),
+        subtitle: t("commandNavTeamSubtitle"),
+        href: "/settings/team",
+        keywords: ["team", "members", "invites", "roles", "rbac", "staff", "admin"],
+        icon: UsersRoundIcon,
+        iconBg: "bg-teal-50 dark:bg-teal-900/30",
+        iconColor: "text-teal-600 dark:text-teal-400",
+      },
+      {
+        id: "nav-billing",
+        label: t("commandNavBillingLabel"),
+        subtitle: t("commandNavBillingSubtitle"),
+        href: "/billing",
+        keywords: ["billing", "tax", "nexus", "invoices", "payment", "subscription", "stripe"],
+        icon: CreditCardIcon,
+        iconBg: "bg-violet-50 dark:bg-violet-900/30",
+        iconColor: "text-violet-600 dark:text-violet-400",
+      },
+      {
+        id: "nav-settings",
+        label: t("commandNavSettingsLabel"),
+        subtitle: t("commandNavSettingsSubtitle"),
+        href: "/settings",
+        keywords: ["settings", "preferences", "appearance", "dark", "light", "theme", "color"],
+        icon: SettingsIcon,
+        iconBg: "bg-slate-50 dark:bg-slate-800",
+        iconColor: "text-slate-600 dark:text-slate-400",
+      },
+    ],
+    [t],
+  );
+
+  const quickActions = useMemo<QuickActionItem[]>(
+    () => [
+      {
+        id: "qa-create-product",
+        label: t("commandQuickCreateProductLabel"),
+        subtitle: t("commandQuickCreateProductSubtitle"),
+        icon: PlusCircle,
+        iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+        iconColor: "text-emerald-600 dark:text-emerald-400",
+        keywords: ["create", "add", "new", "product"],
+        action: "navigate",
+        href: "/products?action=create",
+      },
+      {
+        id: "qa-create-order",
+        label: t("commandQuickCreateOrderLabel"),
+        subtitle: t("commandQuickCreateOrderSubtitle"),
+        icon: CartIcon,
+        iconBg: "bg-blue-50 dark:bg-blue-900/30",
+        iconColor: "text-blue-600 dark:text-blue-400",
+        keywords: ["create", "add", "new", "order"],
+        action: "navigate",
+        href: "/orders?action=create",
+      },
+      {
+        id: "qa-invite-member",
+        label: t("commandQuickInviteMemberLabel"),
+        subtitle: t("commandQuickInviteMemberSubtitle"),
+        icon: UsersRoundIcon,
+        iconBg: "bg-teal-50 dark:bg-teal-900/30",
+        iconColor: "text-teal-600 dark:text-teal-400",
+        keywords: ["invite", "team", "member", "add", "staff"],
+        action: "navigate",
+        href: "/settings/team?action=invite",
+      },
+      {
+        id: "qa-toggle-theme",
+        label: t("commandQuickToggleThemeLabel"),
+        subtitle: t("commandQuickToggleThemeSubtitle"),
+        icon: Palette,
+        iconBg: "bg-violet-50 dark:bg-violet-900/30",
+        iconColor: "text-violet-600 dark:text-violet-400",
+        keywords: ["theme", "dark", "light", "mode", "appearance", "color"],
+        action: "inline",
+        inlineAction: "toggle-theme",
+      },
+      {
+        id: "qa-ai-copilot",
+        label: t("commandQuickAiCopilotLabel"),
+        subtitle: t("commandQuickAiCopilotSubtitle"),
+        icon: Sparkles,
+        iconBg: "bg-amber-50 dark:bg-amber-900/30",
+        iconColor: "text-amber-600 dark:text-amber-400",
+        keywords: ["ai", "copilot", "assistant", "help", "chat"],
+        action: "inline",
+        inlineAction: "open-copilot",
+      },
+      {
+        id: "qa-install-app",
+        label: t("commandQuickInstallAppLabel"),
+        subtitle: t("commandQuickInstallAppSubtitle"),
+        icon: Download,
+        iconBg: "bg-pink-50 dark:bg-pink-900/30",
+        iconColor: "text-pink-600 dark:text-pink-400",
+        keywords: ["install", "pwa", "app", "download", "desktop"],
+        action: "inline",
+        inlineAction: "install-pwa",
+      },
+    ],
+    [t],
+  );
 
   // Reset search state whenever the palette closes (any path).
   const closePalette = useCallback(() => {
@@ -393,13 +417,13 @@ export function CommandPalette() {
     // Filter dashboard menus
     const matchingMenus =
       q.length > 0
-        ? DASHBOARD_MENUS.filter(
+        ? navMenus.filter(
             (m) =>
               m.label.toLowerCase().includes(q) ||
               m.keywords.some((k) => k.includes(q)) ||
               m.subtitle.toLowerCase().includes(q),
           )
-        : DASHBOARD_MENUS;
+        : navMenus;
 
     // 1. Navigation items (always show on empty query, or when query matches menus)
     if (matchingMenus.length > 0) {
@@ -421,13 +445,13 @@ export function CommandPalette() {
     // 1.5 Quick Actions
     const matchingActions =
       q.length > 0
-        ? QUICK_ACTIONS.filter(
+        ? quickActions.filter(
             (a) =>
               a.label.toLowerCase().includes(q) ||
               a.keywords.some((k) => k.includes(q)) ||
               a.subtitle.toLowerCase().includes(q),
           )
-        : QUICK_ACTIONS;
+        : quickActions;
 
     if (matchingActions.length > 0) {
       const start = allItems.length;
@@ -452,7 +476,7 @@ export function CommandPalette() {
         allItems.push({
           id: o.id,
           label: o.orderNumber,
-          subtitle: `${o.customer?.name || "Guest"} · ${formatCurrency(o.grandTotal)}`,
+          subtitle: `${o.customer?.name || t("commandGuest")} · ${formatCurrency(o.grandTotal)}`,
           icon: ShoppingBag,
           iconBg: "bg-blue-50 dark:bg-blue-900/20",
           iconColor: "text-blue-600 dark:text-blue-400",
@@ -469,7 +493,7 @@ export function CommandPalette() {
         allItems.push({
           id: c.id,
           label: c.name,
-          subtitle: `${c.email || "No email"} · ${c.city || "N/A"}`,
+          subtitle: `${c.email || t("commandNoEmail")} · ${c.city || t("commandNotAvailable")}`,
           icon: UsersIcon,
           iconBg: "bg-purple-50 dark:bg-purple-900/20",
           iconColor: "text-purple-600 dark:text-purple-400",
@@ -486,7 +510,10 @@ export function CommandPalette() {
         allItems.push({
           id: p.id,
           label: p.name,
-          subtitle: `${p.sku || "No SKU"} · ${formatCurrency(p.price)} · ${p.stock} in stock`,
+          subtitle: `${p.sku || t("commandNoSku")} · ${formatCurrency(p.price)} · ${t(
+            "commandInStock",
+            { count: p.stock },
+          )}`,
           icon: Package,
           iconBg: "bg-orange-50 dark:bg-orange-900/20",
           iconColor: "text-orange-600 dark:text-orange-400",
@@ -497,7 +524,7 @@ export function CommandPalette() {
     }
 
     return { items: allItems, groupRanges: ranges };
-  }, [query, results, locale]);
+  }, [query, results, locale, t, navMenus, quickActions]);
 
   // ── Keyboard navigation ──
 

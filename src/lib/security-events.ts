@@ -22,13 +22,25 @@ export type SecurityEventType =
   | "REFRESH_REUSE_GRACE"
   | "STEP_UP_VERIFIED"
   | "MFA_VERIFIED"
+  /** A TOTP code was presented a second time inside its own time step
+   *  (RFC 6238 §5.2 replay guard, src/lib/totp-replay.ts). */
+  | "MFA_CODE_REPLAYED"
   | "EMAIL_VERIFIED"
   | "EMAIL_DELIVERY_SENT"
   | "EMAIL_DELIVERY_FAILED"
   | "PASSKEY_ADDED"
   | "PASSKEY_REMOVED"
   | "PASSKEY_LOGIN"
+  /** A second enrolled authenticator app (spare device) added or removed. */
+  | "BACKUP_AUTHENTICATOR_ADDED"
+  | "BACKUP_AUTHENTICATOR_REMOVED"
+  /** The "2FA was turned off" alert email, and the "this wasn't me" revoke. */
+  | "SECURITY_ALERT_SENT"
+  | "SECURITY_ALERT_REVERTED"
   | "TRUSTED_DEVICE_REVOKED"
+  /** Last-resort recovery (authenticator AND backup codes lost). */
+  | "ACCOUNT_RECOVERY_REQUESTED"
+  | "ACCOUNT_RECOVERY_COMPLETED"
   | "SAML_LOGIN"
   | "APIKEY_CREATED"
   | "ACCOUNT_LOCKED"

@@ -22,8 +22,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Challenge expired. Try again." }, { status: 400 });
   }
 
-  const body = await req.json();
-  const { credential, deviceName } = body as { credential: unknown; deviceName?: string };
+  const body = await req.json().catch(() => ({}));
+  const { credential, deviceName } = body as { credential?: unknown; deviceName?: string };
+  // Fail loudly on a malformed body instead of handing `undefined` to
+  // verifyRegistrationResponse, where the resulting TypeError was caught and
+  // reported as a generic "Passkey verification failed".
+  if (!credential) {
+    return NextResponse.json({ error: "Missing credential" }, { status: 400 });
+  }
 
   let verification;
   try {
@@ -32,8 +38,16 @@ export async function POST(req: Request) {
       expectedChallenge,
       expectedOrigin: getExpectedOrigin(req),
       expectedRPID: getRpID(req),
+      // Matches `userVerification: "preferred"` in the options step. Without
+      // this, @simplewebauthn/server's default (`requireUserVerification:
+      // true`) rejects any authenticator that reports UV=0 — the registration
+      // fails on the server even though the browser ceremony succeeded.
+      requireUserVerification: false,
     });
-  } catch {
+  } catch (err) {
+    // Surface the real cause in the server log; the client keeps the friendly
+    // message.
+    console.error("[webauthn] attestation verification failed:", err);
     return NextResponse.json({ error: "Passkey verification failed" }, { status: 400 });
   }
 
@@ -42,6 +56,20 @@ export async function POST(req: Request) {
   }
 
   const { credential: cred } = verification.registrationInfo;
+
+  // Re-registering the SAME authenticator (the keychain already holds a
+  // credential for this RP) surfaces as a unique-constraint violation. Answer
+  // with a 409 the card can explain instead of an opaque 500.
+  const duplicate = await prisma.webAuthnCredential.findUnique({
+    where: { credentialId: cred.id },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return NextResponse.json(
+      { error: "This passkey is already registered", code: "PASSKEY_DUPLICATE" },
+      { status: 409 },
+    );
+  }
 
   await prisma.webAuthnCredential.create({
     data: {

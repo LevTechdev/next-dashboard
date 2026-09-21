@@ -20,7 +20,17 @@ export type SiteLocale = (typeof SITE_LOCALES)[number];
 export const SITE_DEFAULT_LOCALE: SiteLocale = "en";
 
 /** Auth routes that stay public (no JWT required) but never crawlable. */
-export const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"] as const;
+// Reachable without a session — each one is a door the visitor arrives at
+// while locked out. `/security-alert` is the "this wasn't me" confirmation page
+// from the 2FA-disabled alert email: whoever clicks it has just been signed out
+// on purpose, so requiring a session there would make the link useless.
+export const AUTH_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/security-alert",
+] as const;
 
 /** Locale paths that exist as real marketing routes (no auth required). */
 export const MARKETING_PATHS = [

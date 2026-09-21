@@ -154,6 +154,8 @@ const SECURITY_EVENT_TYPES = [
   "EMAIL_VERIFIED",
   "MFA_VERIFIED",
   "REFRESH_REUSE",
+  // RFC 6238 §5.2 replay guard (src/lib/totp-replay.ts).
+  "MFA_CODE_REPLAYED",
 ];
 
 /** Security score tiers (security-center.tsx: t(`score${Title(tier)}`)). */
@@ -165,6 +167,24 @@ const SECURITY_SCORE_TIERS = ["Great", "Good", "Fair", "Weak"];
  * MissingProtection in src/lib/security-score.ts.
  */
 const SECURITY_SCORE_MISSING = ["totp", "passkey", "backup", "email", "mfaFresh"];
+
+/**
+ * Recovery readiness panel (recovery-readiness-card.tsx). Four templates key
+ * off the computed judgement, so every verdict, path and next-action the
+ * module can return must have copy. Must mirror the unions in
+ * src/lib/recovery-readiness.ts — a new ReadinessLevel/RecoveryPathId/
+ * RecoveryNextAction without copy here fails the suite.
+ */
+const RECOVERY_LEVELS = ["unknown", "unprotected", "locked-out", "thin", "ready"];
+const RECOVERY_PATHS = ["spareAuthenticator", "recoveryCodes", "passkey", "email"];
+const RECOVERY_NEXT_ACTIONS = ["enable2fa", "verifyEmail", "addSpare", "generateCodes"];
+
+/**
+ * Destructive recovery-ladder actions that need an acknowledgement
+ * (recovery-guard.tsx: t(`recoveryGuard_${action}_title|body|ack`)).
+ * Must mirror RecoveryRemovalAction in src/lib/recovery-readiness.ts.
+ */
+const RECOVERY_REMOVAL_ACTIONS = ["disable2fa", "removeSpare"];
 
 /** Fraud recommendation values (fraud-prevention-card.tsx: t(`rec_${rec}`)). */
 const FRAUD_RECOMMENDATIONS = ["AUTO_APPROVE", "CHALLENGE_3DS", "MANUAL_REVIEW", "AUTO_VOID"];
@@ -322,6 +342,31 @@ const DYNAMIC_KEY_PATTERNS: DynamicPattern[] = [
     templates: ["missing_${}"],
     namespace: "security",
     keys: SECURITY_SCORE_MISSING.map((m) => `missing_${m}`),
+  },
+  {
+    name: "recovery readiness panel verdicts and paths",
+    templates: ["recoveryLevel_${}", "recoverySummary_${}", "recoveryPath_${}"],
+    namespace: "security",
+    keys: [
+      ...RECOVERY_LEVELS.flatMap((l) => [`recoveryLevel_${l}`, `recoverySummary_${l}`]),
+      ...RECOVERY_PATHS.map((p) => `recoveryPath_${p}`),
+    ],
+  },
+  {
+    name: "recovery readiness panel next action",
+    templates: ["recoveryNext_${}", "recoveryNextAction_${}"],
+    namespace: "security",
+    keys: RECOVERY_NEXT_ACTIONS.flatMap((a) => [`recoveryNext_${a}`, `recoveryNextAction_${a}`]),
+  },
+  {
+    name: "destructive recovery-action acknowledgement copy",
+    templates: ["recoveryGuard_${}_title", "recoveryGuard_${}_body", "recoveryGuard_${}_ack"],
+    namespace: "security",
+    keys: RECOVERY_REMOVAL_ACTIONS.flatMap((a) => [
+      `recoveryGuard_${a}_title`,
+      `recoveryGuard_${a}_body`,
+      `recoveryGuard_${a}_ack`,
+    ]),
   },
   {
     name: "fraud recommendation values",

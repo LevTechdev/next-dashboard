@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
 import { verifyPassword } from "@/lib/auth";
-import { verifyTotp } from "@/lib/totp";
+import { spendPrimaryTotp } from "@/lib/totp-replay";
 import { signStepUpToken, STEP_UP_COOKIE, type StepUpPurpose } from "@/lib/step-up";
 import { logSecurityEvent } from "@/lib/security-events";
 import { isMfaVerificationStale } from "@/lib/mfa-policy";
@@ -61,7 +61,11 @@ export async function POST(req: Request) {
   let verified = false;
   let mfaMethod: string | null = null;
   if (totpToken && user.totpEnabled && user.totpSecret) {
-    verified = verifyTotp(totpToken, user.totpSecret);
+    // Single-use: a code spent at sign-in cannot be replayed here seconds
+    // later to unlock a sensitive action (RFC 6238 §5.2). `spendPrimaryTotp`
+    // claims the step atomically, so concurrent requests cannot both win.
+    const spent = await spendPrimaryTotp(user.id, totpToken);
+    verified = spent.ok;
     if (verified) mfaMethod = "totp";
   } else if (password) {
     verified = await verifyPassword(password, user.password);

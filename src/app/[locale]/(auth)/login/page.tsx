@@ -13,6 +13,8 @@ import {
   SmartphoneIcon,
   MailIcon,
   ChevronRightIcon,
+  KeyRoundIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,7 @@ import {
   useResendCooldown,
 } from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
+import { backupCodeStatus } from "@/lib/backup-code-status";
 import { toast } from "sonner";
 
 import { useTranslations } from "next-intl";
@@ -51,11 +54,22 @@ function LoginForm() {
   // ── Verification-method chooser (2FA step) ──
   // `null` = the default TOTP prompt (unchanged behaviour); "choose" = the
   // picker between authenticator app and an emailed code; "email" = the
-  // emailed-OTP entry step (CodeSlots + resend).
-  const [verifyMethod, setVerifyMethod] = useState<null | "choose" | "email_otp">(null);
+  // emailed-OTP entry step (CodeSlots + resend); "backup_code" = the recovery
+  // path for a lost authenticator (one of the saved single-use codes).
+  const [verifyMethod, setVerifyMethod] = useState<
+    null | "choose" | "email_otp" | "backup_code" | "recover_access"
+  >(null);
   const [, setEmailOtpSent] = useState(false);
   const [emailOtpDevCode, setEmailOtpDevCode] = useState<string | null>(null);
   const [emailOtpHint, setEmailOtpHint] = useState<string | null>(null);
+  // Recovery path: the xxxx-xxxx code typed into the backup-code step.
+  const [backupCodeInput, setBackupCodeInput] = useState("");
+  const [backupRejected, setBackupRejected] = useState(false);
+  // Last resort: neither the authenticator nor any backup code is available, so
+  // the user requests an emailed link that disables 2FA (account recovery).
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+  const [recoveryDevUrl, setRecoveryDevUrl] = useState<string | null>(null);
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
   // Whether the account has registered passkeys — revealed by the first
@@ -80,6 +94,43 @@ function LoginForm() {
       id: "session-notice",
     });
   }, [sessionNotice, t]);
+
+  // Returning from a failed account-recovery link (?recovery=invalid|expired):
+  // the confirm route could not consume the token, so say why and offer a new
+  // link instead of dumping the user on a silent login form.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const recovery = params.get("recovery");
+    // `alert=invalid` is where the security-alert revoke link lands when the
+    // token was expired, already used, or bogus. `alert=reset_required` is the
+    // SSO callback saying the account is paused pending a new password.
+    const alert = params.get("alert");
+    if (
+      recovery !== "invalid" &&
+      recovery !== "expired" &&
+      alert !== "invalid" &&
+      alert !== "reset_required"
+    ) {
+      return;
+    }
+    if (alert === "reset_required") {
+      // The SSO callback refused an account that a "this wasn't me" revoke
+      // paused: the only way forward is a new password, so open the reset
+      // request instead of leaving them on a form that cannot succeed.
+      toast.error(t("passwordResetRequired"));
+      router.replace(`/${locale}/forgot-password`);
+    } else {
+      toast.error(
+        recovery === "expired"
+          ? t("recoveryExpired")
+          : recovery === "invalid"
+            ? t("recoveryInvalid")
+            : t("alertLinkInvalid"),
+      );
+    }
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [t, router, locale]);
 
   // ── Inline forgot-password state (styled like the 2FA step) ──
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -109,6 +160,8 @@ function LoginForm() {
         setEmailOtpSent(false);
         setEmailOtpDevCode(null);
         setEmailOtpHint(null);
+        setBackupCodeInput("");
+        setBackupRejected(false);
         setTrustDevice(false);
         setIsLoading(false);
         return;
@@ -116,6 +169,15 @@ function LoginForm() {
       if (result.success) {
         toast.success(t("welcomeBackToast"));
         router.push(redirect);
+      } else if (result.error === "PASSWORD_RESET_REQUIRED") {
+        // The account was secured by the alert email's "this wasn't me" link.
+        // Sign-in stays closed until the password is replaced, so send the user
+        // straight to the reset request rather than leaving them on a form that
+        // cannot succeed.
+        toast.error(t("passwordResetRequired"));
+        setForgotSent(false);
+        setForgotDevUrl(null);
+        setView("forgot");
       } else {
         toast.error(result.error || t("loginFailed"));
       }
@@ -197,6 +259,67 @@ function LoginForm() {
     }
   };
 
+  /** Format a backup code as xxxx-xxxx as it is typed (case-insensitive). */
+  const formatBackupCode = (raw: string): string => {
+    const clean = raw
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase()
+      .slice(0, 8);
+    return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+  };
+
+  /**
+   * Recovery path for a lost authenticator: submit one of the single-use
+   * backup codes as the second factor. The server consumes it on success, so a
+   * replayed code is rejected — the E2E spec pins that.
+   */
+  const handleBackupCodeVerification = async (code: string) => {
+    const clean = code.trim().toLowerCase();
+    if (clean.replace(/-/g, "").length < 8) {
+      toast.error(t("invalidBackupCodeLength"));
+      return;
+    }
+    if (totpSubmittingRef.current) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        trustDevice,
+        clean,
+      );
+      if (result.success) {
+        toast.success(t("welcomeBackToast"));
+        // Recovery codes are finite and each sign-in burns one. Say so while
+        // the user is still on the recovery step — it is the last moment the
+        // count is in front of them.
+        const status = backupCodeStatus(result.backupCodesRemaining);
+        if (status === "exhausted") {
+          toast.warning(t("backupCodeExhaustedToast"), { duration: 12_000 });
+        } else if (status === "low") {
+          toast.warning(t("backupCodeLowToast", { count: result.backupCodesRemaining ?? 0 }), {
+            duration: 12_000,
+          });
+        }
+        router.push(redirect);
+      } else {
+        setBackupRejected(true);
+        toast.error(t("backupCodeInvalid"));
+      }
+    } catch {
+      setBackupRejected(true);
+      toast.error(t("errorGeneric"));
+    } finally {
+      totpSubmittingRef.current = false;
+      setIsLoading(false);
+    }
+  };
+
   const handleTotpVerification = async (code: string) => {
     if (code.length < 6) {
       toast.error(t("invalidCodeLength"));
@@ -220,7 +343,12 @@ function LoginForm() {
         router.push(redirect);
       } else {
         setTotpRejected(true);
-        toast.error(result.error || t("invalidCode"));
+        // A replayed code is a different problem from a wrong one: the same
+        // digits will keep failing for the rest of their 30-second step, so
+        // tell the user to wait for the next code instead of inviting a retry.
+        toast.error(
+          result.code === "TOTP_REPLAY" ? t("codeAlreadyUsed") : result.error || t("invalidCode"),
+        );
       }
     } catch {
       setTotpRejected(true);
@@ -285,6 +413,39 @@ function LoginForm() {
     } finally {
       totpSubmittingRef.current = false;
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Last resort: no authenticator and no backup code left. Request the emailed
+   * recovery link. The server requires the password again (already verified on
+   * this step) so owning the inbox alone can't start a recovery.
+   */
+  const requestAccountRecovery = async () => {
+    if (recoveryLoading) return;
+    setRecoveryLoading(true);
+    try {
+      const res = await fetch("/api/auth/account-recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: savedEmail || email,
+          password: savedPassword || password,
+          locale,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error || t("errorGeneric"));
+        return;
+      }
+      setRecoverySent(true);
+      // Dev/E2E only: with no mailer configured the API returns the link.
+      setRecoveryDevUrl(typeof data?.recoveryUrl === "string" ? data.recoveryUrl : null);
+    } catch {
+      toast.error(t("errorGeneric"));
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -449,6 +610,35 @@ function LoginForm() {
                         <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
                       </button>
 
+                      {/* Backup code — the recovery path when the authenticator
+                          device (and its app) is gone for good. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("backup_code");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                          setTotpCode("");
+                          setTotpRejected(false);
+                          setEmailOtpHint(null);
+                        }}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <KeyRoundIcon className="h-5 w-5" />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useBackupCode")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useBackupCodeDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
                       {/* Passkey — phishing-resistant, offered when registered */}
                       {hasPasskeys && (
                         <button
@@ -489,6 +679,20 @@ function LoginForm() {
                       </span>
                     </label>
 
+                    {/* Everything lost — offer the last resort from the chooser
+                        too, before the user gives up on the account. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVerifyMethod("recover_access");
+                        setRecoverySent(false);
+                        setRecoveryDevUrl(null);
+                      }}
+                      className="mt-5 w-full text-sm text-primary hover:underline transition-colors"
+                    >
+                      {t("lostAllMethods")}
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -496,9 +700,9 @@ function LoginForm() {
                         setVerifyMethod(null);
                         setTotpCode("");
                       }}
-                      className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      className="mt-4 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                     >
-                      ← Back to login
+                      {t("backToLogin")}
                     </button>
                   </>
                 ) : verifyMethod === "email_otp" ? (
@@ -606,6 +810,185 @@ function LoginForm() {
                       </button>
                     </div>
                   </>
+                ) : verifyMethod === "backup_code" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("backupCodeTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("backupCodeDesc")}</p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleBackupCodeVerification(backupCodeInput);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("backupCodeLabel")}</Label>
+                        <Input
+                          value={backupCodeInput}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            // A shrinking value means backspace — never re-insert
+                            // the dash the user just deleted.
+                            if (raw.length < backupCodeInput.length) {
+                              setBackupCodeInput(
+                                raw
+                                  .replace(/[^a-zA-Z0-9]/g, "")
+                                  .toLowerCase()
+                                  .slice(0, 8),
+                              );
+                              return;
+                            }
+                            setBackupCodeInput(formatBackupCode(raw));
+                            setBackupRejected(false);
+                          }}
+                          placeholder={t("backupCodePlaceholder")}
+                          autoComplete="one-time-code"
+                          spellCheck={false}
+                          disabled={isLoading}
+                          autoFocus
+                          aria-invalid={backupRejected}
+                          className={`h-12 rounded-xl text-center font-mono text-base tracking-[0.25em] ${
+                            backupRejected
+                              ? "border-destructive focus-visible:ring-destructive/40"
+                              : ""
+                          }`}
+                        />
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {t("backupCodeSingleUse")}
+                        </p>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={backupCodeInput.replace(/-/g, "").length < 8 || isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={trustDevice}
+                          onChange={(e) => setTrustDevice(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                        />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                          {t("trustDeviceLabel")}
+                        </span>
+                      </label>
+
+                      {/* Dead end: no authenticator AND no codes left. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("recover_access");
+                          setRecoverySent(false);
+                          setRecoveryDevUrl(null);
+                        }}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("lostAllMethods")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod("choose");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        ← {t("chooseOtherMethod")}
+                      </button>
+                    </form>
+                  </>
+                ) : verifyMethod === "recover_access" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {recoverySent ? t("recoveryLinkSent") : t("accountRecoveryTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">
+                      {recoverySent
+                        ? t("recoveryLinkSentDesc", { email: savedEmail || email })
+                        : t("accountRecoveryDesc")}
+                    </p>
+
+                    {recoverySent ? (
+                      <div className="space-y-6">
+                        {recoveryDevUrl && (
+                          <div className="rounded-lg border border-dashed border-amber-500/40 bg-amber-500/10 p-3">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                              {t("developmentRecoveryLink")}
+                            </p>
+                            <Link
+                              href={recoveryDevUrl}
+                              className="mt-1 block break-all text-xs text-primary underline"
+                            >
+                              {recoveryDevUrl}
+                            </Link>
+                          </div>
+                        )}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full h-11 rounded-xl"
+                          onClick={() => void requestAccountRecovery()}
+                          disabled={recoveryLoading}
+                        >
+                          {recoveryLoading ? t("verifying") : t("resendRecoveryLink")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs leading-snug text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>{t("accountRecoveryWarning")}</span>
+                        </div>
+
+                        <Button
+                          type="button"
+                          className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                          onClick={() => void requestAccountRecovery()}
+                          disabled={recoveryLoading}
+                        >
+                          {recoveryLoading ? (
+                            <>
+                              <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                              {t("verifying")}
+                            </>
+                          ) : (
+                            t("sendRecoveryLink")
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVerifyMethod("choose");
+                        setRecoverySent(false);
+                        setRecoveryDevUrl(null);
+                      }}
+                      className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                    >
+                      {t("chooseOtherMethod")}
+                    </button>
+                  </>
                 ) : (
                   <>
                     <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
@@ -674,6 +1057,23 @@ function LoginForm() {
                         </span>
                       </label>
 
+                      {/* Lost the device (or wiped the app)? The saved
+                          single-use backup codes are the way back in. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("backup_code");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                          setTotpCode("");
+                          setTotpRejected(false);
+                        }}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("lostAuthenticator")}
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -683,7 +1083,7 @@ function LoginForm() {
                         }}
                         className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                       >
-                        ← Back to login
+                        {t("backToLogin")}
                       </button>
                     </form>
                   </>

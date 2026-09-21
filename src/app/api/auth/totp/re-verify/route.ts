@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
 import { resolveSessionUserId } from "@/lib/session-user";
-import { verifyTotp } from "@/lib/totp";
+import { spendPrimaryTotp } from "@/lib/totp-replay";
 import { logSecurityEvent } from "@/lib/security-events";
 
 export const dynamic = "force-dynamic";
@@ -44,8 +44,16 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!verifyTotp(token, user.totpSecret)) {
-    return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
+  // Single-use (RFC 6238 §5.2): the same guard the sign-in step uses, so a code
+  // observed at login cannot be replayed here to reset the freshness clock.
+  const spent = await spendPrimaryTotp(user.id, token);
+  if (!spent.ok) {
+    return NextResponse.json(
+      spent.reason === "REPLAY"
+        ? { error: "That code was already used. Wait for a new one.", code: "TOTP_REPLAY" }
+        : { error: "Invalid verification code" },
+      { status: 400 },
+    );
   }
 
   await logSecurityEvent({

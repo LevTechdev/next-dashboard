@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signToken, type AuthUser } from "@/lib/auth";
 import { ensureStarterSubscription, provisionPersonalTenant } from "@/lib/provisioning";
+import { logSecurityEvent } from "@/lib/security-events";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -199,6 +200,19 @@ export async function GET(request: Request) {
       // Tier system: social signups get the same Starter subscription as
       // email/password registrations so plan gating resolves on first login.
       await ensureStarterSubscription(user.id);
+    } else if (user.passwordResetRequired) {
+      // A "this wasn't me" revoke paused sign-in until the password is
+      // replaced; a linked Google account must not be a side door around it.
+      // The flag only exists on pre-existing rows, so a brand-new signup above
+      // is unaffected.
+      await logSecurityEvent({
+        userId: user.id,
+        type: "LOGIN_FAILED",
+        req: request,
+        metadata: { reason: "password_reset_required", via: "google" },
+        tenantId: user.tenantId,
+      });
+      return NextResponse.redirect(new URL("/en/login?alert=reset_required", request.url));
     }
 
     // ── Create JWT token ──

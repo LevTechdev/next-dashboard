@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CodeSlots } from "@/components/ui/code-slots";
 import { toast } from "sonner";
 import type { SecurityData } from "@/components/security/use-security-data";
+import { useRecoveryAction } from "@/components/security/use-recovery-action";
 import { useResendCooldown } from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -78,6 +79,12 @@ export function EmailVerificationCard({ data }: { data: SecurityData }) {
       setSending(false);
     }
   };
+
+  // Answer the Recovery readiness panel's "Verify email" action — the one
+  // route back that can be opened while everything else is already closed.
+  useRecoveryAction("email-verification", () => {
+    if (!emailVerified && cooldownLeft === 0) void sendVerification();
+  });
 
   const verifyOtpCode = async (code: string) => {
     if (otpSubmittingRef.current) return;

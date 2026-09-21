@@ -2,6 +2,8 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import VerifyEmail from "@/emails/VerifyEmail";
 import ResetPasswordEmail from "@/emails/ResetPasswordEmail";
+import AccountRecoveryEmail from "@/emails/AccountRecoveryEmail";
+import SecurityAlertEmail from "@/emails/SecurityAlertEmail";
 import WelcomeEmail from "@/emails/WelcomeEmail";
 import InvoiceEmail from "@/emails/InvoiceEmail";
 import * as React from "react";
@@ -42,6 +44,20 @@ const RESET_SUBJECTS: Record<string, string> = {
   id: "Atur Ulang Kata Sandi",
   zh: "重置密码",
   ja: "パスワードの再設定",
+};
+
+const RECOVERY_SUBJECTS: Record<string, string> = {
+  en: "Recover access to your account",
+  id: "Pulihkan akses ke akun Anda",
+  zh: "恢复您的账户访问权限",
+  ja: "アカウントへのアクセスを復旧",
+};
+
+const SECURITY_ALERT_SUBJECTS: Record<string, string> = {
+  en: "Two-factor authentication was turned off",
+  id: "Autentikasi dua faktor dinonaktifkan",
+  zh: "两步验证已被关闭",
+  ja: "二段階認証が無効になりました",
 };
 
 function subjectFor(locale: string | undefined, subjects: Record<string, string>): string {
@@ -208,6 +224,58 @@ export async function sendPasswordResetEmail(opts: {
     text,
   });
 }
+/**
+ * Last-resort account recovery link (authenticator AND backup codes lost).
+ * The link disables 2FA and signs out other devices — see
+ * /api/auth/account-recovery/confirm.
+ */
+export async function sendAccountRecoveryEmail(opts: {
+  to: string;
+  url: string;
+  name?: string;
+  locale?: string;
+}): Promise<{ sent: boolean }> {
+  const props = { url: opts.url, name: opts.name, locale: opts.locale };
+  const html = await render(React.createElement(AccountRecoveryEmail, props));
+  const text = await render(React.createElement(AccountRecoveryEmail, props), { plainText: true });
+
+  return sendEmail({
+    to: opts.to,
+    subject: subjectFor(opts.locale, RECOVERY_SUBJECTS),
+    html,
+    text,
+  });
+}
+
+/**
+ * "Two-factor authentication was turned off" alert, with the one-click
+ * "This wasn't me" revoke link. Sent from the account-recovery confirm route
+ * when a recovery disables 2FA.
+ */
+export async function sendSecurityAlertEmail(opts: {
+  to: string;
+  revokeUrl: string;
+  name?: string;
+  locale?: string;
+  happenedAt?: string;
+}): Promise<{ sent: boolean }> {
+  const props = {
+    revokeUrl: opts.revokeUrl,
+    name: opts.name,
+    locale: opts.locale,
+    happenedAt: opts.happenedAt,
+  };
+  const html = await render(React.createElement(SecurityAlertEmail, props));
+  const text = await render(React.createElement(SecurityAlertEmail, props), { plainText: true });
+
+  return sendEmail({
+    to: opts.to,
+    subject: subjectFor(opts.locale, SECURITY_ALERT_SUBJECTS),
+    html,
+    text,
+  });
+}
+
 export async function sendWelcomeEmail(opts: {
   to: string;
   name?: string;

@@ -19,6 +19,11 @@ model User {
   position                 String?
   totpSecret               String? // Encrypted TOTP secret for 2FA
   totpEnabled              Boolean                 @default(false)
+  /// Highest TOTP time step already spent on the PRIMARY authenticator.
+  /// RFC 6238 §5.2: a verifier must not accept the same OTP twice, so a code
+  /// whose time step is <= this value is refused as a replay. Reset whenever
+  /// the primary secret is replaced.
+  totpLastUsedStep         Int?
   emailVerified            DateTime?
   verificationToken        String?
   verificationTokenExpires DateTime?
@@ -29,6 +34,10 @@ model User {
   isActive                 Boolean                 @default(true)
   // ── Security hardening (Phase 1) ──
   passwordAlgo             String                  @default("bcrypt") // "bcrypt" (legacy) | "argon2id"
+  /// Set when a "this wasn't me" revoke secured the account: the password is
+  /// known to whoever else was in it, so sign-in stays closed until a password
+  /// reset clears this.
+  passwordResetRequired    Boolean                 @default(false)
   passwordChangedAt        DateTime?
   failedLoginCount         Int                     @default(0)
   lockedUntil              DateTime?
@@ -51,6 +60,9 @@ model User {
   webauthnCredentials      WebAuthnCredential[]
   pushSubscriptions        PushSubscription[]
   trustedDevices           TrustedDevice[]
+  accountRecoveryTokens    AccountRecoveryToken[]
+  backupAuthenticator      BackupAuthenticator?
+  securityAlertTokens      SecurityAlertToken[]
   tenantId                 String?
   tenant                   Tenant?                 @relation(fields: [tenantId], references: [id])
 }
@@ -168,6 +180,62 @@ model TrustedDevice {
   expiresAt  DateTime
   revokedAt  DateTime?
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Single-use, emailed link that lets a user who lost BOTH the authenticator
+/// and every backup recovery code get back into the account. Only the SHA-256
+/// of the token is stored; completing a recovery disables 2FA, wipes the
+/// remaining codes, and revokes every existing session — so a stolen inbox
+/// can't be used to silently take over a live session.
+model AccountRecoveryToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 of the random 32-byte emailed token
+  ipHash    String? // SHA-256 of the requesting IP (audit only)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// A SECOND, independently enrolled authenticator app ("backup authenticator").
+///
+/// The primary secret lives on `User.totpSecret`; this one is enrolled on a
+/// different device (a tablet, a partner phone, a hardware token) and is
+/// accepted at the exact same TOTP step. Losing one phone therefore never
+/// escalates to an emailed account recovery — the whole reason this exists.
+model BackupAuthenticator {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  secret     String // base32 TOTP secret (same convention as User.totpSecret)
+  label      String? // e.g. "iPad" — shown in the Security Center
+  lastUsedAt DateTime? // last time it completed a sign-in's second factor
+  /// Replay guard for THIS secret (RFC 6238 §5.2), tracked separately from the
+  /// primary so spending a code on one device never invalidates the other.
+  lastUsedStep Int?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Single-use token behind the "this wasn't me" link in the alert email sent
+/// when a recovery turns 2FA off.
+///
+/// Only the SHA-256 is stored. A revoke is naturally idempotent, so single-use
+/// is not about the action's safety — it stops a mailbox scanner that prefetches
+/// the link from silently consuming it before the human ever sees the mail.
+model SecurityAlertToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  kind      String // "RECOVERY_2FA_DISABLED" — what the alert reported
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

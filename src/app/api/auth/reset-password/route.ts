@@ -38,6 +38,11 @@ export async function POST(req: Request) {
         password: await hashPassword(password),
         verificationToken: null,
         verificationTokenExpires: null,
+        // Clears the lockdown a "this wasn't me" revoke set: the password is
+        // new, so the credential whoever else had is now worthless and sign-in
+        // can reopen.
+        passwordResetRequired: false,
+        passwordChangedAt: new Date(),
       },
     });
 

@@ -36,6 +36,7 @@ const createMockSecurityData = (overrides: Partial<SecurityData> = {}): Security
   totpEnabled: true,
   passkeys: [],
   trustedDevices: [],
+  backupAuthenticator: null,
   backupRemaining: 5,
   emailVerified: "2026-01-15T10:00:00Z",
   sessions: [],

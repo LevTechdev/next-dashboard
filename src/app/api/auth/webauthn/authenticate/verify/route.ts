@@ -57,8 +57,19 @@ export async function POST(req: Request) {
         counter: stored.counter,
         transports: stored.transports ? (stored.transports.split(",") as never) : undefined,
       },
+      // The options step requests `userVerification: "preferred"`, but
+      // @simplewebauthn/server DEFAULTS `requireUserVerification` to `true`.
+      // Left at the default, any authenticator that skips user verification
+      // (a roaming security key with no PIN, an OS prompt with UV=0) throws
+      // "User verification required, but user could not be verified" and the
+      // ceremony fails as a generic error. Keep the two ends consistent:
+      // preferred on the way out, not required on the way back.
+      requireUserVerification: false,
     });
-  } catch {
+  } catch (err) {
+    // The client only ever sees the generic message, so log the real cause
+    // (challenge expiry, origin/RP ID mismatch, UV policy, replayed counter).
+    console.error("[webauthn] assertion verification failed:", err);
     return NextResponse.json({ error: "Passkey verification failed" }, { status: 401 });
   }
 

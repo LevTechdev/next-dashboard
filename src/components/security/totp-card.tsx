@@ -28,6 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRecoveryAction } from "@/components/security/use-recovery-action";
+import {
+  RecoveryImpactAcknowledgement,
+  RecoveryImpactNotice,
+  useRecoveryImpact,
+} from "@/components/security/recovery-guard";
 import type { SecurityData } from "@/components/security/use-security-data";
 
 export function TotpCard({ data }: { data: SecurityData }) {
@@ -50,6 +56,20 @@ export function TotpCard({ data }: { data: SecurityData }) {
   const [disablePassword, setDisablePassword] = useState("");
   const [disabling2FA, setDisabling2FA] = useState(false);
   const [showDisablePassword, setShowDisablePassword] = useState(false);
+
+  // Disabling 2FA always needs an explicit acknowledgement: it is the one
+  // action that removes the factor every recovery path exists to protect.
+  const guard = useRecoveryImpact(data, disable2FADialog ? "disable2fa" : null);
+
+  const openDisableDialog = () => {
+    guard.setAcknowledged(false);
+    setDisable2FADialog(true);
+  };
+  const closeDisableDialog = () => {
+    setDisable2FADialog(false);
+    setDisablePassword("");
+    guard.setAcknowledged(false);
+  };
 
   const closeSetupDialog = () => {
     setTwoFADialogOpen(false);
@@ -133,9 +153,15 @@ export function TotpCard({ data }: { data: SecurityData }) {
     }
   };
 
+  // Answer the Recovery readiness panel's "Set up 2FA" action: it is only ever
+  // offered while 2FA is off, so opening the enrollment flow is the fix.
+  useRecoveryAction("totp-card", () => {
+    if (!totpEnabled) void handleSetup2FA();
+  });
+
   return (
     <>
-      <Card>
+      <Card id="totp-card">
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -151,7 +177,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
               disabled={settingUp2FA}
               onCheckedChange={(next) => {
                 if (next) handleSetup2FA();
-                else setDisable2FADialog(true);
+                else openDisableDialog();
               }}
               aria-label={t("twoFactor")}
             />
@@ -178,7 +204,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
                   </div>
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => setDisable2FADialog(true)}>
+              <Button variant="destructive" size="sm" onClick={openDisableDialog}>
                 <ShieldOff className="h-4 w-4 mr-2" /> {t("disable2FA")}
               </Button>
             </div>
@@ -319,10 +345,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
       <Dialog
         open={disable2FADialog}
         onOpenChange={(open) => {
-          if (!open) {
-            setDisable2FADialog(false);
-            setDisablePassword("");
-          }
+          if (!open) closeDisableDialog();
         }}
       >
         <DialogContent className="max-w-md">
@@ -362,21 +385,22 @@ export function TotpCard({ data }: { data: SecurityData }) {
               </div>
             </div>
           </div>
+          {/* What this action costs, computed from the same facts the Recovery
+              readiness panel shows — and a checkbox that must be ticked. */}
+          <RecoveryImpactNotice impact={guard.impact} />
+          <RecoveryImpactAcknowledgement
+            impact={guard.impact}
+            acknowledged={guard.acknowledged}
+            onChange={guard.setAcknowledged}
+          />
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDisable2FADialog(false);
-                setDisablePassword("");
-              }}
-              disabled={disabling2FA}
-            >
+            <Button variant="outline" onClick={closeDisableDialog} disabled={disabling2FA}>
               {tcommon("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDisable2FA}
-              disabled={!disablePassword || disabling2FA}
+              disabled={!disablePassword || disabling2FA || guard.blocked}
             >
               {disabling2FA ? (
                 <>

@@ -708,6 +708,7 @@ function Toggle({
 // ─── Alert Rules Tab ────────────────────────────────────────────────────────
 
 import { requestPushPermission } from "@/lib/push-notifications";
+import { getActiveServiceWorker, serviceWorkerSupported } from "@/lib/service-worker";
 
 function AlertRulesTab() {
   const tnotif = useTranslations("notifications");
@@ -736,10 +737,12 @@ function AlertRulesTab() {
         if (!cancelled) setLoading(false);
       });
 
-    // Check existing push subscription
-    if ("serviceWorker" in navigator && "PushManager" in window) {
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.pushManager.getSubscription().then((sub) => {
+    // Check existing push subscription. Never `serviceWorker.ready` — it does
+    // not settle without a registration, so this branch would silently never
+    // run (see src/lib/service-worker.ts).
+    if (serviceWorkerSupported() && "PushManager" in window) {
+      getActiveServiceWorker().then((reg) => {
+        reg?.pushManager.getSubscription().then((sub) => {
           if (sub && !cancelled) setPushEnabled(true);
         });
       });
@@ -769,17 +772,17 @@ function AlertRulesTab() {
         toast.error(tnotif("pushDeniedToast") || "Push permission denied or not supported");
       }
     } else {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await sub.unsubscribe();
-          await fetch("/api/notifications/push-subscribe", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          });
-        }
+      // Same trap on the way out: awaiting `.ready` here hung the toggle and
+      // the success toast never appeared.
+      const reg = await getActiveServiceWorker();
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      if (sub) {
+        await sub.unsubscribe();
+        await fetch("/api/notifications/push-subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
       }
       setPushEnabled(false);
       toast.success(tnotif("pushDisabledToast") || "Push notifications disabled");

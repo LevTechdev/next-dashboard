@@ -65,6 +65,11 @@ interface AuthContextType {
     passkeyAsserted?: boolean,
     /** Trust this device for 30 days (skip 2FA on future sign-ins). */
     trustDevice?: boolean,
+    /**
+     * Recovery path for a lost authenticator: one of the pre-generated
+     * single-use backup codes. Consumed server-side on success.
+     */
+    backupCode?: string,
   ) => Promise<{
     success: boolean;
     requires2FA?: boolean;
@@ -75,7 +80,18 @@ interface AuthContextType {
     devOtp?: string;
     /** Whether the account has registered passkeys (chooser option). */
     hasPasskeys?: boolean;
+    /**
+     * Unused recovery codes left after a backup-code sign-in (absent on every
+     * other path). Drives the "your codes are running out" warning.
+     */
+    backupCodesRemaining?: number;
     error?: string;
+    /**
+     * Machine-readable reason when the server has one worth localizing —
+     * currently `"TOTP_REPLAY"`, meaning the code was already spent inside its
+     * own time step and a new one is needed rather than a retry.
+     */
+    code?: string;
     attemptsLeft?: number;
   }>;
   register: (
@@ -231,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       challengeEmailOtp?: boolean,
       passkeyAsserted?: boolean,
       trustDevice?: boolean,
+      backupCode?: string,
     ) => {
       setError(null);
       try {
@@ -245,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             challengeEmailOtp,
             passkeyAsserted,
             trustDevice,
+            backupCode,
           }),
         });
 
@@ -254,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return {
             success: false,
             error: data.error || "Login failed",
+            code: data.code,
             attemptsLeft: data.attemptsLeft,
           };
         }
@@ -321,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         router.refresh();
-        return { success: true };
+        return { success: true, backupCodesRemaining: data.backupCodesRemaining };
       } catch {
         return { success: false, error: "Network error. Please try again." };
       }

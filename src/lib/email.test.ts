@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { sendEmail, sendPasswordResetEmail, sendOtpEmail } from "./email";
 
+import { render } from "@react-email/render";
+import * as React from "react";
+
+import SecurityAlertEmail from "@/emails/SecurityAlertEmail";
+import AccountRecoveryEmail from "@/emails/AccountRecoveryEmail";
+
 const ORIGINAL_API_KEY = process.env.RESEND_API_KEY;
 const ORIGINAL_FROM = process.env.EMAIL_FROM;
 const ORIGINAL_RESEND_FROM = process.env.RESEND_FROM;
@@ -320,5 +326,91 @@ describe("password-reset sender", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({ subject: expect.stringContaining("重置密码") }),
     );
+  });
+});
+
+const renderEmail = (component: React.ReactElement) => render(component);
+
+/**
+ * The two emails a user receives when their second factor is in trouble: the
+ * last-resort recovery link, and the "2FA was turned off" alert that carries
+ * the one-click "this wasn't me" revoke.
+ *
+ * Both are localized across the four supported locales — a security warning
+ * that arrives in a language the recipient cannot read is not a warning. These
+ * render the real templates, so a locale that silently falls back to English
+ * fails here.
+ */
+describe("SecurityAlertEmail", () => {
+  it("states what happened and offers the single revoke action", async () => {
+    const html = await renderEmail(
+      React.createElement(SecurityAlertEmail, {
+        revokeUrl: "https://app.test/en/security-alert?token=abc",
+        name: "Ada",
+        locale: "en",
+        happenedAt: "2026-09-21",
+      }),
+    );
+    expect(html).toContain("Two-factor authentication was turned off");
+    expect(html).toContain("Ada");
+    expect(html).toContain("https://app.test/en/security-alert?token=abc");
+    // The mail leads to the CONFIRMATION PAGE, not the action: a scanner that
+    // fetches it must not be able to spend the single-use link.
+    expect(html).not.toContain("/api/auth/security-alert/revoke");
+    expect(html).toContain("Review this sign-in change");
+    expect(html).toContain("expires in 7 days");
+  });
+
+  it("is translated in every supported locale", async () => {
+    const expectations: Record<string, string> = {
+      en: "Two-factor authentication was turned off",
+      id: "Autentikasi dua faktor dinonaktifkan",
+      ja: "二段階認証が無効になりました",
+      zh: "两步验证已被关闭",
+    };
+
+    for (const [locale, heading] of Object.entries(expectations)) {
+      const html = await renderEmail(
+        React.createElement(SecurityAlertEmail, { revokeUrl: "https://app.test/x", locale }),
+      );
+      expect(html, locale).toContain(heading);
+      expect(html, locale).toContain("https://app.test/x");
+      // Never the placeholder from the default props.
+      expect(html, locale).not.toContain("https://example.com");
+    }
+  });
+
+  it("falls back to English for an unknown locale rather than rendering nothing", async () => {
+    const html = await renderEmail(
+      React.createElement(SecurityAlertEmail, { revokeUrl: "https://app.test/x", locale: "fr" }),
+    );
+    expect(html).toContain("Two-factor authentication was turned off");
+  });
+});
+
+describe("AccountRecoveryEmail", () => {
+  it("is translated in every supported locale (it used to be English-only)", async () => {
+    const expectations: Record<string, string> = {
+      en: "Recover access to your account",
+      id: "Pulihkan akses ke akun Anda",
+      ja: "アカウントへのアクセスを復旧",
+      zh: "恢复账户访问权限",
+    };
+
+    for (const [locale, heading] of Object.entries(expectations)) {
+      const html = await renderEmail(
+        React.createElement(AccountRecoveryEmail, { url: "https://app.test/recover", locale }),
+      );
+      expect(html, locale).toContain(heading);
+      expect(html, locale).toContain("https://app.test/recover");
+    }
+  });
+
+  it("names the consequences before the user clicks", async () => {
+    const html = await renderEmail(
+      React.createElement(AccountRecoveryEmail, { url: "https://app.test/x", locale: "en" }),
+    );
+    expect(html).toContain("turns off two-factor authentication and signs out every device");
+    expect(html).toContain("works once and expires in 30 minutes");
   });
 });

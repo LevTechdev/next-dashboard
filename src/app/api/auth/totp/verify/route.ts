@@ -45,6 +45,10 @@ export async function POST(req: Request) {
     data: {
       totpSecret: secret,
       totpEnabled: true,
+      // A new secret starts a fresh TOTP step sequence: carrying the old
+      // replay counter over would refuse valid codes from the new secret
+      // until the clock passed the old counter's value.
+      totpLastUsedStep: null,
     },
   });
 

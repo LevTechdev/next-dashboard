@@ -68,10 +68,18 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
       const verifyRes = await fetch("/api/auth/webauthn/register/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(att),
+        // The route destructures `{ credential, deviceName }`. Posting the
+        // attestation at the top level left `credential` undefined, so
+        // verifyRegistrationResponse threw and EVERY passkey registration
+        // failed as "Passkey verification failed".
+        body: JSON.stringify({ credential: att, deviceName: label }),
       });
       if (!verifyRes.ok) {
         const err = await verifyRes.json().catch(() => ({}));
+        // The same authenticator re-registered on the same RP is a 409 the
+        // server flags with a code, so the copy is localizable instead of
+        // leaking the server's English string.
+        if (err.code === "PASSKEY_DUPLICATE") throw new Error(t("passkeyDuplicate"));
         throw new Error(err.error || t("passkeyFailed"));
       }
       toast.success(t("passkeyRegistered"));

@@ -20,6 +20,8 @@ import { TotpCard } from "@/components/security/totp-card";
 import { PasskeysCard } from "@/components/security/passkeys-card";
 import { TrustedDevicesCard } from "@/components/security/trusted-devices-card";
 import { BackupCodesCard } from "@/components/security/backup-codes-card";
+import { BackupAuthenticatorCard } from "@/components/security/backup-authenticator-card";
+import { RecoveryReadinessCard } from "@/components/security/recovery-readiness-card";
 import { EmailVerificationCard } from "@/components/security/email-verification-card";
 import { Soc2ComplianceCard } from "@/components/security/soc2-compliance-card";
 import { FraudPreventionCard } from "@/components/security/fraud-prevention-card";
@@ -113,6 +115,17 @@ export function SecurityCenter() {
       window.history.replaceState({}, "", window.location.pathname);
     } else if (verified === "invalid") {
       toast.error(t("emailVerifyLinkInvalid"));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    // Last-resort account recovery landed here (?recovered=1). Say plainly what
+    // the recovery did to the account — 2FA is off and other devices are signed
+    // out — because that is a security downgrade the user must act on.
+    if (params.get("recovered") === "1") {
+      toast.warning(t("recoveredToastTitle"), {
+        description: t("recoveredToastDesc"),
+        duration: 15_000,
+      });
       window.history.replaceState({}, "", window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,6 +325,14 @@ export function SecurityCenter() {
         />
       </div>
 
+      {/*
+       * Recovery readiness sits directly under the score banner, above the
+       * compliance and telemetry sections: it is the only panel that answers
+       * "could I get back in if I lost this phone?", and the answer decides
+       * whether any of the cards below are a safety net or a decoration.
+       */}
+      <RecoveryReadinessCard data={data} />
+
       {/* SOC 2 & ISO 27001 Compliance Center */}
       <Soc2ComplianceCard />
 
@@ -331,6 +352,7 @@ export function SecurityCenter() {
         <div className="lg:col-span-2 space-y-6">
           <TotpCard data={data} />
           <PasskeysCard data={data} />
+          <BackupAuthenticatorCard data={data} />
           <BackupCodesCard data={data} />
           <EmailVerificationCard data={data} />
         </div>
