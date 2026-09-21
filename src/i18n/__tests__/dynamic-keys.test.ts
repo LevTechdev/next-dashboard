@@ -180,6 +180,24 @@ const RECOVERY_PATHS = ["spareAuthenticator", "recoveryCodes", "passkey", "email
 const RECOVERY_NEXT_ACTIONS = ["enable2fa", "verifyEmail", "addSpare", "generateCodes"];
 
 /**
+ * Settlement rails on the pricing page (fx-settlement-panel.tsx:
+ * t(`settlementRail_${rail.id}`) and t(`settlementBasis_${rail.basis}`)). Must
+ * mirror SettlementRailId / SettlementRail["basis"] in src/lib/settlement-rails.ts.
+ */
+const SETTLEMENT_RAIL_IDS = ["midMarket", "transfer", "ewallet", "bankWire", "cardOct"];
+const SETTLEMENT_BASES = ["publicFee", "publishedSpread", "estimated"];
+
+/** Bank counter rows (fx-settlement-panel.tsx: t(`bank_${bank.id}`)). */
+const BANK_COUNTER_IDS = ["bca", "mandiri", "bni", "bri"];
+
+/**
+ * Recovery-readiness trend chip (recovery-readiness-card.tsx:
+ * t(`recoveryTrend_${trend}`)). Must mirror ReadinessTrend in
+ * src/lib/recovery-readiness.ts.
+ */
+const RECOVERY_TRENDS = ["up", "down", "flat"];
+
+/**
  * Destructive recovery-ladder actions that need an acknowledgement
  * (recovery-guard.tsx: t(`recoveryGuard_${action}_title|body|ack`)).
  * Must mirror RecoveryRemovalAction in src/lib/recovery-readiness.ts.
@@ -357,6 +375,27 @@ const DYNAMIC_KEY_PATTERNS: DynamicPattern[] = [
     templates: ["recoveryNext_${}", "recoveryNextAction_${}"],
     namespace: "security",
     keys: RECOVERY_NEXT_ACTIONS.flatMap((a) => [`recoveryNext_${a}`, `recoveryNextAction_${a}`]),
+  },
+  {
+    name: "pricing page settlement rails",
+    templates: ["settlementRail_${}", "settlementBasis_${}"],
+    namespace: "pricingPage",
+    keys: [
+      ...SETTLEMENT_RAIL_IDS.map((r) => `settlementRail_${r}`),
+      ...SETTLEMENT_BASES.map((b) => `settlementBasis_${b}`),
+    ],
+  },
+  {
+    name: "pricing page bank counter rows",
+    templates: ["bank_${}"],
+    namespace: "pricingPage",
+    keys: BANK_COUNTER_IDS.map((b) => `bank_${b}`),
+  },
+  {
+    name: "recovery readiness history trend",
+    templates: ["recoveryTrend_${}"],
+    namespace: "security",
+    keys: RECOVERY_TRENDS.map((t) => `recoveryTrend_${t}`),
   },
   {
     name: "destructive recovery-action acknowledgement copy",

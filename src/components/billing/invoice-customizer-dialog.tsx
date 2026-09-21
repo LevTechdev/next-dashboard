@@ -68,7 +68,9 @@ export function InvoiceCustomizerDialog({
   const [previewBarcodeSvg, setPreviewBarcodeSvg] = useState<string>("");
   const [previewQrDataUrl, setPreviewQrDataUrl] = useState<string>("");
 
-  /** Render USD-base sample amounts in the template's chosen currency. */
+  /** Render USD-base sample amounts in the template's chosen currency.
+   *  `convertFromUSD` reads the module-level live-rate store, so the preview
+   *  converts at the same market rate as the dashboard cards. */
   const formatInvoiceMoney = (usdAmount: number) => {
     const cfg = CURRENCIES[config.currency] ?? CURRENCIES.USD;
     const converted = convertFromUSD(usdAmount, config.currency);

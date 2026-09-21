@@ -72,6 +72,39 @@ export const CURRENCIES: Record<SupportedCurrencyCode, CurrencyConfig> = {
   },
 };
 
+/**
+ * Module-level live-rate store.
+ *
+ * `CurrencyProvider` publishes every live quote it fetches here so the
+ * *non-React* conversion helpers (`convertCurrency`, `convertFromUSD`,
+ * `toBaseUsd`) and every caller that formats without the provider —
+ * `utils.formatCurrency` and its 38 call sites across orders, customers,
+ * reports, sales, affiliates, discounts and marketing — convert at the same
+ * market rate the provider-backed cards show, instead of silently falling
+ * back to the two-year-old bundled table.
+ *
+ * Falls back to `DEFAULT_EXCHANGE_RATES` per code until a live quote lands,
+ * so nothing ever divides by undefined.
+ */
+let liveRates: Partial<Record<SupportedCurrencyCode, number>> = {};
+
+/** Publish a live quote (from CurrencyProvider) for all non-React converters. */
+export function setLiveRates(rates: Partial<Record<SupportedCurrencyCode, number>>): void {
+  const clean: Partial<Record<SupportedCurrencyCode, number>> = {};
+  for (const [code, value] of Object.entries(rates)) {
+    const n = typeof value === "number" ? value : Number(value);
+    if (CURRENCIES[code as SupportedCurrencyCode] && Number.isFinite(n) && n > 0) {
+      clean[code as SupportedCurrencyCode] = n;
+    }
+  }
+  liveRates = clean;
+}
+
+/** The rates non-React conversion currently uses: live codes over bundled. */
+export function getLiveRates(): Record<SupportedCurrencyCode, number> {
+  return { ...DEFAULT_EXCHANGE_RATES, ...liveRates };
+}
+
 export const DEFAULT_EXCHANGE_RATES: Record<SupportedCurrencyCode, number> = {
   USD: 1.0,
   IDR: 15850.0,
@@ -84,15 +117,19 @@ export const DEFAULT_EXCHANGE_RATES: Record<SupportedCurrencyCode, number> = {
 /**
  * Normalizes high-denomination IDR or arbitrary local values to USD base.
  * Values > 1000 without explicit source are treated as IDR database amounts.
+ *
+ * The hardcoded 15850 divider becomes a live lookup once a market quote has
+ * landed — otherwise an Indonesian merchant viewing live-rate stat cards
+ * would reverse-convert their orders at a rate twelve percent stale.
  */
 export function toBaseUsd(amount: number, sourceCurrency?: SupportedCurrencyCode): number {
   if (!amount || isNaN(amount)) return 0;
-  if (sourceCurrency === "IDR") return amount / 15850;
+  const rates = getLiveRates();
+  if (sourceCurrency === "IDR") return amount / rates.IDR;
   if (sourceCurrency && sourceCurrency !== "USD") {
-    const rate = CURRENCIES[sourceCurrency]?.rate ?? 1.0;
-    return amount / rate;
+    return amount / (rates[sourceCurrency] ?? 1.0);
   }
-  return amount > 1000 ? amount / 15850 : amount;
+  return amount > 1000 ? amount / rates.IDR : amount;
 }
 
 /**
@@ -113,7 +150,7 @@ export function convertCurrency(
   if (!sourceCurrency && targetCurrency === "IDR" && amount > 1000) return amount;
 
   const usdAmount = toBaseUsd(amount, sourceCurrency);
-  const rate = customRates?.[targetCurrency] ?? CURRENCIES[targetCurrency]?.rate ?? 1.0;
+  const rate = customRates?.[targetCurrency] ?? getLiveRates()[targetCurrency] ?? 1.0;
   return usdAmount * rate;
 }
 
@@ -126,7 +163,7 @@ export function convertFromUSD(
   customRates?: Partial<Record<SupportedCurrencyCode, number>>,
 ): number {
   if (!amountUSD || isNaN(amountUSD)) return 0;
-  const rate = customRates?.[targetCurrency] ?? CURRENCIES[targetCurrency]?.rate ?? 1.0;
+  const rate = customRates?.[targetCurrency] ?? getLiveRates()[targetCurrency] ?? 1.0;
   return amountUSD * rate;
 }
 

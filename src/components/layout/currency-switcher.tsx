@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCurrency } from "@/components/currency-provider";
-import { CURRENCIES, SupportedCurrencyCode } from "@/lib/currency";
+import { CURRENCIES } from "@/lib/currency";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export function CurrencySwitcher({ className }: { className?: string }) {
   const t = useTranslations("currency");
-  const { currency, setCurrency, currentConfig } = useCurrency();
+  const { currency, setCurrency, currentConfig, rates, ratesStale } = useCurrency();
 
   const currencyList = Object.values(CURRENCIES);
 
@@ -79,9 +79,21 @@ export function CurrencySwitcher({ className }: { className?: string }) {
 
               <div className="flex items-center gap-1.5">
                 {curr.code !== "USD" && (
-                  <span className="text-[10px] font-mono text-gray-400">
-                    ~{curr.rate >= 100 ? Math.round(curr.rate).toLocaleString() : curr.rate}
-                  </span>
+                  <Tooltip content={t("liveRateHint")} side="left">
+                    <span
+                      data-testid={`currency-rate-${curr.code}`}
+                      data-stale={ratesStale ? "true" : "false"}
+                      className={cn(
+                        "text-[10px] font-mono",
+                        ratesStale ? "text-gray-400" : "text-emerald-600 dark:text-emerald-400",
+                      )}
+                    >
+                      ~
+                      {rates[curr.code] >= 100
+                        ? Math.round(rates[curr.code]).toLocaleString()
+                        : rates[curr.code]}
+                    </span>
+                  </Tooltip>
                 )}
                 {isSelected ? (
                   <Check className="h-3.5 w-3.5 text-primary" />

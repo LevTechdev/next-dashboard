@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -12,6 +12,23 @@ import { cn } from "@/lib/utils";
 import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
 import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 import { StratusFaq } from "@/components/home/stratus-faq";
+import { FxSettlementPanel } from "@/components/billing/fx-settlement-panel";
+import { useCurrency } from "@/components/currency-provider";
+import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
+
+/**
+ * Which currency a visitor lands on. The list price stays in USD (that is what
+ * is charged), but a buyer deciding in Jakarta, Tokyo or Shanghai should not
+ * have to do the arithmetic in their head.
+ */
+const LOCALE_CURRENCY: Record<string, SupportedCurrencyCode> = {
+  id: "IDR",
+  ja: "JPY",
+  zh: "CNY",
+};
+
+/** Cheap orderings: most-used first, so the common case is one glance away. */
+const CURRENCY_CHOICES: SupportedCurrencyCode[] = ["USD", "IDR", "JPY", "EUR", "SGD", "CNY"];
 
 const PLAN_META = [
   { key: "starter", popular: false, monthly: 29, yearly: 23 },
@@ -29,9 +46,28 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  // Live mid-market conversion for the "≈ Rp …" line under each list price.
+  const { currency, setCurrency, formatMoney, ratesStale, ratesSourceLabel, ratesSource } =
+    useCurrency();
+  // Follow the visitor's locale until they pick a currency themselves — after
+  // that, a locale-based default would fight them on every re-render.
+  const pickedCurrency = useRef(false);
   const planMeta = t.raw("plans") as Record<string, PlanMeta>;
   const compareCols = t.raw("compareCols") as string[];
   const compareRows = t.raw("compareRows") as string[][];
+
+  useEffect(() => {
+    if (pickedCurrency.current) return;
+    const preferred = LOCALE_CURRENCY[locale];
+    if (preferred) setCurrency(preferred);
+    // Locale changes are a deliberate navigation, so re-default then.
+  }, [locale, setCurrency]);
+
+  const chooseCurrency = (code: SupportedCurrencyCode) => {
+    pickedCurrency.current = true;
+    setCurrency(code);
+  };
 
   const handleSubscribe = async (planKey: string) => {
     if (planKey === "enterprise") {
@@ -114,6 +150,38 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
             <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
           </p>
+
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("fxCurrencyLabel")}
+            </span>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background p-1 shadow-sm">
+              {CURRENCY_CHOICES.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => chooseCurrency(code)}
+                  aria-pressed={currency === code}
+                  data-testid={`fx-currency-${code}`}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    currency === code
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {CURRENCIES[code].symbol} {code}
+                </button>
+              ))}
+            </div>
+            {currency !== "USD" && (
+              <span className="text-[11px] text-muted-foreground">
+                {ratesStale
+                  ? t("fxStale")
+                  : t("fxSource", { source: ratesSourceLabel || ratesSource })}
+              </span>
+            )}
+          </div>
 
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
             <button
@@ -203,6 +271,19 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   </span>
                 </div>
 
+                {currency !== "USD" && (
+                  <p
+                    data-testid={`fx-price-${plan.key}`}
+                    data-currency={currency}
+                    className={cn(
+                      "-mt-6 mb-8 text-sm",
+                      plan.popular ? "opacity-80" : "text-muted-foreground",
+                    )}
+                  >
+                    {t("fxEquivalent", { amount: formatMoney(price) })}
+                  </p>
+                )}
+
                 <button
                   onClick={() => handleSubscribe(plan.key)}
                   disabled={loadingKey === plan.key}
@@ -246,6 +327,21 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           })}
         </div>
       </section>
+
+      {/* ──────── WHAT IT COSTS IN LOCAL MONEY ──────── */}
+      {currency === "IDR" && (
+        <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
+          <FxSettlementPanel
+            // The plan most people are deciding between, at the selected period.
+            amountUsd={
+              isAnnual
+                ? (PLAN_META.find((p) => p.popular)?.yearly ?? PLAN_META[1].yearly)
+                : (PLAN_META.find((p) => p.popular)?.monthly ?? PLAN_META[1].monthly)
+            }
+            periodLabel={isAnnual ? t("fxPerYear") : t("perMonth")}
+          />
+        </section>
+      )}
 
       {/* ──────── COMPARISON TABLE ──────── */}
       <section
