@@ -121,6 +121,13 @@ jobs:
           # server inherits this env from the test process, keeping the
           # copilot deterministic in E2E without an OpenAI account.
           AI_MOCK: "1"
+          # Every auth spec signs in from the SAME client IP. At the production
+          # login budget (10 attempts / 120s) the specs contend for one sliding
+          # window, the throttle helper sleeps ~2 minutes mid-test, and the
+          # suite fails at random with a different test each run. The raised
+          # budget is E2E-only — src/lib/rate-limit.ts ignores this variable
+          # when NODE_ENV=production, so it can never weaken a live deployment.
+          E2E_LOGIN_THROTTLE_LIMIT: "500"
       - name: Verify SecurityEvent hash chain is intact
         # Fails when the tamper-evident audit chain is broken — either a
         # content/prevHash mismatch (the 409 GET /api/security/audit/verify

@@ -16,6 +16,28 @@ import { logSecurityEvent } from "@/lib/security-events";
 
 const SECURITY_TYPE = "RATE_LIMITED";
 
+/** Production budget: 10 login attempts per IP per window. */
+export const LOGIN_THROTTLE_DEFAULT = 10;
+
+/**
+ * The per-IP login attempt budget for this process.
+ *
+ * Production is ALWAYS {@link LOGIN_THROTTLE_DEFAULT}. The E2E runner and the
+ * CI E2E job raise it through `E2E_LOGIN_THROTTLE_LIMIT`, because the whole auth
+ * suite signs in dozens of times from one IP: at 10/120s the specs contend for
+ * the same sliding window, `waitForLoginThrottleWindow` sleeps ~2 minutes
+ * mid-test, and a previously green suite goes red at random with a different
+ * test failing each run.
+ *
+ * The override is ignored when `NODE_ENV === "production"`, so a stray env var
+ * on a live deployment can never weaken the limiter.
+ */
+export function loginThrottleLimit(): number {
+  if (process.env.NODE_ENV === "production") return LOGIN_THROTTLE_DEFAULT;
+  const parsed = Number.parseInt(process.env.E2E_LOGIN_THROTTLE_LIMIT ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : LOGIN_THROTTLE_DEFAULT;
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   /** Attempts recorded inside the current window (including rejections). */

@@ -62,6 +62,12 @@ function buildEnv() {
   }
   // Deterministic copilot specs (see docs/e2e-run.md).
   if (!process.env.AI_MOCK) env.AI_MOCK = "1";
+  // The whole auth suite signs in from ONE IP. At the production budget
+  // (10 attempts / 120s) the specs contend for the same sliding window, the
+  // helper sleeps ~2 minutes mid-test, and previously-green specs fail at
+  // random. Raise the budget for the suite; the override is ignored when
+  // NODE_ENV=production (see src/lib/rate-limit.ts).
+  if (!process.env.E2E_LOGIN_THROTTLE_LIMIT) env.E2E_LOGIN_THROTTLE_LIMIT = "500";
   return env;
 }
 
