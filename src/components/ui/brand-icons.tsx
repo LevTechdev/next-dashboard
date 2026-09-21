@@ -1,5 +1,5 @@
 ﻿import * as React from "react";
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 interface BrandIconProps extends Omit<React.SVGProps<SVGSVGElement>, "children"> {
   size?: number;
@@ -23,6 +23,51 @@ function svgProps({ size = 16, className, ...rest }: BrandIconProps) {
 
 /** Union shape so config maps can hold both SVG glyphs and thesvg span wrappers. */
 type AnyBrandIconComponent = React.FC<BrandIconProps> | React.FC<BrandSpanProps>;
+
+/**
+ * Canonical form of a markup string: parsed and re-serialized by the same
+ * browser parser, so `d="M0 0"` vs `d="M0 0"`, `<path/>` vs `<path></path>` and
+ * attribute-quoting differences all compare equal. Comparing raw strings would
+ * flag every icon on the page; comparing canonical forms flags only real
+ * differences.
+ */
+export function canonicalizeMarkup(markup: string): string {
+  if (typeof document === "undefined") return markup;
+  const holder = document.createElement("template");
+  holder.innerHTML = markup;
+  return holder.innerHTML;
+}
+
+/**
+ * Dev-only SSR/client markup guard for injected brand artwork.
+ *
+ * `ThesvgIcon` injects a module-level constant through
+ * `dangerouslySetInnerHTML`, so the ONLY way the server's HTML and the client's
+ * render can disagree is if the module object changed between the two renders
+ * (a fast-refresh swapping the artwork mid-session) or if the component was
+ * rendered into a different tree shape. React reports that as an opaque
+ * hydration error anchored at the <span>, which is exactly how a session was
+ * spent chasing a package that turned out to be byte-identical across its
+ * builds.
+ *
+ * React does not patch a mismatched `dangerouslySetInnerHTML`, so the DOM still
+ * holds the SERVER's markup after hydration. Comparing it with the client's own
+ * markup therefore names the culprit — the slug, and where the strings diverge —
+ * instead of leaving a stack trace pointing at a span.
+ *
+ * Returns a description of the mismatch, or null when they agree.
+ */
+export function brandMarkupMismatch(
+  domMarkup: string,
+  clientMarkup: string,
+): { firstDiff: number; domLength: number; clientLength: number } | null {
+  const a = canonicalizeMarkup(domMarkup);
+  const b = canonicalizeMarkup(clientMarkup);
+  if (a === b) return null;
+  let i = 0;
+  while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++;
+  return { firstDiff: i, domLength: a.length, clientLength: b.length };
+}
 /**
  * Shared renderer for thesvg brand modules — injects the published `default`
  * variant markup into a <span> wrapper (a complete <svg> string cannot be
@@ -63,8 +108,33 @@ export function ThesvgIcon({
     onLoad: _onLoad,
     ...spanRest
   } = rest as Record<string, unknown>;
+
+  // Dev-only hydration guard (see brandMarkupMismatch). The DOM holds the
+  // server's markup when the two renders disagreed, so this is the one place
+  // that can say WHICH icon changed rather than leaving a span in the stack.
+  const spanRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const node = spanRef.current;
+    if (!node) return;
+    const mismatch = brandMarkupMismatch(node.innerHTML, markup);
+    if (!mismatch) return;
+    console.error(
+      `[brand-icons] SSR/client markup mismatch for "${module.slug}" — React will not patch it, ` +
+        `so this icon is showing the server's artwork.\n` +
+        `  server markup: ${mismatch.domLength} chars | client markup: ${mismatch.clientLength} chars | ` +
+        `first difference at ${mismatch.firstDiff}\n` +
+        `  server: ${JSON.stringify(node.innerHTML.slice(mismatch.firstDiff, mismatch.firstDiff + 80))}\n` +
+        `  client: ${JSON.stringify(markup.slice(mismatch.firstDiff, mismatch.firstDiff + 80))}\n` +
+        `  Usually this means the artwork module changed between the server render and hydration ` +
+        `(a dev fast-refresh), or the component rendered into a different tree shape. ` +
+        `Reload the page: if it does not reproduce on a cold load, the package data is fine.`,
+    );
+  }, [markup, module.slug]);
+
   return (
     <span
+      ref={spanRef}
       data-thesvg-icon
       role="img"
       aria-label={module.title ?? module.slug}
