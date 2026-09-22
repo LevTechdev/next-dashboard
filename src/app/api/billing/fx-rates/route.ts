@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchMidMarketRates, RATE_TTL_MS } from "@/lib/market-rates";
-import { fxRateHistory, trackedQuotes } from "@/lib/fx-history";
+import { captureFxSnapshot, fxRateHistory, trackedQuotes } from "@/lib/fx-history";
 import type { SupportedCurrencyCode } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const force = searchParams.get("refresh") === "1";
+
+  // ?capture=1: record today's point (idempotent) and return the capture
+  // report, so the daily scheduler job, this endpoint, and an operator share
+  // one code path — same convention as /api/auth/recovery-history?capture=1.
+  if (searchParams.get("capture") === "1") {
+    const report = await captureFxSnapshot();
+    return NextResponse.json(report);
+  }
 
   // ?history=1&quote=IDR[&days=30]: the pair's recorded daily rates, oldest
   // first, for the pricing panel's trend sparkline. Public — it exposes only
