@@ -144,6 +144,21 @@ export async function revokeFamily(familyId: string): Promise<void> {
   await revokeSessionsByFamily(familyId);
 }
 
+/**
+ * Revoke EVERY refresh-token family for a user — the other half of "sign out
+ * everywhere". Sessions alone are not enough: a still-valid refresh cookie
+ * mints a fresh access token on the next refresh, and that new token has no
+ * Session row, so the revocation check treats it as legacy and allows it.
+ * Killing the families closes the re-entry path.
+ */
+export async function revokeAllRefreshTokens(userId: string): Promise<number> {
+  const res = await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return res.count;
+}
+
 /** Resolve the family id for a raw refresh token (used by logout). */
 export async function getFamilyForToken(rawToken: string | undefined): Promise<string | null> {
   if (!rawToken) return null;

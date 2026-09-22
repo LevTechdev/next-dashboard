@@ -109,11 +109,21 @@ export async function revokeAllSessions(userId: string): Promise<number> {
   return res.count;
 }
 
-/** Whether the token's session has been revoked (used to enforce revocation). */
+/**
+ * Whether the token's session has been revoked (used to enforce revocation).
+ *
+ * Fail-CLOSED by absence: every sign-in path (password, passkey, SAML) creates
+ * a Session row and every refresh rotation re-points it, so an access token
+ * whose hash matches NO row is a token minted after its session was revoked
+ * (rotateSessionAccessToken matched 0 rows) — exactly the token "sign out
+ * everywhere" exists to kill. Returning false for it re-opened the door: the
+ * sweep revoked the rows, the still-valid refresh cookie minted one fresh
+ * Session-less access token, and that token walked back in as "legacy".
+ */
 export async function isTokenRevoked(token: string): Promise<boolean> {
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(token) },
     select: { revokedAt: true },
   });
-  return session?.revokedAt != null;
+  return session === null || session.revokedAt != null;
 }
