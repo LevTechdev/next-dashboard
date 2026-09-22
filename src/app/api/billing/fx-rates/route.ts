@@ -24,7 +24,15 @@ export async function GET(req: Request) {
   // ?capture=1: record today's point (idempotent) and return the capture
   // report, so the daily scheduler job, this endpoint, and an operator share
   // one code path — same convention as /api/auth/recovery-history?capture=1.
+  // Mutating, so it is shared-secret only (same contract as the trial sweep
+  // and usage digest cron routes); plain reads below stay public.
   if (searchParams.get("capture") === "1") {
+    const secret = process.env.CRON_SECRET;
+    const provided =
+      searchParams.get("secret") || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    if (!secret || provided !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const report = await captureFxSnapshot();
     return NextResponse.json(report);
   }
