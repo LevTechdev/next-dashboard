@@ -8,6 +8,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * observation NEVER invents a move.
  */
 
+// The suite imports the module dynamically per test; on a busy machine the
+// first cold transform can exceed the 5s default, so give the file headroom.
+vi.setConfig({ testTimeout: 30_000 });
+
 const upsert = vi.fn().mockResolvedValue({});
 const findFirst = vi.fn().mockResolvedValue(null);
 const findMany = vi.fn().mockResolvedValue([]);

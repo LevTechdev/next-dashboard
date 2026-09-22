@@ -2,12 +2,14 @@
 /**
  * Incremental Supabase mirror sync — leaf tables only.
  *
- * The full mirror sync (sync-supabase-mirror.mjs) truncate/restores all 50
+ * The full mirror sync (sync-supabase-mirror.mjs) truncate/restores all
  * tables through the pooler, which takes ~30 minutes. The mirror only drifts
- * *between* runs on three append-mostly "leaf" tables that nothing on the
- * remote references by FK:
+ * *between* runs on five append-mostly "leaf" tables that nothing on the
+ * remote references by FK (two are User-referencing snapshot series whose
+ * users always exist remotely):
  *
- *   Session · RefreshToken · SecurityEvent
+ *   Session · RefreshToken · SecurityEvent ·
+ *   RecoveryReadinessSnapshot · FxRateSnapshot
  *
  * Every login, token rotation, and security event mints rows locally, so a
  * daily full sync leaves production analytics up to 24h stale on exactly the
@@ -46,7 +48,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const VERIFY_ONLY = process.argv.includes("--verify-only");
 
 /** Leaf tables — append-mostly, immutable rows, nothing references them. */
-const LEAF_TABLES = ["Session", "RefreshToken", "SecurityEvent"];
+const LEAF_TABLES = [
+  "Session",
+  "RefreshToken",
+  "SecurityEvent",
+  "RecoveryReadinessSnapshot",
+  "FxRateSnapshot",
+];
 const WATERMARK_PATH = join(ROOT, "data", "leaf-sync-watermark.json");
 
 function readDbUrlFromEnvFile(path, key = "DATABASE_URL") {
@@ -96,15 +104,10 @@ function tableCounts(url, tables) {
 
 /** Newest createdAt across the leaf tables (ISO string, or null when empty). */
 function readWatermarkFromDb(url) {
-  const out = run("psql", [
-    url,
-    "-tAc",
-    `SELECT max(w) FROM (
-         SELECT max("createdAt") AS w FROM public."Session"
-         UNION ALL SELECT max("createdAt") FROM public."RefreshToken"
-         UNION ALL SELECT max("createdAt") FROM public."SecurityEvent"
-       ) w`,
-  ]).trim();
+  const unions = LEAF_TABLES.map((t) => `SELECT max("createdAt") AS w FROM public."${t}"`).join(
+    " UNION ALL ",
+  );
+  const out = run("psql", ["-tAc", `SELECT max(w) FROM ( ${unions} ) w`, url]).trim();
   return out && out !== "NULL" ? out : null;
 }
 

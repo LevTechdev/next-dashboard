@@ -10,6 +10,36 @@ import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
 
 const prisma = new PrismaClient();
 
+/**
+ * Re-chain the SecurityEvent tamper-evident hash chain in seq order.
+ *
+ * Runs after cleanup (legacy/unhashed rows) AND after the demo telemetry
+ * block, which writes plain `create()` rows the hash-chain helper never
+ * sees — without the second pass those rows carry `hash = null` and the
+ * audit-chain CI gate fails on "zero NULL-hash SecurityEvent rows".
+ */
+async function rechainSecurityEvents(): Promise<void> {
+  const securityEvents = await prisma.securityEvent.findMany({
+    orderBy: { seq: "asc" },
+  });
+  let prevHash = GENESIS_HASH;
+  let rechained = 0;
+  for (const e of securityEvents) {
+    const hash = computeHash(prevHash, e);
+    if (e.hash !== hash || (e.prevHash ?? GENESIS_HASH) !== prevHash) {
+      await prisma.securityEvent.update({
+        where: { id: e.id },
+        data: { prevHash, hash },
+      });
+      rechained++;
+    }
+    prevHash = hash;
+  }
+  if (rechained > 0) {
+    console.log(`🔗 SecurityEvent chain re-chained (${rechained} rows)`);
+  }
+}
+
 async function main() {
   console.log("🌱 Seeding database...");
 
@@ -29,28 +59,8 @@ async function main() {
   await prisma.salesChannel.deleteMany();
   await prisma.user.deleteMany();
 
-  // Re-chain the SecurityEvent tamper-evident hash chain.
-  {
-    const securityEvents = await prisma.securityEvent.findMany({
-      orderBy: { seq: "asc" },
-    });
-    let prevHash = GENESIS_HASH;
-    let rechained = 0;
-    for (const e of securityEvents) {
-      const hash = computeHash(prevHash, e);
-      if (e.hash !== hash || (e.prevHash ?? GENESIS_HASH) !== prevHash) {
-        await prisma.securityEvent.update({
-          where: { id: e.id },
-          data: { prevHash, hash },
-        });
-        rechained++;
-      }
-      prevHash = hash;
-    }
-    if (rechained > 0) {
-      console.log(`🔗 SecurityEvent chain re-chained (${rechained} rows)`);
-    }
-  }
+  // Re-chain any pre-existing rows before fresh data is written.
+  await rechainSecurityEvents();
 
   const defaultTenant = await prisma.tenant.upsert({
     where: { slug: "default" },
@@ -139,6 +149,10 @@ async function main() {
       console.log("🛡️  Security telemetry rows seeded (4 throttles + 1 lockout)");
     }
   }
+
+  // The demo rows above bypassed the hash-chain helper — re-chain so the
+  // audit gate sees zero NULL-hash rows after seeding.
+  await rechainSecurityEvents();
 
   const staff = await prisma.user.create({
     data: {
