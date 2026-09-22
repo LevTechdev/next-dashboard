@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Monitor, Trash2 } from "lucide-react";
+import { Monitor, Trash2, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ export function SessionsCard({ data }: { data: SecurityData }) {
   const tcommon = useTranslations("common");
   const confirm = useConfirm();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [signingOutEverywhere, setSigningOutEverywhere] = useState(false);
 
   const revokeSession = async (id: string) => {
     setBusyId(id);
@@ -52,6 +53,41 @@ export function SessionsCard({ data }: { data: SecurityData }) {
 
   const { sessions } = data;
   const others = sessions.filter((s) => !s.current);
+
+  /**
+   * Sign out EVERYWHERE — every session including this one, plus every
+   * trusted device, so no 2FA skip survives. The server revokes first and
+   * answers before the token is re-checked, so the response always lands;
+   * the client then hard-navigates to /login.
+   */
+  const signOutEverywhere = async () => {
+    const ok = await confirm({
+      title: t("signOutEverywhereTitle"),
+      description: t("signOutEverywhereDesc"),
+      confirmLabel: t("signOutEverywhere"),
+      icon: "key",
+      destructive: true,
+    });
+    if (!ok) return;
+    setSigningOutEverywhere(true);
+    try {
+      const res = await fetch("/api/auth/sessions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ everywhere: true }),
+      });
+      if (res.ok) {
+        toast.success(t("signedOutEverywhere"));
+        // Hard navigation, not router.push: a full sign-out must also drop
+        // every cached client store, and there is no router to keep anyway.
+        window.location.assign("/en/login");
+      } else {
+        toast.error(tcommon("error"));
+      }
+    } finally {
+      setSigningOutEverywhere(false);
+    }
+  };
 
   return (
     <Card>
@@ -122,6 +158,18 @@ export function SessionsCard({ data }: { data: SecurityData }) {
           <Button variant="destructive" size="sm" onClick={revokeAllOthers} className="mt-2">
             <Trash2 className="h-4 w-4 mr-1" />
             {t("revokeAll")}
+          </Button>
+        )}
+        {sessions.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={signOutEverywhere}
+            disabled={signingOutEverywhere}
+            className="mt-2 border-zinc-300 dark:border-zinc-700"
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            {t("signOutEverywhere")}
           </Button>
         )}
       </CardContent>

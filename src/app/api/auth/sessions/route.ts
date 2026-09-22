@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-guard";
 import { getTokenFromCookie, getTokenFromRequest, hashToken } from "@/lib/auth";
-import { listActiveSessions, revokeOtherSessions } from "@/lib/sessions";
+import { listActiveSessions, revokeAllSessions, revokeOtherSessions } from "@/lib/sessions";
+import { revokeAllTrustedDevices } from "@/lib/trusted-devices";
 import { logSecurityEvent } from "@/lib/security-events";
 import { RECOGNITION_WINDOW_DAYS } from "@/lib/device-recognition";
 import { prisma } from "@/lib/db";
@@ -67,10 +68,33 @@ export async function GET(req: Request) {
   );
 }
 
-/** DELETE: revoke all sessions except the current one. */
+/**
+ * DELETE: revoke sessions. Default ("revoke all others") keeps the current
+ * session; `{ everywhere: true }` signs out EVERY device including this one
+ * and revokes every trusted device, so no 2FA skip survives the sweep.
+ */
 export async function DELETE(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
+
+  const body = await req.json().catch(() => ({}));
+
+  if (body.everywhere === true) {
+    const [sessions, devices] = await Promise.all([
+      revokeAllSessions(session.user.id),
+      revokeAllTrustedDevices(session.user.id),
+    ]);
+    await logSecurityEvent({
+      userId: session.user.id,
+      type: "SESSIONS_REVOKED_ALL",
+      req,
+      metadata: { everywhere: true, sessions, trustedDevices: devices },
+      tenantId: session.user.tenantId,
+    });
+    // The response carries no Set-Cookie beyond the normal clear: the client
+    // redirects to /login, and the revoked token is rejected on its next use.
+    return NextResponse.json({ success: true, revoked: sessions, trustedDevices: devices });
+  }
 
   const token = getTokenFromRequest(req) || getTokenFromCookie(req);
   if (!token) {

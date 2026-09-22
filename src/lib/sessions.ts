@@ -96,6 +96,19 @@ export async function revokeOtherSessions(userId: string, currentToken: string):
   return res.count;
 }
 
+/**
+ * Revoke EVERY session for the user — including the one making the request
+ * ("sign out everywhere"). Takes effect on the caller's NEXT request, since
+ * the just-used token is only re-checked after the response is sent.
+ */
+export async function revokeAllSessions(userId: string): Promise<number> {
+  const res = await prisma.session.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return res.count;
+}
+
 /** Whether the token's session has been revoked (used to enforce revocation). */
 export async function isTokenRevoked(token: string): Promise<boolean> {
   const session = await prisma.session.findUnique({
