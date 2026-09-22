@@ -105,6 +105,25 @@ In Vercel **Settings > Domains**, add your custom domain (e.g. `dashboard.exampl
 
 ## 5. Deployment Commands
 
+### Database migrations (BEFORE every schema-changing deploy)
+
+The production `DATABASE_URL` points at Supabase's **transaction pooler**
+(`pooler.supabase.com:6543`), which stalls `prisma migrate deploy` — a build
+that tries to migrate hangs until Vercel kills it (observed 2026-09-22: 46
+minutes, then Error). The build therefore runs `prisma generate && next build`
+only, and migrations are applied **out-of-band** before deploying:
+
+1. Every migration in `prisma/migrations/` newer than the last applied one
+   (query `select migration_name from _prisma_migrations order by finished_at`)
+   is pure additive DDL — verify with `grep -iE "DROP |TRUNCATE |DELETE FROM"`
+   returning nothing.
+2. Apply each pending `migration.sql` through the Supabase Management API
+   (`POST /v1/projects/{ref}/database/query` with an access token) or the
+   Supabase SQL editor, in filename order.
+3. Register each in `_prisma_migrations` (name + timestamps) so future
+   `prisma migrate` runs consider them applied.
+4. Deploy. The new code boots against tables that already exist.
+
 ### Option A: Via GitHub (Recommended)
 Pushing to `main` automatically triggers Vercel CI/CD:
 ```bash

@@ -1,6 +1,5 @@
 {
   "framework": "nextjs",
-  "//": "Migrations are applied out-of-band against the DIRECT database host — the transaction pooler (6543) that DATABASE_URL points at stalls prisma migrate deploy and hangs the build (observed 2026-09-22). Schema changes ship via the committed prisma/migrations history, applied by an operator with direct-DB access, then the deploy build runs generate+build only.",
   "buildCommand": "npx prisma generate && npx next build",
   "regions": ["sin1"],
   "crons": [
