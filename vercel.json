@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npx prisma generate && npx next build",
+  "buildCommand": "npx prisma migrate deploy && npx prisma generate && npx next build",
   "regions": ["sin1"],
   "crons": [
     {
