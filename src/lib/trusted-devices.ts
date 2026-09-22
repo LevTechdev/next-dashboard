@@ -149,9 +149,7 @@ export async function revokeAllTrustedDevices(userId: string): Promise<number> {
 }
 
 /** List the user's un-revoked devices, newest activity first. */
-export async function listTrustedDevices(
-  userId: string,
-): Promise<
+export async function listTrustedDevices(userId: string): Promise<
   Array<{
     id: string;
     label: string | null;
