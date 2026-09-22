@@ -943,9 +943,15 @@ describe("WebAuthn Register Verify", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("WebAuthn Authenticate Options", () => {
-  it("returns 400 when email missing", async () => {
+  // Passwordless: with no email the route returns DISCOVERABLE-credential
+  // options (no allowCredentials) instead of demanding an email — the
+  // authenticator picks the passkey and the verify route resolves the user.
+  it("returns discoverable options when email missing", async () => {
     const res = await webauthnAuthOptionsRoutes.POST(mockRequest({}));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.allowCredentials).toBeUndefined();
+    expect(body.challenge).toBeTruthy();
   });
 
   it("returns 404 when no passkeys registered", async () => {

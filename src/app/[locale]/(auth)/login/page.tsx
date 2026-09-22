@@ -45,6 +45,18 @@ function LoginForm() {
   const [view, setView] = useState("login");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []); // eslint-disable-line react-hooks/set-state-in-effect
+  // True once the browser proves it can run a WebAuthn ceremony
+  // (`navigator.credentials`). Rendering the passwordless button only after
+  // this keeps SSR markup stable — the button is client-only by design, so
+  // first paint never includes it and hydration can't disagree.
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  useEffect(() => {
+    setPasskeyAvailable(
+      typeof window !== "undefined" &&
+        !!window.PublicKeyCredential &&
+        typeof window.PublicKeyCredential === "function",
+    );
+  }, []);
 
   const [totpCode, setTotpCode] = useState("");
   // Drives the CodeSlots error treatment: true while the rejected code drains,
@@ -528,25 +540,18 @@ function LoginForm() {
     window.location.href = "/api/auth/google";
   };
 
-  // Passkey login: request authentication options for the entered email, run
-  // the WebAuthn ceremony, then let the verify endpoint set the session
-  // cookies exactly like a password login.
+  // Passkey login: run the WebAuthn ceremony WITHOUT an email — the options
+  // step omits allowCredentials, so the authenticator offers discoverable
+  // credentials and the user picks one. The verify endpoint resolves the
+  // account from the asserted credential and sets the session cookies
+  // exactly like a password login. True passwordless, zero prelude.
   const handlePasskeyLogin = async () => {
-    if (!email.trim()) {
-      toast.error(t("enterEmailPassword"));
-      return;
-    }
     try {
       const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ discoverable: true }),
       });
-      if (!optionsRes.ok) {
-        const data = await optionsRes.json().catch(() => null);
-        toast.error(data?.error || t("loginFailed"));
-        return;
-      }
       const options = await optionsRes.json();
       const { startAuthentication } = await import("@simplewebauthn/browser");
       const assertion = await startAuthentication({ optionsJSON: options });
@@ -1353,14 +1358,17 @@ function LoginForm() {
                       />
                     </svg>
                   </button>
-                  <button
-                    onClick={() => void handlePasskeyLogin()}
-                    type="button"
-                    aria-label={t("passkeySignIn")}
-                    className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
-                  >
-                    <Fingerprint className="h-5 w-5 text-zinc-700" />
-                  </button>
+                  {passkeyAvailable && (
+                    <button
+                      onClick={() => void handlePasskeyLogin()}
+                      type="button"
+                      aria-label={t("passkeySignIn")}
+                      title={t("passkeyAnyAccount")}
+                      className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                    >
+                      <Fingerprint className="h-5 w-5 text-zinc-700" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"

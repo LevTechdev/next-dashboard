@@ -6,14 +6,38 @@ import { AUTH_CHALLENGE_COOKIE, getRpID, challengeCookieOptions } from "@/lib/we
 export const dynamic = "force-dynamic";
 
 /**
- * POST: begin passkey login. Given an email, return authentication options
- * scoped to that user's registered credentials + stash the challenge.
+ * POST: begin passkey login. With an email, return options scoped to that
+ * account's registered credentials. Without one (or with `discoverable:
+ * true`), omit `allowCredentials` so the browser offers **discoverable
+ * credentials** — the authenticator picks the passkey, no email step. The
+ * verify route already resolves the user from the asserted credential, so
+ * the ceremony shape is otherwise identical.
  */
 export async function POST(req: Request) {
-  const body = await req.json();
-  const email = (body.email as string)?.trim().toLowerCase();
-  if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  const body = await req.json().catch(() => ({}));
+  const email = (body.email as string)?.trim().toLowerCase() || undefined;
+  const discoverable = body.discoverable === true || !email;
 
+  if (!discoverable) {
+    return scopedOptions(email as string, req);
+  }
+
+  const options = await generateAuthenticationOptions({
+    rpID: getRpID(req),
+    userVerification: "preferred",
+    // No allowCredentials ⇒ resident/discoverable credentials: the
+    // authenticator shows every passkey it holds for this RP and the user
+    // picks one. Chrome requires an allowCredentials-less ceremony to ask
+    // for UV, so "preferred" is the strongest ask that still degrades.
+  });
+
+  const res = NextResponse.json(options);
+  res.cookies.set(AUTH_CHALLENGE_COOKIE, options.challenge, challengeCookieOptions());
+  return res;
+}
+
+/** Email-scoped options: only that user's registered credentials may answer. */
+async function scopedOptions(email: string, req: Request) {
   const user = await prisma.user.findUnique({ where: { email } });
   const creds = user
     ? await prisma.webAuthnCredential.findMany({ where: { userId: user.id } })
