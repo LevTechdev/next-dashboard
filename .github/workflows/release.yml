@@ -1,0 +1,47 @@
+name: Release
+
+# Runs semantic-release AFTER CI has passed on main: analyzes conventional
+# commits since the last tag, bumps the version, updates package.json, regenerates
+# CHANGELOG.md entries for the new release, tags it, and publishes a GitHub
+# release. The curated changelog entries written before this gate (≤ v2.0.0)
+# are anchored by their git tag and are not re-derived from history.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write # push the release commit + tag
+  issues: write # semantic-release comment plugin contract (unused but declared)
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # two releases racing on the same ref is worse than queueing
+
+jobs:
+  release:
+    name: Semantic release
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_repository.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: conventional-changelog needs every commit since the last tag
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: "release-bot"
+          GIT_AUTHOR_EMAIL: "actions@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "release-bot"
+          GIT_COMMITTER_EMAIL: "actions@users.noreply.github.com"
+        run: npx semantic-release
