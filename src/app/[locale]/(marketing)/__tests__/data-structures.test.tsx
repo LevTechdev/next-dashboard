@@ -8,8 +8,8 @@ const changelogTypes = changelogMessages.changelogPage.typeLabels;
 import { typeConfig } from "../changelog/page";
 
 describe("Changelog Data Structure", () => {
-  it("has exactly 7 version entries", () => {
-    expect(changelog).toHaveLength(7);
+  it("has exactly 8 version entries", () => {
+    expect(changelog).toHaveLength(8);
   });
 
   it("is ordered newest-first by version", () => {
@@ -38,7 +38,13 @@ describe("Changelog Data Structure", () => {
   });
 
   it("has valid tag values", () => {
-    const validTags = ["Latest Release", "Feature Release", "Improvement", "Major Release"];
+    const validTags = [
+      "Latest Release",
+      "Feature Release",
+      "Improvement",
+      "Major Release",
+      "Security & Pricing",
+    ];
     for (const entry of changelog as any[]) {
       expect(validTags).toContain(entry.tag);
     }
@@ -86,9 +92,9 @@ describe("Changelog Data Structure", () => {
     expect(featureItems.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("has the correct latest version (2.6.0)", () => {
-    expect(changelog[0].version).toBe("2.6.0");
-    expect(changelog[0].tag).toBe("Latest Release");
+  it("has the correct latest version (2.7.0)", () => {
+    expect(changelog[0].version).toBe("2.7.0");
+    expect(changelog[0].tag).toBe("Security & Pricing");
   });
 });
 

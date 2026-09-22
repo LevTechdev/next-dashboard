@@ -8,8 +8,9 @@ import {
   RefreshCw,
   Bell,
   ArrowRight,
-  Sparkles,
-  Rocket,
+  Fingerprint,
+  TrendingUp,
+  ShieldCheck,
   GitCommitHorizontal,
   Bug,
 } from "lucide-react";
@@ -31,14 +32,16 @@ interface ChangelogEntry {
 }
 
 export const typeConfig = {
+  // A passkey, not a sparkle: features here are product capabilities, and the
+  // fingerprint reads as capability at 14px without the generic-AI look.
   feature: {
-    icon: Sparkles,
+    icon: Fingerprint,
     labelKey: "typeLabels.feature",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
   },
   improvement: {
-    icon: Rocket,
+    icon: TrendingUp,
     labelKey: "typeLabels.improvement",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
@@ -253,8 +256,8 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { labelKey: "statReleases", end: 24, icon: GitCommitHorizontal, suffix: "+" },
-              { labelKey: "statFeatures", end: 42, icon: Sparkles, suffix: "+" },
-              { labelKey: "statImprovements", end: 128, icon: Rocket, suffix: "+" },
+              { labelKey: "statFeatures", end: 42, icon: ShieldCheck, suffix: "+" },
+              { labelKey: "statImprovements", end: 128, icon: TrendingUp, suffix: "+" },
               { labelKey: "statFixes", end: 56, icon: Bug, suffix: "+" },
             ].map((stat, i) => {
               const Icon = stat.icon;

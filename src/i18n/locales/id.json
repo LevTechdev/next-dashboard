@@ -2134,6 +2134,70 @@
     "ctaButton": "Buka Dashboard",
     "entries": [
       {
+        "version": "2.7.0",
+        "date": "22 September 2026",
+        "tag": "Keamanan & Harga",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Masuk dengan passkey tanpa kata sandi — tombol sidik jari menjalankan ceremony WebAuthn tanpa email dan tanpa kata sandi, memilih kredensial discoverable langsung dari authenticator"
+          },
+          {
+            "type": "feature",
+            "text": "Pemilih verifikasi masuk: akun dengan beberapa faktor kedua dapat memilih antara aplikasi authenticator, kode sekali pakai via email, passkey, atau perangkat tepercaya"
+          },
+          {
+            "type": "feature",
+            "text": "Perangkat tepercaya — \"ingat perangkat ini selama 30 hari\" melewati two-factor saat masuk, terikat pada profil perangkat dan dapat dicabut dari Security Center"
+          },
+          {
+            "type": "feature",
+            "text": "Authenticator cadangan: daftarkan perangkat TOTP kedua sehingga kehilangan satu ponsel tidak memaksa pemulihan akun via email"
+          },
+          {
+            "type": "feature",
+            "text": "Harga kurs tengah pasar langsung dari tiga penyedia, dengan perbandingan jalur penyelesaian dan cara bayar termurah di halaman harga"
+          },
+          {
+            "type": "feature",
+            "text": "Cuplikan kurs harian dengan sparkline tren 30 hari di halaman harga dan peringatan dalam aplikasi saat mata uang bergerak lebih dari 2% dalam sehari"
+          },
+          {
+            "type": "improvement",
+            "text": "Kesiapan pemulihan kini berupa seri 30 hari di Security Center — sparkline dengan celah yang jujur dan peringatan hari yang sama saat perlindungan turun"
+          },
+          {
+            "type": "improvement",
+            "text": "Keluar dari semua perangkat: satu aksi terkonfirmasi mencabut semua sesi, semua refresh token, dan semua perangkat tepercaya, lalu mengeluarkan Anda juga"
+          },
+          {
+            "type": "improvement",
+            "text": "Kode TOTP sekali pakai: kode yang diterima mengklaim time step-nya, sehingga replay dijawab TOTP_REPLAY dan dicatat demikian"
+          },
+          {
+            "type": "improvement",
+            "text": "Menonaktifkan two-factor atau menghapus jalur pemulihan terakhir kini memerlukan pengakuan eksplisit yang ditegakkan server dan menyebutkan apa yang Anda lepas"
+          },
+          {
+            "type": "fix",
+            "text": "Diperbaiki: token yang dibuat setelah sesinya dicabut diterima sebagai legacy — pencabutan kini fail-closed, terbukti end-to-end"
+          },
+          {
+            "type": "fix",
+            "text": "Diperbaiki: jendela throttle login merusak rantai hash audit keamanan"
+          },
+          {
+            "type": "fix",
+            "text": "Diperbaiki: faktor kedua bisa dikirim dua kali pada koneksi lambat, menghabiskan marker sekali pakai dua kali"
+          },
+          {
+            "type": "fix",
+            "text": "Diperbaiki: ketidakcocokan hidrasi dari pembacaan jam dan random saat render, dan markup brand-icon dipastikan identik antara server dan klien"
+          }
+        ]
+      },
+      {
         "version": "2.6.0",
         "date": "8 September 2026",
         "tag": "Rilis Terbaru",

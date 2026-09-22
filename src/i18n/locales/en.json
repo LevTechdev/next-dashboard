@@ -2134,6 +2134,70 @@
     "ctaButton": "Go to Dashboard",
     "entries": [
       {
+        "version": "2.7.0",
+        "date": "September 22, 2026",
+        "tag": "Security & Pricing",
+        "tagColor": "bg-emerald-500/10 text-emerald-500",
+        "items": [
+          {
+            "type": "feature",
+            "text": "Passwordless passkey sign-in — the fingerprint button runs the WebAuthn ceremony with no email and no password, picking a discoverable credential straight from the authenticator"
+          },
+          {
+            "type": "feature",
+            "text": "Login verification chooser: accounts with several second factors pick between authenticator app, emailed one-time code, passkey, or a trusted device"
+          },
+          {
+            "type": "feature",
+            "text": "Trusted devices — \"remember this device for 30 days\" skips two-factor on sign-in, bound to the device profile and revocable from the Security Center"
+          },
+          {
+            "type": "feature",
+            "text": "Backup authenticator: enroll a second TOTP device so losing one phone never forces an emailed account recovery"
+          },
+          {
+            "type": "feature",
+            "text": "Live mid-market FX pricing from a three-provider chain, with settlement-rail comparison and the cheapest way to pay named on the pricing page"
+          },
+          {
+            "type": "feature",
+            "text": "Daily FX rate snapshots with a 30-day trend sparkline on pricing and an in-app alert when a currency moves more than 2% in a day"
+          },
+          {
+            "type": "improvement",
+            "text": "Recovery readiness is now a 30-day series on the Security Center — a sparkline with honest gaps and a same-day alert the moment coverage drops a rung"
+          },
+          {
+            "type": "improvement",
+            "text": "Sign out everywhere: one confirmed action revokes every session, every refresh token, and every trusted-device grant, then checks the caller out too"
+          },
+          {
+            "type": "improvement",
+            "text": "TOTP codes are single-use: an accepted code claims its time step, so replays answer TOTP_REPLAY and are logged as such"
+          },
+          {
+            "type": "improvement",
+            "text": "Disabling two-factor or removing the last recovery path now requires an explicit, server-enforced acknowledgement that names what you lose"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed a token minted after its session was revoked being accepted as legacy — revocation is now fail-closed, proven end-to-end"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed the login-throttle window breaking the security-audit hash chain"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed a second factor being submittable twice on a slow connection, double-spending the one-time marker"
+          },
+          {
+            "type": "fix",
+            "text": "Fixed hydration mismatches from clock and random reads during render, and pinned brand-icon markup byte-equal between server and client"
+          }
+        ]
+      },
+      {
         "version": "2.6.0",
         "date": "September 8, 2026",
         "tag": "Latest Release",
