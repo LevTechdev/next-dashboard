@@ -139,7 +139,10 @@ describe("ApiTryConsole", () => {
         body: expect.stringContaining('"name"'),
       }),
     );
-    expect(screen.getByText("201")).toBeInTheDocument();
+    // waitFor resolves as soon as fetch is INVOKED, which is one render
+    // ahead of the response state landing — assert the rendered status
+    // inside waitFor too so the check can't race the re-render under load.
+    await waitFor(() => expect(screen.getByText("201")).toBeInTheDocument());
   });
 
   it("blocks send when the request body is not valid JSON", async () => {
