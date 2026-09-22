@@ -38,6 +38,7 @@ const JOB_ROWS = [
   "scheduled-reports",
   "backup-verify",
   "recovery-drift",
+  "fx-snapshot",
 ];
 
 test.describe("Scheduler status card", () => {

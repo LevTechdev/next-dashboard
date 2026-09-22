@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { fetchMidMarketRates, RATE_TTL_MS } from "@/lib/market-rates";
+import { fxRateHistory, trackedQuotes } from "@/lib/fx-history";
+import type { SupportedCurrencyCode } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,19 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const force = searchParams.get("refresh") === "1";
+
+  // ?history=1&quote=IDR[&days=30]: the pair's recorded daily rates, oldest
+  // first, for the pricing panel's trend sparkline. Public — it exposes only
+  // mid-market data.
+  if (searchParams.get("history") === "1") {
+    const quoteParam = (searchParams.get("quote") ?? "IDR").toUpperCase();
+    const days = Math.min(Math.max(Number(searchParams.get("days")) || 30, 2), 90);
+    if (!trackedQuotes().includes(quoteParam as SupportedCurrencyCode)) {
+      return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
+    }
+    const history = await fxRateHistory(quoteParam, days);
+    return NextResponse.json({ base: "USD", quote: quoteParam, days, history });
+  }
 
   const rates = await fetchMidMarketRates({ force });
 

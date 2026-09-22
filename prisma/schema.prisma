@@ -271,6 +271,37 @@ model RecoveryReadinessSnapshot {
   @@index([userId, day])
 }
 
+///
+/// Daily mid-market FX rates. The pricing surface quotes the LIVE rate, but a
+/// rate without a past is just a number: a trend sparkline needs a series, and
+/// "the rupiah moved 3% today" needs history to detect. One row per base+quote
+/// pair per UTC day — the app's six currencies against USD — captured on the
+/// first fetch of the day and compared to the previous row to raise a move
+/// alert. Rates are stored as full-precision `Decimal` strings and rounded
+/// only at display time.
+model FxRateSnapshot {
+  id        String   @id @default(cuid())
+  /// ISO 4217 base currency, always "USD" today (all rates are USD-based).
+  base      String
+  /// ISO 4217 quote currency — the six supported: IDR, JPY, EUR, SGD, CNY.
+  quote     String
+  /// UTC calendar day (YYYY-MM-DD) — the series key.
+  day       String
+  /// 1 base = rate quote units (e.g. 1 USD = 17790.47 IDR).
+  rate      Decimal  @db.Decimal(18, 6)
+  /// Which provider supplied the quote (lib/market-rates RateSourceId).
+  source    String
+  /// Previous day's rate at capture time; null on the first observation.
+  prevRate  Decimal? @db.Decimal(18, 6)
+  /// |move| vs prevRate in percent, when a previous rate exists.
+  movePct   Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([base, quote, day])
+  @@index([base, quote, day])
+}
+
 /// Single-use hashed backup recovery codes for 2FA fallback.
 model BackupCode {
   id        String    @id @default(cuid())

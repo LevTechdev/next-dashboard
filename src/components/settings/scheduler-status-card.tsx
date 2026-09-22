@@ -58,6 +58,7 @@ const JOB_LABEL_KEYS: Record<string, string> = {
   "trial-sweep": "jobTrialSweep",
   "scheduled-reports": "jobScheduledReports",
   "recovery-drift": "jobRecoveryDrift",
+  "fx-snapshot": "jobFxSnapshot",
 };
 
 /**

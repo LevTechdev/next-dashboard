@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, BadgeCheck, Banknote, Info, RefreshCw } from "lucide-react";
 
 import { useCurrency } from "@/components/currency-provider";
+import { FxTrendSparkline } from "@/components/billing/fx-trend-sparkline";
+import { useFxRateHistory } from "@/components/billing/use-fx-rate-history";
 import {
   bankCounterQuotes,
   bestSettlementRail,
@@ -46,6 +48,11 @@ export function FxSettlementPanel({
     formatMoney,
     refreshRates,
   } = useCurrency();
+
+  // 30 days of recorded USD→IDR rates. Called before the early return below
+  // (rules of hooks): the fetch happens regardless of display currency, and
+  // an IDR-only panel merely skips the render.
+  const history = useFxRateHistory("IDR");
 
   const idr = rates.IDR;
   if (currency !== "IDR" || !idr) return null;
@@ -93,6 +100,15 @@ export function FxSettlementPanel({
       </div>
 
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("fxSubtitle")}</p>
+
+      {history && history.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-border bg-muted/30 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("fxTrendTitle", { days: 30 })}
+          </p>
+          <FxTrendSparkline points={history} days={30} className="mt-2" />
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-2xl border border-border bg-muted/40 px-4 py-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

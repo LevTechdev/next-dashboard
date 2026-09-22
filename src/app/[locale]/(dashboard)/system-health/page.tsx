@@ -90,6 +90,7 @@ const JOB_LABEL_KEYS: Record<string, string> = {
   "scheduled-reports": "jobScheduledReports",
   "backup-verify": "jobBackupVerify",
   "recovery-drift": "jobRecoveryDrift",
+  "fx-snapshot": "jobFxSnapshot",
 };
 
 /** Locale-aware "3 minutes ago" formatting (no extra translation keys needed). */

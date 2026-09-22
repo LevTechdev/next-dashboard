@@ -47,6 +47,7 @@ const lastLeafSyncRun: { at: number | null } = { at: null };
 const lastSweepRun: { day: string | null } = { day: null };
 const lastReportsRun: { day: string | null } = { day: null };
 const lastDriftRun: { day: string | null } = { day: null };
+const lastFxRun: { day: string | null } = { day: null };
 
 /** Last execution per job — surfaced by GET /api/scheduler/status. */
 export interface JobRunInfo {
@@ -96,7 +97,8 @@ export type SchedulerJobName =
   | "trial-sweep"
   | "scheduled-reports"
   | "backup-verify"
-  | "recovery-drift";
+  | "recovery-drift"
+  | "fx-snapshot";
 
 /**
  * Record a run triggered outside the in-app loop (e.g. the Vercel cron hit on
@@ -134,6 +136,7 @@ export function schedulerStatus(): {
       "scheduled-reports": runs["scheduled-reports"] ?? null,
       "backup-verify": runs["backup-verify"] ?? null,
       "recovery-drift": runs["recovery-drift"] ?? null,
+      "fx-snapshot": runs["fx-snapshot"] ?? null,
     },
   };
 }
@@ -196,6 +199,11 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
     case "recovery-drift": {
       const { runRecoveryDriftSweep } = await import("@/lib/recovery-drift");
       const result = await runRecoveryDriftSweep();
+      return { job: name, ...result };
+    }
+    case "fx-snapshot": {
+      const { captureFxSnapshot } = await import("@/lib/fx-history");
+      const result = await captureFxSnapshot();
       return { job: name, ...result };
     }
     case "supabase-leaf-sync": {
@@ -303,6 +311,14 @@ export async function startScheduler(): Promise<void> {
         console.log("[scheduler] recovery-drift", await runJob("recovery-drift"));
       }
 
+      // Daily FX rate snapshot — one row per pair per day, alerting on a
+      // >2% day-over-day move. Runs alongside recovery-drift in the same
+      // quiet hour; the alert dedupes per day, so co-scheduling is safe.
+      if (now.getHours() === SYNC_HOUR && lastFxRun.day !== today) {
+        lastFxRun.day = today;
+        console.log("[scheduler] fx-snapshot", await runJob("fx-snapshot"));
+      }
+
       // Hourly auto-payout evaluation (monthly-idempotent inside the job).
       if (now.getTime() % PAYOUT_CHECK_MS < TICK_MS) {
         console.log("[scheduler] auto-payout", await runJob("auto-payout"));
@@ -347,7 +363,7 @@ export async function startScheduler(): Promise<void> {
   timer.current.unref?.();
 
   console.log(
-    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00)",
+    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00, fx-snapshot=03:00)",
   );
 }
 
