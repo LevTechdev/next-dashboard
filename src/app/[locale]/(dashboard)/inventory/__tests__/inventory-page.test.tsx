@@ -93,7 +93,10 @@ describe("Inventory Page", () => {
     render(<InventoryPage />);
     expect((await screen.findAllByText("In Stock")).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Low Stock").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Out of Stock").length).toBeGreaterThanOrEqual(1);
+    // "Out of Stock" exists only in the product-table row badges (there is no
+    // such summary card), so wait for the table render instead of asserting
+    // synchronously — the sync form raced the fetch and failed ~50% of CI runs.
+    expect((await screen.findAllByText("Out of Stock")).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the search input", async () => {

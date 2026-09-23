@@ -34,7 +34,14 @@ const codeAt = (secret: string, step: number) =>
 async function alignToFreshStep() {
   const elapsed = Math.floor(Date.now() / 1000) % TOTP_PERIOD_SECONDS;
   if (elapsed > 24) {
-    await new Promise((r) => setTimeout(r, (TOTP_PERIOD_SECONDS - elapsed) * 1000 + 200));
+    // Cap the sit-out: the naive formula can demand (30 - 24)s + margin =
+    // ~6.2s, over vitest's 5s default timeout, whenever the test starts in
+    // the last quarter of the window (a pure wall-clock flake). If a full
+    // boundary wait doesn't fit the budget, assert on the FRESH side of the
+    // boundary we've already crossed instead — the test's guarantees don't
+    // need the boundary to be in its future.
+    const wait = (TOTP_PERIOD_SECONDS - elapsed) * 1000 + 200;
+    await new Promise((r) => setTimeout(r, Math.min(wait, 2_000)));
   }
 }
 
