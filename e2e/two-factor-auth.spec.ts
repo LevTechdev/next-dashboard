@@ -107,7 +107,7 @@ test.describe("Two-Factor Authentication", () => {
 
     // 3. Start 2FA setup: the dialog (t("security.setup2FATitle")) shows the QR
     //    code and the manual secret key.
-    await page.getByRole("button", { name: "Set up 2FA" }).click();
+    await page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
 
@@ -345,7 +345,9 @@ test.describe("Two-Factor Authentication", () => {
 
     await expect(page.getByText("Two-factor authentication disabled")).toBeVisible();
     // Card reverts to the setup state.
-    await expect(page.getByRole("button", { name: "Set up 2FA" })).toBeVisible();
+    await expect(
+      page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }),
+    ).toBeVisible();
   });
 
   test("signs in without a TOTP prompt after 2FA is disabled", async ({ page }) => {

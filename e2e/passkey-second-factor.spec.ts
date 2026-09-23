@@ -104,7 +104,7 @@ async function registerUser(page: Page, email: string): Promise<void> {
 /** Security Center → enable TOTP, returning the shared secret. */
 async function enableTotp(page: Page): Promise<string> {
   await expect(page.getByText("Not enabled").first()).toBeVisible();
-  await page.getByRole("button", { name: "Set up 2FA" }).click();
+  await page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
 

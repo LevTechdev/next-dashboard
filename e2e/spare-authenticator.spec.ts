@@ -82,7 +82,7 @@ test.describe("Spare authenticator", () => {
     await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
     await expect(page.getByText("Not enabled").first()).toBeVisible();
 
-    await page.getByRole("button", { name: "Set up 2FA" }).click();
+    await page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }).click();
     const setupDialog = page.getByRole("dialog");
     await expect(setupDialog.getByText("Set up two-factor authentication")).toBeVisible();
     primarySecret = (

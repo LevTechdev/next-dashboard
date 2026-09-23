@@ -81,7 +81,9 @@ test.describe("Security Center", () => {
       await page.goto("/en/security");
       // Seed-dependent: the seed admin starts with 2FA disabled (the 2FA spec
       // deliberately uses fresh users so admin state is never mutated).
-      await expect(page.getByRole("button", { name: "Set up 2FA" })).toBeVisible();
+      await expect(
+        page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }),
+      ).toBeVisible();
       await expect(page.getByText("Not enabled")).toBeVisible();
       await expect(
         page.getByText("Add a second verification step with an authenticator app."),
