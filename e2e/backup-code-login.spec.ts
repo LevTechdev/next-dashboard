@@ -101,7 +101,7 @@ test.describe("Backup-code recovery login", () => {
     await page.goto("/en/security");
     await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
     await expect(page.getByText("Not enabled").first()).toBeVisible();
-    await page.getByRole("button", { name: "Set up 2FA" }).click();
+    await page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();

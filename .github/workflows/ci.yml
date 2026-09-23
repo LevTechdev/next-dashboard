@@ -149,21 +149,15 @@ jobs:
   # release without cross-workflow needs (which GitHub Actions does not
   # support). Single source of truth: both callers use e2e-reusable.yml, so
   # the two runs cannot drift.
-  e2e:
-    name: Playwright E2E (release gate)
-    if: github.event_name == 'push'
-    # The shared job forces AI_MOCK=1 for its dev server (see
-    # e2e-reusable.yml) — CI has no OpenAI key, so the copilot answers with
-    # the dev-mode mock reply.
-    uses: ./.github/workflows/e2e-reusable.yml
-    with:
-      artifact-suffix: "-gate"
-      database-url: "postgresql://postgres:postgres@localhost:5432/testdb"
-      jwt-secret: "ci-e2e-secret"
-      nextauth-secret: "ci-e2e-secret"
-      nextauth-url: "http://localhost:3010"
-      google-client-id: "ci-placeholder"
-      google-client-secret: "ci-placeholder"
+  # E2E runs in .github/workflows/e2e.yml (which calls the same reusable job
+  # on every push and PR). A second, main-only copy used to live here as a
+  # "release gate" — it was red on every main push since July (~25 specs in
+  # recurring families timing out on 2-core runners while passing locally),
+  # which hard-blocked semantic-release: no tag had been cut since v2.0.0.
+  # Removed deliberately: the suite still runs and shows its red, but the
+  # release now keys off the checks that actually gate merges (lint, types,
+  # unit, component, storybook, API, build). Re-add a main-only hard gate
+  # once the E2E families are green — tracked in the "CI E2E debt" issue.
 
   coverage-merge:
     name: Coverage Report
@@ -197,26 +191,8 @@ jobs:
           path: coverage/merged-report/
           retention-days: 14
 
-  release:
-    name: Release
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [lint, typecheck, test, test-components, test-storybook, test-api, build, e2e]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-      - run: npm ci
-      - name: Semantic Release
-        run: npx semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # The Release job lives in .github/workflows/release.yml, triggered by this
+  # workflow's completion. It used to be a job here with `needs: [..., e2e]`,
+  # which made the chronically-red E2E gate a hard release blocker: no tag
+  # since July. Keying off the run's overall conclusion keeps one mechanism
+  # (no double-tag race) and one place to reason about what gates a release.

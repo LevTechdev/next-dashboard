@@ -106,7 +106,7 @@ test.describe("Mobile modal geometry at 375px", () => {
     await page.goto("/en/security");
 
     // The security cards render client-side after fetch.
-    const setupBtn = page.getByRole("button", { name: "Set up 2FA" });
+    const setupBtn = page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" });
     await expect(setupBtn).toBeVisible({ timeout: 45_000 });
     await setupBtn.click();
 
