@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -18,84 +19,88 @@ import {
   Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
+import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 const INTEGRATIONS = [
   {
+    key: "stripe",
     name: "Stripe",
-    description: "Process payments, manage subscriptions, and handle invoicing seamlessly.",
     icon: CreditCard,
-    category: "Payments",
     popular: true,
     color: "bg-indigo-500/10 text-indigo-500",
   },
   {
+    key: "shopify",
     name: "Shopify",
-    description: "Sync orders, products, and inventory from your Shopify store in real time.",
     icon: ShoppingCart,
-    category: "E-commerce",
     popular: true,
     color: "bg-emerald-500/10 text-emerald-500",
   },
   {
+    key: "sendgrid",
     name: "SendGrid",
-    description: "Send transactional emails, notifications, and marketing campaigns at scale.",
     icon: Mail,
-    category: "Email",
     popular: false,
     color: "bg-blue-500/10 text-blue-500",
   },
   {
+    key: "slack",
     name: "Slack",
-    description: "Get real-time alerts, order updates, and team notifications in your channels.",
     icon: MessageSquare,
-    category: "Communication",
     popular: true,
     color: "bg-amber-500/10 text-amber-500",
   },
   {
+    key: "postgresql",
     name: "PostgreSQL",
-    description: "Connect your existing database for custom analytics and reporting.",
     icon: Database,
-    category: "Data",
     popular: false,
     color: "bg-cyan-500/10 text-cyan-500",
   },
   {
+    key: "aws",
     name: "AWS",
-    description: "Deploy and scale your infrastructure with AWS cloud services.",
     icon: Cloud,
-    category: "Infrastructure",
     popular: false,
     color: "bg-orange-500/10 text-orange-500",
   },
   {
+    key: "ga",
     name: "Google Analytics",
-    description: "Track traffic, user behavior, and conversion metrics alongside your data.",
     icon: BarChart3,
-    category: "Analytics",
     popular: false,
     color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500",
   },
   {
+    key: "zapier",
     name: "Zapier",
-    description: "Connect 3,000+ apps and automate workflows without writing code.",
     icon: Zap,
-    category: "Automation",
     popular: true,
     color: "bg-purple-500/10 text-purple-500",
   },
   {
+    key: "social",
     name: "Instagram & Facebook",
-    description: "Manage orders and ads from your social commerce channels in one place.",
     icon: Share2,
-    category: "Social",
     popular: false,
     color: "bg-pink-500/10 text-pink-500",
   },
 ];
+
+const INTEGRATION_CATEGORY_KEYS: Record<string, string> = {
+  stripe: "catPayments",
+  shopify: "catEcommerce",
+  sendgrid: "catEmail",
+  slack: "catCommunication",
+  postgresql: "catData",
+  aws: "catInfrastructure",
+  ga: "catAnalytics",
+  zapier: "catAutomation",
+  social: "catSocial",
+};
 
 const categories = [
   {
@@ -130,7 +135,11 @@ const categories = [
   },
 ];
 
-export { INTEGRATIONS as integrations, categories };
+export {
+  INTEGRATIONS as integrations,
+  INTEGRATION_CATEGORY_KEYS as integrationCategoryKeys,
+  categories,
+};
 
 function BentoCard({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
@@ -147,6 +156,7 @@ function BentoCard({ className, children }: { className?: string; children: Reac
 
 export default function IntegrationsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
+  const t = useTranslations("integrationsPage");
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden min-h-screen">
@@ -164,16 +174,33 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
             <Plug className="h-3.5 w-3.5" />
-            Integrations
+            {t("heroTag")}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Connect your favorite tools
+            <AnimatedHeading text={t("heroPrefix")} delay={0.15} />
+            <br className="hidden sm:block" />
+            <span className="text-primary inline-flex">
+              {/* Real hero copy, revealed by the chromatic sweep. */}
+              <DiaTextReveal
+                text={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                repeat
+                fixedWidth
+                duration={1.1}
+                holdDuration={1.9}
+                colors={[
+                  "hsl(var(--primary))",
+                  "color-mix(in oklab, hsl(var(--primary)) 45%, #fff)",
+                  "hsl(var(--primary))",
+                ]}
+                textColor="hsl(var(--primary))"
+                className="text-4xl font-bold sm:text-5xl md:text-6xl"
+              />
+            </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Sync data, automate workflows, and bring all your business tools together in one unified
-            platform.
+            <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
           </p>
         </motion.div>
       </section>
@@ -202,25 +229,25 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
                     </div>
                     {integration.popular && (
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-primary/10 text-primary">
-                        Popular
+                        {t("popularTag")}
                       </span>
                     )}
                   </div>
 
                   <h3 className="text-lg font-bold text-foreground mb-2">{integration.name}</h3>
                   <p className="text-sm text-muted-foreground mb-6 flex-1">
-                    {integration.description}
+                    {t(`desc.${integration.key}`)}
                   </p>
 
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {integration.category}
+                      {t(INTEGRATION_CATEGORY_KEYS[integration.key])}
                     </span>
                     <Link
                       href={`/${locale}/register`}
                       className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
                     >
-                      Connect <ArrowRight className="h-3 w-3" />
+                      {t("connectButton")} <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
                 </div>
@@ -244,17 +271,14 @@ export default function IntegrationsPage({ params }: { params: Promise<{ locale:
 
           <div className="relative z-10">
             <Layers className="h-10 w-10 mx-auto mb-6 opacity-80" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Don&apos;t see your tool?</h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              We&apos;re constantly adding new integrations. You can also use our API and Webhooks
-              to build custom connections.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
               >
-                View API Docs
+                {t("ctaButton")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

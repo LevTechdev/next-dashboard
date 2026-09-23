@@ -17,6 +17,7 @@ vi.mock("next/navigation", () => ({
 // Tabs use useConfirm for destructive actions; provide a no-op confirm
 vi.mock("@/components/ui/confirm-provider", () => ({
   useConfirm: vi.fn().mockReturnValue(vi.fn().mockResolvedValue(true)),
+  ConfirmProvider: ({ children }: { children: any }) => <>{children}</>,
 }));
 
 // sonner renders nothing without a <Toaster>; capture toast calls instead
@@ -103,6 +104,23 @@ describe("Integrations Page", () => {
           ok: true,
           status: 200,
           json: () => Promise.resolve(mockWhoami),
+        } as Response);
+      }
+      if (url.includes("/api/integrations/chat-alerts")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              channels: [],
+              rules: {
+                stockoutDoiThreshold: 7,
+                vipOrderMinAmount: 500,
+                paymentAlertsEnabled: true,
+                dailyDigestTime: "09:00",
+                dailyDigestEnabled: true,
+              },
+              deliveries: [],
+            }),
         } as Response);
       }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) } as Response);

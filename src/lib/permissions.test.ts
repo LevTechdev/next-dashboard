@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { can, canAccessPage, filterNavItemsByRole, getRole, ROLES, type Role } from "./permissions";
+import {
+  can,
+  canAccessPage,
+  canPerformGranularAction,
+  filterNavItemsByRole,
+  getRole,
+  normalizeRole,
+  ROLES,
+  type Role,
+} from "./permissions";
 
 // ── ROLES constant ─────────────────────────────────────────────────────────
 
@@ -33,7 +42,10 @@ describe("can()", () => {
 
   describe("unknown resource", () => {
     it("returns false for a resource not in CRUD_PERMISSIONS", () => {
-      expect(can("ADMIN", "read", "nonexistent")).toBe(false);
+      // ADMIN is the merged all-access role (formerly SUPER_ADMIN), so the
+      // negative case is asserted with a scoped role instead.
+      expect(can("ADMIN", "read", "nonexistent")).toBe(true);
+      expect(can("MANAGER", "read", "nonexistent")).toBe(false);
     });
   });
 
@@ -205,7 +217,10 @@ describe("canAccessPage()", () => {
 
   describe("unknown page", () => {
     it("returns false for a page not in PAGE_ACCESS", () => {
-      expect(canAccessPage("nonexistent", "ADMIN")).toBe(false);
+      // ADMIN is the merged all-access role (formerly SUPER_ADMIN), so the
+      // negative case is asserted with a scoped role instead.
+      expect(canAccessPage("nonexistent", "ADMIN")).toBe(true);
+      expect(canAccessPage("nonexistent", "MANAGER")).toBe(false);
     });
   });
 
@@ -268,7 +283,7 @@ describe("filterNavItemsByRole()", () => {
   const allItems = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/analytics", label: "Analytics" },
-    { href: "/team", label: "Team" },
+    { href: "/settings/team", label: "Team" },
     { href: "/settings", label: "Settings" },
     { href: "/orders", label: "Orders" },
   ];
@@ -287,7 +302,7 @@ describe("filterNavItemsByRole()", () => {
     expect(result.map((i) => i.href)).toEqual([
       "/dashboard",
       "/analytics",
-      "/team",
+      "/settings/team",
       "/settings",
       "/orders",
     ]);
@@ -359,9 +374,10 @@ describe("filterNavItemsByRole()", () => {
 
     it("handles trailing slash without query", () => {
       const items = [{ href: "/analytics/", label: "Analytics" }];
-      // page = 'analytics/' — not in PAGE_ACCESS
+      // page resolves through the parent segment ("analytics") — a trailing
+      // slash must not make a nav item vanish for roles that own the page.
       const result = filterNavItemsByRole(items, "ADMIN");
-      expect(result).toEqual([]);
+      expect(result.map((i) => i.label)).toEqual(["Analytics"]);
     });
   });
 
@@ -399,5 +415,46 @@ describe("getRole()", () => {
 
   it("returns STAFF role", () => {
     expect(getRole({ role: "STAFF" })).toBe("STAFF");
+  });
+});
+
+// ── Legacy SUPER_ADMIN merge (normalizeRole) ───────────────────────────
+
+describe("normalizeRole() — SUPER_ADMIN merge", () => {
+  it("maps legacy SUPER_ADMIN to ADMIN", () => {
+    expect(normalizeRole("SUPER_ADMIN")).toBe("ADMIN");
+  });
+
+  it("passes current roles through unchanged", () => {
+    expect(normalizeRole("ADMIN")).toBe("ADMIN");
+    expect(normalizeRole("MANAGER")).toBe("MANAGER");
+    expect(normalizeRole("STAFF")).toBe("STAFF");
+    expect(normalizeRole("AUDITOR")).toBe("AUDITOR");
+    expect(normalizeRole("CLIENT")).toBe("CLIENT");
+    expect(normalizeRole("CLIENT_ENTERPRISE")).toBe("CLIENT_ENTERPRISE");
+  });
+
+  it("returns null for empty/null/undefined", () => {
+    expect(normalizeRole(null)).toBeNull();
+    expect(normalizeRole(undefined)).toBeNull();
+    expect(normalizeRole("")).toBeNull();
+  });
+
+  it("getRole normalizes legacy SUPER_ADMIN users", () => {
+    expect(getRole({ role: "SUPER_ADMIN" })).toBe("ADMIN");
+  });
+
+  it("legacy SUPER_ADMIN session keeps full access: pages, CRUD, granular", () => {
+    // Pre-merge accounts in the DB still carry role="SUPER_ADMIN"; every
+    // permission surface must treat them as the all-access ADMIN.
+    expect(canAccessPage("settings", "SUPER_ADMIN" as Role)).toBe(true);
+    expect(canAccessPage("roles", "SUPER_ADMIN" as Role)).toBe(true);
+    expect(can("SUPER_ADMIN" as Role, "delete", "orders")).toBe(true);
+    expect(canPerformGranularAction("SUPER_ADMIN" as Role, "manage_billing")).toBe(true);
+  });
+
+  it("normalization does not elevate scoped roles", () => {
+    expect(canAccessPage("settings", "MANAGER")).toBe(false);
+    expect(can("MANAGER", "delete", "orders")).toBe(false);
   });
 });

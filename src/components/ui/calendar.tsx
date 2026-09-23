@@ -184,11 +184,16 @@ export function Calendar({
                     !inMonth && "text-gray-300 dark:text-gray-600",
                     inMonth && "text-gray-700 dark:text-gray-300",
                     disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
-                    today && !inRange && "font-semibold text-indigo-600 dark:text-indigo-400",
+                    today && !inRange && "font-semibold text-primary",
                     // Range styling
-                    inRange && "bg-indigo-50 dark:bg-indigo-900/30 rounded-none",
-                    rangeStart && "bg-indigo-600 text-white hover:bg-indigo-700 rounded-l-md",
-                    rangeEnd && "bg-indigo-600 text-white hover:bg-indigo-700 rounded-r-md",
+                    // Range styling rides the dynamic accent (--primary), so a
+                    // custom appearance color re-tints the selection in both
+                    // light and dark themes instead of forcing indigo.
+                    inRange && "bg-primary/10 rounded-none",
+                    rangeStart &&
+                      "bg-primary text-primary-foreground hover:bg-primary/90 rounded-l-md",
+                    rangeEnd &&
+                      "bg-primary text-primary-foreground hover:bg-primary/90 rounded-r-md",
                     rangeStart && rangeEnd && "rounded-md",
                     // Single selected (using parent's selected state via external CSS)
                   )}

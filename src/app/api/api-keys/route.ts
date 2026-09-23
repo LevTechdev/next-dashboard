@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
+import { getTierFeaturesForUser, API_KEY_LIMITS } from "@/lib/plan-tiers";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,27 @@ export async function POST(req: Request) {
 
   const { session } = await requireAuth(req);
   const userId = session.user.id;
+
+  // Plan quota: cap simultaneously active API keys per tier.
+  const features = await getTierFeaturesForUser(userId);
+  const keyLimit = API_KEY_LIMITS[features.tier];
+  if (keyLimit !== null) {
+    const activeKeys = await prisma.apiKey.count({
+      where: { userId, status: "ACTIVE" },
+    });
+    if (activeKeys >= keyLimit) {
+      return NextResponse.json(
+        {
+          error: "plan_limit_reached",
+          limit: "apiKeys",
+          max: keyLimit,
+          used: activeKeys,
+          requiredTier: "PRO",
+        },
+        { status: 402 },
+      );
+    }
+  }
 
   const apiKey = await prisma.apiKey.create({
     data: {

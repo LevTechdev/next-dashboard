@@ -244,7 +244,7 @@ export default function CustomerDetailPage() {
                         className="cursor-pointer"
                         onClick={() => router.push(`/${locale}/orders/${order.id}`)}
                       >
-                        <TableCell className="font-medium text-indigo-600 dark:text-indigo-400">
+                        <TableCell className="font-medium text-primary">
                           #{order.orderNumber}
                         </TableCell>
                         <TableCell>{order.channel?.name || torders("na")}</TableCell>
@@ -261,9 +261,11 @@ export default function CustomerDetailPage() {
                     ))}
                     {(customer.orders || []).length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          {torders("noOrders")}
+                        <TableCell colSpan={5} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-gray-500">
+                            <ShoppingBag className="h-8 w-8 opacity-50" />
+                            <span>{torders("noOrders")}</span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}

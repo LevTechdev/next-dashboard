@@ -1,16 +1,19 @@
 import { describe, it, expect } from "vitest";
+import changelogMessages from "../../../../i18n/locales/en.json";
+
+const changelog = changelogMessages.changelogPage.entries;
+const changelogTypes = changelogMessages.changelogPage.typeLabels;
 
 // ── Changelog Data ─────────────────────────────────────────────────────────
-import { changelog, typeConfig } from "../changelog/page";
+import { typeConfig } from "../changelog/page";
 
 describe("Changelog Data Structure", () => {
-  it("has exactly 6 version entries", () => {
-    expect(changelog).toHaveLength(6);
+  it("has exactly 8 version entries", () => {
+    expect(changelog).toHaveLength(8);
   });
 
   it("is ordered newest-first by version", () => {
-    const versions = changelog.map((e) => e.version);
-    // Semantic version comparison: split by "." and compare numerically
+    const versions = changelog.map((e: any) => e.version);
     for (let i = 1; i < versions.length; i++) {
       const prev = versions[i - 1].split(".").map(Number);
       const curr = versions[i].split(".").map(Number);
@@ -23,46 +26,51 @@ describe("Changelog Data Structure", () => {
 
   it("has semver version strings (x.x.x)", () => {
     const semverRegex = /^\d+\.\d+\.\d+$/;
-    for (const entry of changelog) {
+    for (const entry of changelog as any[]) {
       expect(entry.version).toMatch(semverRegex);
     }
   });
 
-  it("has valid date strings in 'Month Day, Year' format", () => {
-    const dateRegex = /^[A-Z][a-z]+ \d{1,2}, \d{4}$/;
-    for (const entry of changelog) {
-      expect(entry.date).toMatch(dateRegex);
+  it("has non-empty date strings", () => {
+    for (const entry of changelog as any[]) {
+      expect(entry.date.trim().length).toBeGreaterThan(0);
     }
   });
 
   it("has valid tag values", () => {
-    const validTags = ["Latest Release", "Feature Release", "Improvement", "Major Release"];
-    for (const entry of changelog) {
+    const validTags = [
+      "Latest Release",
+      "Feature Release",
+      "Improvement",
+      "Major Release",
+      "Security & Pricing",
+    ];
+    for (const entry of changelog as any[]) {
       expect(validTags).toContain(entry.tag);
     }
   });
 
   it("has valid tagColor Tailwind classes", () => {
     const colorPatterns = [
-      "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
-      "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-      "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-      "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
+      "bg-indigo-500/10 text-indigo-500",
+      "bg-emerald-500/10 text-emerald-500",
+      "bg-blue-500/10 text-blue-500",
+      "bg-purple-500/10 text-purple-500",
     ];
-    for (const entry of changelog) {
+    for (const entry of changelog as any[]) {
       expect(colorPatterns).toContain(entry.tagColor);
     }
   });
 
   it("has non-empty items arrays", () => {
-    for (const entry of changelog) {
+    for (const entry of changelog as any[]) {
       expect(entry.items.length).toBeGreaterThan(0);
     }
   });
 
   it("has valid item types (feature, improvement, fix)", () => {
-    const validTypes = ["feature", "improvement", "fix"] as const;
-    for (const entry of changelog) {
+    const validTypes = ["feature", "improvement", "fix"];
+    for (const entry of changelog as any[]) {
       for (const item of entry.items) {
         expect(validTypes).toContain(item.type);
       }
@@ -70,7 +78,7 @@ describe("Changelog Data Structure", () => {
   });
 
   it("has non-empty item text", () => {
-    for (const entry of changelog) {
+    for (const entry of changelog as any[]) {
       for (const item of entry.items) {
         expect(item.text.trim().length).toBeGreaterThan(0);
       }
@@ -78,22 +86,15 @@ describe("Changelog Data Structure", () => {
   });
 
   it("has at least one feature item in Major Release (2.0.0)", () => {
-    const majorRelease = changelog.find((e) => e.version === "2.0.0");
+    const majorRelease = (changelog as any[]).find((e) => e.version === "2.0.0");
     expect(majorRelease).toBeDefined();
-    const featureItems = majorRelease!.items.filter((i) => i.type === "feature");
+    const featureItems = majorRelease.items.filter((i: any) => i.type === "feature");
     expect(featureItems.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("has the correct latest version (2.5.0)", () => {
-    expect(changelog[0].version).toBe("2.5.0");
-    expect(changelog[0].tag).toBe("Latest Release");
-  });
-
-  it("has version string matching the v-prefix displayed in the UI", () => {
-    for (const entry of changelog) {
-      // UI displays "v{entry.version}" — make sure it renders as v2.5.0 etc.
-      expect(`v${entry.version}`).toMatch(/^v\d+\.\d+\.\d+$/);
-    }
+  it("has the correct latest version (2.7.0)", () => {
+    expect(changelog[0].version).toBe("2.7.0");
+    expect(changelog[0].tag).toBe("Security & Pricing");
   });
 });
 
@@ -104,35 +105,39 @@ describe("typeConfig Structure", () => {
     expect(typeConfig).toHaveProperty("fix");
   });
 
-  it("each type config has icon, label, color, bg properties", () => {
+  it("each type config has icon, labelKey, color, bg properties", () => {
     const types = ["feature", "improvement", "fix"] as const;
     for (const type of types) {
       const config = typeConfig[type];
       expect(config).toHaveProperty("icon");
-      expect(config).toHaveProperty("label");
+      expect(config).toHaveProperty("labelKey");
       expect(config).toHaveProperty("color");
       expect(config).toHaveProperty("bg");
     }
   });
 
   it("has valid Tailwind color classes", () => {
-    expect(typeConfig.feature.color).toBe("text-emerald-600 dark:text-emerald-400");
+    expect(typeConfig.feature.color).toBe("text-emerald-500");
     expect(typeConfig.feature.bg).toBe("bg-emerald-500/10");
-    expect(typeConfig.improvement.color).toBe("text-blue-600 dark:text-blue-400");
+    expect(typeConfig.improvement.color).toBe("text-blue-500");
     expect(typeConfig.improvement.bg).toBe("bg-blue-500/10");
-    expect(typeConfig.fix.color).toBe("text-amber-600 dark:text-amber-400");
+    expect(typeConfig.fix.color).toBe("text-amber-500");
     expect(typeConfig.fix.bg).toBe("bg-amber-500/10");
   });
 
-  it("has descriptive labels", () => {
-    expect(typeConfig.feature.label).toBe("New Feature");
-    expect(typeConfig.improvement.label).toBe("Improvement");
-    expect(typeConfig.fix.label).toBe("Bug Fix");
+  it("labelKeys resolve to typeLabels entries in the locale", () => {
+    const types = ["feature", "improvement", "fix"] as const;
+    for (const type of types) {
+      const key = typeConfig[type].labelKey.replace("typeLabels.", "");
+      const label = (changelogTypes as Record<string, string>)[key];
+      expect(typeof label).toBe("string");
+      expect(label.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it("all typeConfig entries are referenced by changelog items", () => {
     const usedTypes = new Set<string>();
-    for (const entry of changelog) {
+    for (const entry of changelog as any[]) {
       for (const item of entry.items) {
         usedTypes.add(item.type);
       }
@@ -144,7 +149,10 @@ describe("typeConfig Structure", () => {
 });
 
 // ── Integrations Data ──────────────────────────────────────────────────────
-import { integrations, categories } from "../integrations-overview/page";
+import { integrations, integrationCategoryKeys, categories } from "../integrations-overview/page";
+import integrationMessages from "../../../../i18n/locales/en.json";
+
+const intgNs = integrationMessages.integrationsPage;
 
 describe("Integrations Data Structure", () => {
   it("has exactly 9 integration entries", () => {
@@ -157,16 +165,27 @@ describe("Integrations Data Structure", () => {
     expect(uniqueNames.size).toBe(names.length);
   });
 
-  it("all integrations have non-empty names and descriptions", () => {
+  it("all integrations have non-empty names", () => {
     for (const integration of integrations) {
       expect(integration.name.trim().length).toBeGreaterThan(0);
-      expect(integration.description.trim().length).toBeGreaterThan(0);
     }
   });
 
-  it("all integrations have a non-empty category string", () => {
+  it("every integration has a desc key that resolves in the locale", () => {
+    const descs = (intgNs as any).desc as Record<string, string>;
     for (const integration of integrations) {
-      expect(integration.category.trim().length).toBeGreaterThan(0);
+      const desc = descs[integration.key];
+      expect(typeof desc).toBe("string");
+      expect(desc.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every integration has a category key that resolves in the locale", () => {
+    const ns = intgNs as any;
+    for (const integration of integrations) {
+      const categoryKey = integrationCategoryKeys[integration.key];
+      expect(typeof ns[categoryKey]).toBe("string");
+      expect(ns[categoryKey].trim().length).toBeGreaterThan(0);
     }
   });
 

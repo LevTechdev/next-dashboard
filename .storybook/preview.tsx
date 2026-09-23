@@ -1,6 +1,26 @@
-import type { Preview, Decorator } from "@storybook/react";
+import type { Preview, Decorator } from "@storybook/nextjs-vite";
+import { NextIntlClientProvider } from "next-intl";
+import { Toaster } from "sonner";
 
 import "../src/app/globals.css";
+import enMessages from "../src/i18n/locales/en.json";
+import { ConfirmProvider } from "../src/components/ui/confirm-provider";
+
+/**
+ * next-intl provider for stories — most dashboard components call
+ * `useTranslations`, which throws without this context. Storybook has no
+ * locale routing, so every story renders with the default `en` messages.
+ * ConfirmProvider + Toaster ride along because the security cards use
+ * `useConfirm()` (imperative AlertDialog) and several cards toast on action.
+ */
+export const withIntl: Decorator = (Story) => (
+  <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+    <ConfirmProvider>
+      <Toaster position="bottom-right" />
+      <Story />
+    </ConfirmProvider>
+  </NextIntlClientProvider>
+);
 
 export const withTheme: Decorator = (Story, context) => {
   const theme = context.globals.theme || "light";
@@ -27,7 +47,7 @@ export const withMotion: Decorator = (Story, context) => {
 };
 
 const preview: Preview = {
-  decorators: [withTheme, withMotion],
+  decorators: [withIntl, withTheme, withMotion],
 
   parameters: {
     controls: {

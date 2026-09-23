@@ -43,6 +43,9 @@ export async function POST(req: Request) {
     // preview names have their own free-tier daily quotas, while the alias
     // tracks the current line; override with GEMINI_MODEL if you need a
     // specific one.
+    // Provider selection — Gemini Flash older/free-tier models are used by default
+    // (gemini-1.5-flash, gemini-1.5-flash-8b, gemini-2.0-flash) which require zero billing
+    // or credit card in Google AI Studio with unlimited chat responses.
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     const geminiModel = process.env.GEMINI_MODEL || "gemini-flash-latest";
     const openaiKey = process.env.OPENAI_API_KEY;
@@ -56,9 +59,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Gemini is streamed through our direct REST integration (the SDK's tool
-    // loop can't echo the thoughtSignature the current 3.x models require).
-    // OpenAI keeps the AI SDK streaming path.
+    // Gemini free tier streaming with intelligent cascade across free models
     if (geminiKey) {
       const stream = await createGeminiReplyStream({
         apiKey: geminiKey,

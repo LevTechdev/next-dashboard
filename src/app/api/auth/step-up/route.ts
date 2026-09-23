@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
 import { verifyPassword } from "@/lib/auth";
-import { verifyTotp } from "@/lib/totp";
+import { spendPrimaryTotp } from "@/lib/totp-replay";
 import { signStepUpToken, STEP_UP_COOKIE, type StepUpPurpose } from "@/lib/step-up";
 import { logSecurityEvent } from "@/lib/security-events";
+import { isMfaVerificationStale } from "@/lib/mfa-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +42,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  // 30-day MFA freshness gate: an enrolled-but-stale 2FA user must re-prove
+  // the second factor right here — password alone no longer unlocks sensitive
+  // actions. The successful TOTP verification below records MFA_VERIFIED,
+  // which resets the freshness window, so the challenge IS the re-verification.
+  let mfaStale = false;
+  if (user.totpEnabled && user.totpSecret) {
+    mfaStale = await isMfaVerificationStale(user.id);
+    if (mfaStale && !totpToken) {
+      return NextResponse.json(
+        { error: "Two-factor re-verification required", totpRequired: true },
+        { status: 428 },
+      );
+    }
+  }
+
   // Verify via TOTP if the user has 2FA, else via password.
   let verified = false;
   let mfaMethod: string | null = null;
   if (totpToken && user.totpEnabled && user.totpSecret) {
-    verified = verifyTotp(totpToken, user.totpSecret);
+    // Single-use: a code spent at sign-in cannot be replayed here seconds
+    // later to unlock a sensitive action (RFC 6238 §5.2). `spendPrimaryTotp`
+    // claims the step atomically, so concurrent requests cannot both win.
+    const spent = await spendPrimaryTotp(user.id, totpToken);
+    verified = spent.ok;
     if (verified) mfaMethod = "totp";
   } else if (password) {
     verified = await verifyPassword(password, user.password);

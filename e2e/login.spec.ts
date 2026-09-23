@@ -7,9 +7,9 @@ import { loginAs, SEED_ADMIN_EMAIL } from "./helpers";
  * Seed admin creds: SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD (./helpers).
  *
  * The login form (src/app/[locale]/(auth)/login/page.tsx):
- * - email  <input type="email" placeholder="nextdashboards@gmail.com">
- * - password <input placeholder="Enter your password">
- * - submit <button>Sign In</button> (disabled until both fields are filled)
+ * - email    <input type="email" placeholder="Your email">   (t("emailPlaceholder"))
+ * - password <input placeholder="Enter password">            (t("passwordPlaceholder"))
+ * - submit   <button>Log in</button> (t("login"), disabled until both fields are filled)
  * - feedback via sonner toasts; success navigates to /en/dashboard.
  */
 test.describe("Login", () => {

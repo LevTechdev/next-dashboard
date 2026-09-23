@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface LinkedPlatformsBadgeProps {
   productId: string;
@@ -25,17 +26,19 @@ export function LinkedPlatformsBadge({ productId, count, className }: LinkedPlat
   if (!count || count <= 0) return null;
 
   return (
-    <Link
-      href={`/${locale}/products/${productId}#platform-links`}
-      onClick={(e) => e.stopPropagation()}
-      title={t("linkedPlatforms")}
-      className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-medium align-middle hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors",
-        className,
-      )}
-    >
-      <Share2 className="h-2.5 w-2.5" />
-      {count}
-    </Link>
+    <Tooltip side="top" content={t("linkedPlatforms")}>
+      <Link
+        href={`/${locale}/products/${productId}#platform-links`}
+        onClick={(e) => e.stopPropagation()}
+        aria-label={`${t("linkedPlatforms")} (${count})`}
+        className={cn(
+          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium align-middle hover:bg-primary/20 transition-colors",
+          className,
+        )}
+      >
+        <Share2 className="h-2.5 w-2.5" />
+        {count}
+      </Link>
+    </Tooltip>
   );
 }

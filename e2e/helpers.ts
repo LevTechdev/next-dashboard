@@ -13,6 +13,90 @@ export const SEED_ADMIN_EMAIL = "nextdashboards@gmail.com";
 export const SEED_ADMIN_PASSWORD = "admin123";
 
 /**
+ * Headroom for fetch-gated renders: dashboard reads go through the remote DB
+ * and queue behind parallel workers' argon2 logins (~10s CPU each), which
+ * blows past the 20s default expect timeout. Use for any wait that gates on a
+ * network fetch resolving — initial data lists, post-action refetches, and
+ * dialog closes that only happen after a POST/PUT/DELETE succeeds.
+ */
+export const FETCH_GATED = { timeout: 45_000 } as const;
+
+/**
+ * Session cache for loginAs: token strings keyed by "email:password". Workers
+ * share module state when the suite runs in the same process, and the goal is
+ * to mint at most one argon2 login per credential per run.
+ */
+const sessionTokens = new Map<string, string>();
+
+// ── Login-throttle awareness ─────────────────────────────────────────────────
+//
+// /api/auth/login limits 10 attempts / 120s per IP (persisted as SecurityEvent
+// rows, so it survives a dev-server restart) and answers 429 with a
+// `Retry-After` header. Back-to-back spec runs legitimately trip it; a
+// throttled response used to surface as a confusing "redirected back to
+// /login" failure. These helpers make the suite wait the window out instead:
+// the header is authoritative when present, and the module-level deadline lets
+// every later call in the same worker back off proactively instead of
+// re-discovering the limit with more attempts.
+
+const THROTTLE_FALLBACK_SECONDS = 30;
+/**
+ * Full sliding-window length of /api/auth/login (10 attempts / 120s). The
+ * Retry-After header only reports when the OLDEST attempt exits the window —
+ * but every 429'd probe is itself recorded, so retrying on Retry-After alone
+ * keeps the window saturated forever. A saturated window needs one full
+ * window-length purge with zero probes inside it.
+ */
+const LOGIN_WINDOW_SECONDS = 130;
+let throttledUntil = 0;
+
+/** Seconds to wait, preferring the response's Retry-After header. */
+function retryAfterSecondsFrom(res: { headers: () => Record<string, string> }): number {
+  const raw = res.headers()["retry-after"];
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : THROTTLE_FALLBACK_SECONDS;
+}
+
+/** Wait out a throttle window (with a small clock-skew buffer). */
+async function waitOutThrottle(seconds: number): Promise<void> {
+  // A rejected attempt is itself recorded, so a Retry-After-length sleep only
+  // frees one slot while our probe refills another — purge the full window.
+  const ms = Math.max(seconds, LOGIN_WINDOW_SECONDS) * 1000 + 500;
+  throttledUntil = Math.max(throttledUntil, Date.now() + ms);
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Public: observe a login POST and absorb a 429 into the shared backoff, so
+ * every later `waitForLoginThrottleWindow()` in this worker waits the window
+ * out. Specs that drive the login form manually (the TOTP flow) wrap their
+ * `waitForResponse("…/api/auth/login")` in this instead of reading the
+ * response once and losing the signal.
+ */
+export async function observeLoginResponse(
+  pending: Promise<{ status: () => number; headers: () => Record<string, string> } | null>,
+): Promise<{ status: () => number; headers: () => Record<string, string> } | null> {
+  const res = await pending;
+  if (res && res.status() === 429) {
+    await waitOutThrottle(retryAfterSecondsFrom(res));
+  }
+  return res;
+}
+
+/**
+ * Public: sleep when a previously-seen 429 window is still open. Specs that
+ * drive the login form themselves (the TOTP flow) should call this right
+ * before submitting so they inherit the backoff.
+ */
+export async function waitForLoginThrottleWindow(): Promise<void> {
+  const remaining = throttledUntil - Date.now();
+  if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+}
+
+/** Predicate for page.waitForResponse — the login POST only. */
+const isLoginResponse = (res: { url: () => string }) => res.url().includes("/api/auth/login");
+
+/**
  * Log in through the /en/login form and wait for the dashboard. Defaults to
  * the seed admin credentials. Only for accounts WITHOUT 2FA (the seed admin
  * has 2FA disabled); the TOTP-gated login flow lives in the 2FA spec.
@@ -43,8 +127,72 @@ export async function loginAs(
   );
   if (hasSession) {
     await page.goto("/en/dashboard");
-    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
     return;
+  }
+
+  // Cross-worker session cache: each test gets a fresh context (no cookies),
+  // and every cold form login burns ~10s of dev-server CPU in argon2 — with
+  // 2 workers that contention also delays every parallel dashboard fetch. The
+  // first login mints a token and caches it (keyed by credentials); later
+  // logins inject it directly and verify it still works by landing on the
+  // dashboard. The seed admin is shared, so the cache hit rate is high; a
+  // revoked/expired cached token falls through to the form path below.
+  const credKey = `${email}:${password}`;
+  const cachedToken = sessionTokens.get(credKey);
+  if (cachedToken) {
+    await page.context().addCookies([
+      {
+        name: "token",
+        value: cachedToken,
+        domain: "localhost",
+        path: "/",
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+    await page.goto("/en/dashboard");
+    if (page.url().includes("/en/dashboard")) {
+      return;
+    } // Token dead (server restart with a changed JWT secret, revocation, etc.)
+    // — clear and fall through to the form path.
+    sessionTokens.delete(credKey);
+  }
+
+  // A 429 seen by an earlier call in this worker is enough to know the window
+  // is open — wait it out before spending another attempt on it.
+  await waitForLoginThrottleWindow();
+
+  // API-login fast path: the form flow depends on the login page's client
+  // hydration, which a degraded/loaded dev server can stall indefinitely
+  // (fields filled, submit never enables — seen on long-lived servers).
+  // POSTing the credentials directly mints the same httpOnly token cookie
+  // into this context's cookie jar (page.request shares it with page),
+  // skipping the hydration dependency entirely. Falls through to the form
+  // flow below if the API rejects (bad credentials, 2FA-gated account).
+  // A 429 is retried once after the Retry-After window rather than reported.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const apiLogin = await page.request.post("/api/auth/login", {
+      data: { email, password },
+      timeout: 90_000,
+    });
+    if (apiLogin.ok()) {
+      const minted = (await page.context().cookies()).find(
+        (c) => c.name === "token" && c.value.length > 0,
+      );
+      if (minted) {
+        sessionTokens.set(credKey, minted.value);
+        await page.goto("/en/dashboard");
+        await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
+        return;
+      }
+    }
+    if (apiLogin.status() === 429) {
+      await waitOutThrottle(retryAfterSecondsFrom(apiLogin));
+      continue;
+    }
+    // Anything else (401, 2FA-gated) → the form path below.
+    break;
   }
 
   // Cold-start hardening: the webServer port probe can succeed a beat before
@@ -80,8 +228,33 @@ export async function loginAs(
       { timeout: 20_000, message: "login form never hydrated" },
     )
     .toBe(true);
+  // Watch the login POST so a throttled submit can be retried instead of
+  // surfacing as "the form submitted but never redirected".
+  const firstLoginResponse = page
+    .waitForResponse(isLoginResponse, { timeout: 60_000 })
+    .catch(() => null);
   await submit.click();
-  await expect(page).toHaveURL(/\/en\/dashboard/);
+  const loginResponse = await firstLoginResponse;
+  if (loginResponse && loginResponse.status() === 429) {
+    await waitOutThrottle(retryAfterSecondsFrom(loginResponse));
+    const retryLoginResponse = page
+      .waitForResponse(isLoginResponse, { timeout: 60_000 })
+      .catch(() => null);
+    await submit.click();
+    await retryLoginResponse;
+  }
+  // The login POST runs argon2 (~10s) against the remote DB and can queue
+  // behind a parallel worker's login — give the redirect real headroom.
+  await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
+
+  // Cache the minted token for later workers/tests (best-effort: the cookie
+  // must exist and the dashboard URL proves the session is live).
+  const minted = (await page.context().cookies()).find(
+    (c) => c.name === "token" && c.value.length > 0,
+  );
+  if (minted) {
+    sessionTokens.set(credKey, minted.value);
+  }
 }
 
 /**
@@ -123,11 +296,12 @@ export interface RegisterFreshUserOptions {
 
 /**
  * Register a brand-new user and land on the dashboard WITHOUT verifying the
- * email (clicking "Skip for now" on the signup OTP step). Every signup issues
- * a 6-digit email OTP for identity verification; the OTP step is deliberately
- * skipped so the account starts unverified (the flows that call this helper
- * exercise the unverified state themselves, and must not mutate shared state
- * like the seed admin's emailVerified / 2FA settings).
+ * email. Every signup issues a 6-digit email OTP for identity verification;
+ * the current UI has no "Skip for now" affordance on the OTP step, but the
+ * register API sets the session cookie at signup, so navigating straight to
+ * the dashboard leaves the account unverified (the flows that call this
+ * helper exercise the unverified state themselves, and must not mutate shared
+ * state like the seed admin's emailVerified / 2FA settings).
  *
  * Uses a unique auto-generated email by default (Date.now + random suffix so
  * parallel workers never collide); pass `options.email` to pin one, e.g. for
@@ -146,10 +320,17 @@ export interface FillRegistrationFormOptions {
 }
 
 /**
- * Fill the signup form and click "Create Account". Assumes the register page
- * is already loaded (callers wait for hydration via networkidle first).
- * The submit button is disabled until the confirmation matches, so it always
- * receives the same value as the password.
+ * Fill the signup form and click "Sign Up" (t("signUpButton")). Assumes the
+ * register page is already loaded (callers wait for hydration via networkidle
+ * first).
+ *
+ * Selectors match the CURRENT register UI (src/app/[locale]/(auth)/register/
+ * page.tsx): the name placeholder is localized ("John Doe" in en), the email
+ * input's placeholder is the hard-coded "you@example.com", and both password
+ * fields share the bullet "••••••••" placeholder — so the password fields are
+ * located by input type rather than placeholder text. The submit button is
+ * only disabled while a request is in flight (validation fires on submit as
+ * toasts), so it always receives the same value as the password.
  */
 export async function fillRegistrationForm(
   page: Page,
@@ -157,11 +338,12 @@ export async function fillRegistrationForm(
   options: FillRegistrationFormOptions = {},
 ): Promise<void> {
   const password = options.password ?? TEST_PASSWORD;
-  await page.getByPlaceholder("Your name").fill(options.name ?? "E2E Test User");
-  await page.getByPlaceholder("Your email").fill(email);
-  await page.getByPlaceholder("Create a password").fill(password);
-  await page.getByPlaceholder("Confirm password").fill(password);
-  const submit = page.getByRole("button", { name: "Create account" });
+  await page.getByPlaceholder("John Doe").fill(options.name ?? "E2E Test User");
+  await page.getByPlaceholder("you@example.com").fill(email);
+  const passwordInputs = page.locator('input[type="password"]');
+  await passwordInputs.first().fill(password);
+  await passwordInputs.nth(1).fill(password);
+  const submit = page.getByRole("button", { name: "Sign Up", exact: true });
   await expect(submit).toBeEnabled();
   await submit.click();
 }
@@ -169,17 +351,17 @@ export async function fillRegistrationForm(
 /**
  * Read the dev-mode 6-digit OTP (rendered inline when no mailer is
  * configured) and submit it to complete the signup identity-verification step.
- * Assumes the "Check your email" step is on screen.
+ * Assumes the "Verify your email" step (t("verifyEmailTitle")) is on screen.
  */
 export async function completeSignupOtp(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
   const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
   expect(code).toMatch(/^\d{6}$/);
-  // The OTP input auto-submits the moment the 6th digit lands, so filling the
-  // code triggers verification directly. Do NOT click "Verify Email" — the
-  // click would race the in-flight request (button flips to a disabled
-  // "Verifying…" state) and either time out or double-fire the submission.
-  await page.locator('input[maxLength="6"]').fill(code);
+  // The OTP input carries no maxLength attribute (the page slices to 6 digits
+  // in JS) and does NOT auto-submit on the 6th digit — click the explicit
+  // "Verify & Continue" button (t("verifyContinue")) to submit.
+  await page.getByPlaceholder("000000").fill(code);
+  await page.getByRole("button", { name: "Verify & Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/dashboard/);
 }
 
@@ -274,7 +456,43 @@ export async function waitForStableLayout<T>(
 
 /** The API Keys tab renders its toolbar only after the initial fetch resolves. */
 export async function waitForApiKeysTab(page: Page): Promise<void> {
-  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible();
+  // The toolbar renders only after the api-keys fetch resolves on the remote
+  // DB; under 2-worker argon2-login contention that fetch can exceed the 20s
+  // default expect timeout, so grant explicit headroom.
+  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible({
+    timeout: 45_000,
+  });
+}
+
+/**
+ * The plan caps API keys per workspace. Specs in this suite leave their keys
+ * behind, so once the cap is full POST /api/api-keys answers
+ * 402 plan_limit_reached and the dialog stays open on its error toast.
+ * Delete the oldest leftover key to reclaim a slot (leaving room for the one
+ * about to be created). Plan-agnostic: the cap comes from the 402 itself.
+ */
+async function reclaimApiKeySlot(page: Page): Promise<void> {
+  const listed = await page.request.get("/api/api-keys");
+  if (!listed.ok()) return;
+  const keys = (await listed.json()) as Array<{ id: string; name: string }>;
+  const oldest = keys[keys.length - 1];
+  if (!oldest) return;
+  await page.request.delete("/api/api-keys", { data: { id: oldest.id } });
+  // The tab refetches the list, so the freed slot is visible before we retry.
+  await expect(page.getByRole("heading", { name: oldest.name, exact: true })).toHaveCount(
+    0,
+    FETCH_GATED,
+  );
+}
+
+/** Submit the create-key dialog and return the POST response. */
+async function submitCreateKey(page: Page, dialog: Locator): Promise<number> {
+  const posted = page.waitForResponse(
+    (r) => r.url().includes("/api/api-keys") && r.request().method() === "POST",
+    { timeout: 60_000 },
+  );
+  await dialog.getByRole("button", { name: "Generate Key", exact: true }).click();
+  return (await posted).status();
 }
 
 /**
@@ -286,11 +504,22 @@ export async function createApiKey(page: Page, name: string): Promise<string> {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Create API Key")).toBeVisible();
   await dialog.getByPlaceholder("e.g., Production Integration").fill(name);
-  await dialog.getByRole("button", { name: "Generate Key", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
+
+  if ((await submitCreateKey(page, dialog)) === 402) {
+    // At the plan's key cap — free a slot and submit again (the dialog is
+    // still open, holding the name we already typed).
+    await reclaimApiKeySlot(page);
+    expect(
+      await submitCreateKey(page, dialog),
+      "create should succeed after reclaiming a slot",
+    ).toBe(200);
+  }
+
+  // Both waits gate on the POST + refetch round-tripping the remote DB.
+  await expect(dialog).not.toBeVisible(FETCH_GATED);
 
   const banner = page.locator("main .dashboard-card").filter({ hasText: "API Key Created" });
-  await expect(banner).toBeVisible();
+  await expect(banner).toBeVisible(FETCH_GATED);
   return (await banner.locator("code").textContent())?.trim() ?? "";
 }
 
@@ -564,15 +793,14 @@ export async function fillCopilotThreadUntilScrollable(
         async () => {
           // Assistant messages render with the Bot icon; the message
           // content div has class whitespace-pre-wrap.
-          const count = await panel
-            .locator('.rounded-2xl .whitespace-pre-wrap')
-            .evaluateAll((els) =>
+          const count = await panel.locator(".rounded-2xl .whitespace-pre-wrap").evaluateAll(
+            (els) =>
               els.filter((el) => {
                 const t = el.textContent?.trim() ?? "";
                 // Exclude loading placeholder ("...") and empty bubbles.
                 return t.length > 0 && t !== "...";
               }).length,
-            );
+          );
           return count >= round + 1;
         },
         { timeout: 25_000, message: "copilot never replied" },
@@ -612,10 +840,16 @@ export async function registerFreshUser(
   await page.waitForLoadState("networkidle");
   await fillRegistrationForm(page, email, { name: options.name });
 
-  // Skip the inline email-OTP step so the account stays unverified.
-  await expect(page.getByText("Verify your email")).toBeVisible();
-  await page.getByText(/Skip for now/i).click();
-
+  // The OTP step has no "Skip for now" button in the current UI, but the
+  // register API sets the session cookie at signup, so navigating straight to
+  // the dashboard preserves the unverified-account contract (the flows that
+  // call this helper exercise the unverified state themselves). The OTP view
+  // appearing is the signal that the signup actually succeeded. Scoped to
+  // the heading ROLE: plain getByText would also match the Next.js route
+  // announcer ([id="__next-route-announcer__"], role=alert), which can carry
+  // the same string after a navigation — strict-mode bomb.
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  await page.goto("/en/dashboard");
   await expect(page).toHaveURL(/\/en\/dashboard/);
   return email;
 }

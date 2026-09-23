@@ -34,9 +34,9 @@ test.describe("SSO / Enterprise settings", () => {
       await dialog
         .getByPlaceholder("https://idp.example.com/sso")
         .fill("https://acme.okta.com/app/next-dashboard/sso/saml");
-      await dialog.getByPlaceholder(/BEGIN CERTIFICATE/).fill(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA",
-      );
+      await dialog
+        .getByPlaceholder(/BEGIN CERTIFICATE/)
+        .fill("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA");
       await dialog.getByRole("button", { name: "Save connection", exact: true }).click();
 
       // Dialog closes and the connection renders.
@@ -64,7 +64,9 @@ test.describe("SSO / Enterprise settings", () => {
       await ensureConfiguredSso(page);
 
       await page.getByRole("button", { name: "Remove connection", exact: true }).click();
-      const dialog = page.getByRole("dialog");
+      // ConfirmProvider renders the Sora AlertDialog (role=alertdialog);
+      // its confirm button defaults to common.confirm.
+      const dialog = page.getByRole("alertdialog");
       await expect(dialog.getByText("Remove SSO connection?")).toBeVisible();
       await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
 
@@ -75,9 +77,7 @@ test.describe("SSO / Enterprise settings", () => {
 
 /** Wait for client-side data to load (hydration + GET) before interacting. */
 async function waitForSsoState(page: Page) {
-  await expect(
-    page.getByText(/No SSO connection|Enabled/).first(),
-  ).toBeVisible();
+  await expect(page.getByText(/No SSO connection|Enabled/).first()).toBeVisible();
 }
 
 /** Guarantee the page shows the empty state, deleting any prior connection. */
@@ -87,7 +87,7 @@ async function ensureEmptySso(page: Page) {
   const empty = page.getByText("No SSO connection");
   if (!(await empty.isVisible())) {
     await page.getByRole("button", { name: "Remove connection", exact: true }).click();
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("alertdialog");
     await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(empty).toBeVisible();
   }
@@ -105,9 +105,9 @@ async function ensureConfiguredSso(page: Page) {
     await dialog
       .getByPlaceholder("https://idp.example.com/sso")
       .fill("https://acme.okta.com/app/next-dashboard/sso/saml");
-    await dialog.getByPlaceholder(/BEGIN CERTIFICATE/).fill(
-      "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA",
-    );
+    await dialog
+      .getByPlaceholder(/BEGIN CERTIFICATE/)
+      .fill("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA");
     await dialog.getByRole("button", { name: "Save connection", exact: true }).click();
     await expect(page.getByText("Enabled").first()).toBeVisible();
   }

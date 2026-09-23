@@ -13,7 +13,13 @@ vi.mock("lucide-react", async () => {
 vi.mock("next-intl", () => ({
   useTranslations: (namespace: string) => {
     const messages: Record<string, Record<string, string>> = {
-      nav: { dashboard: "Dashboard", profile: "Profile", settings: "Settings", logout: "Logout" },
+      nav: {
+        dashboard: "Dashboard",
+        profile: "Profile",
+        settings: "Settings",
+        logout: "Logout",
+        switchLanguage: "Switch language",
+      },
       common: {
         search: "Search orders, customers...",
         cancel: "Cancel",
@@ -92,13 +98,18 @@ describe("Header", () => {
 
   it("renders the language toggle with current locale", () => {
     render(<Header />);
-    // The dropdown trigger shows the flag emoji and has the language title
-    expect(screen.getByTitle("English")).toBeInTheDocument();
-    // Open the dropdown and verify all 4 languages are listed
-    const trigger = screen.getByTitle("English");
+    // The dropdown trigger is found by its localized accessible name — the
+    // native `title` was replaced by a Radix tooltip (same hint, no double
+    // labels), so getByTitle no longer applies.
+    const trigger = screen.getByRole("button", { name: "Switch language" });
+    expect(trigger).toBeInTheDocument();
+    // Open the dropdown and verify all 4 languages are listed. Radix opens
+    // the menu on pointerdown (then the click lands) — same as the
+    // dropdown-menu tests.
     fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
     // Check language labels are in the dropdown
-    expect(screen.getByText("Switch Language")).toBeInTheDocument();
+    expect(screen.getByText("Switch language")).toBeInTheDocument();
     expect(screen.getByText("ID")).toBeInTheDocument();
     expect(screen.getByText("中文")).toBeInTheDocument();
     // Japanese appears twice (label + name), so use getAllByText
@@ -127,8 +138,11 @@ describe("Header", () => {
     expect(menuButton).toBeInTheDocument();
   });
 
-  it("shows Dashboard label on mobile", () => {
+  it("shows the mobile menu and compact search trigger", () => {
     render(<Header />);
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    // On small screens the header collapses to a menu button + search trigger
+    // (the full-width search pill is hidden below sm).
+    expect(screen.getByLabelText("Toggle menu")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search orders, customers...")).toBeInTheDocument();
   });
 });

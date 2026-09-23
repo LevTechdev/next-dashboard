@@ -70,6 +70,7 @@ const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = v
           .fn()
           .mockResolvedValue([{ id: "cat-1", name: "Electronics", _count: { products: 8 } }]),
       }),
+      orderItem: deepModel({}),
       user: deepModel({
         findUnique: vi.fn().mockResolvedValue({
           id: "u-1",
@@ -77,6 +78,15 @@ const { mockRequireAuth, mockRequirePermission, mockGetSession, mockPrisma } = v
           email: "test@test.com",
           role: "ADMIN",
         }),
+      }),
+      // Tier system: orders POST reads the plan cap via plan-tiers.
+      subscription: deepModel({
+        findFirst: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "sub-1" }),
+      }),
+      plan: deepModel({
+        findUnique: vi.fn().mockResolvedValue(null),
       }),
       activityLog: deepModel({}),
       auditLog: deepModel({}),
@@ -293,6 +303,54 @@ describe("HTTP integration: request edge cases", () => {
       const { POST } = await import("../orders/route");
       const res = await POST(req);
       expect(res.status).toBe(200);
+    });
+
+    it("orders POST with line items persists them and derives the ledger from price × quantity", async () => {
+      // Regression: this route used to store the caller's totals verbatim while
+      // writing NO OrderItem rows at all. The order detail then rendered an
+      // empty item list beside a non-zero subtotal ("the items don't add up to
+      // the total") and the invoice route's invariant — totalAmount equals the
+      // sum of the item totals — was silently false.
+      const req = post("http://localhost/api/orders", {
+        customerId: "c-1",
+        // Deliberately wrong totals AND wrong line totals: the server must
+        // ignore all of them and re-derive from price × quantity.
+        totalAmount: 999999,
+        grandTotal: 999999,
+        shippingAmount: 20,
+        taxAmount: 33,
+        items: [
+          { name: "Widget", quantity: 2, price: 100, total: 1 },
+          { name: "Gadget", quantity: 1, price: 100, total: 1 },
+        ],
+      });
+      const { POST } = await import("../orders/route");
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const data = (mockPrisma.order.create as any).mock.calls.at(-1)[0].data;
+      expect(data.items.create).toEqual([
+        { name: "Widget", productId: null, quantity: 2, price: 100, total: 200 },
+        { name: "Gadget", productId: null, quantity: 1, price: 100, total: 100 },
+      ]);
+      // Subtotal = items sum, grand total = subtotal − discount + shipping + tax.
+      expect(data.totalAmount).toBe(300);
+      expect(data.grandTotal).toBe(353);
+    });
+
+    it("orders POST without items keeps storing the caller's totals (offline replay path)", async () => {
+      const req = post("http://localhost/api/orders", {
+        customerId: "c-1",
+        totalAmount: 500,
+        grandTotal: 555,
+      });
+      const { POST } = await import("../orders/route");
+      await POST(req);
+
+      const data = (mockPrisma.order.create as any).mock.calls.at(-1)[0].data;
+      expect(data.totalAmount).toBe(500);
+      expect(data.grandTotal).toBe(555);
+      expect(data.items).toBeUndefined();
     });
 
     it("team POST with real JSON body creates user", async () => {
@@ -521,7 +579,7 @@ describe("HTTP integration: auth guard consistency", () => {
       },
     ];
 
-    for (const { route, handler, req, expected } of testCases) {
+    for (const { handler, req, expected } of testCases) {
       const res = await handler(req);
       expect(res.status).toBe(expected);
     }

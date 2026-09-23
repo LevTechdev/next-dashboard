@@ -13,6 +13,22 @@ import { useEffect, useRef, useState } from "react";
 export const RESEND_COOLDOWN_SECONDS = 60;
 export const COOLDOWN_KEY = "email-verify-cooldown-until";
 
+/**
+ * Cooldown for the SIGNUP OTP's own resend button, deliberately separate from
+ * {@link COOLDOWN_KEY}: account creation auto-sends a verification email (and
+ * starts this cooldown) before the user ever sees the dashboard, so a shared
+ * key would leave the profile / Security-Center "Send Verification Email"
+ * button counting down 40+s on a brand-new session — blocking the very first
+ * verification action right after signup.
+ */
+export const SIGNUP_OTP_COOLDOWN_KEY = "signup-otp-cooldown-until";
+
+/**
+ * Independent cooldown for forgot-password resets, so requesting a reset link
+ * never blocks (or is blocked by) the email-verification OTP resend.
+ */
+export const FORGOT_PASSWORD_COOLDOWN_KEY = "forgot-password-cooldown-until";
+
 export interface ResendCooldownOptions {
   /** Cooldown length in seconds. Defaults to {@link RESEND_COOLDOWN_SECONDS}. */
   durationSeconds?: number;

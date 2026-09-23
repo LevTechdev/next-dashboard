@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { isMfaVerificationEventType, MFA_VERIFIED_RECENT_DAYS } from "@/lib/security-score";
+import {
+  daysSinceMfaVerification,
+  isMfaVerificationEventType,
+  MFA_VERIFIED_RECENT_DAYS,
+} from "@/lib/security-score";
 
 export interface SessionRow {
   id: string;
@@ -12,6 +16,8 @@ export interface SessionRow {
   lastActiveAt: string;
   createdAt: string;
   current: boolean;
+  /** Both device profile and IP seen on an earlier session of this user. */
+  recognized?: boolean;
 }
 
 export interface SecurityEventRow {
@@ -19,6 +25,15 @@ export interface SecurityEventRow {
   type: string;
   ip: string | null;
   createdAt: string;
+  /** Structured payload (rate-limit counters, endpoint, blocked flag…). */
+  metadata?: {
+    endpoint?: string;
+    attempt?: number;
+    limit?: number;
+    blocked?: boolean;
+    email?: string;
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface PasskeyRow {
@@ -28,17 +43,50 @@ export interface PasskeyRow {
   lastUsedAt: string | null;
 }
 
+/**
+ * The spare authenticator (second enrolled TOTP secret). `enrolled: false` is
+ * authoritative — it means the API answered and there is none — which is why
+ * the field is null until the first fetch lands.
+ */
+export interface BackupAuthenticatorState {
+  enrolled: boolean;
+  label: string | null;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+}
+
+export interface TrustedDeviceRow {
+  id: string;
+  label: string | null;
+  device: string;
+  browser: string;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
 export interface SecurityData {
   sessions: SessionRow[];
   events: SecurityEventRow[];
   backupRemaining: number | null;
   passkeys: PasskeyRow[];
+  trustedDevices: TrustedDeviceRow[];
+  /** null until the spare-authenticator status has been fetched. */
+  backupAuthenticator: BackupAuthenticatorState | null;
   /** null while loading / unknown */
   totpEnabled: boolean | null;
   /** ISO timestamp when the email was verified, or null. */
   emailVerified: string | null;
   /** Whether an MFA method was verified within the last 30 days. */
   mfaVerifiedRecently: boolean;
+  /**
+   * ISO timestamp of the newest MFA-verification event (TOTP, passkey login,
+   * backup code) visible in the fetched window — null when none exists.
+   * Backs the visible days-since counter for the 30-day policy.
+   */
+  mfaLastVerifiedAt: string | null;
+  /** Whole days since that verification (null = never verified). */
+  mfaDaysSince: number | null;
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -70,15 +118,24 @@ export function useSecurityData(): SecurityData {
   const [events, setEvents] = useState<SecurityEventRow[]>([]);
   const [backupRemaining, setBackupRemaining] = useState<number | null>(null);
   const [passkeys, setPasskeys] = useState<PasskeyRow[]>([]);
+  const [trustedDevices, setTrustedDevices] = useState<TrustedDeviceRow[]>([]);
+  const [backupAuthenticator, setBackupAuthenticator] = useState<BackupAuthenticatorState | null>(
+    null,
+  );
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
   const [emailVerified, setEmailVerified] = useState<string | null>(null);
   const [mfaVerifiedRecently, setMfaVerifiedRecently] = useState(false);
+  const [mfaLastVerifiedAt, setMfaLastVerifiedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [s, e, b, p, pr] = await Promise.allSettled([
+    const [s, e, b, p, pr, td, ba] = await Promise.allSettled([
       fetch("/api/auth/sessions").then((r) => json<SessionRow[]>(r, [])),
-      fetch("/api/auth/security-events").then((r) => json<SecurityEventRow[]>(r, [])),
+      // 30 events (not 20) so the telemetry panel has enough RATE_LIMITED /
+      // ACCOUNT_LOCKED rows to summarize even on busy accounts.
+      // take=60: wide enough that seeded demo telemetry (RATE_LIMITED /
+      // ACCOUNT_LOCKED) stays visible alongside normal sign-in traffic.
+      fetch("/api/auth/security-events?take=60").then((r) => json<SecurityEventRow[]>(r, [])),
       fetch("/api/auth/backup-codes")
         .then((r) => json<{ remaining: number }>(r, { remaining: 0 }))
         .then((d) => d.remaining ?? 0),
@@ -86,12 +143,22 @@ export function useSecurityData(): SecurityData {
       fetch("/api/profile").then((r) =>
         json<{ totpEnabled?: boolean; emailVerified?: string | null }>(r, {}),
       ),
+      fetch("/api/auth/trusted-devices").then((r) => json<TrustedDeviceRow[]>(r, [])),
+      // The spare authenticator. Fetched HERE rather than by its own card so
+      // the Recovery readiness panel and the card read the same answer from one
+      // request — two sources could disagree mid-refresh, and the panel's whole
+      // job is to be trustworthy about what exists.
+      fetch("/api/auth/totp/backup").then((r) => json<BackupAuthenticatorState | null>(r, null)),
     ]);
     if (s.status === "fulfilled" && Array.isArray(s.value)) setSessions(s.value);
     if (e.status === "fulfilled" && Array.isArray(e.value)) {
       setEvents(e.value);
       // MFA verification is rewarded if a real second-factor proof happened
       // within the recency window (TOTP, passkey login, or backup code).
+      // Events arrive newest-first, so the first hit is the newest proof —
+      // the same timestamp the visible days-since counter renders.
+      const newestProof = e.value.find((ev) => isMfaVerificationEventType(ev.type));
+      setMfaLastVerifiedAt(newestProof ? newestProof.createdAt : null);
       setMfaVerifiedRecently(
         e.value.some(
           (ev) =>
@@ -102,6 +169,15 @@ export function useSecurityData(): SecurityData {
     }
     if (b.status === "fulfilled" && typeof b.value === "number") setBackupRemaining(b.value);
     if (p.status === "fulfilled" && Array.isArray(p.value)) setPasskeys(p.value);
+    if (td.status === "fulfilled" && Array.isArray(td.value)) setTrustedDevices(td.value);
+    if (ba.status === "fulfilled" && ba.value && typeof ba.value.enrolled === "boolean") {
+      setBackupAuthenticator({
+        enrolled: ba.value.enrolled,
+        label: ba.value.label ?? null,
+        createdAt: ba.value.createdAt ?? null,
+        lastUsedAt: ba.value.lastUsedAt ?? null,
+      });
+    }
     if (pr.status === "fulfilled" && typeof pr.value?.totpEnabled === "boolean") {
       setTotpEnabled(pr.value.totpEnabled);
     }
@@ -123,9 +199,14 @@ export function useSecurityData(): SecurityData {
     events,
     backupRemaining,
     passkeys,
+    trustedDevices,
+    backupAuthenticator,
     totpEnabled,
     emailVerified,
     mfaVerifiedRecently,
+    mfaLastVerifiedAt,
+    // Computed on fetch completion (client-only), never during SSR render.
+    mfaDaysSince: daysSinceMfaVerification(mfaLastVerifiedAt),
     loading,
     refresh,
   };

@@ -1,0 +1,50 @@
+{
+  "default": {
+    "tenantId": "default",
+    "brandName": "Next Dashboard Enterprise",
+    "customDomain": "dashboard.company.com",
+    "domainStatus": "VERIFIED",
+    "cnameTarget": "cname.next-dashboard.com",
+    "sslActive": true,
+    "logoUrl": "/icon",
+    "faviconUrl": "/icon",
+    "primaryColor": "#4f46e5",
+    "accentColor": "#06b6d4",
+    "invoiceHeaderNote": "Thank you for your business. Please remit payment within terms.",
+    "invoiceFooterNote": "Registered Enterprise Inc. • Tax ID / NPWP: 01.234.567.8-901.000",
+    "emailDigestSubject": "Executive Weekly Digest & KPI Report",
+    "updatedAt": "2026-09-07T02:31:08.652Z"
+  },
+  "tenant-1": {
+    "tenantId": "tenant-1",
+    "brandName": "Starlight Retail Group",
+    "customDomain": "dashboard.starlight.com",
+    "domainStatus": "VERIFIED",
+    "cnameTarget": "cname.next-dashboard.com",
+    "sslActive": true,
+    "logoUrl": "/icon",
+    "faviconUrl": "/icon",
+    "primaryColor": "#059669",
+    "accentColor": "#06b6d4",
+    "invoiceHeaderNote": "Thank you for your business. Please remit payment within terms.",
+    "invoiceFooterNote": "Registered Enterprise Inc. • Tax ID / NPWP: 01.234.567.8-901.000",
+    "emailDigestSubject": "Executive Weekly Digest & KPI Report",
+    "updatedAt": "2026-09-07T08:21:36.569Z"
+  },
+  "cms7ucq4s0000u5css0pfn8nc": {
+    "tenantId": "cms7ucq4s0000u5css0pfn8nc",
+    "brandName": "Next Dashboard Enterprise",
+    "customDomain": "dashboard.levtech.com",
+    "domainStatus": "VERIFIED",
+    "cnameTarget": "cname.next-dashboard.com",
+    "sslActive": true,
+    "logoUrl": "/icon",
+    "faviconUrl": "/icon",
+    "primaryColor": "#0284c7",
+    "accentColor": "#06b6d4",
+    "invoiceHeaderNote": "Thank you for your business. Please remit payment within terms.",
+    "invoiceFooterNote": "Registered Enterprise Inc. • Tax ID / NPWP: 01.234.567.8-901.000",
+    "emailDigestSubject": "Executive Weekly Digest & KPI Report",
+    "updatedAt": "2026-09-08T14:12:19.669Z"
+  }
+}

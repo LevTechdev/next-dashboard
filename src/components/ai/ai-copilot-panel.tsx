@@ -6,7 +6,9 @@ import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { ScrollContainer } from "@/components/ui/scroll-container";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useAiChat } from "@/hooks/use-ai-chat";
+import { cleanAiText } from "@/lib/ai/clean-text";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { useAiCopilot } from "@/components/ai/ai-copilot-provider";
 import { XIcon, BotIcon, SendIcon, SparklesIcon, TrendingUpIcon, UsersIcon } from "lucide-animated";
@@ -19,7 +21,27 @@ import {
   Wrench,
   RotateCcw,
   ChevronDown,
+  Copy,
+  Pencil,
 } from "lucide-react";
+import { ActionProposalCard } from "@/components/ai/action-proposal-card";
+import type { CopilotActionProposal } from "@/lib/ai/copilot-proposals";
+import { toast } from "sonner";
+
+function parseProposalFromContent(content: string): {
+  cleanText: string;
+  proposal: CopilotActionProposal | null;
+} {
+  const match = content.match(/```json:action-proposal\s*([\s\S]*?)\s*```/);
+  if (!match) return { cleanText: content, proposal: null };
+  try {
+    const proposal = JSON.parse(match[1]);
+    const cleanText = content.replace(/```json:action-proposal\s*[\s\S]*?\s*```/, "").trim();
+    return { cleanText, proposal };
+  } catch {
+    return { cleanText: content, proposal: null };
+  }
+}
 
 const suggestedQuestions = [
   { icon: BarChart3, key: "q1" },
@@ -28,6 +50,8 @@ const suggestedQuestions = [
   { icon: UsersIcon, key: "q4" },
   { icon: Package, key: "q5" },
   { icon: Lightbulb, key: "q6" },
+  { icon: SparklesIcon, key: "q7" },
+  { icon: TrendingUpIcon, key: "q8" },
 ] as const;
 
 function SuggestedQuestions({ onSelect }: { onSelect: (query: string) => void }) {
@@ -80,16 +104,17 @@ function TypingIndicator({ onStop }: { onStop?: () => void }) {
           ))}
         </div>
         {onStop && (
-          <button
-            type="button"
-            onClick={onStop}
-            aria-label={t("stopGenerating")}
-            title={t("stopGenerating")}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          >
-            <StopCircle className="h-3.5 w-3.5" />
-            {t("stop")}
-          </button>
+          <Tooltip side="top" content={t("stopGenerating")}>
+            <button
+              type="button"
+              onClick={onStop}
+              aria-label={t("stopGenerating")}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <StopCircle className="h-3.5 w-3.5" />
+              {t("stop")}
+            </button>
+          </Tooltip>
         )}
       </div>
     </div>
@@ -258,13 +283,15 @@ export function AiCopilotPanel() {
               </div>
               <div className="flex items-center gap-1">
                 {messages.length > 0 && (
-                  <button
-                    onClick={clearMessages}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-[10px]"
-                    title={t("clearConversation")}
-                  >
-                    <XIcon size={12} className="h-3 w-3" />
-                  </button>
+                  <Tooltip side="top" content={t("clearConversation")}>
+                    <button
+                      onClick={clearMessages}
+                      aria-label={t("clearConversation")}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-[10px]"
+                    >
+                      <XIcon size={12} className="h-3 w-3" />
+                    </button>
+                  </Tooltip>
                 )}
                 <button
                   onClick={closeCopilot}
@@ -347,11 +374,52 @@ export function AiCopilotPanel() {
                               : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md",
                           )}
                         >
-                          <div className="whitespace-pre-wrap">
-                            {message.content ||
-                              (isLoading && i === messages.length - 1 ? "..." : "")}
-                          </div>
+                          {(() => {
+                            const raw =
+                              message.content ||
+                              (isLoading && i === messages.length - 1 ? "..." : "");
+                            // Strip markdown noise (#, *, _, `) for a cleaner
+                            // bubble while preserving the action-proposal fence
+                            // and code blocks (clean-text protects fences), so
+                            // the structured ActionProposalCard still parses.
+                            const { cleanText, proposal } = parseProposalFromContent(
+                              message.role === "assistant" ? cleanAiText(raw) : raw,
+                            );
+                            return (
+                              <>
+                                <div className="whitespace-pre-wrap">{cleanText}</div>
+                                {proposal && <ActionProposalCard proposal={proposal} />}
+                              </>
+                            );
+                          })()}
                         </div>
+
+                        {message.role === "user" && (
+                          <div className="flex items-center gap-1.5 opacity-70">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard?.writeText(message.content || "");
+                                toast.success(t("copiedPrompt"));
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <Copy className="h-3 w-3" />
+                              {t("copyPrompt")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInputValue(message.content || "");
+                                inputRef.current?.focus();
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              {t("editPrompt")}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {message.role === "user" && (
@@ -481,15 +549,16 @@ export function AiCopilotPanel() {
                 </div>
 
                 {isLoading ? (
-                  <button
-                    onClick={stop}
-                    aria-label={t("stopGenerating")}
-                    className="flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl bg-red-500 text-white hover:bg-red-600 shrink-0 transition-colors text-xs font-semibold shadow-lg shadow-red-500/20"
-                    title={t("stopGenerating")}
-                  >
-                    <StopCircle className="h-4 w-4" />
-                    <span>{t("stop")}</span>
-                  </button>
+                  <Tooltip side="top" content={t("stopGenerating")}>
+                    <button
+                      onClick={stop}
+                      aria-label={t("stopGenerating")}
+                      className="flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl bg-red-500 text-white hover:bg-red-600 shrink-0 transition-colors text-xs font-semibold shadow-lg shadow-red-500/20"
+                    >
+                      <StopCircle className="h-4 w-4" />
+                      <span>{t("stop")}</span>
+                    </button>
+                  </Tooltip>
                 ) : (
                   <button
                     onClick={handleSendMessage}

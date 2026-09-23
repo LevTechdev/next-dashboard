@@ -68,9 +68,19 @@ test.describe("Integrations tab bar on mobile", () => {
     // Radix roving focus moves focus inside a setTimeout, so wait for each
     // step to land before pressing again — otherwise consecutive keydowns
     // all compute from the still-focused element and only advance one tab.
+    // Walk the REAL tab order — two tabs (Delivery health, Team Chat,
+    // Omnichannel Sync) sit between Delivery Log and Playground, so the
+    // previous three-step list walked off the intended target.
     await page.getByRole("tab", { name: "API Keys" }).focus();
     await expect(page.getByRole("tab", { name: "API Keys" })).toBeFocused();
-    for (const name of ["Webhooks", "Delivery Log", "Playground"]) {
+    for (const name of [
+      "Webhooks",
+      "Delivery Log",
+      "Delivery health",
+      "Team Chat (Slack & Discord)",
+      "Omnichannel Sync",
+      "Playground",
+    ]) {
       await page.keyboard.press("ArrowRight");
       await expect(page.getByRole("tab", { name })).toBeFocused();
     }

@@ -7,6 +7,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    // Heavy table pages (orders/products/customers) render slowly under
+    // parallel full-suite load and kept tripping the 5s default — 15s gives
+    // them deterministic headroom without masking real failures.
+    testTimeout: 15000,
+    hookTimeout: 15000,
     include: ["**/__tests__/**/*.test.{ts,tsx}"],
     exclude: ["**/node_modules/**", "**/my-app/**", "src/app/api/**"],
     setupFiles: ["./src/app/[locale]/(marketing)/__tests__/setup.ts"],

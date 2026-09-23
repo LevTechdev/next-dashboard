@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Share2, Trash2, ExternalLink, AlertTriangle } from "lucide-react";
+import { Share2, Trash2, ExternalLink, AlertTriangle, Store } from "lucide-react";
 import { PlusIcon, CopyIcon } from "lucide-animated";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, sanitizeInteger } from "@/lib/utils";
 import { ShareLinkDialog } from "@/components/share-link-dialog";
+import { getPlatformChannelConfig, SalesChannelIcon } from "@/components/ui/brand-icons";
 import { toast } from "sonner";
 
 interface ProductAffiliateLinksProps {
@@ -131,12 +133,22 @@ export function ProductAffiliateLinks({
                 key={pf.id}
                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-800"
               >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-semibold shrink-0"
-                  style={{ backgroundColor: pf.color || "#6366f1" }}
-                >
-                  {pf.name.charAt(0)}
-                </div>
+                {(() => {
+                  const brand = getPlatformChannelConfig(pf.name, pf.slug);
+                  return brand ? (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800 shrink-0">
+                      <SalesChannelIcon name={brand.name} size={18} />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary text-xs font-semibold shrink-0">
+                      {pf.name.charAt(0) ? (
+                        pf.name.charAt(0).toUpperCase()
+                      ) : (
+                        <Store className="h-4 w-4" />
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">{pf.name}</p>
                   {link ? (
@@ -159,7 +171,7 @@ export function ProductAffiliateLinks({
                     <button
                       onClick={() => copyLink(link.code)}
                       title={affiliateUrl(link.code)}
-                      className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                      className="p-1.5 text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                     >
                       <CopyIcon size={14} className="h-3.5 w-3.5" />
                     </button>
@@ -171,21 +183,25 @@ export function ProductAffiliateLinks({
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
-                    <button
-                      onClick={() => setShareTarget(link)}
-                      title={t("shareLink")}
-                      className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                    >
-                      <Share2 className="h-3.5 w-3.5" />
-                    </button>
-                    {canDelete && (
+                    <Tooltip side="top" content={t("shareLink")}>
                       <button
-                        onClick={() => setDeleteTarget(link)}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                        title={tcommon("delete")}
+                        onClick={() => setShareTarget(link)}
+                        aria-label={t("shareLink")}
+                        className="p-1.5 text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        <Share2 className="h-3.5 w-3.5" />
                       </button>
+                    </Tooltip>
+                    {canDelete && (
+                      <Tooltip side="top" content={tcommon("delete")}>
+                        <button
+                          onClick={() => setDeleteTarget(link)}
+                          aria-label={tcommon("delete")}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 ) : canManage ? (

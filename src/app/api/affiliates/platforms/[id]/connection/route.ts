@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
 import { getConnector } from "@/lib/platform-connectors";
+import { writeDeletionAudit } from "@/lib/activity-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -84,10 +85,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
  * Disconnects the platform (removes stored credentials).
  */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { response } = await requirePermission("delete", "affiliates", req);
+  const { session, response } = await requirePermission("delete", "affiliates", req);
   if (response) return response;
 
   const { id } = await params;
+
+  const platform = await prisma.affiliatePlatform.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+
   await prisma.platformConnection.deleteMany({ where: { platformId: id } });
+
+  await writeDeletionAudit({
+    session: session!,
+    action: "DISCONNECT_AFFILIATE_PLATFORM",
+    entity: "PlatformConnection",
+    entityId: id,
+    details: `Affiliate platform${platform?.name ? ` "${platform.name}"` : ` ${id}`} disconnected — stored credentials removed`,
+    req,
+  });
+
   return NextResponse.json({ success: true });
 }

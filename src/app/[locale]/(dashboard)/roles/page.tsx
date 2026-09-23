@@ -569,7 +569,7 @@ export default function RolesPage() {
                             onClick={() => {
                               window.location.href = window.location.pathname.replace(
                                 /\/roles(\/.*)?$/,
-                                "/team",
+                                "/settings/team",
                               );
                             }}
                           >

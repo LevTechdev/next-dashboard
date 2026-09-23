@@ -98,8 +98,14 @@ describe("Security Center Page", () => {
   it("renders the security score banner", async () => {
     render(<SecurityPage />);
     expect(screen.getByText("Security score")).toBeInTheDocument();
+    // The mock profile enrolls every protection (TOTP, email verified, backup
+    // codes, passkey, MFA verified) — the component-aware banner must confirm
+    // completeness instead of falling back to a per-tier sentence that would
+    // tell this account to "enable two-factor authentication".
     await waitFor(() => {
-      expect(screen.getByText("Your account is strongly protected.")).toBeInTheDocument();
+      expect(
+        screen.getByText("All protections are active — your account is fully secured."),
+      ).toBeInTheDocument();
     });
   });
 

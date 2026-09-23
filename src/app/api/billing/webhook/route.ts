@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
+import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -107,19 +108,33 @@ export async function POST(req: Request) {
 
       if (checkout.amount_total != null) {
         const paid = checkout.payment_status === "paid";
+        const amount = checkout.amount_total / 100;
+        const currency = (checkout.currency || "usd").toUpperCase();
+        // payment_status="unpaid" means the customer still has a payment
+        // obligation (e.g. async methods) — record WHICH gateway to settle so
+        // the invoice PDF shows the real method instead of a default.
         await prisma.invoice.create({
           data: {
             invoiceNumber: `INV-${Date.now()}`,
             planId: plan.id,
             userId,
             subscriptionId: subscription.id,
-            amount: checkout.amount_total / 100,
-            currency: (checkout.currency || "usd").toUpperCase(),
+            amount,
+            currency,
             status: paid ? "PAID" : "PENDING",
             description: `${plan.name} Plan`,
             periodStart: now,
             periodEnd,
             paidAt: paid ? now : null,
+            paymentMethod: "stripe",
+            snapshotJson: buildInvoiceSnapshot({
+              plan,
+              amount,
+              currency,
+              description: `${plan.name} Plan`,
+              periodStart: now,
+              periodEnd,
+            }),
           },
         });
       }

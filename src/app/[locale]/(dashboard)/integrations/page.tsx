@@ -23,7 +23,11 @@ import {
   FlaskConical,
   SquareTerminal,
   ChevronDown,
+  MessageSquare,
+  Network,
 } from "lucide-react";
+import { ChatAlertsHub } from "@/components/integrations/chat-alerts-hub";
+import { InboundWebhookSync } from "@/components/integrations/inbound-webhook-sync";
 import { cn } from "@/lib/utils";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -47,6 +51,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -123,7 +128,11 @@ function getEventLabel(value: string, t: (key: string) => string) {
           .join(""),
       )
       .join("");
-  return t(key);
+  const label = t(key);
+  // Fall back to the raw event name instead of the raw key path when a locale
+  // is missing the entry (next-intl returns the key itself and logs
+  // MISSING_MESSAGE in that case).
+  return label === key ? value : label;
 }
 
 function getGroupLabel(label: string, t: (key: string) => string) {
@@ -165,6 +174,18 @@ export default function IntegrationsPage() {
             <ClockIcon size={16} className="h-4 w-4" />
             {t("tabDeliveries")}
           </TabsTrigger>
+          <TabsTrigger value="dlq" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            {t("tabDlq")}
+          </TabsTrigger>
+          <TabsTrigger value="chat-alerts" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            {t("tabChatAlerts")}
+          </TabsTrigger>
+          <TabsTrigger value="omnichannel" className="flex items-center gap-2">
+            <Network className="h-4 w-4 text-primary" />
+            {t("tabOmnichannel")}
+          </TabsTrigger>
           <TabsTrigger value="playground" className="flex items-center gap-2">
             <FlaskConical className="h-4 w-4" />
             {t("tabPlayground")}
@@ -179,6 +200,15 @@ export default function IntegrationsPage() {
         </TabsContent>
         <TabsContent value="deliveries" className="mt-6">
           <DeliveriesTab />
+        </TabsContent>
+        <TabsContent value="dlq" className="mt-6">
+          <DlqTab />
+        </TabsContent>
+        <TabsContent value="chat-alerts" className="mt-6">
+          <ChatAlertsHub />
+        </TabsContent>
+        <TabsContent value="omnichannel" className="mt-6">
+          <InboundWebhookSync />
         </TabsContent>
         <TabsContent value="playground" className="mt-6">
           <PlaygroundTab />
@@ -284,6 +314,7 @@ function ApiKeysTab() {
   const handleDelete = async (id: string) => {
     const ok = await confirm({
       description: t("confirmDeleteKey"),
+      icon: "key",
       destructive: true,
     });
     if (!ok) return;
@@ -399,19 +430,32 @@ function ApiKeysTab() {
           {filteredKeys.map((key) => (
             <Card key={key.id} className="hover:shadow-sm transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold truncate">{key.name}</h3>
                       <Badge variant={key.status === "ACTIVE" ? "success" : "danger"}>
                         {key.status}
                       </Badge>
                       <Badge variant="info">{key.permissions}</Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                        {key.prefix}
-                      </code>
+                    <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-1">
+                        <code className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                          {key.prefix}
+                        </code>
+                        <Tooltip content={tc("copy")} side="top">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleCopyKey(key.prefix)}
+                            aria-label={tc("copy")}
+                          >
+                            <CopyIcon size={14} className="h-3.5 w-3.5 text-gray-400" />
+                          </Button>
+                        </Tooltip>
+                      </span>
                       {key.lastUsedAt && (
                         <span>
                           {t("lastUsed")} {formatDate(key.lastUsedAt)}
@@ -427,27 +471,35 @@ function ApiKeysTab() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRevoke(key.id, key.status)}
-                      title={key.status === "ACTIVE" ? t("revokeKey") : t("reactivateKey")}
+                  {/* Action row: wraps under the info block on mobile, inline column on ≥sm */}
+                  <div className="flex items-center gap-1 shrink-0 max-sm:self-end">
+                    <Tooltip
+                      content={key.status === "ACTIVE" ? t("revokeKey") : t("reactivateKey")}
+                      side="top"
                     >
-                      {key.status === "ACTIVE" ? (
-                        <PowerOff className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Power className="h-4 w-4 text-green-500" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(key.id)}
-                      title={t("deleteKey")}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRevoke(key.id, key.status)}
+                        aria-label={key.status === "ACTIVE" ? t("revokeKey") : t("reactivateKey")}
+                      >
+                        {key.status === "ACTIVE" ? (
+                          <PowerOff size={16} className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <Power size={16} className="h-4 w-4 text-green-500" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content={t("deleteKey")} side="top">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(key.id)}
+                        aria-label={t("deleteKey")}
+                      >
+                        <Trash2 size={16} className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               </CardContent>
@@ -648,6 +700,7 @@ function WebhooksTab() {
   const handleDelete = async (id: string) => {
     const ok = await confirm({
       description: t("confirmDeleteWebhook"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -901,47 +954,60 @@ function WebhooksTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleTest(ep.id)}
-                      disabled={testing === ep.id}
-                      title={t("testWebhook")}
+                    <Tooltip content={t("testWebhook")} side="top">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleTest(ep.id)}
+                        disabled={testing === ep.id}
+                        aria-label={t("testWebhook")}
+                      >
+                        {testing === ep.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCwIcon size={16} className="h-4 w-4 text-blue-500" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      content={ep.status === "ACTIVE" ? t("pauseWebhook") : t("activateWebhook")}
+                      side="top"
                     >
-                      {testing === ep.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCwIcon size={16} className="h-4 w-4 text-blue-500" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleToggleStatus(ep.id, ep.status)}
-                      title={ep.status === "ACTIVE" ? t("pauseWebhook") : t("activateWebhook")}
-                    >
-                      {ep.status === "ACTIVE" ? (
-                        <PowerOff className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Power className="h-4 w-4 text-green-500" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openEdit(ep)}
-                      title={t("editWebhook")}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(ep.id)}
-                      title={t("deleteWebhook")}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleToggleStatus(ep.id, ep.status)}
+                        aria-label={
+                          ep.status === "ACTIVE" ? t("pauseWebhook") : t("activateWebhook")
+                        }
+                      >
+                        {ep.status === "ACTIVE" ? (
+                          <PowerOff size={16} className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <Power size={16} className="h-4 w-4 text-green-500" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content={t("editWebhook")} side="top">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openEdit(ep)}
+                        aria-label={t("editWebhook")}
+                      >
+                        <Pencil size={16} className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content={t("deleteWebhook")} side="top">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(ep.id)}
+                        aria-label={t("deleteWebhook")}
+                      >
+                        <Trash2 size={16} className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               </CardContent>
@@ -1003,7 +1069,7 @@ function WebhooksTab() {
                       <input
                         type="checkbox"
                         id={`group-${group.label}`}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-gray-300 text-primary focus:ring-ring"
                         checked={group.events.every((e) => formEvents.includes(e))}
                         onChange={() => selectAllInGroup(group.events)}
                       />
@@ -1024,7 +1090,7 @@ function WebhooksTab() {
                             type="checkbox"
                             checked={formEvents.includes(event)}
                             onChange={() => toggleEvent(event)}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="rounded border-gray-300 text-primary focus:ring-ring"
                           />
                           <span className="text-sm text-gray-600 dark:text-gray-400">
                             {getEventLabel(event, t)}
@@ -1249,6 +1315,259 @@ function DeliveriesTab() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── DLQ Tab (delivery health: failed inbound webhooks) ─────────────────
+
+interface DlqEntry {
+  id: string;
+  platform: string;
+  event: string;
+  payload: any;
+  errorMessage: string;
+  retryCount: number;
+  maxRetries: number;
+  status: "FAILED" | "RETRYING" | "RESOLVED";
+  transient?: boolean;
+  createdAt: string;
+  lastAttemptAt: string;
+  nextRetryAt?: string;
+}
+
+interface DlqSummary {
+  totalFailed: number;
+  totalRetrying: number;
+  totalResolved: number;
+  totalExhausted: number;
+  totalCount: number;
+}
+
+const DLQ_PLATFORM_LABELS: Record<string, string> = {
+  shopify: "Shopify",
+  tiktok: "TikTok Shop",
+  shopee: "Shopee",
+  woocommerce: "WooCommerce",
+};
+
+function DlqTab() {
+  const t = useTranslations("integrations");
+  const tc = useTranslations("common");
+  const confirm = useConfirm();
+  const [entries, setEntries] = useState<DlqEntry[]>([]);
+  const [summary, setSummary] = useState<DlqSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const fetchDlq = useCallback(async () => {
+    try {
+      const res = await fetch("/api/webhooks/inbound/dlq", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data.entries || []);
+        setSummary(data.summary || null);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDlq();
+  }, [fetchDlq]);
+
+  const act = async (id: string, action: "replay" | "discard") => {
+    setBusyId(id);
+    try {
+      const res = await fetch("/api/webhooks/inbound/dlq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        toast.success(data.message || (action === "replay" ? "Replayed" : "Discarded"));
+      } else {
+        toast.error(data.message || "Action failed");
+      }
+    } catch {
+      toast.error("Action failed");
+    } finally {
+      setBusyId(null);
+      fetchDlq();
+    }
+  };
+
+  const handleDiscard = async (entry: DlqEntry) => {
+    const ok = await confirm({
+      title: t("dlqDiscardConfirmTitle"),
+      description: t("dlqDiscardConfirmDesc"),
+      confirmLabel: tc("delete"),
+    });
+    if (ok) act(entry.id, "discard");
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  const statusTone = (s: DlqEntry["status"], exhausted: boolean) =>
+    s === "RESOLVED" ? "success" : exhausted ? "danger" : s === "RETRYING" ? "warning" : "info";
+
+  return (
+    <div className="space-y-6">
+      {/* Health summary strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: t("dlqFailed"), value: summary?.totalFailed ?? 0, tone: "text-red-500" },
+          { label: t("dlqRetrying"), value: summary?.totalRetrying ?? 0, tone: "text-amber-500" },
+          { label: t("dlqResolved"), value: summary?.totalResolved ?? 0, tone: "text-green-500" },
+          { label: t("dlqTotal"), value: summary?.totalCount ?? 0, tone: "text-foreground" },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-4">
+              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className={cn("text-2xl font-bold tabular-nums", s.tone)}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {entries.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <CircleCheckIcon size={48} className="h-12 w-12 text-green-500/60 mb-4" />
+            <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
+              {t("dlqEmpty")}
+            </h3>
+            <p className="text-sm text-gray-400 mt-1">{t("dlqEmptyDesc")}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {entries.map((e) => {
+            const exhausted =
+              e.status === "FAILED" && e.retryCount >= e.maxRetries && !e.nextRetryAt;
+            return (
+              <Card key={e.id} className="hover:shadow-sm transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <AnimatedDisclosure
+                        open={expandedId === e.id}
+                        onToggle={() => setExpandedId(expandedId === e.id ? null : e.id)}
+                        trigger={() => (
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div>
+                              {e.status === "RESOLVED" ? (
+                                <CircleCheckIcon size={20} className="h-5 w-5 text-green-500" />
+                              ) : e.status === "RETRYING" ? (
+                                <RefreshCwIcon
+                                  size={20}
+                                  className="h-5 w-5 text-amber-500 animate-spin [animation-duration:2.5s]"
+                                />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-red-500" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm">{e.event}</span>
+                                <Badge variant="outline">
+                                  {DLQ_PLATFORM_LABELS[e.platform] || e.platform}
+                                </Badge>
+                                <Badge variant={statusTone(e.status, exhausted)}>
+                                  {exhausted ? t("dlqExhausted") : e.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                <span className="truncate max-w-xs" title={e.errorMessage}>
+                                  {e.errorMessage}
+                                </span>
+                                <span>
+                                  {t("dlqAttempts", { count: e.retryCount, max: e.maxRetries })}
+                                </span>
+                                <span>{formatDate(e.lastAttemptAt)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        triggerClassName="flex items-start justify-between gap-4 w-full text-left cursor-pointer group"
+                        contentClassName="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800"
+                      >
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 mb-1">
+                              {t("dlqError")}
+                            </p>
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              {e.errorMessage}
+                            </p>
+                          </div>
+                          {e.nextRetryAt && e.status === "RETRYING" && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 mb-1">
+                                {t("dlqNextRetry")}
+                              </p>
+                              <p className="text-xs">{formatDate(e.nextRetryAt)}</p>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 mb-1">
+                              {t("payload")}
+                            </p>
+                            <pre className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded max-h-40 overflow-auto scrollbar-thin whitespace-pre-wrap">
+                              {(() => {
+                                try {
+                                  return JSON.stringify(e.payload, null, 2);
+                                } catch {
+                                  return String(e.payload);
+                                }
+                              })()}
+                            </pre>
+                          </div>
+                        </div>
+                      </AnimatedDisclosure>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={busyId === e.id || e.status === "RESOLVED"}
+                        onClick={() => act(e.id, "replay")}
+                      >
+                        <RefreshCwIcon
+                          size={14}
+                          className={cn("h-3.5 w-3.5 mr-1.5", busyId === e.id && "animate-spin")}
+                        />
+                        {t("dlqReplay")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        disabled={busyId === e.id}
+                        onClick={() => handleDiscard(e)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                        {t("dlqDiscard")}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

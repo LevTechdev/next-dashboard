@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -14,7 +14,7 @@ import {
   UserIcon,
   DollarSignIcon,
 } from "lucide-animated";
-import { ShoppingBag, Store, BarChart3 } from "lucide-react";
+import { ShoppingBag, Store, BarChart3, FileText, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,10 +30,17 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination-bar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Sparkline } from "@/components/ui/sparkline";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
-import { RealtimeIndicator } from "@/components/realtime-indicator";
+import { useNow } from "@/hooks/use-now";
+import { enqueueAndFlush } from "@/lib/offline-queue";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { PremiumStatCard } from "@/components/ui/premium-stat-card";
+import { useShowUpgrade } from "@/components/billing/tier-gate";
+import { SalesChannelBadge } from "@/components/ui/brand-icons";
 import { motion } from "framer-motion";
 import {
   OrderTrackingTimeline,
@@ -41,6 +48,7 @@ import {
 } from "@/components/order-tracking-timeline";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import { DataExportButton } from "@/components/data-export-button";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 
@@ -49,23 +57,41 @@ export default function OrdersPage() {
   const locale = (params?.locale as string) || "en";
   const torders = useTranslations("orders");
   const tcommon = useTranslations("common");
+  const tpwa = useTranslations("pwa");
+  const { formatMoney, formatCompactMoney, currency } = useCurrency();
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
+  // Open-ended ranges compare against "now"; read through the hook instead of
+  // calling Date.now() inside the memo below, which renders impurely.
+  const now = useNow();
 
   const {
     data: orders,
     loading,
-    lastUpdated,
     isRefreshing,
+    error,
     refresh,
   } = useRealtimeData<any[]>("/api/orders", {
     interval: 15000,
     realtime: { table: "Order", event: "*" },
   });
+
+  // PRO-gated volume cap: when /api/orders answers 402 (plan_limit_reached),
+  // surface the shared upgrade dialog (once per mount) and keep a persistent
+  // upsell banner above the table.
+  const showUpgrade = useShowUpgrade();
+  const orderLimitReached = !!error && /HTTP 402/.test(error.message);
+  const upgradeShownRef = useRef(false);
+  useEffect(() => {
+    if (orderLimitReached && !upgradeShownRef.current) {
+      upgradeShownRef.current = true;
+      showUpgrade("orderLimit");
+    }
+  }, [orderLimitReached, showUpgrade]);
 
   const dateFiltered = useMemo(() => {
     if (!orders) return [];
@@ -83,9 +109,80 @@ export default function OrdersPage() {
   }, [orders, dateRange]);
 
   // Compute stats from date-filtered orders data
+
+  const sparkData = useMemo(() => {
+    if (!dateFiltered || dateFiltered.length === 0) return { orders: [], revenue: [] };
+
+    // Sort the date-filtered orders by date first (oldest to newest) so the
+    // sparklines follow the selected range instead of the whole dataset.
+    const sorted = [...dateFiltered].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+
+    const grouped: Record<string, { count: number; rev: number }> = {};
+    sorted.forEach((o) => {
+      const d = new Date(o.createdAt).toLocaleDateString();
+      if (!grouped[d]) grouped[d] = { count: 0, rev: 0 };
+      grouped[d].count++;
+      grouped[d].rev += o.grandTotal || 0;
+    });
+
+    return {
+      orders: Object.values(grouped).map((g: any) => g.count),
+      revenue: Object.values(grouped).map((g: any) => g.rev),
+    };
+  }, [dateFiltered]);
+
+  // Stats must agree with the visible (date-filtered) list: “Total Orders”
+  // used to count the whole dataset while revenue/avg filtered by the range,
+  // so the cards contradicted each other and the table below.
+  const totalOrdersInRange = dateFiltered.length;
   const totalRevenue = dateFiltered.reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
   const pendingCount = dateFiltered.filter((o: any) => o.status === "PENDING").length;
   const avgOrderValue = dateFiltered.length > 0 ? totalRevenue / dateFiltered.length : 0;
+
+  // Trend pills (dashboard parity): compare the filtered window with the
+  // immediately preceding window of equal length. Without an explicit range
+  // the two halves of the dataset form the comparison; with a range we look
+  // back one window before `from`. Same period-over-period math the overview
+  // cards use, so every stat row shows the same pill design.
+  const trendChanges = useMemo(() => {
+    const pct = (current: number, previous: number) =>
+      previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
+    if (!orders) return { orders: undefined, revenue: undefined, avg: undefined };
+
+    let current: any[] = dateFiltered;
+    let previous: any[] = [];
+    if (dateRange.from || dateRange.to) {
+      const spanMs = Math.max(
+        1,
+        (dateRange.to ? new Date(dateRange.to).getTime() : now) -
+          (dateRange.from ? new Date(dateRange.from).getTime() : now - 30 * 86400000),
+      );
+      const fromMs = dateRange.from ? new Date(dateRange.from).getTime() : now - spanMs;
+      const prevEnd = fromMs - 1;
+      const prevStart = prevEnd - spanMs;
+      previous = orders.filter((o: any) => {
+        const t = new Date(o.createdAt).getTime();
+        return t >= prevStart && t <= prevEnd;
+      });
+    } else {
+      const mid = Math.floor(current.length / 2);
+      previous = current.slice(0, mid);
+      current = current.slice(mid);
+    }
+
+    const prevRevenue = previous.reduce((s: number, o: any) => s + (o.grandTotal || 0), 0);
+    const currRevenue = current.reduce((s: number, o: any) => s + (o.grandTotal || 0), 0);
+    return {
+      orders: pct(current.length, previous.length),
+      revenue: pct(currRevenue, prevRevenue),
+      avg: pct(
+        current.length > 0 ? currRevenue / current.length : 0,
+        previous.length > 0 ? prevRevenue / previous.length : 0,
+      ),
+    };
+  }, [orders, dateFiltered, dateRange, now]);
 
   const filtered = dateFiltered.filter(
     (o: any) =>
@@ -99,13 +196,16 @@ export default function OrdersPage() {
   const pageStart = (currentPage - 1) * pageSize;
   const paginated = filtered.slice(pageStart, pageStart + pageSize);
 
+  // Offline-first: when the network drops the mutation is queued in
+  // IndexedDB and replayed on reconnect (the row keeps its local change in
+  // the meantime — a "draft" edit until the queue syncs).
   const updateStatus = async (id: string, status: string) => {
-    const res = await fetch("/api/orders", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
-    if (!res.ok) {
+    const result = await enqueueAndFlush("/api/orders", "PUT", { id, status }, "order-status");
+    if (result.queued) {
+      toast.info(tpwa("queuedToast"));
+      return;
+    }
+    if (!result.response.ok) {
       toast.error(tcommon("error"));
       return;
     }
@@ -122,12 +222,17 @@ export default function OrdersPage() {
       destructive: true,
     });
     if (!ok) return;
-    const res = await fetch("/api/orders", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: "CANCELLED" }),
-    });
-    if (!res.ok) {
+    const result = await enqueueAndFlush(
+      "/api/orders",
+      "PUT",
+      { id, status: "CANCELLED" },
+      "order-status",
+    );
+    if (result.queued) {
+      toast.info(tpwa("queuedToast"));
+      return;
+    }
+    if (!result.response.ok) {
       toast.error(tcommon("error"));
       return;
     }
@@ -173,12 +278,12 @@ export default function OrdersPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{torders("title")}</h1>
+          <h1 className="text-2xl font-bold truncate">{torders("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{torders("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
           <Button
             variant="ghost"
@@ -224,71 +329,69 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Summary Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Stats Cards — shared premium stat card (same size as dashboard) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
         {[
           {
-            label: torders("totalOrders") || "Total Orders",
-            end: orders?.length || 0,
+            title: torders("totalOrders") || "Total Orders",
+            endValue: totalOrdersInRange,
+            change: trendChanges.orders,
             icon: ShoppingBag,
             color: "text-blue-600 dark:text-blue-400",
             bg: "bg-blue-50 dark:bg-blue-900/20",
+            sparkData: sparkData.orders,
           },
           {
-            label: torders("totalRevenue") || "Total Revenue",
-            end: totalRevenue,
+            title: torders("totalRevenue") || "Total Revenue",
+            endValue: totalRevenue,
+            change: trendChanges.revenue,
             icon: DollarSignIcon,
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
-            format: (v: number) => formatCurrency(v),
+            formatter: (v: number) =>
+              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : formatMoney(v),
+            sparkData: sparkData.revenue,
           },
           {
-            label: torders("pending") || "Pending",
-            end: pendingCount,
+            title: torders("pending") || "Pending",
+            endValue: pendingCount,
             icon: ClockIcon,
             color: "text-amber-600 dark:text-amber-400",
             bg: "bg-amber-50 dark:bg-amber-900/20",
           },
           {
-            label: torders("avgOrder") || "Avg Order",
-            end: avgOrderValue,
+            title: torders("avgOrder") || "Avg Order",
+            endValue: avgOrderValue,
+            change: trendChanges.avg,
             icon: BarChart3,
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
-            format: (v: number) => formatCurrency(v),
+            formatter: (v: number) =>
+              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : formatMoney(v),
           },
         ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <Card className="group hover:shadow-md transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div
-                    className={cn(
-                      "p-2.5 rounded-lg transition-transform group-hover:scale-110 duration-300",
-                      stat.bg,
-                    )}
-                  >
-                    <stat.icon size={20} className={cn("h-5 w-5", stat.color)} />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                  <AnimatedCounter
-                    end={stat.end}
-                    duration={1400}
-                    {...(stat.format ? { formatter: stat.format } : {})}
-                  />
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <PremiumStatCard key={stat.title} {...stat} delay={i * 0.08} />
         ))}
       </div>
+
+      {orderLimitReached && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <p className="text-xs text-muted-foreground leading-snug min-w-0">
+              {torders("limitBanner")}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="gap-1.5 shrink-0 sm:ml-auto"
+            onClick={() => showUpgrade("orderLimit")}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {torders("upgradeCta")}
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="pb-3">
@@ -330,19 +433,28 @@ export default function OrdersPage() {
                     <TableCell className="font-mono text-sm font-medium">
                       <Link
                         href={`/${locale}/orders/${order.id}`}
-                        className="text-lime-600 dark:text-indigo-400 hover:underline"
+                        className="text-primary hover:underline font-semibold transition-colors"
                       >
                         #{order.orderNumber}
                       </Link>
                     </TableCell>
-                    <TableCell>{order.customer?.name || torders("guest")}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{order.channel?.name || torders("na")}</Badge>
+                      {order.customer?.id ? (
+                        <Link
+                          href={`/${locale}/customers/${order.customer.id}`}
+                          className="hover:text-primary transition-colors font-medium"
+                        >
+                          {order.customer.name}
+                        </Link>
+                      ) : (
+                        order.customer?.name || torders("guest")
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <SalesChannelBadge channel={order.channel} />
                     </TableCell>
                     <TableCell>{order.items?.length || 0}</TableCell>
-                    <TableCell className="font-medium">
-                      {formatCurrency(order.grandTotal)}
-                    </TableCell>
+                    <TableCell className="font-medium">{formatMoney(order.grandTotal)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                     </TableCell>
@@ -356,17 +468,34 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setActiveTab("details");
-                          }}
-                          title={torders("viewDetails")}
-                        >
-                          <EyeIcon size={16} className="h-4 w-4" />
-                        </Button>
+                        <Tooltip content={torders("viewDetails")} side="top">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setActiveTab("details");
+                            }}
+                            aria-label={torders("viewDetails")}
+                          >
+                            <EyeIcon size={16} className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content={torders("downloadInvoice")} side="top">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              window.open(
+                                `/api/orders/${order.id}/invoice?currency=${currency}`,
+                                "_blank",
+                              )
+                            }
+                            aria-label={torders("downloadInvoice")}
+                          >
+                            <FileText size={16} className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
                         {order.status === "PENDING" && (
                           <Button
                             variant="ghost"
@@ -413,9 +542,12 @@ export default function OrdersPage() {
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                      <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-50" />{" "}
-                      {torders("noOrders")}
+                    <TableCell colSpan={9}>
+                      <EmptyState
+                        icon={ShoppingBag}
+                        title={torders("noOrders")}
+                        description={torders("noOrdersDesc")}
+                      />
                     </TableCell>
                   </TableRow>
                 )}
@@ -442,151 +574,180 @@ export default function OrdersPage() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              Order #{selectedOrder?.orderNumber}
+              Order{" "}
+              <span className="text-primary font-mono font-bold">
+                #{selectedOrder?.orderNumber}
+              </span>
               <Badge className={getStatusColor(selectedOrder?.status)}>
                 {selectedOrder?.status}
               </Badge>
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="md:w-full md:justify-start">
-                <TabsTrigger value="details">{torders("tabDetails")}</TabsTrigger>
-                <TabsTrigger value="tracking">{torders("tabTracking")}</TabsTrigger>
-                <TabsTrigger value="items">{torders("tabItems")}</TabsTrigger>
-              </TabsList>
+            <>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="md:w-full md:justify-start">
+                  <TabsTrigger value="details">{torders("tabDetails")}</TabsTrigger>
+                  <TabsTrigger value="tracking">{torders("tabTracking")}</TabsTrigger>
+                  <TabsTrigger value="items">{torders("tabItems")}</TabsTrigger>
+                </TabsList>
 
-              {/* Details Tab */}
-              <TabsContent value="details" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <UserIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("orderCustomer")}
-                    </div>
-                    <p className="text-sm font-medium">
-                      {selectedOrder.customer?.name || torders("guest")}
-                    </p>
-                    {selectedOrder.customer?.email && (
-                      <p className="text-xs text-gray-500">{selectedOrder.customer.email}</p>
-                    )}
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <Store className="h-3.5 w-3.5" />
-                      {torders("orderChannel")}
-                    </div>
-                    <p className="text-sm font-medium">
-                      {selectedOrder.channel?.name || torders("na")}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <CreditCardIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("orderPayment")}
-                    </div>
-                    <p className="text-sm font-medium capitalize">
-                      {selectedOrder.paymentMethod?.replace(/_/g, " ").toLowerCase() ||
-                        torders("na")}
-                    </p>
-                    <Badge className={getStatusColor(selectedOrder.paymentStatus)}>
-                      {selectedOrder.paymentStatus}
-                    </Badge>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <ShoppingBag className="h-3.5 w-3.5" />
-                      {torders("orderDate")}
-                    </div>
-                    <p className="text-sm font-medium">{formatDateTime(selectedOrder.createdAt)}</p>
-                  </div>
-                </div>
-
-                {selectedOrder.shippingAddress && (
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                      <MapPinIcon size={14} className="h-3.5 w-3.5" />
-                      {torders("shippingAddress")}
-                    </div>
-                    <p className="text-sm font-medium">{selectedOrder.shippingAddress}</p>
-                  </div>
-                )}
-
-                {selectedOrder.notes && (
-                  <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
-                    <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                      {torders("notes")}
-                    </p>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                      {selectedOrder.notes}
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Tracking Tab */}
-              <TabsContent value="tracking">
-                <div className="p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-                  <OrderTrackingTimeline
-                    currentStatus={selectedOrder.status}
-                    events={getTrackingEventsFromOrder(selectedOrder)}
-                  />
-                </div>
-              </TabsContent>
-
-              {/* Items Tab */}
-              <TabsContent value="items" className="space-y-4">
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {selectedOrder.items?.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity} × {formatCurrency(item.price)}
-                        </p>
+                {/* Details Tab */}
+                <TabsContent value="details" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <UserIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("orderCustomer")}
                       </div>
-                      <span className="text-sm font-medium">{formatCurrency(item.total)}</span>
+                      <p className="text-sm font-medium">
+                        {selectedOrder.customer?.name || torders("guest")}
+                      </p>
+                      {selectedOrder.customer?.email && (
+                        <p className="text-xs text-gray-500">{selectedOrder.customer.email}</p>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <Store className="h-3.5 w-3.5" />
+                        {torders("orderChannel")}
+                      </div>
+                      <p className="text-sm font-medium flex items-center gap-1.5">
+                        {selectedOrder.channel ? (
+                          <>
+                            <SalesChannelBadge channel={selectedOrder.channel} />
+                          </>
+                        ) : (
+                          torders("na")
+                        )}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <CreditCardIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("orderPayment")}
+                      </div>
+                      <p className="text-sm font-medium capitalize">
+                        {selectedOrder.paymentMethod?.replace(/_/g, " ").toLowerCase() ||
+                          torders("na")}
+                      </p>
+                      <Badge className={getStatusColor(selectedOrder.paymentStatus)}>
+                        {selectedOrder.paymentStatus}
+                      </Badge>
+                    </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <ShoppingBag className="h-3.5 w-3.5" />
+                        {torders("orderDate")}
+                      </div>
+                      <p className="text-sm font-medium">
+                        {formatDateTime(selectedOrder.createdAt)}
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="border-t pt-4 space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">{torders("subtotal")}</span>
-                    <span>{formatCurrency(selectedOrder.totalAmount)}</span>
+                  {selectedOrder.shippingAddress && (
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <MapPinIcon size={14} className="h-3.5 w-3.5" />
+                        {torders("shippingAddress")}
+                      </div>
+                      <p className="text-sm font-medium">{selectedOrder.shippingAddress}</p>
+                    </div>
+                  )}
+
+                  {selectedOrder.notes && (
+                    <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                        {torders("notes")}
+                      </p>
+                      <p className="text-sm text-yellow-600 dark:text-yellow-300">
+                        {selectedOrder.notes}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Tracking Tab */}
+                <TabsContent value="tracking">
+                  <div className="p-4 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+                    <OrderTrackingTimeline
+                      currentStatus={selectedOrder.status}
+                      events={getTrackingEventsFromOrder(selectedOrder)}
+                    />
                   </div>
-                  {selectedOrder.shippingAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("shipping")}</span>
-                      <span>{formatCurrency(selectedOrder.shippingAmount)}</span>
-                    </div>
-                  )}
-                  {selectedOrder.discountAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("discount")}</span>
-                      <span className="text-red-500">
-                        -{formatCurrency(selectedOrder.discountAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {selectedOrder.taxAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{torders("tax")}</span>
-                      <span>{formatCurrency(selectedOrder.taxAmount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-base border-t pt-2">
-                    <span>{torders("totalLabel")}</span>
-                    <span>{formatCurrency(selectedOrder.grandTotal)}</span>
+                </TabsContent>
+
+                {/* Items Tab */}
+                <TabsContent value="items" className="space-y-4">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {selectedOrder.items?.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Qty: {item.quantity} Ã— {formatMoney(item.price)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-medium">{formatMoney(item.total)}</span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+
+                  <div className="border-t pt-4 space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{torders("subtotal")}</span>
+                      <span>{formatMoney(selectedOrder.totalAmount)}</span>
+                    </div>
+                    {selectedOrder.shippingAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("shipping")}</span>
+                        <span>{formatMoney(selectedOrder.shippingAmount)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.discountAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("discount")}</span>
+                        <span className="text-red-500">
+                          -{formatMoney(selectedOrder.discountAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.taxAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">{torders("tax")}</span>
+                        <span>{formatMoney(selectedOrder.taxAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-base border-t pt-2">
+                      <span>{torders("totalLabel")}</span>
+                      <span>{formatMoney(selectedOrder.grandTotal)}</span>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              <div className="pt-3 mt-3 border-t border-border flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() =>
+                    window.open(
+                      `/api/orders/${selectedOrder.id}/invoice?currency=${currency}`,
+                      "_blank",
+                    )
+                  }
+                >
+                  <FileText className="h-4 w-4" />
+                  Download PDF Invoice
+                </Button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

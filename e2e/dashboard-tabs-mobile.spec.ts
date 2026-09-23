@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   loginAs,
   waitForStableLayout,
@@ -44,13 +44,39 @@ function measureTabBar(list: HTMLElement): TabBarMetrics {
   };
 }
 
+/**
+ * The page-level tab bar, identified by the page's own tabs rather than by a
+ * bare `getByRole("tablist")`: pages can also carry a nested period picker
+ * (e.g. analytics' "Chart period" 7d/30d/90d pills), which a bare role lookup
+ * would either match ambiguously or pick wrongly.
+ */
+function pageTabList(page: Page, p: TabbedPage) {
+  return page
+    .getByRole("tablist")
+    .filter({ has: page.getByRole("tab", { name: p.tabs[0], exact: true }) });
+}
+
 const TABBED_PAGES: TabbedPage[] = [
-  { path: "/en/billing", tabs: ["Overview", "Plans", "Invoices", "Payment"], scrolls: true },
-  { path: "/en/analytics", tabs: ["Conversion Funnel", "Cohort Retention", "Geographic Breakdown", "Sales by Channel", "Top Products"], scrolls: true },
+  {
+    path: "/en/billing",
+    tabs: ["Overview", "Plans", "Invoices", "Payment", "Tax Nexus & VAT/GST", "QRIS & Withdraw"],
+    scrolls: true,
+  },
+  {
+    path: "/en/analytics",
+    tabs: [
+      "Conversion Funnel",
+      "Cohort Retention",
+      "Geographic Breakdown",
+      "Sales by Channel",
+      "Top Products",
+    ],
+    scrolls: true,
+  },
   { path: "/en/roles", tabs: ["Permission Matrix", "Role Assignments"], scrolls: false },
   {
     path: "/en/notifications",
-    tabs: ["Inbox", "Alert Rules", "Email Preferences"],
+    tabs: ["Inbox", "Alert Rules", "Email Preferences", "Team Chat (Slack & Discord)"],
     scrolls: true,
   },
   {
@@ -58,10 +84,22 @@ const TABBED_PAGES: TabbedPage[] = [
     tabs: ["Overview", "Revenue Breakdown", "Sales Report", "Customer Report", "Product Report"],
     scrolls: true,
   },
-  { path: "/en/affiliates", tabs: ["Platforms", "Affiliate Links", "Conversions"], scrolls: false },
+  {
+    path: "/en/affiliates",
+    tabs: ["Platforms", "Affiliate Links", "Conversions", "Payouts & Disbursements"],
+    scrolls: true,
+  },
   {
     path: "/en/integrations",
-    tabs: ["API Keys", "Webhooks", "Delivery Log", "Playground"],
+    tabs: [
+      "API Keys",
+      "Webhooks",
+      "Delivery Log",
+      "Delivery health",
+      "Team Chat (Slack & Discord)",
+      "Omnichannel Sync",
+      "Playground",
+    ],
     scrolls: true,
   },
 ];
@@ -76,7 +114,7 @@ test.describe("Dashboard tab bars at a 375px viewport", () => {
   test("every tabbed page keeps its tab bar inside the viewport", async ({ page }) => {
     for (const p of TABBED_PAGES) {
       await page.goto(p.path);
-      const tabList = page.getByRole("tablist");
+      const tabList = pageTabList(page, p);
       await expect(tabList).toBeVisible();
 
       // The view-transition animation can briefly offset the layout on
@@ -138,7 +176,7 @@ test.describe("Dashboard tab bars at a 375px viewport", () => {
   test("every tab on every page is reachable and activates", async ({ page }) => {
     for (const p of TABBED_PAGES) {
       await page.goto(p.path);
-      await expect(page.getByRole("tablist")).toBeVisible();
+      await expect(pageTabList(page, p)).toBeVisible();
 
       for (const name of p.tabs) {
         // Retry the click until Radix marks it active: a click during

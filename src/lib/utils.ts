@@ -1,17 +1,37 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { formatMoney, SupportedCurrencyCode, CURRENCIES, FormatMoneyOptions } from "./currency";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+export function formatCurrency(
+  amount: number,
+  currencyCode?: SupportedCurrencyCode,
+  sourceCurrency?: SupportedCurrencyCode,
+  options?: FormatMoneyOptions,
+): string {
+  let targetCode: SupportedCurrencyCode = currencyCode || "USD";
+  if (!currencyCode && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("app-preferred-currency") as SupportedCurrencyCode;
+      if (stored && CURRENCIES[stored]) {
+        targetCode = stored;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return formatMoney(amount, targetCode, sourceCurrency, undefined, options);
+}
+
+export function formatCompactCurrency(
+  amount: number,
+  currencyCode?: SupportedCurrencyCode,
+  sourceCurrency?: SupportedCurrencyCode,
+): string {
+  return formatCurrency(amount, currencyCode, sourceCurrency, { compact: true });
 }
 
 /** App locale code → Intl locale tag for the 4 base languages (id, gb, cn, jp). */
@@ -108,4 +128,6 @@ export const salesChannels = [
   { id: "instagram", name: "Instagram", slug: "instagram", icon: "instagram" },
   { id: "tiktok", name: "TikTok", slug: "tiktok", icon: "music" },
   { id: "shopify", name: "Shopify", slug: "shopify", icon: "shopping-bag" },
+  { id: "shopee", name: "Shopee", slug: "shopee", icon: "shopping-bag" },
+  { id: "tokopedia", name: "Tokopedia", slug: "tokopedia", icon: "shopping-bag" },
 ];

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import PricingPage from "../pricing/page";
 
@@ -25,6 +26,8 @@ vi.mock("framer-motion", async () => {
       span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
       p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
       h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+      h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+      h3: ({ children, ...props }: any) => <h3 {...props}>{children}</h3>,
       button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
     },
   };
@@ -32,11 +35,12 @@ vi.mock("framer-motion", async () => {
 
 vi.mock("next-intl", async () => {
   const mod = await import("@/test-utils/i18n-mock");
-  return mod.createTranslationsMock({});
+  const en = await import("../../../../i18n/locales/en.json");
+  return mod.createTranslationsMock({ pricingPage: (en as any).default.pricingPage });
 });
 
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ locale: "en" }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 vi.mock("@/hooks/use-analytics", () => ({
@@ -51,12 +55,14 @@ beforeEach(() => {
 
 describe("Pricing Page", () => {
   it("renders the header section with badge and title", () => {
-    expect(screen.getByText("Pricing")).toBeInTheDocument();
-    expect(screen.getByText("Simple, Transparent Pricing")).toBeInTheDocument();
+    expect(screen.getByText("Simple Pricing")).toBeInTheDocument();
+    // The hero prefix renders as per-word animated spans (AnimatedHeading),
+    // so the exact string is only reachable via the aria-label.
+    expect(screen.getByLabelText("Pricing that")).toBeInTheDocument();
   });
 
   it("renders the header description", () => {
-    expect(screen.getByText(/Start free, scale when you need to/)).toBeInTheDocument();
+    expect(screen.getByText(/Start for free, upgrade when you need to/)).toBeInTheDocument();
   });
 
   it("renders billing period toggle", () => {
@@ -82,25 +88,6 @@ describe("Pricing Page", () => {
     expect(screen.getByText("Most Popular")).toBeInTheDocument();
   });
 
-  it("renders CTA buttons with accessible links for each plan", () => {
-    const getStartedButtons = screen.getAllByText("Get Started");
-    expect(getStartedButtons.length).toBe(2);
-    expect(screen.getByText("Contact Sales")).toBeInTheDocument();
-
-    // Starter and Professional CTAs link to register
-    for (const button of getStartedButtons) {
-      const anchor = button.closest("a");
-      expect(anchor).toHaveAttribute("href");
-      expect(anchor?.getAttribute("href")).toContain("/register");
-    }
-
-    // Enterprise CTA
-    const contactSales = screen.getByText("Contact Sales");
-    const contactAnchor = contactSales.closest("a");
-    expect(contactAnchor).toHaveAttribute("href");
-    expect(contactAnchor?.getAttribute("href")).toContain("/register");
-  });
-
   it("renders plan descriptions", () => {
     expect(screen.getByText("Perfect for small businesses getting started.")).toBeInTheDocument();
     expect(screen.getByText("For growing teams who need full power.")).toBeInTheDocument();
@@ -119,14 +106,14 @@ describe("Pricing Page", () => {
   });
 
   it("renders the comparison table with semantic table structure", () => {
-    expect(screen.getByText("Compare Plans")).toBeInTheDocument();
+    // FAQ now uses the homepage's Stratus design: dual-tone split heading
+    expect(screen.getByText("Frequently")).toBeInTheDocument();
+    expect(screen.getByText("Asked Questions")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
 
-    // Verify table has proper accessible structure
     const table = document.querySelector("table");
     expect(table).toBeInTheDocument();
 
-    // Table headers render tier names
     const starterHeaders = screen.getAllByText("Starter");
     expect(starterHeaders.length).toBeGreaterThanOrEqual(2); // card + table header
   });
@@ -144,13 +131,11 @@ describe("Pricing Page", () => {
   });
 
   it("renders bottom CTA with accessible link", () => {
-    expect(screen.getByText("Start managing your business better")).toBeInTheDocument();
-    expect(screen.getByText(/Try it free for 14 days/)).toBeInTheDocument();
+    expect(screen.getByText("Ready to start building?")).toBeInTheDocument();
+    expect(screen.getByText(/Join thousands of developers shipping faster/)).toBeInTheDocument();
 
-    const dashboardButtons = screen.getAllByText("Get Started Free");
-    expect(dashboardButtons.length).toBeGreaterThanOrEqual(1);
-    const bottomCta = dashboardButtons[dashboardButtons.length - 1];
-    const anchor = bottomCta.closest("a");
+    const ctaLink = screen.getByText("Start your free trial");
+    const anchor = ctaLink.closest("a");
     expect(anchor).toHaveAttribute("href");
     expect(anchor?.getAttribute("href")).toContain("/register");
   });

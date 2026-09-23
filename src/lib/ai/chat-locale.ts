@@ -107,12 +107,99 @@ export function buildMockAiReply(
 ): string {
   const language = LOCALE_NAMES[normalizeAiLocale(locale)];
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+  const query = (lastUserMessage?.content || "").toLowerCase();
+
+  // 1. Inquiries about at-risk VIP customers or win-back discounts
+  if (
+    query.includes("at-risk") ||
+    query.includes("vip") ||
+    query.includes("churn") ||
+    query.includes("win-back") ||
+    query.includes("winback")
+  ) {
+    return [
+      `### 💎 At-Risk VIP Customer Analysis\n\nI identified **5 high-LTV VIP customers** who have spent over **\$1,500** historically but have placed zero orders in the last **60+ days**:\n\n1. **Jonathan Edwards** (Total LTV: \$2,450 — Last Active: 74 days ago)\n2. **Bambang Soedirgo** (Total LTV: \$1,980 — Last Active: 68 days ago)\n3. **Clara Tan** (Total LTV: \$1,820 — Last Active: 82 days ago)\n4. **Michael Chen** (Total LTV: \$1,640 — Last Active: 61 days ago)\n5. **Siti Rahma** (Total LTV: \$1,590 — Last Active: 90 days ago)\n\n**Churn Risk**: **HIGH (78%)**. Inaction risks losing \$9,480 in annualized recurring GMV.`,
+      `I recommend launching an automated VIP Win-Back voucher granting **15% off** for the next 14 days. Review and execute the proposal below:`,
+      `\`\`\`json:action-proposal
+{
+  "id": "prop-disc-vip15",
+  "type": "CREATE_DISCOUNT",
+  "title": "Launch 15% VIP Win-Back Discount (WINBACK15)",
+  "description": "Automated campaign targeted at 5 high-value customers at risk of churning. Grants 15% off valid for 14 days.",
+  "estimatedImpact": "Est. $2,400 recovered revenue; ~18% reactivation conversion.",
+  "payload": {
+    "code": "WINBACK15",
+    "name": "VIP Win-Back Special (15% OFF)",
+    "description": "Targeted re-engagement voucher for inactive high-LTV accounts",
+    "type": "PERCENTAGE",
+    "value": 15,
+    "minPurchase": 50,
+    "durationDays": 14
+  },
+  "status": "pending"
+}
+\`\`\``,
+    ].join("\n\n");
+  }
+
+  // 2. Inquiries about ROAS, ad spend, or channels (TikTok Shop, Shopee)
+  if (
+    query.includes("roas") ||
+    query.includes("tiktok") ||
+    query.includes("ad spend") ||
+    query.includes("cpa")
+  ) {
+    return [
+      `### 📈 Acquisition Channel & ROAS Performance\n\nHere is your multi-channel performance breakdown over the **last 30 days**:\n\n- **TikTok Shop**: **4.82x ROAS** (Ad Spend: \$1,240 → GMV: \$5,976, CPA: \$14.20) — 🟢 *Optimal Scale*\n- **Online Direct Store**: **3.65x ROAS** (Ad Spend: \$2,100 → GMV: \$7,665, CPA: \$22.50) — 🟢 *Healthy*\n- **Instagram Shopping**: **2.91x ROAS** (Ad Spend: \$950 → GMV: \$2,764, CPA: \$28.10) — 🟡 *Acceptable*\n- **Shopee Marketplace**: **3.40x ROAS** (Ad Spend: \$800 → GMV: \$2,720, CPA: \$18.40) — 🟢 *Healthy*\n\n**Blended ROAS**: **3.71x** (above target 3.00x). TikTok Shop is currently your highest return-on-capital acquisition funnel.`,
+      `Would you like me to allocate more budget or draft a promotion specifically for TikTok Shop customers?`,
+    ].join("\n\n");
+  }
+
+  // 3. Inquiries about replenishment, PO, low stock, inventory
+  if (
+    query.includes("replenishment") ||
+    query.includes("po") ||
+    query.includes("low stock") ||
+    query.includes("inventory") ||
+    query.includes("stockout")
+  ) {
+    return [
+      `### 📦 Inventory Velocity & Stockout Alert\n\nBased on your 30-day sales velocity, **1 product** has reached critical stockout risk ($\text{DOI} \\le 7\\text{d}$):\n\n- **Classic Oxford Cotton Shirt (SKU: SHIRT-OXF-001)**:\n  - Current Stock: **12 units**\n  - Daily Velocity: **3.8 units/day**\n  - Days of Inventory: **3.1 days remaining**\n  - Supplier: **Apex Manufacturing Ltd.** (Lead time: 7 days)\n\n**Projected Stockout**: in **3 days** without an immediate supplier order.`,
+      `I have prepared an automated replenishment purchase order for 150 units. Review and issue the order below:`,
+      `\`\`\`json:action-proposal
+{
+  "id": "prop-po-oxf",
+  "type": "CREATE_PURCHASE_ORDER",
+  "title": "Issue Replenishment PO for 150 Units",
+  "description": "Restock critical low-stock items (<7 DOI) via Apex Manufacturing to prevent imminent stockout.",
+  "estimatedImpact": "Prevents $4,200 in projected lost sales over the next 3 weeks.",
+  "payload": {
+    "supplierId": "sup-001",
+    "warehouseId": "wh-jkt",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "Classic Oxford Cotton Shirt",
+        "sku": "SHIRT-OXF-001",
+        "quantity": 150,
+        "unitCost": 125000
+      }
+    ],
+    "notes": "Auto-generated via Autonomous AI Executive Copilot replenishment alert."
+  },
+  "status": "pending"
+}
+\`\`\``,
+    ].join("\n\n");
+  }
+
   const echo = lastUserMessage?.content ? `You asked: "${lastUserMessage.content.trim()}"` : "";
 
   return [
-    "This is a dev-mode mock reply — no AI provider API key is configured, so the Copilot answered instantly without calling a provider.",
-    `Add a GEMINI_API_KEY or OPENAI_API_KEY in production and this panel will answer with real dashboard data (revenue, orders, customers, products) in ${language}.`,
+    `This is a dev-mode mock reply — the Copilot answered instantly without calling an external LLM API.`,
+    `In production with GEMINI_API_KEY or OPENAI_API_KEY, this panel queries live PostgreSQL analytics in ${language}.`,
     echo,
+    `*Tip: Try asking: "Who are our top 5 at-risk VIP customers?", "What was our TikTok Shop ROAS?", or "Draft a replenishment PO for low stock items".*`,
   ]
     .filter(Boolean)
     .join("\n\n");

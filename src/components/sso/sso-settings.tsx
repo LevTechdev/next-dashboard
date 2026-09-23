@@ -182,6 +182,7 @@ export function SsoSettings() {
     const ok = await confirm({
       title: t("deleteTitle"),
       description: t("deleteDesc"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -234,8 +235,8 @@ export function SsoSettings() {
         >
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-4">
-                <Building2 className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <Building2 className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">
                 {t("notConfiguredTitle")}
@@ -391,7 +392,7 @@ export function SsoSettings() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <LinkIcon size={20} className="h-5 w-5 text-indigo-500" />
+                    <LinkIcon size={20} className="h-5 w-5 text-primary" />
                     <CardTitle>{t("metadataTitle")}</CardTitle>
                   </div>
                   <CardDescription>{t("metadataDesc")}</CardDescription>
@@ -460,7 +461,7 @@ export function SsoSettings() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-indigo-600" />
+              <Building2 className="h-5 w-5 text-primary" />
               {state.status === "ready" ? t("editTitle") : t("setupTitle")}
             </DialogTitle>
             <DialogDescription>

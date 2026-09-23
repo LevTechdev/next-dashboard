@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { PlusIcon, SearchIcon } from "lucide-animated";
+import { PlusIcon } from "lucide-animated";
 import { Megaphone, Edit2, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SalesChannelIcon } from "@/components/ui/brand-icons";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency, formatDate, getStatusColor, sanitizeInteger } from "@/lib/utils";
+import { formatCurrency, getStatusColor, sanitizeInteger } from "@/lib/utils";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -121,6 +122,7 @@ export default function MarketingPage() {
       title: tcommon("delete"),
       description: tmarketing("confirmDelete"),
       confirmLabel: tcommon("delete"),
+      icon: "trash",
       destructive: true,
     });
     if (!ok) return;
@@ -139,7 +141,7 @@ export default function MarketingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{tmarketing("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{tmarketing("subtitle")}</p>
@@ -203,11 +205,36 @@ export default function MarketingPage() {
                     <SelectValue placeholder={tmarketing("channel")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="instagram">Instagram</SelectItem>
-                    <SelectItem value="tiktok">TikTok</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="google">Google Ads</SelectItem>
+                    <SelectItem value="facebook">
+                      <span className="flex items-center gap-2">
+                        <SalesChannelIcon name="facebook" size={14} />
+                        <span>Facebook</span>
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="instagram">
+                      <span className="flex items-center gap-2">
+                        <SalesChannelIcon name="instagram" size={14} />
+                        <span>Instagram</span>
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="tiktok">
+                      <span className="flex items-center gap-2">
+                        <SalesChannelIcon name="tiktok" size={14} />
+                        <span>TikTok</span>
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="email">
+                      <span className="flex items-center gap-2">
+                        <SalesChannelIcon name="gmail" size={14} />
+                        <span>Email</span>
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="google">
+                      <span className="flex items-center gap-2">
+                        <SalesChannelIcon name="google" size={14} />
+                        <span>Google Ads</span>
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -259,11 +286,22 @@ export default function MarketingPage() {
                     c.spent > 0 ? (((c.budget - c.spent) / c.spent) * 100).toFixed(0) : "0";
                   return (
                     <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="font-medium text-primary hover:text-primary/80 transition-colors">
+                        {c.name}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{c.type}</Badge>
                       </TableCell>
-                      <TableCell className="capitalize">{c.channel || "-"}</TableCell>
+                      <TableCell>
+                        {c.channel && c.channel !== "-" ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <SalesChannelIcon name={c.channel} size={14} />
+                            <span className="capitalize">{c.channel}</span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>{formatCurrency(c.budget)}</TableCell>
                       <TableCell>{formatCurrency(c.spent)}</TableCell>
                       <TableCell>
@@ -312,8 +350,11 @@ export default function MarketingPage() {
                 })}
                 {campaigns.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" /> {tcommon("noData")}
+                    <TableCell colSpan={8} className="py-10">
+                      <div className="flex flex-col items-center gap-2 text-gray-500">
+                        <Megaphone className="h-8 w-8 opacity-50" />
+                        <span>{tcommon("noData")}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

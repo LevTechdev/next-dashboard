@@ -15,6 +15,17 @@ vi.mock("@/hooks/use-realtime-data", () => ({
 
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 
+// next/navigation — the ?month= deep-link filter reads useSearchParams. The
+// component re-renders after suspension, so the router mocks must be stable.
+const mockRouterReplace = vi.fn();
+const mockSearchParams = new URLSearchParams();
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/en/analytics",
+  useParams: () => ({ locale: "en" }),
+  useSearchParams: () => mockSearchParams,
+  useRouter: () => ({ push: vi.fn(), replace: mockRouterReplace }),
+}));
+
 const mockUseRealtimeData = vi.mocked(useRealtimeData);
 
 const mockData = {
@@ -51,26 +62,49 @@ const loadingState = {
   error: null,
 };
 
+const ordersState = {
+  data: [],
+  loading: false,
+  lastUpdated: new Date(),
+  isRefreshing: false,
+  refresh: vi.fn(),
+  error: null,
+};
+
+// The page polls two endpoints — /api/dashboard for the KPIs and /api/orders
+// for the funnel/geo breakdown, and React StrictMode double-invokes effects,
+// so calls are served by URL instead of a one-shot queue (a Once-queue starves
+// on re-render and the destructure crashes on undefined).
+function mockRealtimeData() {
+  mockUseRealtimeData.mockImplementation((url: string) =>
+    url === "/api/dashboard" ? loadedState : ordersState,
+  );
+}
+
 describe("Analytics Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Re-install the stable URL-based implementation after clearAllMocks.
+    mockRealtimeData();
   });
 
   it("renders loading skeleton when loading", () => {
-    mockUseRealtimeData.mockReturnValue(loadingState);
+    mockUseRealtimeData.mockImplementation((url: string) =>
+      url === "/api/dashboard" ? loadingState : ordersState,
+    );
     const { container } = render(<AnalyticsPage />);
     expect(container.querySelector(".shimmer")).toBeInTheDocument();
   });
 
   it("renders the page heading with data", () => {
-    mockUseRealtimeData.mockReturnValue(loadedState);
+    mockRealtimeData();
     render(<AnalyticsPage />);
-    expect(screen.getByText("Dashboard Overview")).toBeInTheDocument();
-    expect(screen.getAllByText("Insights").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Analytics")).toBeInTheDocument();
+    expect(screen.getByText(/revenue trends/i)).toBeInTheDocument();
   });
 
   it("renders metric cards", () => {
-    mockUseRealtimeData.mockReturnValue(loadedState);
+    mockRealtimeData();
     render(<AnalyticsPage />);
     expect(screen.getByText("Total Revenue")).toBeInTheDocument();
     expect(screen.getAllByText("Total Orders").length).toBeGreaterThanOrEqual(1);
@@ -79,22 +113,22 @@ describe("Analytics Page", () => {
   });
 
   it("renders tab navigation", () => {
-    mockUseRealtimeData.mockReturnValue(loadedState);
+    mockRealtimeData();
     render(<AnalyticsPage />);
-    expect(screen.getAllByText("Insights").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/revenue trends/i)).toBeInTheDocument();
     const channelElements = screen.getAllByText("Sales by Channel");
     expect(channelElements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Top Products").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders Revenue Trends chart section", () => {
-    mockUseRealtimeData.mockReturnValue(loadedState);
+    mockRealtimeData();
     render(<AnalyticsPage />);
     expect(screen.getAllByText("Revenue Overview").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the Refresh button", () => {
-    mockUseRealtimeData.mockReturnValue(loadedState);
+    mockRealtimeData();
     render(<AnalyticsPage />);
     expect(screen.getByText("View")).toBeInTheDocument();
   });

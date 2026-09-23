@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { createOtpPayload } from "@/lib/email-otp";
 import { sendOtpEmail } from "@/lib/email";
+import { logEmailDelivery, type EmailDeliveryStatus } from "@/lib/email-delivery";
 
 /**
  * Issue a fresh email-verification OTP: generate a 6-digit code, persist only
@@ -23,13 +24,36 @@ export async function issueEmailOtp(opts: {
     data: { emailOtpHash: hash, emailOtpExpires: expiresAt, emailOtpAttempts: 0 },
   });
 
-  const { sent } = await sendOtpEmail({
+  let status: EmailDeliveryStatus = "failed";
+  let transport: "smtp" | "resend" | "none" = "none";
+  let reason: string | undefined;
+  try {
+    const { sent } = await sendOtpEmail({
+      to: opts.email,
+      otp: code,
+      locale: opts.locale,
+    });
+    if (sent) {
+      status = "sent";
+      transport = process.env.SMTP_HOST ? "smtp" : process.env.RESEND_API_KEY ? "resend" : "none";
+    } else {
+      reason = "no mailer configured";
+    }
+  } catch (err) {
+    reason = err instanceof Error ? err.message.slice(0, 200) : "transport error";
+  }
+
+  // Audit trail: whether the code actually left the building.
+  await logEmailDelivery({
+    userId: opts.userId,
+    status,
+    template: "verify_email",
     to: opts.email,
-    otp: code,
-    locale: opts.locale,
+    transport,
+    reason,
   });
 
-  return { sent, code };
+  return { sent: status === "sent", code };
 }
 
 /** Whether the current environment may expose the dev-mode OTP/code fallback. */

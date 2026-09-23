@@ -2,7 +2,7 @@
  * Type for a namespace-to-messages mapping.
  * Each namespace maps translation keys to their display values.
  */
-export type TranslationMessages = Record<string, Record<string, string>>;
+export type TranslationMessages = Record<string, Record<string, unknown>>;
 
 // ─── Reusable translation message sets ─────────────────────────────────────
 
@@ -75,6 +75,9 @@ export const dashboardMessages: TranslationMessages = {
   dashboard: {
     title: "Dashboard Overview",
     subtitle: "Welcome back! Here's what's happening today.",
+    greetingMorning: "Good morning,",
+    greetingAfternoon: "Good afternoon,",
+    greetingEvening: "Good evening,",
     totalRevenue: "Total Revenue",
     totalOrders: "Total Orders",
     totalCustomers: "Total Customers",
@@ -190,7 +193,10 @@ export function createTranslationsMock(overrides?: TranslationMessages) {
         key
           .split(".")
           .reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), ns);
-      const t = (key: string) => resolve(key) ?? key;
+      const t = (key: string): string => {
+        const value = resolve(key);
+        return typeof value === "string" ? value : key;
+      };
       t.raw = (key: string) => resolve(key) ?? key;
       t.rich = (key: string) => resolve(key) ?? key;
       return t;

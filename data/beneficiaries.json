@@ -1,0 +1,66 @@
+[
+  {
+    "id": "ben-bca-01",
+    "accountNumber": "8410294821",
+    "maskedAccount": "8410 •••• 821",
+    "accountName": "Budi Santoso",
+    "channel": "bank_transfer",
+    "bankCode": "014",
+    "bankName": "Bank Central Asia (BCA)",
+    "verified": true,
+    "favorite": true,
+    "lastUsedAt": "2026-09-07T14:30:00.000Z",
+    "totalDisbursed": 15000000
+  },
+  {
+    "id": "ben-dana-02",
+    "accountNumber": "081287654321",
+    "maskedAccount": "0812-••••-4321",
+    "accountName": "Siti Rahmawati",
+    "channel": "dana",
+    "bankName": "DANA Digital Wallet",
+    "verified": true,
+    "favorite": true,
+    "lastUsedAt": "2026-09-06T11:15:00.000Z",
+    "totalDisbursed": 4500000
+  },
+  {
+    "id": "ben-mandiri-03",
+    "accountNumber": "1370019283741",
+    "maskedAccount": "1370 •••••• 741",
+    "accountName": "PT Maju Bersama Logistik",
+    "channel": "bank_transfer",
+    "bankCode": "008",
+    "bankName": "Bank Mandiri",
+    "verified": true,
+    "favorite": false,
+    "lastUsedAt": "2026-09-05T09:00:00.000Z",
+    "totalDisbursed": 28000000
+  },
+  {
+    "id": "ben-card-04",
+    "accountNumber": "4532019827364242",
+    "maskedAccount": "•••• •••• •••• 4242",
+    "accountName": "Hendra Wijaya",
+    "channel": "card_oct",
+    "cardType": "visa",
+    "cardTier": "platinum",
+    "bankName": "Visa Platinum OCT",
+    "verified": true,
+    "favorite": false,
+    "lastUsedAt": "2026-09-04T16:45:00.000Z",
+    "totalDisbursed": 8500000
+  },
+  {
+    "id": "ben-alipay-05",
+    "accountNumber": "seller_global@supplychain.cn",
+    "maskedAccount": "sel••••••@supplychain.cn",
+    "accountName": "Zhang Wei (Shenzhen Trade)",
+    "channel": "alipay",
+    "bankName": "Alipay Cross-Border Direct",
+    "verified": true,
+    "favorite": false,
+    "lastUsedAt": "2026-09-03T18:20:00.000Z",
+    "totalDisbursed": 12400000
+  }
+]

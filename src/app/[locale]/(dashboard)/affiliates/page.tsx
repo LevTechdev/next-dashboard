@@ -36,8 +36,10 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
+  SelectGroup,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -47,10 +49,36 @@ import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
 import { ShareLinkDialog } from "@/components/share-link-dialog";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatDateTime, cn, sanitizeInteger } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { can } from "@/lib/permissions";
+import { getPlatformChannelConfig, SalesChannelIcon } from "@/components/ui/brand-icons";
+import { identifyAccountInput } from "@/lib/account-validator";
+
+/** Payout disbursement rails — the Select groups the way money can leave. */
+const PAYOUT_PROVIDERS = [
+  { value: "DANA", group: "wallet", label: "DANA" },
+  { value: "OVO", group: "wallet", label: "OVO" },
+  { value: "GOPAY", group: "wallet", label: "GoPay" },
+  { value: "BCA", group: "bank", label: "BCA" },
+  { value: "MANDIRI", group: "bank", label: "Mandiri" },
+  { value: "BRI", group: "bank", label: "BRI" },
+  { value: "BNI", group: "bank", label: "BNI" },
+  { value: "STRIPE", group: "intl", label: "Stripe Connect (Visa/Mastercard OCT · USD)" },
+  { value: "ALIPAY", group: "intl", label: "Alipay (CNY)" },
+] as const;
+
+const WALLET_PROVIDERS = new Set(["DANA", "OVO", "GOPAY"]);
+
+/** preferredMethod hint per provider so identifyAccountInput validates the right rail. */
+function providerHint(provider: string): string | undefined {
+  if (WALLET_PROVIDERS.has(provider)) return provider.toLowerCase();
+  if (provider === "ALIPAY") return "alipay";
+  if (["BCA", "MANDIRI", "BRI", "BNI"].includes(provider)) return provider;
+  return undefined;
+}
 
 const STATUS_STYLES: Record<string, string> = {
   CONNECTED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -92,6 +120,28 @@ export default function AffiliatesPage() {
   const [links, setLinks] = useState<any[]>([]);
   const [conversions, setConversions] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutSummary, setPayoutSummary] = useState<any>(null);
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({
+    amount: "500",
+    provider: "STRIPE",
+    account: "",
+  });
+  const [payoutSaving, setPayoutSaving] = useState(false);
+  // Live validation for the payout dialog: rail detection on the account
+  // input (e-wallet / bank / Alipay) plus the two balance gates that
+  // POST /api/affiliates/payouts enforces — surfaced inline before submit.
+  const payoutAmountNum = parseFloat(payoutForm.amount) || 0;
+  const payoutDetection = payoutForm.account
+    ? identifyAccountInput(payoutForm.account, providerHint(payoutForm.provider))
+    : null;
+  const amountExceedsAvailable =
+    payoutSummary?.availableBalance != null && payoutAmountNum > payoutSummary.availableBalance;
+  const amountExceedsSettlement =
+    !amountExceedsAvailable &&
+    payoutSummary?.settlementBalance != null &&
+    payoutAmountNum > payoutSummary.settlementBalance;
   const [loading, setLoading] = useState(true);
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
 
@@ -171,12 +221,19 @@ export default function AffiliatesPage() {
       fetch("/api/affiliates/links").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/affiliates/conversions").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/products").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([s, p, l, c, prods]) => {
+      fetch("/api/affiliates/payouts").then((r) =>
+        r.ok ? r.json() : { payouts: [], summary: null },
+      ),
+    ]).then(([s, p, l, c, prods, payData]) => {
       setSummary(s);
       setPlatforms(p);
       setLinks(l);
       setConversions(c);
       setProducts(Array.isArray(prods) ? prods : prods.products || []);
+      if (payData) {
+        setPayouts(payData.payouts || []);
+        setPayoutSummary(payData.summary || null);
+      }
       setLoading(false);
     });
   }, []);
@@ -230,6 +287,7 @@ export default function AffiliatesPage() {
   const disconnect = async (platform: any) => {
     const ok = await confirm({
       description: t("disconnectConfirm", { name: platform.name }),
+      icon: "key",
       destructive: true,
     });
     if (!ok) return;
@@ -492,25 +550,25 @@ export default function AffiliatesPage() {
           <p className="text-sm text-gray-500 mt-1">{t("subtitle")}</p>
         </div>
         <Button variant="ghost" size="sm" onClick={loadAll} className="gap-1">
-          <RefreshCwIcon size={14} className="h-3.5 w-3.5" />
+          <RefreshCwIcon size={14} />
           {tcommon("refresh")}
         </Button>
       </div>
 
       {/* Summary stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
         <StatCard
           icon={<MousePointerClick className="h-5 w-5 text-blue-500" />}
           label={t("totalClicks")}
           value={<AnimatedCounter end={totals.clicks} />}
         />
         <StatCard
-          icon={<TrendingUpIcon size={20} className="h-5 w-5 text-purple-500" />}
+          icon={<TrendingUpIcon size={20} className="text-purple-500" />}
           label={t("totalConversions")}
           value={<AnimatedCounter end={totals.conversions} />}
         />
         <StatCard
-          icon={<DollarSignIcon size={20} className="h-5 w-5 text-emerald-500" />}
+          icon={<DollarSignIcon size={20} className="text-emerald-500" />}
           label={t("attributedRevenue")}
           value={<AnimatedCounter end={totals.revenue} formatter={formatCurrency} />}
         />
@@ -526,6 +584,7 @@ export default function AffiliatesPage() {
           <TabsTrigger value="platforms">{t("tabPlatforms")}</TabsTrigger>
           <TabsTrigger value="links">{t("tabLinks")}</TabsTrigger>
           <TabsTrigger value="conversions">{t("tabConversions")}</TabsTrigger>
+          <TabsTrigger value="payouts">{t("tabPayouts")}</TabsTrigger>
         </TabsList>
 
         {/* ═══ PLATFORMS TAB ═══ */}
@@ -535,16 +594,22 @@ export default function AffiliatesPage() {
               const status = p.connection?.status || "DISCONNECTED";
               return (
                 <Card key={p.id} className="overflow-hidden">
-                  <div className="h-1" style={{ backgroundColor: p.color || "#6366f1" }} />
+                  <div className="h-1 bg-primary/70" />
                   <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
-                          style={{ backgroundColor: p.color || "#6366f1" }}
-                        >
-                          {p.name.charAt(0)}
-                        </div>
+                        {(() => {
+                          const brand = getPlatformChannelConfig(p.name, p.slug);
+                          return brand ? (
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-800 shrink-0">
+                              <SalesChannelIcon name={brand.name} size={20} />
+                            </div>
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary/10 text-primary font-semibold text-sm">
+                              {p.name.charAt(0)}
+                            </div>
+                          );
+                        })()}
                         <div>
                           <p className="font-semibold text-sm">{p.name}</p>
                           <p className="text-xs text-gray-500">
@@ -578,24 +643,57 @@ export default function AffiliatesPage() {
                           <Plug className="h-3.5 w-3.5 mr-1" />
                           {status === "CONNECTED" ? t("manage") : t("connect")}
                         </Button>
+                        {p.baseUrl && (
+                          <Tooltip content={t("openLink")} side="top">
+                            <a href={p.baseUrl} target="_blank" rel="noopener noreferrer">
+                              <Button size="sm" variant="ghost" aria-label={t("openLink")}>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </a>
+                          </Tooltip>
+                        )}
                         {status === "CONNECTED" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => syncProducts(p)}
-                            disabled={syncingId === p.id}
-                            title={t("syncProducts")}
-                          >
-                            <RefreshCwIcon
-                              size={14}
-                              className={cn("h-3.5 w-3.5", syncingId === p.id && "animate-spin")}
-                            />
-                          </Button>
+                          <Tooltip content={t("syncProducts")} side="top">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => syncProducts(p)}
+                              disabled={syncingId === p.id}
+                              aria-label={t("syncProducts")}
+                            >
+                              <RefreshCwIcon
+                                size={14}
+                                className={cn(syncingId === p.id && "animate-spin")}
+                              />
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     )}
 
                     {/* Per-platform headless fallback toggle for URL imports */}
+                    {(p.links?.length ?? 0) > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <p className="text-[11px] font-medium text-gray-500 mb-1.5">
+                          {t("platformRecentLinks")}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {p.links.map((l: any) => (
+                            <a
+                              key={l.id}
+                              href={affiliateUrl(l.code)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors max-w-44"
+                              title={l.product?.name || affiliateUrl(l.code)}
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                              <span className="truncate">/aff/{l.code}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {canManage && (
                       <label className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 cursor-pointer">
                         <span className="text-xs text-gray-500">{t("headlessFallback")}</span>
@@ -621,11 +719,11 @@ export default function AffiliatesPage() {
             {can(role, "create", "affiliates") && (
               <>
                 <Button variant="outline" onClick={() => setImportOpen(true)}>
-                  <LinkIcon size={16} className="h-4 w-4 mr-2" />
+                  <LinkIcon size={16} className="mr-2" />
                   {t("importFromUrl")}
                 </Button>
                 <Button onClick={() => setLinkDialogOpen(true)}>
-                  <PlusIcon size={16} className="h-4 w-4 mr-2" />
+                  <PlusIcon size={16} className="mr-2" />
                   {t("createLink")}
                 </Button>
               </>
@@ -672,14 +770,28 @@ export default function AffiliatesPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            style={{
-                              backgroundColor: `${l.platform?.color}20`,
-                              color: l.platform?.color,
-                            }}
-                          >
-                            {l.platform?.name}
-                          </Badge>
+                          {(() => {
+                            const brand = getPlatformChannelConfig(
+                              l.platform?.name,
+                              l.platform?.slug,
+                            );
+                            return (
+                              <Badge
+                                className="inline-flex items-center gap-1.5"
+                                style={
+                                  brand
+                                    ? undefined
+                                    : {
+                                        backgroundColor: `${l.platform?.color}20`,
+                                        color: l.platform?.color,
+                                      }
+                                }
+                              >
+                                {brand && <SalesChannelIcon name={brand.name} size={12} />}
+                                {l.platform?.name}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {l.commissionType === "FIXED"
@@ -694,41 +806,47 @@ export default function AffiliatesPage() {
                         <TableCell>
                           <button
                             onClick={() => copyLink(l.code)}
-                            className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-mono"
+                            className="flex items-center gap-1 text-xs text-primary hover:underline font-mono"
                             title={affiliateUrl(l.code)}
                           >
-                            <CopyIcon size={12} className="h-3 w-3" />
+                            <CopyIcon size={12} />
                             /aff/{l.code}
                           </button>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <a
-                              href={affiliateUrl(l.code)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button variant="ghost" size="icon" title={t("openLink")}>
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </a>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setShareLink(l)}
-                              title={t("shareLink")}
-                            >
-                              <Share2 className="h-4 w-4 text-indigo-500" />
-                            </Button>
-                            {canManage && (
+                            <Tooltip content={t("openLink")} side="top">
+                              <a
+                                href={affiliateUrl(l.code)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Button variant="ghost" size="icon" aria-label={t("openLink")}>
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              </a>
+                            </Tooltip>
+                            <Tooltip content={t("shareLink")} side="top">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => openEditLink(l)}
-                                title={t("editLink")}
+                                onClick={() => setShareLink(l)}
+                                aria-label={t("shareLink")}
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Share2 className="h-4 w-4 text-indigo-500" />
                               </Button>
+                            </Tooltip>
+                            {canManage && (
+                              <Tooltip content={t("editLink")} side="top">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEditLink(l)}
+                                  aria-label={t("editLink")}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </Tooltip>
                             )}
                             {can(role, "delete", "affiliates") && (
                               <Button
@@ -745,9 +863,11 @@ export default function AffiliatesPage() {
                     ))}
                     {links.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          <LinkIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          {t("noLinks")}
+                        <TableCell colSpan={8} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-gray-500">
+                            <LinkIcon size={32} className="opacity-50" />
+                            <span>{t("noLinks")}</span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -784,14 +904,28 @@ export default function AffiliatesPage() {
                           {c.link?.product?.name}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            style={{
-                              backgroundColor: `${c.link?.platform?.color}20`,
-                              color: c.link?.platform?.color,
-                            }}
-                          >
-                            {c.link?.platform?.name}
-                          </Badge>
+                          {(() => {
+                            const brand = getPlatformChannelConfig(
+                              c.link?.platform?.name,
+                              c.link?.platform?.slug,
+                            );
+                            return (
+                              <Badge
+                                className="inline-flex items-center gap-1.5"
+                                style={
+                                  brand
+                                    ? undefined
+                                    : {
+                                        backgroundColor: `${c.link?.platform?.color}20`,
+                                        color: c.link?.platform?.color,
+                                      }
+                                }
+                              >
+                                {brand && <SalesChannelIcon name={brand.name} size={12} />}
+                                {c.link?.platform?.name}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>{formatCurrency(c.amount)}</TableCell>
                         <TableCell className="font-medium text-emerald-600 dark:text-emerald-400">
@@ -827,12 +961,158 @@ export default function AffiliatesPage() {
                     ))}
                     {conversions.length === 0 && (
                       <TableRow>
+                        <TableCell colSpan={canManage ? 7 : 6} className="py-10">
+                          <div className="flex flex-col items-center gap-2 text-gray-500">
+                            <TrendingUpIcon size={32} className="opacity-50" />
+                            <span>{t("noConversions")}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ═══ PAYOUTS & DISBURSEMENTS TAB ═══ */}
+        <TabsContent value="payouts" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-5">
+                <p className="text-xs text-muted-foreground font-medium">{t("totalPaid")}</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  ${payoutSummary?.totalPaid ? payoutSummary.totalPaid.toLocaleString() : "0.00"}
+                </p>
+                <p className="text-xs text-emerald-500 font-medium mt-1">
+                  Via Stripe Connect & Midtrans Iris
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-5">
+                <p className="text-xs text-muted-foreground font-medium">{t("pendingBalance")}</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  $
+                  {payoutSummary?.pendingBalance
+                    ? payoutSummary.pendingBalance.toLocaleString()
+                    : "0.00"}
+                </p>
+                <p className="text-xs text-amber-500 font-medium mt-1">
+                  In processing / escrow queue
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-between">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      {t("availableBalance")}
+                    </p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      $
+                      {payoutSummary?.availableBalance
+                        ? payoutSummary.availableBalance.toLocaleString()
+                        : "0.00"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      // Prefill the amount with the available commission balance.
+                      setPayoutForm((prev) => ({
+                        ...prev,
+                        amount: payoutSummary?.availableBalance
+                          ? String(Math.floor(payoutSummary.availableBalance))
+                          : prev.amount,
+                      }));
+                      setPayoutDialogOpen(true);
+                    }}
+                    className="gap-1.5"
+                  >
+                    <DollarSignIcon size={16} />
+                    {t("requestPayout")}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">{t("payoutsTitle")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("payoutsSubtitle")}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadAll} className="gap-1.5">
+                  <RefreshCwIcon size={14} />
+                  {tcommon("refresh")}
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("payoutId")}</TableHead>
+                      <TableHead>{t("provider")}</TableHead>
+                      <TableHead>{t("account")}</TableHead>
+                      <TableHead>{t("commission")}</TableHead>
+                      <TableHead>{tcommon("status")}</TableHead>
+                      <TableHead>{tcommon("date")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payouts.length > 0 ? (
+                      payouts.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs font-semibold text-foreground">
+                            {p.id}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border bg-muted/50">
+                              {p.provider === "STRIPE"
+                                ? "💳 Stripe Connect"
+                                : p.provider === "MIDTRANS"
+                                  ? "🏦 Midtrans Iris"
+                                  : "🏛️ Bank Transfer"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs font-mono text-muted-foreground">
+                            {p.account}
+                          </TableCell>
+                          <TableCell className="text-xs font-bold text-foreground">
+                            ${p.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-semibold",
+                                p.status === "COMPLETED"
+                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                  : p.status === "PROCESSING"
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                              )}
+                            >
+                              {t(`status_${p.status}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(p.createdAt).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
                         <TableCell
-                          colSpan={canManage ? 7 : 6}
-                          className="text-center py-8 text-gray-500"
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground text-xs"
                         >
-                          <DollarSignIcon size={32} className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          {t("noConversions")}
+                          No payout records found
                         </TableCell>
                       </TableRow>
                     )}
@@ -943,7 +1223,7 @@ export default function AffiliatesPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <LinkIcon size={20} className="h-5 w-5" />
+              <LinkIcon size={20} />
               {t("createLink")}
             </DialogTitle>
           </DialogHeader>
@@ -1056,7 +1336,7 @@ export default function AffiliatesPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <LinkIcon size={20} className="h-5 w-5" />
+              <LinkIcon size={20} />
               {t("importFromUrl")}
             </DialogTitle>
           </DialogHeader>
@@ -1164,7 +1444,7 @@ export default function AffiliatesPage() {
                           className={cn(
                             "shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-move",
                             importForm.image === img
-                              ? "border-indigo-500 ring-2 ring-indigo-500/30"
+                              ? "border-primary ring-2 ring-primary/30"
                               : "border-transparent hover:border-gray-300 dark:hover:border-gray-600",
                             importDrag.from === idx && "opacity-40",
                             importDrag.over === idx &&
@@ -1432,6 +1712,166 @@ export default function AffiliatesPage() {
         onClose={() => setLightbox(null)}
         onIndexChange={(i) => setLightbox((lb) => (lb ? { ...lb, index: i } : lb))}
       />
+
+      {/* ═══ REQUEST PAYOUT DIALOG ═══ */}
+      <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSignIcon size={20} className="text-emerald-500" />
+              {t("requestPayoutTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-xs text-muted-foreground">{t("requestPayoutDesc")}</p>
+
+            {/* Balance context — the two gates the API enforces. */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg border border-border bg-muted/30 p-2.5">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("availableBalance")}
+                </p>
+                <p className="text-sm font-bold text-foreground tabular-nums">
+                  {formatCurrency(payoutSummary?.availableBalance ?? 0, "USD")}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-2.5">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("settlementBalance")}
+                </p>
+                <p className="text-sm font-bold text-foreground tabular-nums">
+                  {formatCurrency(payoutSummary?.settlementBalance ?? 0, "USD")}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("payoutAmount")}</label>
+              <Input
+                type="number"
+                min="10"
+                value={payoutForm.amount}
+                onChange={(e) => setPayoutForm((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="500"
+              />
+              {amountExceedsAvailable && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                  {t("insufficientBalance")}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("selectProvider")}</label>
+              <Select
+                value={payoutForm.provider}
+                onValueChange={(val) => setPayoutForm((prev) => ({ ...prev, provider: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>{t("providerGroupWallet")}</SelectLabel>
+                    {PAYOUT_PROVIDERS.filter((p) => p.group === "wallet").map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>{t("providerGroupBank")}</SelectLabel>
+                    {PAYOUT_PROVIDERS.filter((p) => p.group === "bank").map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>{t("providerGroupIntl")}</SelectLabel>
+                    {PAYOUT_PROVIDERS.filter((p) => p.group === "intl").map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">{t("account")}</label>
+              <Input
+                value={payoutForm.account}
+                onChange={(e) => setPayoutForm((prev) => ({ ...prev, account: e.target.value }))}
+                placeholder="0812-3456-789 · 1234567890 · name@example.com"
+              />
+              {/* Live rail detection from the shared account validator. */}
+              {payoutDetection && (
+                <p
+                  className={cn(
+                    "text-xs font-medium",
+                    payoutDetection.isValid
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400",
+                  )}
+                >
+                  {payoutDetection.provider} · {payoutDetection.formatted}
+                  {!payoutDetection.isValid && ` — ${t("accountInvalid")}`}
+                </p>
+              )}
+            </div>
+            {amountExceedsSettlement && !amountExceedsAvailable && (
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                {t("settlementShortfall")}
+              </p>
+            )}
+            <div className="pt-2 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPayoutDialogOpen(false)}>
+                {tcommon("cancel")}
+              </Button>
+              <Button
+                size="sm"
+                disabled={
+                  payoutSaving ||
+                  !payoutForm.amount ||
+                  !payoutDetection?.isValid ||
+                  amountExceedsAvailable
+                }
+                onClick={async () => {
+                  setPayoutSaving(true);
+                  try {
+                    const res = await fetch("/api/affiliates/payouts", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payoutForm),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                      toast.success(t("payoutSuccess"));
+                      setPayoutDialogOpen(false);
+                      loadAll();
+                    } else {
+                      // Surface the API's balance gates inline, not as a generic toast.
+                      if (data.error === "insufficient_commission_balance") {
+                        toast.error(t("insufficientBalance"));
+                      } else if (data.error === "insufficient_settlement_funds") {
+                        toast.error(t("settlementShortfall"));
+                      } else {
+                        toast.error(data.message || t("payoutFailed"));
+                      }
+                    }
+                  } catch {
+                    toast.error(t("payoutFailed"));
+                  } finally {
+                    setPayoutSaving(false);
+                  }
+                }}
+              >
+                {payoutSaving ? t("processingPayout") : t("submitPayout")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
@@ -1446,14 +1886,18 @@ function StatCard({
   value: React.ReactNode;
 }) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-          {icon}
-        </div>
-        <p className="text-sm text-gray-500 mb-1">{label}</p>
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
+    <div className="stat-card-premium h-full min-w-0 flex flex-col">
+      <div className="flex items-center min-h-[40px]">
+        <div className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 shadow-sm">{icon}</div>
+      </div>
+      <div className="mt-4 min-w-0">
+        <p className="text-sm text-gray-500 mb-1 truncate">{label}</p>
+        <p className="text-lg sm:text-xl xl:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
+          {value}
+        </p>
+      </div>
+      {/* Reserved sparkline row so heights match the shared premium stat card */}
+      <div className="mt-2 min-h-[30px]" />
+    </div>
   );
 }

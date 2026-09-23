@@ -1,71 +1,110 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, ArrowRight, Star, Percent } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, X, ArrowRight, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
+import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
+import { StratusFaq } from "@/components/home/stratus-faq";
+import { FxSettlementPanel } from "@/components/billing/fx-settlement-panel";
+import { useCurrency } from "@/components/currency-provider";
+import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
+
+/**
+ * Which currency a visitor lands on. The list price stays in USD (that is what
+ * is charged), but a buyer deciding in Jakarta, Tokyo or Shanghai should not
+ * have to do the arithmetic in their head.
+ */
+const LOCALE_CURRENCY: Record<string, SupportedCurrencyCode> = {
+  id: "IDR",
+  ja: "JPY",
+  zh: "CNY",
+};
+
+/** Cheap orderings: most-used first, so the common case is one glance away. */
+const CURRENCY_CHOICES: SupportedCurrencyCode[] = ["USD", "IDR", "JPY", "EUR", "SGD", "CNY"];
 
 const PLAN_META = [
-  {
-    key: "starter",
-    name: "Starter",
-    desc: "Perfect for small businesses getting started.",
-    popular: false,
-    monthly: 29,
-    yearly: 23,
-    features: [
-      "Up to 100 orders/month",
-      "Up to 3 team members",
-      "Basic analytics",
-      "Standard exports",
-      "Email support",
-    ],
-  },
-  {
-    key: "professional",
-    name: "Professional",
-    desc: "For growing teams who need full power.",
-    popular: true,
-    monthly: 79,
-    yearly: 63,
-    features: [
-      "Up to 1,000 orders/month",
-      "Up to 10 team members",
-      "Advanced real-time analytics",
-      "Priority support",
-      "Multi-channel integrations",
-      "Custom reports",
-      "Role-Based Access Control",
-      "API & Webhooks",
-    ],
-  },
-  {
-    key: "enterprise",
-    name: "Enterprise",
-    desc: "Custom solutions for high-volume businesses.",
-    popular: false,
-    monthly: 199,
-    yearly: 159,
-    features: [
-      "Unlimited orders",
-      "Unlimited team members",
-      "Advanced real-time analytics",
-      "24/7 Dedicated support",
-      "Multi-channel integrations",
-      "Custom reports",
-      "Role-Based Access Control",
-      "API & Webhooks",
-      "Custom data exports",
-    ],
-  },
+  { key: "starter", popular: false, monthly: 29, yearly: 23 },
+  { key: "professional", popular: true, monthly: 79, yearly: 63 },
+  { key: "enterprise", popular: false, monthly: 199, yearly: 159 },
 ];
+
+export type PlanMeta = { name: string; desc: string; features: string[] };
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export default function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations("pricingPage");
   const { locale } = use(params);
+  const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  // Live mid-market conversion for the "≈ Rp …" line under each list price.
+  const { currency, setCurrency, formatMoney, ratesStale, ratesSourceLabel, ratesSource } =
+    useCurrency();
+  // Follow the visitor's locale until they pick a currency themselves — after
+  // that, a locale-based default would fight them on every re-render.
+  const pickedCurrency = useRef(false);
+  const planMeta = t.raw("plans") as Record<string, PlanMeta>;
+  const compareCols = t.raw("compareCols") as string[];
+  const compareRows = t.raw("compareRows") as string[][];
+
+  useEffect(() => {
+    if (pickedCurrency.current) return;
+    const preferred = LOCALE_CURRENCY[locale];
+    if (preferred) setCurrency(preferred);
+    // Locale changes are a deliberate navigation, so re-default then.
+  }, [locale, setCurrency]);
+
+  const chooseCurrency = (code: SupportedCurrencyCode) => {
+    pickedCurrency.current = true;
+    setCurrency(code);
+  };
+
+  const handleSubscribe = async (planKey: string) => {
+    if (planKey === "enterprise") {
+      router.push(`/${locale}/register`);
+      return;
+    }
+    setLoadingKey(planKey);
+    try {
+      const plansRes = await fetch("/api/billing/plans");
+      const plans = await plansRes.json();
+      const plan = plans.find((p: any) => p.name.toLowerCase() === planKey.toLowerCase());
+
+      if (!plan) {
+        toast.error(t("toastPlanNotFound"));
+        return;
+      }
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: plan.id, locale }),
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        router.push(`/${locale}/register`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast.error(err.message || t("toastCheckoutFailed"));
+    } finally {
+      setLoadingKey(null);
+    }
+  };
 
   return (
     <div className="bg-zinc-50 dark:bg-[#0b0c11] text-zinc-900 dark:text-zinc-100 overflow-x-hidden min-h-screen">
@@ -83,16 +122,66 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold mb-6 shadow-sm">
             <Star className="h-3.5 w-3.5" />
-            Pricing
+            {t("heroTag")}
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-4xl mx-auto text-foreground">
-            Simple, Transparent Pricing
+            <AnimatedHeading text={t("heroPrefix")} delay={0.15} />
+            <br className="hidden sm:block" />
+            <span className="text-primary inline-flex">
+              {/* Real hero copy, revealed by the chromatic sweep. */}
+              <DiaTextReveal
+                text={[t("heroWord1"), t("heroWord2"), t("heroWord3")]}
+                repeat
+                fixedWidth
+                duration={1.1}
+                holdDuration={1.9}
+                colors={[
+                  "hsl(var(--primary))",
+                  "color-mix(in oklab, hsl(var(--primary)) 45%, #fff)",
+                  "hsl(var(--primary))",
+                ]}
+                textColor="hsl(var(--primary))"
+                className="text-4xl font-bold sm:text-5xl md:text-6xl"
+              />
+            </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10">
-            Start free, scale when you need to. Choose the plan that fits your business needs.
+            <AnimatedSubtitle text={t("heroSubtitle")} delay={0.45} />
           </p>
+
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("fxCurrencyLabel")}
+            </span>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background p-1 shadow-sm">
+              {CURRENCY_CHOICES.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => chooseCurrency(code)}
+                  aria-pressed={currency === code}
+                  data-testid={`fx-currency-${code}`}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    currency === code
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {CURRENCIES[code].symbol} {code}
+                </button>
+              ))}
+            </div>
+            {currency !== "USD" && (
+              <span className="text-[11px] text-muted-foreground">
+                {ratesStale
+                  ? t("fxStale")
+                  : t("fxSource", { source: ratesSourceLabel || ratesSource })}
+              </span>
+            )}
+          </div>
 
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
             <button
@@ -104,7 +193,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Monthly
+              {t("monthly")}
             </button>
             <button
               onClick={() => setIsAnnual(true)}
@@ -115,7 +204,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Yearly
+              {t("yearly")}
               <span
                 className={cn(
                   "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
@@ -124,7 +213,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                     : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
                 )}
               >
-                Save 20%
+                {t("yearlyDiscount")}
               </span>
             </button>
           </div>
@@ -135,6 +224,7 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6 items-start">
           {PLAN_META.map((plan, i) => {
+            const meta = planMeta[plan.key];
             const price = isAnnual ? plan.yearly : plan.monthly;
 
             return (
@@ -154,19 +244,19 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                 {plan.popular && (
                   <div className="absolute top-0 right-8 -translate-y-1/2">
                     <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                      Most Popular
+                      {t("mostPopular")}
                     </span>
                   </div>
                 )}
 
-                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                <h3 className="text-xl font-bold mb-2">{meta.name}</h3>
                 <p
                   className={cn(
                     "text-sm mb-6",
                     plan.popular ? "opacity-80" : "text-muted-foreground",
                   )}
                 >
-                  {plan.desc}
+                  {meta.desc}
                 </p>
 
                 <div className="flex items-baseline gap-1 mb-8">
@@ -177,21 +267,37 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                       plan.popular ? "opacity-80" : "text-muted-foreground",
                     )}
                   >
-                    /month
+                    {t("perMonth")}
                   </span>
                 </div>
 
-                <Link
-                  href={`/${locale}/register`}
+                {currency !== "USD" && (
+                  <p
+                    data-testid={`fx-price-${plan.key}`}
+                    data-currency={currency}
+                    className={cn(
+                      "-mt-6 mb-8 text-sm",
+                      plan.popular ? "opacity-80" : "text-muted-foreground",
+                    )}
+                  >
+                    {t("fxEquivalent", { amount: formatMoney(price) })}
+                  </p>
+                )}
+
+                <button
+                  onClick={() => handleSubscribe(plan.key)}
+                  disabled={loadingKey === plan.key}
                   className={cn(
-                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8",
+                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8 flex justify-center items-center gap-2",
                     plan.popular
                       ? "bg-background text-foreground hover:bg-muted"
                       : "bg-foreground text-background hover:opacity-90",
+                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : "",
                   )}
                 >
-                  {plan.key === "enterprise" ? "Contact Sales" : "Get Started"}
-                </Link>
+                  {loadingKey === plan.key ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {plan.key === "enterprise" ? t("contactSales") : t("getStarted")}
+                </button>
 
                 <div className="flex-1">
                   <p
@@ -200,10 +306,10 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                       plan.popular ? "opacity-80" : "text-muted-foreground",
                     )}
                   >
-                    Includes
+                    {t("featuresIncluded")}
                   </p>
                   <ul className="space-y-4">
-                    {plan.features.map((feature, j) => (
+                    {meta.features.map((feature, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm">
                         <Check
                           className={cn(
@@ -222,37 +328,54 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
+      {/* ──────── WHAT IT COSTS IN LOCAL MONEY ──────── */}
+      {currency === "IDR" && (
+        <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
+          <FxSettlementPanel
+            // The plan most people are deciding between, at the selected period.
+            amountUsd={
+              isAnnual
+                ? (PLAN_META.find((p) => p.popular)?.yearly ?? PLAN_META[1].yearly)
+                : (PLAN_META.find((p) => p.popular)?.monthly ?? PLAN_META[1].monthly)
+            }
+            periodLabel={isAnnual ? t("fxPerYear") : t("perMonth")}
+          />
+        </section>
+      )}
+
       {/* ──────── COMPARISON TABLE ──────── */}
-      <section className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border">
+      <section
+        id="comparison"
+        className="px-4 sm:px-6 lg:px-12 py-24 max-w-7xl mx-auto border-t border-border"
+      >
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-4">
-            Compare Plans
+            {t("compareTitle")}
           </h2>
-          <p className="text-muted-foreground text-sm">
-            Find the perfect set of features for your business scale.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("compareSubtitle")}</p>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-border bg-background">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="text-left py-4 px-6 font-semibold text-foreground">Features</th>
-                <th className="text-center py-4 px-6 font-semibold text-foreground">Starter</th>
-                <th className="text-center py-4 px-6 font-semibold text-primary">Professional</th>
-                <th className="text-center py-4 px-6 font-semibold text-foreground">Enterprise</th>
+                {compareCols.map((col, i) => (
+                  <th
+                    key={col}
+                    className={cn(
+                      i === 0 && "text-left",
+                      i !== 0 && "text-center",
+                      "py-4 px-6 font-semibold",
+                      i === 2 ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {[
-                ["Monthly Orders", "100", "1,000", "Unlimited"],
-                ["Team Members", "3", "10", "Unlimited"],
-                ["Analytics", "Basic", "Advanced", "Advanced"],
-                ["Support", "Email", "Priority", "24/7 Dedicated"],
-                ["API Access", "-", "Full", "Full"],
-                ["Custom Exports", "-", "-", "Yes"],
-                ["RBAC", "-", "Yes", "Yes"],
-              ].map((row, i) => (
+              {compareRows.map((row, i) => (
                 <tr key={i} className="hover:bg-muted/30 transition-colors">
                   <td className="py-4 px-6 font-medium text-foreground">{row[0]}</td>
                   {row.slice(1).map((cell, j) => (
@@ -273,6 +396,23 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
+      {/* ──────── FAQ — same Stratus design as the homepage, pricing items ──────── */}
+      <div className="border-t border-border">
+        <StratusFaq
+          t={t}
+          defaultOpenIndex={null}
+          items={[
+            { id: "pricing-faq-1", question: t("faqQ1"), answer: t("faqA1") },
+            { id: "pricing-faq-2", question: t("faqQ2"), answer: t("faqA2") },
+            { id: "pricing-faq-3", question: t("faqQ3"), answer: t("faqA3") },
+            { id: "pricing-faq-4", question: t("faqQ4"), answer: t("faqA4") },
+          ]}
+          badgeKey="faqBadge"
+          titlePart1Key="faqTitlePart1"
+          titlePart2Key="faqTitlePart2"
+        />
+      </div>
+
       {/* ──────── BOTTOM CTA ──────── */}
       <section className="px-4 sm:px-6 lg:px-12 pb-24 max-w-7xl mx-auto">
         <motion.div
@@ -286,18 +426,14 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Start managing your business better
-            </h2>
-            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">
-              Join thousands of businesses that trust our platform. Try it free for 14 days.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{t("ctaTitle")}</h2>
+            <p className="text-base sm:text-lg opacity-80 max-w-2xl mx-auto mb-8">{t("ctaDesc")}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={`/${locale}/register`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-background text-foreground text-sm font-semibold hover:opacity-90 transition"
               >
-                Get Started Free
+                {t("ctaButton")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

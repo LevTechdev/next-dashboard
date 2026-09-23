@@ -47,18 +47,22 @@ test.describe("Dashboard seeded data", () => {
   test("dashboard stat cards render non-zero seeded values", async ({ page }) => {
     await loginAs(page);
 
-    // Stat cards are `.stat-card-premium`; each holds a `p.text-sm` title and
-    // a `p.text-2xl` value rendered by AnimatedCounter (id-ID currency for the
-    // revenue card — "Rp 99.072.110"). toHaveText auto-retries, so the ~1.6s
-    // count-up animation is absorbed.
+    // Stat cards are `.stat-card-premium`; the value renders inside a
+    // bold div (AnimatedCounter). The revenue card goes through the global
+    // currency provider (PremiumStatCard's isCurrency fallback), so it renders
+    // in the user's display currency — "$" by default, converted from the
+    // seeded IDR amounts. Require a non-zero amount; toHaveText auto-retries
+    // through the ~1.6s count-up animation.
     const revenueCard = page
       .locator(".stat-card-premium")
       .filter({ has: page.getByText("Total Revenue") });
-    await expect(revenueCard.locator("p.text-2xl")).toHaveText(/^Rp\s[1-9][0-9.,]*$/);
+    await expect(revenueCard.locator(".font-bold.tracking-tight")).toHaveText(
+      /^\D*\s?[1-9][0-9.,]*$/,
+    );
 
     for (const title of ["Total Orders", "Total Customers", "Total Products"]) {
       const card = page.locator(".stat-card-premium").filter({ has: page.getByText(title) });
-      await expect(card.locator("p.text-2xl")).toHaveText(/^[1-9][0-9]*$/);
+      await expect(card.locator(".font-bold.tracking-tight")).toHaveText(/^[1-9][0-9]*$/);
     }
   });
 });

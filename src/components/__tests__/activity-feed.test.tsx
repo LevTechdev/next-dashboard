@@ -66,6 +66,7 @@ function defaultRealtimeMock(overrides: Record<string, unknown> = {}) {
   return {
     notifications: [] as any[],
     connectionStatus: "connected" as const,
+    reconnectInfo: { attempt: 0, retryAt: null },
     unreadCount: 0,
     lastGlobalUpdate: null,
     globalRefreshTrigger: 0,
@@ -714,7 +715,7 @@ describe("ActivityFeed", () => {
     it("renders the export button", async () => {
       render(<ActivityFeed />);
       await waitFor(() => {
-        expect(screen.getByTitle("Export as CSV")).toBeInTheDocument();
+        expect(screen.getByLabelText("Export as CSV")).toBeInTheDocument();
       });
     });
 
@@ -726,7 +727,7 @@ describe("ActivityFeed", () => {
         expect(screen.getByText("Export Test")).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTitle("Export as CSV"));
+      fireEvent.click(screen.getByLabelText("Export as CSV"));
 
       expect(clickSpy).toHaveBeenCalled();
       clickSpy.mockRestore();
@@ -826,7 +827,7 @@ describe("ActivityFeed", () => {
       ]);
       render(<ActivityFeed />);
       await waitFor(() => {
-        expect(screen.getByLabelText("Export activity feed as CSV")).toBeInTheDocument();
+        expect(screen.getByLabelText("Export as CSV")).toBeInTheDocument();
       });
     });
   });

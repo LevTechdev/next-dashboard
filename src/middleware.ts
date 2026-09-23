@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { jwtVerify } from "jose";
 import { routing } from "./i18n/routing";
+import { canAccessPage, type Role } from "@/lib/permissions";
+import {
+  prefixAllowsRole,
+  rolePrefixForRole,
+  splitRolePrefixedPath,
+  verifyScopeToken,
+  type RolePrefix,
+} from "@/lib/role-routes";
+import { MARKETING_PATHS, AUTH_PATHS, EXTRA_PUBLIC_PATHS } from "@/lib/site-config";
+import {
+  assertSameOrigin,
+  assertCsrfDoubleSubmit,
+  requestIsBrowser,
+  CSRF_EXEMPT_PATHS,
+} from "@/lib/csrf";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -9,19 +24,17 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "dev-jwt-secret-change-in-production",
 );
 
-// Public routes that don't require authentication
+// Public marketing routes — derived from MARKETING_PATHS (site-config.ts), the
+// same list that feeds the sitemap, so middleware and sitemap can never drift
+// apart when a page is added or removed.
 const publicRoutes = [
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/reset-password",
   "/",
-  "/features",
-  "/pricing",
-  "/changelog",
-  "/integrations-overview",
-  "/about",
-  "/contact",
+  ...MARKETING_PATHS.filter((p) => p !== ""),
+  ...AUTH_PATHS,
+  // Transactional checkout flow + PWA fallback page (the latter must be
+  // reachable without a session). Declared in site-config so the route-registry
+  // guard test shares the same list.
+  ...EXTRA_PUBLIC_PATHS,
 ];
 
 // Content-Security-Policy shipped in Report-Only mode first so it never blocks
@@ -30,10 +43,12 @@ const publicRoutes = [
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data: https:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "connect-src 'self' https:",
+  // snap.js renders the Midtrans payment iframe in-page.
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -59,12 +74,105 @@ function isPublicRoute(pathname: string): boolean {
   });
 }
 
+/**
+ * Role-prefixed navigation scopes — /en/admin/dashboard, /id/staff/orders.
+ *
+ * The prefix is presentation, not authorization: middleware rewrites it away
+ * so the request is served by the canonical (dashboard) route tree, while the
+ * browser URL keeps the role prefix. A `?scope=` token (HMAC-signed, 10-min
+ * TTL) may pin the scope for shareable/bookmarked links — it rides through
+ * the login redirect inside `?redirect=` and is validated post-login. Page
+ * and API permission checks stay authoritative regardless of the prefix.
+ */
+const ROLE_PAGE_PREFIXES = new Set(["admin", "manager", "staff", "client", "enterprise"]);
+
+async function handleRolePrefixedPath(req: NextRequest, pathname: string) {
+  const parsed = splitRolePrefixedPath(pathname);
+  if (!parsed) return null;
+  const { locale, prefix, rest } = parsed;
+
+  // A bare role segment with no tail is NOT a scope link — it's the canonical
+  // page when one exists at that exact path (e.g. /en/admin, the real
+  // user-management page). Treating it as a scope would rewrite it onto the
+  // dashboard and shadow that page entirely. Deeper prefixes like
+  // /en/admin/orders still hit the rewrite below; auth is enforced by the
+  // canonical page + its API guards either way.
+  if (!rest) return null;
+
+  // /en/admin/dashboard → /en/dashboard (the prefix REPLACES "dashboard");
+  // deeper scopes like /en/admin/orders → /en/dashboard/orders).
+  const subPath = rest.replace(/^\/dashboard/, "") || "/dashboard";
+  const canonicalPath = `/${locale}/dashboard${subPath === "/dashboard" ? "" : subPath}`;
+
+  const token = req.cookies.get("token")?.value;
+  if (!token) {
+    // Anonymous visitor with a role-prefixed link: send to login carrying the
+    // original URL (signed scope included) for the post-login round-trip.
+    const loginUrl = new URL(`/${locale}/login`, req.url);
+    loginUrl.searchParams.set("redirect", pathname + req.nextUrl.search);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl));
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const sessionRole = String((payload as { role?: string }).role ?? "");
+
+    // A signed ?scope= can pin the prefix for this request — but only when the
+    // token names the session's own role (a navigation pin, never an escape).
+    const scopeParam = req.nextUrl.searchParams.get("scope");
+    const scopePayload = scopeParam ? await verifyScopeToken(scopeParam) : null;
+    const allowed =
+      prefixAllowsRole(prefix, sessionRole) ||
+      (scopePayload != null &&
+        scopePayload.role === sessionRole &&
+        prefixAllowsRole(prefix, scopePayload.role));
+
+    if (!allowed) {
+      // Session bound to a different scope: bounce to the user's own prefix,
+      // keeping the same tail shape (/admin/orders → /staff/orders).
+      const own = req.nextUrl.clone();
+      own.searchParams.delete("scope");
+      own.pathname = `/${locale}/${rolePrefixForRole(sessionRole)}${rest || "/dashboard"}`;
+      return withSecurityHeaders(NextResponse.redirect(own));
+    }
+
+    const res = NextResponse.rewrite(new URL(canonicalPath, req.url));
+    res.headers.set("x-nav-role-prefix", prefix);
+    return withSecurityHeaders(res);
+  } catch {
+    // Invalid/expired access token — defer to the generic auth handling.
+    return null;
+  }
+}
+
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Skip for API routes, static files, manifest/icons, and locale-detected files
+  // API requests: enforce CSRF on unsafe methods with two layers —
+  //   1. Double-submit token: the csrf_token cookie must be echoed in the
+  //      X-CSRF-Token header (set by GET /api/auth/csrf). Non-browser clients
+  //      (curl, webhooks) are exempt via the same-origin rule below.
+  //   2. Same-origin: requests carrying Origin/Referer must match the host.
+  // Auth cookies are httpOnly + SameSite=Lax; both layers are belt-and-braces.
+  if (pathname.startsWith("/api/")) {
+    if (
+      !CSRF_EXEMPT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) &&
+      requestIsBrowser(req)
+    ) {
+      const csrf = assertCsrfDoubleSubmit(req, { pathname });
+      if (!csrf.ok) {
+        return NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      }
+    }
+    const origin = assertSameOrigin(req, pathname);
+    if (!origin.ok) {
+      return NextResponse.json({ error: "Cross-origin request rejected" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
+  // Skip for static files, manifest/icons, and locale-detected files
   if (
-    pathname.startsWith("/api/") ||
     pathname.includes("/_next") ||
     pathname.includes("/favicon") ||
     pathname === "/icon" ||
@@ -77,9 +185,24 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // PWA offline fallback: served as-is (no locale redirect). The service
+  // worker caches this exact URL and replays it when a navigation fails, so
+  // it must resolve to a 200 page at /offline without a locale round-trip.
+  if (pathname === "/offline") {
+    return withSecurityHeaders(NextResponse.next());
+  }
+
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
     return withSecurityHeaders(intlMiddleware(req));
+  }
+
+  // Role-prefixed scope routes (/en/admin/…) are handled by their own pass,
+  // which rewrites to the canonical dashboard tree.
+  const firstSegmentAfterLocale = pathname.split("/")[2];
+  if (firstSegmentAfterLocale && ROLE_PAGE_PREFIXES.has(firstSegmentAfterLocale)) {
+    const handled = await handleRolePrefixedPath(req, pathname);
+    if (handled) return handled;
   }
 
   // Protected route: verify the JWT signature at the edge (not just existence).
@@ -117,5 +240,8 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  // Includes /api so the same-origin (CSRF) check can run on unsafe methods;
+  // the api branch short-circuits to NextResponse.next() for everything else.
+  // Static files (dots) and Next internals stay excluded.
+  matcher: ["/((?!api/auth/saml|_next|.*\\..*).*)"],
 };

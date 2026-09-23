@@ -290,7 +290,7 @@ export default function ProductDetailPage() {
                         className="cursor-pointer"
                         onClick={() => router.push(`/${locale}/orders/${item.orderId}`)}
                       >
-                        <TableCell className="font-medium text-indigo-600 dark:text-indigo-400">
+                        <TableCell className="font-medium text-primary hover:underline font-semibold transition-colors">
                           #{item.order?.orderNumber}
                         </TableCell>
                         <TableCell>

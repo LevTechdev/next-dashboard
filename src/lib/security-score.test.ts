@@ -3,8 +3,11 @@ import {
   computeSecurityScore,
   scoreTier,
   scoreColor,
+  scoreBannerMode,
   isSuspiciousEventType,
   isMfaVerificationEventType,
+  daysSinceMfaVerification,
+  daysUntilMfaReverificationDue,
   SECURITY_SCORE_MAX,
   MFA_VERIFIED_RECENT_DAYS,
   type SecurityScoreInput,
@@ -104,6 +107,43 @@ describe("scoreTier", () => {
   });
 });
 
+describe("scoreBannerMode", () => {
+  it("reports complete when every protection is enrolled", () => {
+    const fullyProtected: SecurityScoreInput = {
+      totpEnabled: true,
+      passkeyCount: 1,
+      backupRemaining: 4,
+      emailVerified: true,
+      suspiciousRecent: 4,
+      sessionCount: 104,
+      mfaVerifiedRecently: true,
+    };
+    // This is the live bug: score 75 ("good" tier) WITH 2FA enabled — the
+    // banner must not fall back to static "enable two-factor" copy.
+    expect(computeSecurityScore(fullyProtected)).toBe(75);
+    expect(scoreTier(75)).toBe("good");
+    expect(scoreBannerMode(fullyProtected)).toBe("complete");
+  });
+
+  it("reports missing when any protection is absent", () => {
+    expect(scoreBannerMode({ ...base, totpEnabled: true, emailVerified: true })).toBe("missing");
+  });
+
+  it("treats a stale-but-enrolled factor as missing (mfaFresh)", () => {
+    expect(
+      scoreBannerMode({
+        totpEnabled: true,
+        passkeyCount: 1,
+        backupRemaining: 4,
+        emailVerified: true,
+        suspiciousRecent: 0,
+        sessionCount: 1,
+        mfaVerifiedRecently: false,
+      }),
+    ).toBe("missing");
+  });
+});
+
 describe("scoreColor", () => {
   it("returns green for strong, red for weak", () => {
     expect(scoreColor(100)).toBe("#10b981");
@@ -131,5 +171,39 @@ describe("event classification", () => {
 
   it("exposes the recency window used by the security-data hook", () => {
     expect(MFA_VERIFIED_RECENT_DAYS).toBe(30);
+  });
+});
+
+describe("daysSinceMfaVerification", () => {
+  const now = Date.UTC(2026, 8, 19, 12, 0, 0); // 2026-09-19T12:00:00Z
+
+  it("returns null for never-verified accounts and invalid timestamps", () => {
+    expect(daysSinceMfaVerification(null, now)).toBeNull();
+    expect(daysSinceMfaVerification(undefined, now)).toBeNull();
+    expect(daysSinceMfaVerification("not-a-date", now)).toBeNull();
+  });
+
+  it("counts whole days elapsed since the last verification", () => {
+    const hourAgo = new Date(now - 3 * 3600_000).toISOString();
+    expect(daysSinceMfaVerification(hourAgo, now)).toBe(0); // today
+    const tenDaysAgo = new Date(now - 10 * 86_400_000 - 3600_000).toISOString();
+    expect(daysSinceMfaVerification(tenDaysAgo, now)).toBe(10);
+  });
+
+  it("never returns negative for clock skew / future timestamps", () => {
+    const future = new Date(now + 5 * 86_400_000).toISOString();
+    expect(daysSinceMfaVerification(future, now)).toBe(0);
+  });
+
+  it("flags the policy boundary: day 30 is no longer within the window", () => {
+    const exactly30d = new Date(now - 30 * 86_400_000).toISOString();
+    expect(daysSinceMfaVerification(exactly30d, now)).toBe(30);
+    expect(daysUntilMfaReverificationDue(exactly30d, now)).toBe(0); // due now
+    const day29 = new Date(now - 29 * 86_400_000).toISOString();
+    expect(daysUntilMfaReverificationDue(day29, now)).toBe(1);
+  });
+
+  it("returns null days-until-due when the clock never started", () => {
+    expect(daysUntilMfaReverificationDue(null, now)).toBeNull();
   });
 });

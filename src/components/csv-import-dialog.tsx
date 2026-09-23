@@ -120,7 +120,7 @@ export function CsvImportDialog({
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-indigo-500" />
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
               {timport("importCsv")}
             </DialogTitle>
           </DialogHeader>
@@ -138,7 +138,7 @@ export function CsvImportDialog({
               ref={fileInputRef}
               type="file"
               accept=".csv,text/csv"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-600 dark:file:bg-indigo-900/30 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleFile(file);

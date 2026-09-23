@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/api-guard";
+import { resolveSessionUserId } from "@/lib/session-user";
 import { verifyTotp } from "@/lib/totp";
 import { logSecurityEvent } from "@/lib/security-events";
 
@@ -9,7 +10,12 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
-  const userId = session.user.id;
+  // Resolve id → email → 404. No "first admin" fallback: a stale session must
+  // never enroll 2FA on a different account's row.
+  const userId = await resolveSessionUserId(session);
+  if (!userId) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const body = await req.json();
   const { token, secret } = body;
@@ -28,14 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
   }
 
-  // Find the user
-  let user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    user = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-      orderBy: { createdAt: "asc" },
-    });
-  }
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -46,10 +45,19 @@ export async function POST(req: Request) {
     data: {
       totpSecret: secret,
       totpEnabled: true,
+      // A new secret starts a fresh TOTP step sequence: carrying the old
+      // replay counter over would refuse valid codes from the new secret
+      // until the clock passed the old counter's value.
+      totpLastUsedStep: null,
     },
   });
 
   await logSecurityEvent({ userId: user.id, type: "TOTP_ENABLED", req, tenantId: user.tenantId });
+
+  // The enrollment code itself is the first successful proof of the factor:
+  // log MFA_VERIFIED so the 30-day freshness clock starts NOW — otherwise the
+  // score banner keeps nagging to "re-verify" until the next TOTP login.
+  await logSecurityEvent({ userId: user.id, type: "MFA_VERIFIED", req, tenantId: user.tenantId });
 
   return NextResponse.json({ success: true });
 }

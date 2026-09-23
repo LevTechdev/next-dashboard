@@ -134,6 +134,7 @@ export default function AuditLogPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleExport = () => {
     downloadCsv(
       [

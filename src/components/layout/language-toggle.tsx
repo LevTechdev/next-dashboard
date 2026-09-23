@@ -1,12 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CheckIcon, EarthIcon } from "lucide-animated";
 import { useViewTransition } from "@/components/view-transition-provider";
 import { setLocaleCookie } from "@/lib/locale-cookie";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +36,7 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
   const { push: pushWithTransition } = useViewTransition();
   const { trackLanguageSwitch } = useAnalytics();
   const router = useRouter();
+  const tNav = useTranslations("nav");
 
   const switchLocale = (newLocale: string) => {
     if (newLocale === locale) return;
@@ -46,23 +54,39 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-gray-500 gap-1 px-2 min-w-[56px] active:scale-95 transition-transform duration-150"
-          title={current.name}
-          aria-label="Switch language"
-        >
-          <span className="flex items-center gap-1.5">
-            <span className="text-sm leading-none">{current.flag}</span>
-            <EarthIcon size={14} className="h-3.5 w-3.5" />
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
+      {/* Tooltip + menu-trigger composition: both Radix triggers stack via
+          asChild chains ending on the Button (TooltipTrigger renders a DOM
+          node, so the Slot chain never breaks and the dropdown still opens).
+          The native `title` is dropped so hint + tooltip never double up. */}
+      {/* Tooltip + menu-trigger composition — Radix's canonical order for a
+          tooltip on a menu trigger: the TOOLTIP is the outermost Slot chain
+          (TooltipTrigger asChild → DropdownMenuTrigger asChild → Button).
+          The previous inverted nesting made the hydration pass disagree with
+          the server about who owns the button's type/id/aria-haspopup/
+          aria-expanded attributes (React 19 attribute-mismatch error). */}
+      <TooltipProvider delayDuration={300}>
+        <TooltipRoot>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 gap-1 px-2 min-w-[56px] active:scale-95 transition-transform duration-150"
+                aria-label={tNav("switchLanguage")}
+              >
+                <span className="flex items-center gap-1.5">
+                  <EarthIcon size={14} className="h-3.5 w-3.5" />
+                  <span className="text-xs font-semibold leading-none">{current.label}</span>
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{tNav("switchLanguage")}</TooltipContent>
+        </TooltipRoot>
+      </TooltipProvider>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="text-xs text-gray-400 dark:text-gray-500 font-normal">
-          Switch Language
+          {tNav("switchLanguage")}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {LANGUAGES.map((lang) => {
@@ -74,7 +98,7 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
               className={cn(
                 "flex items-center gap-3 cursor-pointer group",
                 isSelected
-                  ? "bg-lime-50 dark:bg-indigo-900/20 text-lime-600 dark:text-indigo-400 font-medium"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "text-gray-700 dark:text-gray-300",
               )}
             >
@@ -88,10 +112,10 @@ export function LanguageToggle({ locale, pathname }: { locale: string; pathname:
               {isSelected ? (
                 <CheckIcon
                   size={16}
-                  className="h-4 w-4 text-lime-600 animate-in zoom-in-50 duration-200"
+                  className="h-4 w-4 text-primary animate-in zoom-in-50 duration-200"
                 />
               ) : (
-                <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
             </DropdownMenuItem>
           );

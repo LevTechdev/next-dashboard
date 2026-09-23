@@ -30,7 +30,7 @@ function stubMatchMedia(matches: boolean): StubMediaQueryList {
   };
   vi.stubGlobal(
     "matchMedia",
-    vi.fn((query: string) => mql),
+    vi.fn(() => mql),
   );
   return mql;
 }

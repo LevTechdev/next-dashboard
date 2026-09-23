@@ -6,6 +6,8 @@ import { forwardToSiem } from "@/lib/siem";
 import { tenantWhere } from "@/lib/tenancy";
 
 export type SecurityEventType =
+  | "SIGNIN_ALERT_SENT"
+  | "SIGNIN_ALERT_SUPPRESSED"
   | "LOGIN"
   | "LOGIN_FAILED"
   | "LOGOUT"
@@ -17,15 +19,38 @@ export type SecurityEventType =
   | "SESSION_REVOKED"
   | "SESSIONS_REVOKED_ALL"
   | "REFRESH_REUSE"
+  | "REFRESH_REUSE_GRACE"
   | "STEP_UP_VERIFIED"
   | "MFA_VERIFIED"
+  /** A TOTP code was presented a second time inside its own time step
+   *  (RFC 6238 §5.2 replay guard, src/lib/totp-replay.ts). */
+  | "MFA_CODE_REPLAYED"
   | "EMAIL_VERIFIED"
+  | "EMAIL_DELIVERY_SENT"
+  | "EMAIL_DELIVERY_FAILED"
   | "PASSKEY_ADDED"
   | "PASSKEY_REMOVED"
   | "PASSKEY_LOGIN"
+  /** A second enrolled authenticator app (spare device) added or removed. */
+  | "BACKUP_AUTHENTICATOR_ADDED"
+  | "BACKUP_AUTHENTICATOR_REMOVED"
+  /** The "2FA was turned off" alert email, and the "this wasn't me" revoke. */
+  | "SECURITY_ALERT_SENT"
+  | "SECURITY_ALERT_REVERTED"
+  | "TRUSTED_DEVICE_REVOKED"
+  /** The account's recovery readiness moved DOWN the ladder (covered →
+   *  fragile → locked out) — recorded the day the daily sweep noticed it. */
+  | "RECOVERY_READINESS_DROPPED"
+  /** Last-resort recovery (authenticator AND backup codes lost). */
+  | "ACCOUNT_RECOVERY_REQUESTED"
+  | "ACCOUNT_RECOVERY_COMPLETED"
   | "SAML_LOGIN"
   | "APIKEY_CREATED"
-  | "ACCOUNT_LOCKED";
+  | "ACCOUNT_LOCKED"
+  | "ACCOUNT_DELETED"
+  | "SSO_CONNECTION_DELETED"
+  /** Rate-limit rejections from src/lib/rate-limit.ts (per-IP sliding window). */
+  | "RATE_LIMITED";
 
 /**
  * Append a security event. Best-effort: never throws into the caller so a
@@ -72,6 +97,7 @@ export async function logSecurityEvent(params: {
       // — the hash chain may have gaps under heavy concurrency but the
       // `repair:audit-chain` script can restore it).
       const last = await prisma.securityEvent.findFirst({
+        where: { hash: { not: null } },
         orderBy: { seq: "desc" },
         select: { hash: true },
       });
@@ -118,6 +144,11 @@ export async function logSecurityEvent(params: {
           /* non-Postgres or lock unavailable — proceed best-effort */
         }
         const last = await tx.securityEvent.findFirst({
+          // ONLY the newest *hashed* row can be a link target. Rows written
+          // outside this helper (legacy imports) carry `hash = null`; linking
+          // to one would set `prevHash = GENESIS`, permanently breaking the
+          // chain for every subsequent event.
+          where: { hash: { not: null } },
           orderBy: { seq: "desc" },
           select: { hash: true },
         });

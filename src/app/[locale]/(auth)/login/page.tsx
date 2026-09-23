@@ -1,54 +1,161 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { LoaderCircleIcon } from "lucide-animated";
 import {
-  Smartphone,
-  Sparkles,
-  KeyRound,
-  ChevronLeft,
-  ChevronRight,
   Fingerprint,
   Building2,
-  Sun,
-  Moon,
+  Eye,
+  EyeOff,
+  Timer,
+  SmartphoneIcon,
+  MailIcon,
+  ChevronRightIcon,
+  KeyRoundIcon,
+  AlertTriangle,
 } from "lucide-react";
+import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CodeSlots } from "@/components/ui/code-slots";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { ThemeToggleButton } from "@/components/theme/theme-toggle-button";
+import {
+  FORGOT_PASSWORD_COOLDOWN_KEY,
+  useResendCooldown,
+} from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
+import { backupCodeStatus } from "@/lib/backup-code-status";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 import { useTranslations } from "next-intl";
 
 function LoginForm() {
   const t = useTranslations("auth");
   const params = useParams();
-  const locale = params.locale;
+  const locale = (params?.locale as string) || "en";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [totpRequired, setTotpRequired] = useState(false);
   const [view, setView] = useState("login");
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => setMounted(true), []); // eslint-disable-line react-hooks/set-state-in-effect
+  // True once the browser proves it can run a WebAuthn ceremony
+  // (`navigator.credentials`). Rendering the passwordless button only after
+  // this keeps SSR markup stable — the button is client-only by design, so
+  // first paint never includes it and hydration can't disagree.
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
+  useEffect(() => {
+    setPasskeyAvailable(
+      typeof window !== "undefined" &&
+        !!window.PublicKeyCredential &&
+        typeof window.PublicKeyCredential === "function",
+    );
+  }, []);
 
   const [totpCode, setTotpCode] = useState("");
+  // Drives the CodeSlots error treatment: true while the rejected code drains,
+  // cleared by the component's own reset (onChange("") after the drain) so the
+  // row returns to the idle treatment ready for the next attempt.
+  const [totpRejected, setTotpRejected] = useState(false);
+  // ── Verification-method chooser (2FA step) ──
+  // `null` = the default TOTP prompt (unchanged behaviour); "choose" = the
+  // picker between authenticator app and an emailed code; "email" = the
+  // emailed-OTP entry step (CodeSlots + resend); "backup_code" = the recovery
+  // path for a lost authenticator (one of the saved single-use codes).
+  const [verifyMethod, setVerifyMethod] = useState<
+    null | "choose" | "email_otp" | "backup_code" | "recover_access"
+  >(null);
+  const [, setEmailOtpSent] = useState(false);
+  const [emailOtpDevCode, setEmailOtpDevCode] = useState<string | null>(null);
+  const [emailOtpHint, setEmailOtpHint] = useState<string | null>(null);
+  // Recovery path: the xxxx-xxxx code typed into the backup-code step.
+  const [backupCodeInput, setBackupCodeInput] = useState("");
+  const [backupRejected, setBackupRejected] = useState(false);
+  // Last resort: neither the authenticator nor any backup code is available, so
+  // the user requests an emailed link that disables 2FA (account recovery).
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+  const [recoveryDevUrl, setRecoveryDevUrl] = useState<string | null>(null);
   const [savedEmail, setSavedEmail] = useState("");
   const [savedPassword, setSavedPassword] = useState("");
+  // Whether the account has registered passkeys — revealed by the first
+  // requires-2FA response and used to render the chooser's passkey card.
+  const [hasPasskeys, setHasPasskeys] = useState(false);
+  // "Trust this device for 30 days" — granted only while completing a second
+  // factor; the server skips 2FA for the TTL on the matching device profile.
+  const [trustDevice, setTrustDevice] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/en/dashboard";
+  const redirect = searchParams.get("redirect") || `/${locale}/dashboard`;
+  const sessionNotice = searchParams.get("reason");
+
+  // A dead session force-closes the dashboard onto this form with
+  // ?reason=expired (or reason=session-changed when another tab signed in as a
+  // different account). Say why, so the reappearing login form doesn't read as
+  // a random ejection.
+  useEffect(() => {
+    if (sessionNotice !== "expired" && sessionNotice !== "session-changed") return;
+    toast.info(sessionNotice === "expired" ? t("sessionExpired") : t("sessionChanged"), {
+      id: "session-notice",
+    });
+  }, [sessionNotice, t]);
+
+  // Returning from a failed account-recovery link (?recovery=invalid|expired):
+  // the confirm route could not consume the token, so say why and offer a new
+  // link instead of dumping the user on a silent login form.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const recovery = params.get("recovery");
+    // `alert=invalid` is where the security-alert revoke link lands when the
+    // token was expired, already used, or bogus. `alert=reset_required` is the
+    // SSO callback saying the account is paused pending a new password.
+    const alert = params.get("alert");
+    if (
+      recovery !== "invalid" &&
+      recovery !== "expired" &&
+      alert !== "invalid" &&
+      alert !== "reset_required"
+    ) {
+      return;
+    }
+    if (alert === "reset_required") {
+      // The SSO callback refused an account that a "this wasn't me" revoke
+      // paused: the only way forward is a new password, so open the reset
+      // request instead of leaving them on a form that cannot succeed.
+      toast.error(t("passwordResetRequired"));
+      router.replace(`/${locale}/forgot-password`);
+    } else {
+      toast.error(
+        recovery === "expired"
+          ? t("recoveryExpired")
+          : recovery === "invalid"
+            ? t("recoveryInvalid")
+            : t("alertLinkInvalid"),
+      );
+    }
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [t, router, locale]);
+
+  // ── Inline forgot-password state (styled like the 2FA step) ──
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotDevUrl, setForgotDevUrl] = useState<string | null>(null);
+  const { cooldownLeft, startCooldown } = useResendCooldown({
+    storageKey: FORGOT_PASSWORD_COOLDOWN_KEY,
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter email and password");
+      toast.error(t("enterEmailPassword"));
       return;
     }
 
@@ -59,17 +166,35 @@ function LoginForm() {
         setSavedEmail(email);
         setSavedPassword(password);
         setTotpRequired(true);
+        // Fresh challenge → always land on the method chooser.
+        setVerifyMethod("choose");
+        setHasPasskeys(result.hasPasskeys ?? false);
+        setEmailOtpSent(false);
+        setEmailOtpDevCode(null);
+        setEmailOtpHint(null);
+        setBackupCodeInput("");
+        setBackupRejected(false);
+        setTrustDevice(false);
         setIsLoading(false);
         return;
       }
       if (result.success) {
-        toast.success("Welcome back!");
+        toast.success(t("welcomeBackToast"));
         router.push(redirect);
+      } else if (result.error === "PASSWORD_RESET_REQUIRED") {
+        // The account was secured by the alert email's "this wasn't me" link.
+        // Sign-in stays closed until the password is replaced, so send the user
+        // straight to the reset request rather than leaving them on a form that
+        // cannot succeed.
+        toast.error(t("passwordResetRequired"));
+        setForgotSent(false);
+        setForgotDevUrl(null);
+        setView("forgot");
       } else {
-        toast.error(result.error || "Login failed");
+        toast.error(result.error || t("loginFailed"));
       }
     } catch {
-      toast.error("An error occurred");
+      toast.error(t("errorGeneric"));
     } finally {
       setIsLoading(false);
     }
@@ -77,27 +202,337 @@ function LoginForm() {
 
   const totpSubmittingRef = useRef(false);
 
-  const handleTotpVerification = async (code: string) => {
+  /**
+   * Latched the moment the second factor is ACCEPTED.
+   *
+   * Every second-factor handler below ends the same way: on success it toasts,
+   * pushes to the dashboard, and releases `totpSubmittingRef` in its `finally` —
+   * while the redirect is still in flight. The code field also auto-submits the
+   * moment six digits land, so an impatient click on top of it produced a SECOND
+   * request with a code the server had already spent.
+   *
+   * That second request is now refused (RFC 6238 §5.2 replay guard, and backup
+   * codes were always single-use), which turned a real defect into a visible one:
+   * a successful sign-in could show "That code was already used" next to
+   * "Welcome back!". Once the factor is accepted there is nothing left to
+   * submit, so every handler bows out instead.
+   */
+  const secondFactorSettledRef = useRef(false);
+
+  /** True while a second-factor request is in flight or already accepted. */
+  const secondFactorLocked = () => secondFactorSettledRef.current || totpSubmittingRef.current;
+
+  /** Send (or re-send) the email login challenge and switch to its entry step. */
+  const requestEmailOtp = async () => {
+    setIsLoading(true);
+    try {
+      const result = await login(savedEmail, savedPassword, undefined, undefined, true);
+      if (result.requires2FA) {
+        setEmailOtpSent(true);
+        setVerifyMethod("email_otp");
+        setEmailOtpDevCode(result.devOtp ?? null);
+        setEmailOtpHint(null);
+        setTotpCode("");
+        setTotpRejected(false);
+        toast.success(result.emailSent ? t("emailOtpSentToast") : t("developmentOtp"));
+      } else {
+        toast.error(result.error || t("errorGeneric"));
+      }
+    } catch {
+      toast.error(t("errorGeneric"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** Submit the emailed-OTP step (same session grant as the TOTP path). */
+  const handleEmailOtpVerification = async (code: string) => {
     if (code.length < 6) {
-      toast.error("Please enter a valid 6-digit code");
+      toast.error(t("invalidCodeLength"));
       return;
     }
-    if (totpSubmittingRef.current) return;
+    if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
     setIsLoading(true);
     try {
-      const result = await login(savedEmail, savedPassword, code);
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        code,
+        undefined,
+        undefined,
+        trustDevice,
+      );
       if (result.success) {
-        toast.success("Welcome back!");
+        secondFactorSettledRef.current = true;
+        toast.success(t("welcomeBackToast"));
         router.push(redirect);
       } else {
-        toast.error(result.error || "Invalid code");
+        setTotpRejected(true);
+        setEmailOtpHint(
+          result.attemptsLeft !== undefined
+            ? t("otpIncorrectAttempts").replace("{attempts}", String(result.attemptsLeft))
+            : result.error === "OTP_EXPIRED"
+              ? t("otpExpired")
+              : result.error === "OTP_TOO_MANY_ATTEMPTS"
+                ? t("otpTooManyAttempts")
+                : null,
+        );
+        toast.error(
+          result.error === "OTP_INVALID" ? t("invalidCode") : result.error || t("invalidCode"),
+        );
       }
     } catch {
-      toast.error("An error occurred");
+      setTotpRejected(true);
+      toast.error(t("errorGeneric"));
     } finally {
-      totpSubmittingRef.current = false;
-      setIsLoading(false);
+      // A settled sign-in keeps the spinner: the redirect is in flight, and a
+      // re-enabled button is what invited the second submit in the first place.
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
+    }
+  };
+
+  /** Format a backup code as xxxx-xxxx as it is typed (case-insensitive). */
+  const formatBackupCode = (raw: string): string => {
+    const clean = raw
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase()
+      .slice(0, 8);
+    return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+  };
+
+  /**
+   * Recovery path for a lost authenticator: submit one of the single-use
+   * backup codes as the second factor. The server consumes it on success, so a
+   * replayed code is rejected — the E2E spec pins that.
+   */
+  const handleBackupCodeVerification = async (code: string) => {
+    const clean = code.trim().toLowerCase();
+    if (clean.replace(/-/g, "").length < 8) {
+      toast.error(t("invalidBackupCodeLength"));
+      return;
+    }
+    if (secondFactorLocked()) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        trustDevice,
+        clean,
+      );
+      if (result.success) {
+        secondFactorSettledRef.current = true;
+        toast.success(t("welcomeBackToast"));
+        // Recovery codes are finite and each sign-in burns one. Say so while
+        // the user is still on the recovery step — it is the last moment the
+        // count is in front of them.
+        const status = backupCodeStatus(result.backupCodesRemaining);
+        if (status === "exhausted") {
+          toast.warning(t("backupCodeExhaustedToast"), { duration: 12_000 });
+        } else if (status === "low") {
+          toast.warning(t("backupCodeLowToast", { count: result.backupCodesRemaining ?? 0 }), {
+            duration: 12_000,
+          });
+        }
+        router.push(redirect);
+      } else {
+        setBackupRejected(true);
+        toast.error(t("backupCodeInvalid"));
+      }
+    } catch {
+      setBackupRejected(true);
+      toast.error(t("errorGeneric"));
+    } finally {
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleTotpVerification = async (code: string) => {
+    if (code.length < 6) {
+      toast.error(t("invalidCodeLength"));
+      return;
+    }
+    if (secondFactorLocked()) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        code,
+        undefined,
+        undefined,
+        undefined,
+        trustDevice,
+      );
+      if (result.success) {
+        secondFactorSettledRef.current = true;
+        toast.success(t("welcomeBackToast"));
+        router.push(redirect);
+      } else {
+        setTotpRejected(true);
+        // A replayed code is a different problem from a wrong one: the same
+        // digits will keep failing for the rest of their 30-second step, so
+        // tell the user to wait for the next code instead of inviting a retry.
+        toast.error(
+          result.code === "TOTP_REPLAY" ? t("codeAlreadyUsed") : result.error || t("invalidCode"),
+        );
+      }
+    } catch {
+      setTotpRejected(true);
+      toast.error(t("errorGeneric"));
+    } finally {
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
+    }
+  };
+
+  /**
+   * Passkey as the second factor: run the WebAuthn ceremony in second-factor
+   * mode (the endpoint verifies the assertion but issues no session), then
+   * complete the login with the marker it set. The password step already
+   * happened, so this only satisfies the second factor.
+   */
+  const handlePasskeySecondFactor = async () => {
+    if (secondFactorLocked()) return;
+    totpSubmittingRef.current = true;
+    setIsLoading(true);
+    try {
+      const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: savedEmail }),
+      });
+      if (!optionsRes.ok) {
+        const data = await optionsRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      const options = await optionsRes.json();
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: assertion, mode: "second_factor" }),
+      });
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      const result = await login(
+        savedEmail,
+        savedPassword,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        trustDevice,
+      );
+      if (result.success) {
+        // The marker cookie is single-use, so a second completion would fail
+        // with a bare "login failed" on a sign-in that already worked.
+        secondFactorSettledRef.current = true;
+        toast.success(t("welcomeBackToast"));
+        router.push(redirect);
+      } else {
+        toast.error(result.error || t("loginFailed"));
+      }
+    } catch {
+      // User dismissed the browser's passkey prompt — not a failure toast.
+    } finally {
+      if (!secondFactorSettledRef.current) {
+        totpSubmittingRef.current = false;
+        setIsLoading(false);
+      }
+    }
+  };
+
+  /**
+   * Last resort: no authenticator and no backup code left. Request the emailed
+   * recovery link. The server requires the password again (already verified on
+   * this step) so owning the inbox alone can't start a recovery.
+   */
+  const requestAccountRecovery = async () => {
+    if (recoveryLoading) return;
+    setRecoveryLoading(true);
+    try {
+      const res = await fetch("/api/auth/account-recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: savedEmail || email,
+          password: savedPassword || password,
+          locale,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error || t("errorGeneric"));
+        return;
+      }
+      setRecoverySent(true);
+      // Dev/E2E only: with no mailer configured the API returns the link.
+      setRecoveryDevUrl(typeof data?.recoveryUrl === "string" ? data.recoveryUrl : null);
+    } catch {
+      toast.error(t("errorGeneric"));
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const goToForgot = () => {
+    setForgotSent(false);
+    setForgotDevUrl(null);
+    setView("forgot");
+  };
+
+  const goToLogin = () => {
+    setForgotSent(false);
+    setForgotDevUrl(null);
+    setView("login");
+  };
+
+  const sendForgotLink = async () => {
+    if (!email) {
+      toast.error(t("email"));
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, locale }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setForgotSent(true);
+        if (data.resetUrl) setForgotDevUrl(data.resetUrl);
+        startCooldown();
+        return;
+      }
+      toast.error(data.error || t("resetError"));
+    } catch {
+      toast.error(t("resetError"));
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -105,208 +540,786 @@ function LoginForm() {
     window.location.href = "/api/auth/google";
   };
 
-  const { theme, setTheme } = useTheme();
+  // Passkey login: run the WebAuthn ceremony WITHOUT an email — the options
+  // step omits allowCredentials, so the authenticator offers discoverable
+  // credentials and the user picks one. The verify endpoint resolves the
+  // account from the asserted credential and sets the session cookies
+  // exactly like a password login. True passwordless, zero prelude.
+  const handlePasskeyLogin = async () => {
+    try {
+      const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discoverable: true }),
+      });
+      const options = await optionsRes.json();
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: assertion }),
+      });
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => null);
+        toast.error(data?.error || t("loginFailed"));
+        return;
+      }
+      toast.success(t("welcomeBackToast"));
+      router.push(redirect);
+      router.refresh();
+    } catch {
+      // User cancelled the authenticator prompt or the ceremony failed.
+      toast.error(t("loginFailed"));
+    }
+  };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#F25C38] dark:bg-zinc-950 p-4 sm:p-8 relative transition-colors duration-300">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-primary dark:bg-zinc-950 p-4 sm:p-8 transition-colors duration-300">
       {mounted && (
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-900/20 hover:bg-white dark:bg-zinc-900/30 dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-md transition-all text-white shadow-sm z-50"
-          aria-label="Toggle theme"
-        >
-          <Sun className="h-5 w-5 hidden dark:block" />
-          <Moon className="h-5 w-5 block dark:hidden" />
-        </button>
+        <ThemeToggleButton
+          className="absolute top-4 right-4 sm:top-8 sm:right-8 p-3 rounded-full bg-white dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700/80 backdrop-blur-md text-zinc-900 dark:text-white shadow-sm z-50"
+          iconClassName="h-5 w-5"
+          side="bottom"
+        />
       )}
 
-      <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/20 dark:border-zinc-800 transition-colors">
+      <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/20 dark:border-zinc-800 transition-colors">
         {/* Left Side */}
         <div className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
           <div className="w-full max-w-sm mx-auto">
-            <div className="text-[#F25C38] mb-6">
-              <Sparkles className="w-8 h-8 fill-current" />
+            <div className="mb-6 flex justify-center">
+              <BrandLogo animated />
             </div>
 
             {totpRequired ? (
               <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-3">
-                  Two-Factor Auth
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Enter the 6-digit code from your authenticator app to continue.
-                </p>
+                {verifyMethod === "choose" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("chooseVerifyTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("chooseVerifyDesc")}</p>
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void handleTotpVerification(totpCode);
-                  }}
-                  className="space-y-6"
-                >
-                  <div className="space-y-2">
-                    <Label className="text-zinc-700">Verification Code</Label>
-                    <div className="relative flex justify-between gap-2 w-full">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
-                            totpCode.length === i
-                              ? "border-[#F25C38] ring-1 ring-[#F25C38]"
-                              : "border-zinc-200",
-                            totpCode[i] ? "text-zinc-900" : "text-transparent",
-                          )}
-                        >
-                          {totpCode[i] || ""}
-                        </div>
-                      ))}
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
-                        value={totpCode}
-                        onChange={(e) => {
-                          const next = e.target.value.replace(/\D/g, "").slice(0, 6);
-                          setTotpCode(next);
-                          if (next.length === 6) {
-                            void handleTotpVerification(next);
-                          }
+                    <div className="space-y-3">
+                      {/* Authenticator app — the default second factor */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod(null);
+                          setTotpCode("");
+                          setTotpRejected(false);
                         }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-text"
-                        autoFocus
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <SmartphoneIcon className="h-5 w-5" />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useAuthenticator")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useAuthenticatorDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Emailed code — same account, different channel */}
+                      <button
+                        type="button"
                         disabled={isLoading}
+                        onClick={() => void requestEmailOtp()}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {isLoading ? (
+                            <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <MailIcon className="h-5 w-5" />
+                          )}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useEmailCode")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useEmailCodeDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Backup code — the recovery path when the authenticator
+                          device (and its app) is gone for good. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("backup_code");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                          setTotpCode("");
+                          setTotpRejected(false);
+                          setEmailOtpHint(null);
+                        }}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <KeyRoundIcon className="h-5 w-5" />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                            {t("useBackupCode")}
+                          </span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {t("useBackupCodeDesc")}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Passkey — phishing-resistant, offered when registered */}
+                      {hasPasskeys && (
+                        <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => void handlePasskeySecondFactor()}
+                          className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
+                        >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                            {isLoading ? (
+                              <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Fingerprint className="h-5 w-5" />
+                            )}
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
+                              {t("usePasskey")}
+                            </span>
+                            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              {t("usePasskeyDesc")}
+                            </span>
+                          </span>
+                          <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+
+                    <label className="mt-5 flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={trustDevice}
+                        onChange={(e) => setTrustDevice(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
                       />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("trustDeviceLabel")}
+                      </span>
+                    </label>
+
+                    {/* Everything lost — offer the last resort from the chooser
+                        too, before the user gives up on the account. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVerifyMethod("recover_access");
+                        setRecoverySent(false);
+                        setRecoveryDevUrl(null);
+                      }}
+                      className="mt-5 w-full text-sm text-primary hover:underline transition-colors"
+                    >
+                      {t("lostAllMethods")}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTotpRequired(false);
+                        setVerifyMethod(null);
+                        setTotpCode("");
+                      }}
+                      className="mt-4 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                    >
+                      {t("backToLogin")}
+                    </button>
+                  </>
+                ) : verifyMethod === "email_otp" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("emailOtpTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">
+                      {t("emailOtpDesc", { email: savedEmail })}
+                    </p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleEmailOtpVerification(totpCode);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("verificationCode")}</Label>
+                        <div className="flex w-full justify-center pt-1">
+                          <CodeSlots
+                            value={totpCode}
+                            onChange={(code) => {
+                              setTotpCode(code);
+                              if (code.length === 0) {
+                                setTotpRejected(false);
+                                setEmailOtpHint(null);
+                              }
+                            }}
+                            onComplete={(code) => {
+                              void handleEmailOtpVerification(code);
+                            }}
+                            status={totpRejected ? "error" : "idle"}
+                            disabled={isLoading}
+                            autoFocus
+                            ariaLabel={t("verificationCode")}
+                            slotSize={48}
+                            gap={6}
+                          />
+                        </div>
+                        {emailOtpDevCode && (
+                          <div className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-2.5 text-center">
+                            <p className="text-[11px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">
+                              {t("developmentOtp")}
+                            </p>
+                            <p className="font-mono text-lg font-bold tracking-[0.3em] text-zinc-800 dark:text-zinc-100">
+                              {emailOtpDevCode}
+                            </p>
+                          </div>
+                        )}
+                        {emailOtpHint && (
+                          <p className="text-xs text-destructive text-center">{emailOtpHint}</p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={totpCode.length < 6 || isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
+                    </form>
+
+                    <label className="mt-4 flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={trustDevice}
+                        onChange={(e) => setTrustDevice(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                      />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("trustDeviceLabel")}
+                      </span>
+                    </label>
+
+                    <div className="mt-4 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => void requestEmailOtp()}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("resendEmailCode")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod("choose");
+                          setTotpCode("");
+                          setTotpRejected(false);
+                          setEmailOtpHint(null);
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        ← {t("chooseOtherMethod")}
+                      </button>
+                    </div>
+                  </>
+                ) : verifyMethod === "backup_code" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("backupCodeTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("backupCodeDesc")}</p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleBackupCodeVerification(backupCodeInput);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("backupCodeLabel")}</Label>
+                        <Input
+                          value={backupCodeInput}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            // A shrinking value means backspace — never re-insert
+                            // the dash the user just deleted.
+                            if (raw.length < backupCodeInput.length) {
+                              setBackupCodeInput(
+                                raw
+                                  .replace(/[^a-zA-Z0-9]/g, "")
+                                  .toLowerCase()
+                                  .slice(0, 8),
+                              );
+                              return;
+                            }
+                            setBackupCodeInput(formatBackupCode(raw));
+                            setBackupRejected(false);
+                          }}
+                          placeholder={t("backupCodePlaceholder")}
+                          autoComplete="one-time-code"
+                          spellCheck={false}
+                          disabled={isLoading}
+                          autoFocus
+                          aria-invalid={backupRejected}
+                          className={`h-12 rounded-xl text-center font-mono text-base tracking-[0.25em] ${
+                            backupRejected
+                              ? "border-destructive focus-visible:ring-destructive/40"
+                              : ""
+                          }`}
+                        />
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {t("backupCodeSingleUse")}
+                        </p>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={backupCodeInput.replace(/-/g, "").length < 8 || isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={trustDevice}
+                          onChange={(e) => setTrustDevice(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                        />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                          {t("trustDeviceLabel")}
+                        </span>
+                      </label>
+
+                      {/* Dead end: no authenticator AND no codes left. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("recover_access");
+                          setRecoverySent(false);
+                          setRecoveryDevUrl(null);
+                        }}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("lostAllMethods")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod("choose");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        ← {t("chooseOtherMethod")}
+                      </button>
+                    </form>
+                  </>
+                ) : verifyMethod === "recover_access" ? (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {recoverySent ? t("recoveryLinkSent") : t("accountRecoveryTitle")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">
+                      {recoverySent
+                        ? t("recoveryLinkSentDesc", { email: savedEmail || email })
+                        : t("accountRecoveryDesc")}
+                    </p>
+
+                    {recoverySent ? (
+                      <div className="space-y-6">
+                        {recoveryDevUrl && (
+                          <div className="rounded-lg border border-dashed border-amber-500/40 bg-amber-500/10 p-3">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                              {t("developmentRecoveryLink")}
+                            </p>
+                            <Link
+                              href={recoveryDevUrl}
+                              className="mt-1 block break-all text-xs text-primary underline"
+                            >
+                              {recoveryDevUrl}
+                            </Link>
+                          </div>
+                        )}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full h-11 rounded-xl"
+                          onClick={() => void requestAccountRecovery()}
+                          disabled={recoveryLoading}
+                        >
+                          {recoveryLoading ? t("verifying") : t("resendRecoveryLink")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs leading-snug text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>{t("accountRecoveryWarning")}</span>
+                        </div>
+
+                        <Button
+                          type="button"
+                          className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                          onClick={() => void requestAccountRecovery()}
+                          disabled={recoveryLoading}
+                        >
+                          {recoveryLoading ? (
+                            <>
+                              <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                              {t("verifying")}
+                            </>
+                          ) : (
+                            t("sendRecoveryLink")
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVerifyMethod("choose");
+                        setRecoverySent(false);
+                        setRecoveryDevUrl(null);
+                      }}
+                      className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                    >
+                      {t("chooseOtherMethod")}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                      {t("twoFactorAuth")}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-8">{t("twoFactorDescription")}</p>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleTotpVerification(totpCode);
+                      }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-zinc-700">{t("verificationCode")}</Label>
+                        {/* CodeSlots: six animated slots, a gliding caret, and the
+                        real verification state — a rejected code drains the row
+                        and flashes the destructive treatment, an accepted one
+                        washes it with the accent before the redirect. */}
+                        <div className="flex w-full justify-center pt-1">
+                          <CodeSlots
+                            value={totpCode}
+                            onChange={(code) => {
+                              setTotpCode(code);
+                              if (code.length === 0 && totpRejected) setTotpRejected(false);
+                            }}
+                            onComplete={(code) => {
+                              void handleTotpVerification(code);
+                            }}
+                            status={totpRejected ? "error" : "idle"}
+                            disabled={isLoading}
+                            autoFocus
+                            ariaLabel={t("verificationCode")}
+                            slotSize={48}
+                            gap={6}
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20"
+                        disabled={totpCode.length < 6 || isLoading}
+                      >
+                        {" "}
+                        {isLoading ? (
+                          <>
+                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            {t("verifying")}
+                          </>
+                        ) : (
+                          t("verifyAndLogin")
+                        )}
+                      </Button>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={trustDevice}
+                          onChange={(e) => setTrustDevice(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
+                        />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                          {t("trustDeviceLabel")}
+                        </span>
+                      </label>
+
+                      {/* Lost the device (or wiped the app)? The saved
+                          single-use backup codes are the way back in. */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setVerifyMethod("backup_code");
+                          setBackupCodeInput("");
+                          setBackupRejected(false);
+                          setTotpCode("");
+                          setTotpRejected(false);
+                        }}
+                        className="w-full text-sm text-primary hover:underline transition-colors disabled:opacity-60"
+                      >
+                        {t("lostAuthenticator")}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTotpRequired(false);
+                          setVerifyMethod(null);
+                          setTotpCode("");
+                        }}
+                        className="w-full text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                      >
+                        {t("backToLogin")}
+                      </button>
+                    </form>
+                  </>
+                )}
+              </>
+            ) : view === "forgot" ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                    {forgotSent ? t("resetLinkSent") : t("forgotPasswordTitle")}
+                  </h1>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
+                    {forgotSent ? t("resetLinkSentDesc") : t("forgotPasswordSubtitle")}
+                  </p>
+                </div>
+
+                {forgotSent ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-zinc-700 dark:text-zinc-200">
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                      {t("resetLinkSent")}
+                    </div>
+
+                    {forgotDevUrl && (
+                      <a
+                        href={forgotDevUrl}
+                        className="block text-center text-xs text-primary break-all hover:underline"
+                      >
+                        {forgotDevUrl}
+                      </a>
+                    )}
+
+                    <div className="flex items-center justify-center gap-3 text-sm">
+                      {cooldownLeft > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-zinc-400">
+                          <Timer className="h-3.5 w-3.5" />
+                          {t("resendInSeconds", { seconds: cooldownLeft })}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void sendForgotLink()}
+                          disabled={forgotLoading}
+                          className="text-primary font-medium hover:underline transition-colors disabled:opacity-50"
+                        >
+                          {forgotLoading ? t("sendingResetLink") : t("resendResetLink")}
+                        </button>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-11"
+                      onClick={goToLogin}
+                    >
+                      {t("backToLogin")}
+                    </Button>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void sendForgotLink();
+                    }}
+                    className="space-y-5"
+                  >
+                    <div>
+                      <Label className="text-zinc-700 dark:text-zinc-300 font-medium mb-1.5 block">
+                        {t("email")}
+                      </Label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={t("emailPlaceholder")}
+                        disabled={forgotLoading}
+                        autoFocus
+                        required
+                        className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={!email || forgotLoading || cooldownLeft > 0}
+                      className="w-full h-11 rounded-xl text-primary-foreground bg-accent-gradient font-semibold mt-2 shadow-none"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />
+                          {t("sendingResetLink")}
+                        </>
+                      ) : cooldownLeft > 0 ? (
+                        t("resendInSeconds", { seconds: cooldownLeft })
+                      ) : (
+                        t("sendResetLink")
+                      )}
+                    </Button>
+
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={goToLogin}
+                        className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-primary dark:text-zinc-400 transition-colors"
+                      >
+                        {t("backToLogin")}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <>
+                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
+                  {t("welcomeBack")}
+                </h1>
+                <p className="text-sm text-zinc-500 mb-8">{t("loginDescription")}</p>
+
+                {/* Persistent counterpart to the session toast: a dead session
+                    force-closed the dashboard onto this form, and the banner
+                    stays until it is dismissed by navigation — the toast alone
+                    vanished too fast to read (and gave e2e nothing to assert). */}
+                {(sessionNotice === "expired" || sessionNotice === "session-changed") && (
+                  <div
+                    id="session-expired-notice"
+                    data-testid="session-expired-notice"
+                    role="alert"
+                    className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+                  >
+                    <Timer className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                    <span>
+                      {sessionNotice === "expired" ? t("sessionExpired") : t("sessionChanged")}
+                    </span>
+                  </div>
+                )}
+
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-700">{t("email")}</Label>
+                    <Input
+                      type="email"
+                      placeholder={t("emailPlaceholder")}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-zinc-700 dark:text-zinc-300">{t("password")}</Label>
+                      <button
+                        type="button"
+                        onClick={goToForgot}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {t("forgotPassword")}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("passwordPlaceholder")}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20"
-                    disabled={totpCode.length < 6 || isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Verifying...
-                      </>
-                    ) : (
-                      "Verify & Login"
-                    )}
-                  </Button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTotpRequired(false);
-                      setTotpCode("");
-                    }}
-                    className="w-full text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-                  >
-                    ← Back to login
-                  </button>
-                </form>
-              </>
-            ) : view === "forgot" ? (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div>
-                  <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
-                    {t("forgotPasswordTitle")}
-                  </h1>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    {t("forgotPasswordSubtitle")}
-                  </p>
-                </div>
-
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    toast.success(t("resetLinkSent"));
-                    setView("login");
-                  }}
-                  className="space-y-5"
-                >
-                  <div>
-                    <Label className="text-zinc-700 dark:text-zinc-300 font-medium mb-1.5 block">
-                      {t("email")}
-                    </Label>
-                    <Input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@dashboard.com"
-                      disabled={isLoading}
-                      className="w-full h-12 rounded-xl border-zinc-200 dark:border-zinc-800 focus:border-[#F25C38] focus:ring-[#F25C38]/20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-11 rounded-xl bg-[#F5A898] hover:bg-[#EE5D36] transition-colors text-white font-semibold mt-2 shadow-none"
-                  >
-                    {isLoading ? (
-                      <LoaderCircleIcon size={16} className="animate-spin" />
-                    ) : (
-                      t("sendResetLink")
-                    )}
-                  </Button>
-                </form>
-
-                <div className="text-center pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="inline-flex items-center text-sm font-medium text-zinc-500 hover:text-[#EE5D36] dark:text-zinc-400 dark:hover:text-[#EE5D36] transition-colors"
-                  >
-                    Back to log in
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-3">
-                  Welcome back
-                </h1>
-                <p className="text-sm text-zinc-500 mb-8">
-                  Log in to your account to continue exploring and utilizing our resources.
-                </p>
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-zinc-700">Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="Your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-zinc-700">Password</Label>
-                    <Input
-                      type="password"
-                      placeholder="Enter password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 focus:border-[#F25C38] focus:ring-[#F25C38]/20 rounded-xl"
-                      required
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-sm font-medium bg-[#F25C38] hover:bg-[#D94C2B] text-white rounded-xl shadow-lg shadow-orange-500/20 mt-2"
+                    className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20 mt-2"
                     disabled={!email || !password || isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon className="h-4 w-4 mr-2 animate-spin" /> Logging in...
+                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                        {t("loggingIn")}
                       </>
                     ) : (
-                      "Log in"
+                      t("loginButton")
                     )}
                   </Button>
                 </form>
@@ -316,7 +1329,7 @@ function LoginForm() {
                     <div className="w-full border-t border-zinc-200" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase font-medium">
-                    <span className="bg-white dark:bg-zinc-900 px-3 text-zinc-400">OR</span>
+                    <span className="bg-white dark:bg-zinc-900 px-3 text-zinc-400">{t("or")}</span>
                   </div>
                 </div>
 
@@ -345,12 +1358,17 @@ function LoginForm() {
                       />
                     </svg>
                   </button>
-                  <button
-                    type="button"
-                    className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
-                  >
-                    <Fingerprint className="h-5 w-5 text-zinc-700" />
-                  </button>
+                  {passkeyAvailable && (
+                    <button
+                      onClick={() => void handlePasskeyLogin()}
+                      type="button"
+                      aria-label={t("passkeySignIn")}
+                      title={t("passkeyAnyAccount")}
+                      className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                    >
+                      <Fingerprint className="h-5 w-5 text-zinc-700" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
@@ -360,9 +1378,12 @@ function LoginForm() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/en/register" className="text-[#F25C38] hover:underline">
-                    Create one
+                  {t("noAccount")}{" "}
+                  <Link
+                    href={`/${locale}/register`}
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    {t("createOne")}
                   </Link>
                 </p>
 
@@ -374,43 +1395,9 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Right Side Visual */}
+        {/* Right Side Visual — customer review (i18n) */}
         <div className="hidden md:flex md:w-[400px] lg:w-[480px] p-4 pl-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden relative bg-gradient-to-br from-orange-200 via-orange-100 to-amber-100 flex items-end p-6">
-            {/* Soft decorative blur shapes */}
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-400/30 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3" />
-            <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-rose-400/20 rounded-full blur-[60px] -translate-x-1/2" />
-
-            {/* Glass Card */}
-            <div className="relative z-10 w-full backdrop-blur-xl bg-white dark:bg-zinc-900/20 border border-white/40 p-8 rounded-[24px] shadow-2xl">
-              <div className="flex gap-2 mb-6">
-                <span className="px-4 py-1.5 bg-white dark:bg-zinc-900/30 text-zinc-800 text-xs font-semibold rounded-full border border-white/20 shadow-sm backdrop-blur-md">
-                  Community of designers
-                </span>
-                <span className="px-4 py-1.5 bg-white dark:bg-zinc-900/30 text-zinc-800 text-xs font-semibold rounded-full border border-white/20 shadow-sm backdrop-blur-md">
-                  Creative resources
-                </span>
-              </div>
-              <p className="text-zinc-900 font-semibold text-lg sm:text-xl mb-8 leading-snug">
-                &quot;I was able to reduce the time taken to present high-level designs by 35% using
-                the platform.&quot;
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-zinc-900 font-bold text-sm">Sara Bright</p>
-                  <p className="text-zinc-800/80 text-xs font-medium mt-0.5">Freelancer Designer</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-900 hover:bg-zinc-50 shadow-sm transition-colors">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AuthTestimonial />
         </div>
       </div>
     </div>
@@ -421,8 +1408,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#F25C38]">
-          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-white" />
+        <div className="min-h-screen flex items-center justify-center bg-primary">
+          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-primary-foreground" />
         </div>
       }
     >

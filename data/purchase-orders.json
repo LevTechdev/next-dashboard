@@ -1,0 +1,472 @@
+[
+  {
+    "id": "po-mtrmz4ja-a3ld",
+    "poNumber": "PO-2026-0017",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "Classic Oxford Cotton Shirt",
+        "sku": "SHIRT-OXF-001",
+        "quantity": 150,
+        "unitCost": 125000,
+        "totalCost": 18750000
+      }
+    ],
+    "totalAmount": 18750000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T19:31:14.998Z",
+    "expectedDeliveryDate": "2026-09-14T19:31:14.998Z",
+    "notes": "Auto-generated via Autonomous AI Executive Copilot replenishment alert.",
+    "createdAt": "2026-09-07T19:31:14.998Z",
+    "updatedAt": "2026-09-07T19:31:14.998Z"
+  },
+  {
+    "id": "po-mtqz1ymy-raln",
+    "poNumber": "PO-2026-0016",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T08:21:36.538Z",
+    "expectedDeliveryDate": "2026-09-14T08:21:36.538Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T08:21:36.538Z",
+    "updatedAt": "2026-09-07T08:21:36.538Z"
+  },
+  {
+    "id": "po-mtqvpb1t-h8fj",
+    "poNumber": "PO-2026-0015",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T06:47:47.249Z",
+    "expectedDeliveryDate": "2026-09-14T06:47:47.249Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T06:47:47.249Z",
+    "updatedAt": "2026-09-07T06:47:47.249Z"
+  },
+  {
+    "id": "po-mtqu6i9s-9u21",
+    "poNumber": "PO-2026-0014",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T06:05:10.528Z",
+    "expectedDeliveryDate": "2026-09-14T06:05:10.528Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T06:05:10.528Z",
+    "updatedAt": "2026-09-07T06:05:10.528Z"
+  },
+  {
+    "id": "po-mtqtv3ku-z4ii",
+    "poNumber": "PO-2026-0013",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T05:56:18.270Z",
+    "expectedDeliveryDate": "2026-09-14T05:56:18.270Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T05:56:18.270Z",
+    "updatedAt": "2026-09-07T05:56:18.270Z"
+  },
+  {
+    "id": "po-mtqsd869-bz8j",
+    "poNumber": "PO-2026-0012",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "Classic Oxford Cotton Shirt",
+        "sku": "SHIRT-OXF-001",
+        "quantity": 150,
+        "unitCost": 125000,
+        "totalCost": 18750000
+      }
+    ],
+    "totalAmount": 18750000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T05:14:24.801Z",
+    "expectedDeliveryDate": "2026-09-14T05:14:24.801Z",
+    "notes": "Auto-generated via Autonomous AI Executive Copilot replenishment alert.",
+    "createdAt": "2026-09-07T05:14:24.801Z",
+    "updatedAt": "2026-09-07T05:14:24.801Z"
+  },
+  {
+    "id": "po-mtqscctx-ctci",
+    "poNumber": "PO-2026-0011",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "Classic Oxford Cotton Shirt",
+        "sku": "SHIRT-OXF-001",
+        "quantity": 150,
+        "unitCost": 125000,
+        "totalCost": 18750000
+      }
+    ],
+    "totalAmount": 18750000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T05:13:44.181Z",
+    "expectedDeliveryDate": "2026-09-14T05:13:44.181Z",
+    "notes": "Auto-generated via Autonomous AI Executive Copilot replenishment alert.",
+    "createdAt": "2026-09-07T05:13:44.181Z",
+    "updatedAt": "2026-09-07T05:13:44.181Z"
+  },
+  {
+    "id": "po-mtqq8tow-kom6",
+    "poNumber": "PO-2026-0010",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T04:15:00.176Z",
+    "expectedDeliveryDate": "2026-09-14T04:15:00.176Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T04:15:00.176Z",
+    "updatedAt": "2026-09-07T04:15:00.176Z"
+  },
+  {
+    "id": "po-mtqq8h5s-a5tr",
+    "poNumber": "PO-2026-0009",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T04:14:43.936Z",
+    "expectedDeliveryDate": "2026-09-14T04:14:43.936Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T04:14:43.936Z",
+    "updatedAt": "2026-09-07T04:14:43.936Z"
+  },
+  {
+    "id": "po-mtqq846y-2u14",
+    "poNumber": "PO-2026-0008",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T04:14:27.130Z",
+    "expectedDeliveryDate": "2026-09-14T04:14:27.130Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T04:14:27.130Z",
+    "updatedAt": "2026-09-07T04:14:27.130Z"
+  },
+  {
+    "id": "po-mtqq4h1h-tcur",
+    "poNumber": "PO-2026-0007",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T04:11:37.157Z",
+    "expectedDeliveryDate": "2026-09-14T04:11:37.157Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T04:11:37.157Z",
+    "updatedAt": "2026-09-07T04:11:37.157Z"
+  },
+  {
+    "id": "po-mtqq3pll-7ivv",
+    "poNumber": "PO-2026-0006",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T04:11:01.593Z",
+    "expectedDeliveryDate": "2026-09-14T04:11:01.593Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T04:11:01.593Z",
+    "updatedAt": "2026-09-07T04:11:01.593Z"
+  },
+  {
+    "id": "po-mtqph1wu-rmbb",
+    "poNumber": "PO-2026-0005",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T03:53:24.462Z",
+    "expectedDeliveryDate": "2026-09-14T03:53:24.462Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T03:53:24.462Z",
+    "updatedAt": "2026-09-07T03:53:24.462Z"
+  },
+  {
+    "id": "po-mtqneakq-d3ak",
+    "poNumber": "PO-2026-0004",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "ISSUED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T02:55:16.490Z",
+    "expectedDeliveryDate": "2026-09-14T02:55:16.490Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T02:55:16.490Z",
+    "updatedAt": "2026-09-07T02:55:16.490Z"
+  },
+  {
+    "id": "po-mtqmj9fo-04u2",
+    "poNumber": "PO-2026-0003",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "RECEIVED",
+    "items": [
+      {
+        "productId": "prod-test-1",
+        "productName": "Test Oxford Shirt",
+        "sku": "SHIRT-TEST-001",
+        "quantity": 50,
+        "unitCost": 90000,
+        "totalCost": 4500000
+      }
+    ],
+    "totalAmount": 4500000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-07T02:31:08.676Z",
+    "expectedDeliveryDate": "2026-09-14T02:31:08.676Z",
+    "notes": "Test inbound shipment",
+    "createdAt": "2026-09-07T02:31:08.676Z",
+    "updatedAt": "2026-09-07T02:49:00.159Z",
+    "receivedDate": "2026-09-07T02:49:00.159Z"
+  },
+  {
+    "id": "po-seed-001",
+    "poNumber": "PO-2026-0001",
+    "supplierId": "sup-001",
+    "supplierName": "Apex Manufacturing Ltd.",
+    "supplierEmail": "supply@apexmanufacture.com",
+    "status": "RECEIVED",
+    "items": [
+      {
+        "productId": "prod-001",
+        "productName": "Classic Oxford Cotton Shirt",
+        "sku": "SHIRT-OXF-001",
+        "quantity": 150,
+        "unitCost": 125000,
+        "totalCost": 18750000
+      },
+      {
+        "productId": "prod-002",
+        "productName": "Slim Chino Trousers",
+        "sku": "PANT-CHN-002",
+        "quantity": 80,
+        "unitCost": 175000,
+        "totalCost": 14000000
+      }
+    ],
+    "totalAmount": 32750000,
+    "warehouseId": "wh-jkt",
+    "warehouseName": "Jakarta Central Fulfillment Center",
+    "leadTimeDays": 7,
+    "issueDate": "2026-09-04T02:31:08.486Z",
+    "expectedDeliveryDate": "2026-09-11T02:31:08.486Z",
+    "notes": "Expedited shipping requested for festive season restock.",
+    "createdAt": "2026-09-04T02:31:08.486Z",
+    "updatedAt": "2026-09-07T08:21:36.544Z",
+    "receivedDate": "2026-09-07T08:21:36.544Z"
+  },
+  {
+    "id": "po-seed-002",
+    "poNumber": "PO-2026-0002",
+    "supplierId": "sup-002",
+    "supplierName": "Pacific Textiles & Apparel",
+    "supplierEmail": "orders@pacifictextiles.id",
+    "status": "RECEIVED",
+    "items": [
+      {
+        "productId": "prod-003",
+        "productName": "Merino Wool Crewneck",
+        "sku": "KNIT-MRN-003",
+        "quantity": 100,
+        "unitCost": 250000,
+        "totalCost": 25000000
+      }
+    ],
+    "totalAmount": 25000000,
+    "warehouseId": "wh-sub",
+    "warehouseName": "Surabaya Regional Logistics Depot",
+    "leadTimeDays": 14,
+    "issueDate": "2026-08-22T02:31:08.486Z",
+    "expectedDeliveryDate": "2026-09-05T02:31:08.486Z",
+    "receivedDate": "2026-09-05T02:31:08.486Z",
+    "notes": "Received in full at Surabaya gate 4.",
+    "createdAt": "2026-08-22T02:31:08.486Z",
+    "updatedAt": "2026-09-05T02:31:08.486Z"
+  }
+]

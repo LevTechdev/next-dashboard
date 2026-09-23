@@ -7,6 +7,7 @@ import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
+import { ensureStarterSubscription, provisionPersonalTenant } from "@/lib/provisioning";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, email, password } = body;
+    // Verification-email locale: sent by the client (the signup page knows it);
+    // anything unsupported falls back to en inside the mailer.
+    const locale = typeof body.locale === "string" ? body.locale : undefined;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -47,9 +51,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email already in use" }, { status: 409 });
     }
 
-    // Create user
+    // Create user — self-service signups are always CLIENT; workspace roles
+    // (STAFF/MANAGER/ADMIN) exist only when an ADMIN creates them in Team.
     const hashedPassword = await hashPassword(password);
-    const defaultTenant = await prisma.tenant.findUnique({ where: { slug: "default" } });
+    // Fresh signups get their OWN empty workspace (not the shared `default`
+    // tenant) so the dashboard starts clean — $0 revenue, 0 orders — instead
+    // of rendering the seed workspace's data to a brand-new account.
+    const tenantId = await provisionPersonalTenant(name);
     const user = await prisma.user.create({
       data: {
         name,
@@ -57,11 +65,15 @@ export async function POST(req: Request) {
         password: hashedPassword,
         passwordAlgo: "argon2id",
         passwordChangedAt: new Date(),
-        role: "STAFF",
+        role: "CLIENT",
         isActive: true,
-        tenantId: defaultTenant?.id ?? null,
+        tenantId,
       },
     });
+
+    // Tier system: every new signup lands on the Starter plan (REGULAR tier)
+    // with an ACTIVE subscription so plan gating resolves on first login.
+    await ensureStarterSubscription(user.id);
 
     // Create JWT token
     const authUser: AuthUser = {
@@ -102,8 +114,10 @@ export async function POST(req: Request) {
     // can be re-requested from the Security Center (send route) afterwards.
     const emailOtpRequired = true;
     let devOtp: string | undefined;
+    let emailSent = false;
     try {
-      const issued = await issueEmailOtp({ userId: user.id, email: user.email });
+      const issued = await issueEmailOtp({ userId: user.id, email: user.email, locale });
+      emailSent = issued.sent;
       devOtp = issued.code; // always capture — gated on isDevFallbackAllowed at response
     } catch (err) {
       console.error("[register] OTP issue error:", err);
@@ -134,6 +148,9 @@ export async function POST(req: Request) {
       user: safeUser,
       message: "Account created successfully",
       emailOtpRequired,
+      // True when a configured transport (SMTP/Resend) accepted the message —
+      // lets the UI tell "check your inbox" apart from "no mailer configured".
+      emailSent,
       ...(isDevFallbackAllowed() && devOtp ? { devOtp } : {}), // devOtp gated: only in non-production
     });
 

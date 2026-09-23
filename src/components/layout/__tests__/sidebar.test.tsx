@@ -22,10 +22,12 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "en" }),
 }));
 
-// Mock useAuth
+// Mock useAuth — the sidebar reads user.role directly from the context
+// (real shape: user is the session user, tierFeatures the subscription).
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(() => ({
-    user: { user: { name: "Admin User", email: "admin@test.com", role: "ADMIN" } },
+    user: { name: "Admin User", email: "admin@test.com", role: "ADMIN" },
+    tierFeatures: null,
     isLoading: false,
     error: null,
     isAuthenticated: true,
@@ -92,7 +94,7 @@ describe("Sidebar", () => {
   });
 
   it("renders in collapsed mode without text labels", () => {
-    const { container } = render(<Sidebar collapsed={true} onToggle={vi.fn()} />);
+    render(<Sidebar collapsed={true} onToggle={vi.fn()} />);
     // Should not show text labels in collapsed mode
     expect(screen.queryByText("Management System")).not.toBeInTheDocument();
     expect(screen.queryByText("Collapse")).not.toBeInTheDocument();

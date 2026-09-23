@@ -12,17 +12,28 @@ import { createSession } from "@/lib/sessions";
 import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
+import {
+  issueSecondFactorMarker,
+  markerCookieOptions,
+  PASSKEY_2FA_COOKIE,
+} from "@/lib/passkey-second-factor";
 
 export const dynamic = "force-dynamic";
 
-/** POST: finish passkey login — verify the assertion and issue a session. */
+/**
+ * POST: finish passkey login — verify the assertion and either issue a
+ * session (passwordless first factor, the default) or, in `second_factor`
+ * mode, hand back a short-lived marker the login route consumes as the second
+ * factor (the password step already happened in the browser).
+ */
 export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const secondFactorMode = body.mode === "second_factor";
   const expectedChallenge = readChallengeCookie(req, AUTH_CHALLENGE_COOKIE);
   if (!expectedChallenge) {
     return NextResponse.json({ error: "Challenge expired. Try again." }, { status: 400 });
   }
 
-  const body = await req.json();
   const credential = body.credential as { id?: string } | undefined;
   if (!credential?.id) {
     return NextResponse.json({ error: "Invalid credential" }, { status: 400 });
@@ -46,8 +57,19 @@ export async function POST(req: Request) {
         counter: stored.counter,
         transports: stored.transports ? (stored.transports.split(",") as never) : undefined,
       },
+      // The options step requests `userVerification: "preferred"`, but
+      // @simplewebauthn/server DEFAULTS `requireUserVerification` to `true`.
+      // Left at the default, any authenticator that skips user verification
+      // (a roaming security key with no PIN, an OS prompt with UV=0) throws
+      // "User verification required, but user could not be verified" and the
+      // ceremony fails as a generic error. Keep the two ends consistent:
+      // preferred on the way out, not required on the way back.
+      requireUserVerification: false,
     });
-  } catch {
+  } catch (err) {
+    // The client only ever sees the generic message, so log the real cause
+    // (challenge expiry, origin/RP ID mismatch, UV policy, replayed counter).
+    console.error("[webauthn] assertion verification failed:", err);
     return NextResponse.json({ error: "Passkey verification failed" }, { status: 401 });
   }
 
@@ -65,6 +87,17 @@ export async function POST(req: Request) {
     where: { id: stored.id },
     data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() },
   });
+
+  // ── Second-factor mode: no session here. ──
+  // The login route still holds the verified-password context; hand back a
+  // short-lived signed marker it can verify and consume server-side.
+  if (secondFactorMode) {
+    const marker = await issueSecondFactorMarker(user.id);
+    const res = NextResponse.json({ secondFactorVerified: true });
+    res.cookies.set(PASSKEY_2FA_COOKIE, marker, markerCookieOptions());
+    res.cookies.set(AUTH_CHALLENGE_COOKIE, "", { path: "/", maxAge: 0 });
+    return res;
+  }
 
   // Issue a session exactly like password login (Phase 2 rotation).
   const authUser: AuthUser = {

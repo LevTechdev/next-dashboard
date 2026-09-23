@@ -31,7 +31,7 @@ export function SpotlightNavbar({
   const navRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);
   const [hoverX, setHoverX] = useState<number | null>(null);
-  const [isDark, setIsDark] = useState(false);
+  const [, setIsDark] = useState(false);
 
   // Refs for the "light" positions so we can animate them imperatively
   const spotlightX = useRef(0);

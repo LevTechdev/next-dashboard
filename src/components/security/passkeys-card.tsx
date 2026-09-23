@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, KeyRound, Loader2, Smartphone } from "lucide-react";
 import { CheckIcon, FingerprintIcon } from "lucide-animated";
 import { startRegistration } from "@simplewebauthn/browser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CodeSlots } from "@/components/ui/code-slots";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/sora-ui/base/alert-dialog";
 import { timeAgo, type SecurityData } from "@/components/security/use-security-data";
 
 export function PasskeysCard({ data }: { data: SecurityData }) {
@@ -30,51 +35,96 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
   } | null>(null);
   const [verifyPassword, setVerifyPassword] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [showVerifyPassword, setShowVerifyPassword] = useState(false);
+  // 30-day MFA freshness gate: when the step-up endpoint answers 428, the
+  // dialog flips from password to authenticator-code verification — the same
+  // second factor the freshness policy demands.
+  const [totpMode, setTotpMode] = useState(false);
+  // CodeSlots error treatment after a rejected step-up code.
+  const [totpRejected, setTotpRejected] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
 
   const addPasskey = async () => {
     setAddingPasskey(true);
     try {
+      // WebAuthn only exists in a secure context (HTTPS or localhost) — without
+      // this guard the failure below is a cryptic NotSupportedError.
+      if (
+        typeof window === "undefined" ||
+        !window.isSecureContext ||
+        !navigator.credentials?.create
+      ) {
+        toast.error(t("passkeyUnsupported"));
+        return;
+      }
       const optRes = await fetch("/api/auth/webauthn/register/options", { method: "POST" });
-      if (!optRes.ok) throw new Error("options");
-      const options = await optRes.json();
+      const options = await optRes.json().catch(() => null);
+      if (!optRes.ok || !options) {
+        throw new Error(options?.error || t("passkeyFailed"));
+      }
       const att = await startRegistration({ optionsJSON: options });
       const label =
         typeof navigator !== "undefined" && navigator.platform ? navigator.platform : "Passkey";
       const verifyRes = await fetch("/api/auth/webauthn/register/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // The route destructures `{ credential, deviceName }`. Posting the
+        // attestation at the top level left `credential` undefined, so
+        // verifyRegistrationResponse threw and EVERY passkey registration
+        // failed as "Passkey verification failed".
         body: JSON.stringify({ credential: att, deviceName: label }),
       });
-      if (!verifyRes.ok) throw new Error("verify");
-      toast.success(t("passkeyAdded"));
+      if (!verifyRes.ok) {
+        const err = await verifyRes.json().catch(() => ({}));
+        // The same authenticator re-registered on the same RP is a 409 the
+        // server flags with a code, so the copy is localizable instead of
+        // leaking the server's English string.
+        if (err.code === "PASSKEY_DUPLICATE") throw new Error(t("passkeyDuplicate"));
+        throw new Error(err.error || t("passkeyFailed"));
+      }
+      toast.success(t("passkeyRegistered"));
       data.refresh();
-    } catch {
-      toast.error(t("passkeyFailed"));
+    } catch (err: any) {
+      // The user dismissed the browser's passkey prompt — that is not a failure.
+      if (err instanceof DOMException && err.name === "NotAllowedError") return;
+      toast.error(err?.message || t("passkeyFailed"));
     } finally {
       setAddingPasskey(false);
     }
   };
 
-  const confirmRemovePasskey = (id: string, deviceName: string | null) => {
-    setVerifyPassword("");
-    setRevokeTarget({ id, deviceName });
-  };
-
   const removePasskey = async () => {
     if (!revokeTarget) return;
-    if (!verifyPassword) {
+    if (!totpMode && !verifyPassword) {
       toast.error(t("verifyPasswordRequired"));
+      return;
+    }
+    if (totpMode && totpCode.length < 6) {
+      toast.error(t("totpRequired"));
       return;
     }
     setVerifying(true);
     try {
-      // Step-up: re-authenticate before this sensitive action (password or TOTP).
+      // Step-up: re-authenticate before this sensitive action. The challenge
+      // depends on the freshness gate: password normally, TOTP when the 30-day
+      // MFA re-verification is due (the endpoint answers 428 and we flip).
       const stepUp = await fetch("/api/auth/step-up", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ purpose: "manage_2fa", password: verifyPassword }),
+        body: JSON.stringify(
+          totpMode
+            ? { purpose: "manage_2fa", totpToken: totpCode }
+            : { purpose: "manage_2fa", password: verifyPassword },
+        ),
       });
       if (!stepUp.ok) {
+        if (stepUp.status === 428 && !totpMode) {
+          // Freshness gate: switch the dialog to TOTP and let the user retry.
+          setTotpMode(true);
+          setVerifying(false);
+          return;
+        }
+        if (totpMode) setTotpRejected(true);
         toast.error(t("verificationFailed"));
         return;
       }
@@ -87,6 +137,8 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
         toast.success(t("passkeyRemoved"));
         setRevokeTarget(null);
         setVerifyPassword("");
+        setTotpMode(false);
+        setTotpCode("");
         data.refresh();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -99,6 +151,14 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
 
   const { passkeys } = data;
   const isLastPasskey = passkeys.length === 1;
+
+  function confirmRemovePasskey(id: string, deviceName: string | null) {
+    setRevokeTarget({ id, deviceName });
+    setVerifyPassword("");
+    setTotpMode(false);
+    setTotpCode("");
+    setTotpRejected(false);
+  }
 
   return (
     <>
@@ -153,29 +213,40 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
             </p>
           )}
           <Button
-            variant="outline"
+            variant={passkeys.length > 0 ? "outline" : "outline"}
             size="sm"
             onClick={addPasskey}
-            disabled={addingPasskey}
-            className="mt-1"
+            disabled={addingPasskey || passkeys.length > 0}
+            className={cn("mt-1", passkeys.length > 0 && "opacity-60 cursor-not-allowed")}
           >
-            <FingerprintIcon size={16} className="h-4 w-4 mr-1" />
-            {addingPasskey ? tcommon("loading") : t("addPasskey")}
+            {passkeys.length > 0 ? (
+              <>
+                <CheckIcon size={16} className="h-4 w-4 mr-1 text-lime-600 dark:text-green-400" />
+                {t("passkeyRegistered")}
+              </>
+            ) : (
+              <>
+                <FingerprintIcon size={16} className="h-4 w-4 mr-1" />
+                {addingPasskey ? tcommon("loading") : t("addPasskey")}
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Passkey revoke — re-auth verification modal */}
-      <Dialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-              <Trash2 className="h-5 w-5" />
-              {t("passkeyVerifyTitle")}
-            </DialogTitle>
-            <DialogDescription>{t("passkeyVerifyDesc")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      {/* Passkey revoke — Sora alert-dialog with re-auth verification.
+          When the 30-day MFA freshness gate demands it (428), the challenge
+          switches from password to authenticator code. */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-red-500/10 text-red-600 dark:text-red-400">
+              <KeyRound className="size-5" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>{t("passkeyVerifyTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("passkeyVerifyDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
             {isLastPasskey && (
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-900/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
                 <AlertTriangle size={14} className="h-4 w-4 mt-0.5 shrink-0" />
@@ -187,47 +258,93 @@ export function PasskeysCard({ data }: { data: SecurityData }) {
                 {revokeTarget.deviceName}
               </p>
             )}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t("verifyPasswordLabel")}
-              </label>
-              <Input
-                type="password"
-                value={verifyPassword}
-                onChange={(e) => setVerifyPassword(e.target.value)}
-                placeholder={t("verifyPasswordPlaceholder")}
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && !verifying && removePasskey()}
-              />
-            </div>
+            {totpMode ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t("totpLabel")}
+                </label>
+                {/* CodeSlots — the shared animated one-time-code control. */}
+                <div className="flex justify-center">
+                  <CodeSlots
+                    value={totpCode}
+                    onChange={(code) => {
+                      setTotpCode(code);
+                      if (code.length === 0 && totpRejected) setTotpRejected(false);
+                    }}
+                    status={totpRejected ? "error" : "idle"}
+                    disabled={verifying}
+                    autoFocus
+                    ariaLabel={t("totpLabel")}
+                    placeholder="123456"
+                    slotSize={44}
+                    gap={6}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t("totpFreshnessHint")}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t("verifyPasswordLabel")}
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showVerifyPassword ? "text" : "password"}
+                    value={verifyPassword}
+                    onChange={(e) => setVerifyPassword(e.target.value)}
+                    placeholder={t("verifyPasswordPlaceholder")}
+                    className="pr-10"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && !verifying && removePasskey()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowVerifyPassword(!showVerifyPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showVerifyPassword ? (
+                      <EyeOff size={16} className="h-4 w-4" />
+                    ) : (
+                      <Eye size={16} className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
+          <AlertDialogFooter>
+            <AlertDialogCancel
               onClick={() => {
                 setRevokeTarget(null);
                 setVerifyPassword("");
+                setTotpMode(false);
+                setTotpCode("");
               }}
               disabled={verifying}
             >
               {tcommon("cancel")}
-            </Button>
-            <Button
+            </AlertDialogCancel>
+            <AlertDialogAction
               variant="destructive"
               onClick={removePasskey}
-              disabled={!verifyPassword || verifying}
+              disabled={verifying || (totpMode ? totpCode.length < 6 : !verifyPassword)}
             >
               {verifying ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("verifying")}
                 </>
+              ) : totpMode ? (
+                <>
+                  <Smartphone className="h-4 w-4 mr-2" /> {t("totpConfirm")}
+                </>
               ) : (
                 t("verifyConfirm")
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 import InventoryPage from "../page";
 
@@ -15,48 +15,102 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: "en" }),
 }));
 
+// The PO table now calls useConfirm for the bulk-issue flow — provide the
+// provider context the page expects.
+vi.mock("@/components/ui/confirm-provider", () => ({
+  useConfirm: () => async () => true,
+}));
+
 describe("Inventory Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve([
-          { id: "1", name: "Widget Pro", sku: "WGT-001", price: 29.99, stock: 50 },
-          { id: "2", name: "Gadget X", sku: "GDG-002", price: 49.99, stock: 5 },
-          { id: "3", name: "Old Model", sku: "OLD-003", price: 9.99, stock: 0 },
-        ]),
-    } as Response);
+    // The page polls several endpoints; route each to its expected shape.
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      const json = (data: unknown) =>
+        Promise.resolve({ ok: true, json: () => Promise.resolve(data) } as unknown as Response);
+
+      if (String(url).includes("/api/products")) {
+        return json({
+          products: [
+            {
+              id: "1",
+              name: "Widget Pro",
+              sku: "WGT-001",
+              price: 29.99,
+              costPrice: 12,
+              stock: 50,
+              category: null,
+              categoryId: null,
+            },
+            {
+              id: "2",
+              name: "Gadget X",
+              sku: "GDG-002",
+              price: 49.99,
+              costPrice: 20,
+              stock: 5,
+              category: null,
+              categoryId: null,
+            },
+            {
+              id: "3",
+              name: "Old Model",
+              sku: "OLD-003",
+              price: 9.99,
+              costPrice: 4,
+              stock: 0,
+              category: null,
+              categoryId: null,
+            },
+          ],
+          categories: [],
+          totalValue: 100000,
+          lowStockCount: 1,
+          outOfStockCount: 1,
+          inStockCount: 1,
+        });
+      }
+      if (String(url).includes("/api/inventory/replenishment")) {
+        return json({ items: [], summary: {} });
+      }
+      if (String(url).includes("/api/inventory/purchase-orders")) {
+        return json({ orders: [], summary: null });
+      }
+      if (String(url).includes("/api/inventory/warehouses")) {
+        return json({ warehouses: [] });
+      }
+      return json({});
+    });
   });
 
   it("renders the page heading", async () => {
     render(<InventoryPage />);
-    await waitFor(() => {});
-    expect(screen.getByText("Inventory Management")).toBeInTheDocument();
+    expect(await screen.findByText("Inventory Management")).toBeInTheDocument();
     expect(screen.getByText("Track stock levels and inventory movements")).toBeInTheDocument();
   });
 
   it("renders stock summary cards", async () => {
     render(<InventoryPage />);
-    await waitFor(() => {});
-    expect(screen.queryAllByText("In Stock").length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryAllByText("Low Stock").length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryAllByText("Out of Stock").length).toBeGreaterThanOrEqual(1);
+    expect((await screen.findAllByText("In Stock")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Low Stock").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Out of Stock").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the search input", async () => {
     render(<InventoryPage />);
-    await waitFor(() => {});
-    expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText("Search products by name or SKU..."),
+    ).toBeInTheDocument();
   });
 
   it("renders table headers", async () => {
     render(<InventoryPage />);
-    await waitFor(() => {});
-    expect(screen.getByText("Product")).toBeInTheDocument();
+    await screen.findByText("Widget Pro");
     expect(screen.getByText("SKU")).toBeInTheDocument();
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Category")).toBeInTheDocument();
     expect(screen.getAllByText("Price").length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryAllByText("Current Stock").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Stock")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
   });
 });

@@ -244,6 +244,15 @@ export const Particles: React.FC<ParticlesProps> = ({
   };
 
   const animate = () => {
+    // A theme reveal (View Transitions API) rasterises the whole page for its
+    // old/new snapshots; the canvas redraw landing mid-capture both slows that
+    // capture (the wipe's first frame lands noticeably later on heavy pages)
+    // and gets frozen into the snapshot. Skip redraws while it runs — the
+    // last frame persists on the canvas anyway, and the loop resumes after.
+    if (document.documentElement.hasAttribute("data-theme-reveal")) {
+      rafID.current = window.requestAnimationFrame(animateRef.current);
+      return;
+    }
     clearContext();
     circles.current.forEach((circle: Circle, i: number) => {
       // Handle the alpha value

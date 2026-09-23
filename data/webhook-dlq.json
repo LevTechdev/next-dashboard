@@ -1,0 +1,697 @@
+[
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtrs0tqp-40qu",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T21:52:32.401Z",
+    "lastAttemptAt": "2026-09-07T21:52:32.401Z",
+    "nextRetryAt": "2026-09-07T21:57:32.401Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtrqnply-goj8",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T21:14:20.902Z",
+    "lastAttemptAt": "2026-09-07T21:14:20.902Z",
+    "nextRetryAt": "2026-09-07T21:19:20.902Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtrpiil0-1g8r",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T20:42:18.900Z",
+    "lastAttemptAt": "2026-09-07T20:42:18.900Z",
+    "nextRetryAt": "2026-09-07T20:47:18.900Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtrn4mv9-1292",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T19:35:32.037Z",
+    "lastAttemptAt": "2026-09-07T19:35:32.037Z",
+    "nextRetryAt": "2026-09-07T19:40:32.037Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtrepek0-j8bw",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T15:39:44.496Z",
+    "lastAttemptAt": "2026-09-07T15:39:44.496Z",
+    "nextRetryAt": "2026-09-07T15:44:44.496Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtr2rrag-utok",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T10:05:38.920Z",
+    "lastAttemptAt": "2026-09-07T10:05:38.920Z",
+    "nextRetryAt": "2026-09-07T10:10:38.920Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtr26dy2-ysjk",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T09:49:01.850Z",
+    "lastAttemptAt": "2026-09-07T09:49:01.850Z",
+    "nextRetryAt": "2026-09-07T09:54:01.850Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtr0l7tf-vcqy",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T09:04:34.515Z",
+    "lastAttemptAt": "2026-09-07T09:04:34.515Z",
+    "nextRetryAt": "2026-09-07T09:09:34.515Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqz3nxv-gfwx",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T08:22:55.987Z",
+    "lastAttemptAt": "2026-09-07T08:22:55.987Z",
+    "nextRetryAt": "2026-09-07T08:27:55.987Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "payload": {
+      "id": "123",
+      "total_price": 150000
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqz1x5s-8z33",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T08:21:34.624Z",
+    "lastAttemptAt": "2026-09-07T08:21:34.624Z",
+    "nextRetryAt": "2026-09-07T08:26:34.624Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "284",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http",
+      "x-shopify-hmac-sha256": "JPzF/pINb7qDUu83rLA0xAAhHJ50z1gT/eN8T6lrhL4="
+    },
+    "payload": {
+      "id": "1788765483864",
+      "name": "#SHPF-4265",
+      "customer": {
+        "first_name": "Sarah",
+        "last_name": "Jenkins",
+        "email": "sarah.j@gmail.com"
+      },
+      "line_items": [
+        {
+          "title": "Linen Summer Blazer",
+          "sku": "BLZ-LIN-01",
+          "quantity": 1,
+          "price": 450000
+        }
+      ],
+      "total_price": 450000,
+      "currency": "IDR",
+      "financial_status": "paid"
+    },
+    "errorMessage": "\nInvalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create()` invocation in\nD:\\Project\\next-dashboard\\.next\\dev\\server\\chunks\\[root-of-the-server]__096w-ax._.js:541:164\n\n  538     }\n  539 });\n  540 if (!customer) {\n→ 541     customer = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create(\nForeign key constraint violated on the constraint: `Customer_tenantId_fkey`",
+    "id": "dlq-mtqws94k-ncfg",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T07:18:04.340Z",
+    "lastAttemptAt": "2026-09-07T07:18:04.340Z",
+    "nextRetryAt": "2026-09-07T07:23:04.340Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip,deflate,br",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqwp5xz-1z8o",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T07:15:40.247Z",
+    "lastAttemptAt": "2026-09-07T07:15:40.247Z",
+    "nextRetryAt": "2026-09-07T07:20:40.247Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqw0nm5-2afk",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:56:36.749Z",
+    "lastAttemptAt": "2026-09-07T06:56:36.749Z",
+    "nextRetryAt": "2026-09-07T07:01:36.749Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "payload": {
+      "id": "123",
+      "total_price": 150000
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqvpau7-ahn6",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:47:46.975Z",
+    "lastAttemptAt": "2026-09-07T06:47:46.975Z",
+    "nextRetryAt": "2026-09-07T06:52:46.975Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "284",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http",
+      "x-shopify-hmac-sha256": "62D5QcKUYasgufRfisavNlj5KhxN9XXuq+YswktBIDc="
+    },
+    "payload": {
+      "id": "1788762018061",
+      "name": "#SHPF-9177",
+      "customer": {
+        "first_name": "Sarah",
+        "last_name": "Jenkins",
+        "email": "sarah.j@gmail.com"
+      },
+      "line_items": [
+        {
+          "title": "Linen Summer Blazer",
+          "sku": "BLZ-LIN-01",
+          "quantity": 1,
+          "price": 450000
+        }
+      ],
+      "total_price": 450000,
+      "currency": "IDR",
+      "financial_status": "paid"
+    },
+    "errorMessage": "\nInvalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create()` invocation in\nD:\\Project\\next-dashboard\\.next\\dev\\server\\chunks\\[root-of-the-server]__096w-ax._.js:541:164\n\n  538     }\n  539 });\n  540 if (!customer) {\n→ 541     customer = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create(\nForeign key constraint violated on the constraint: `Customer_tenantId_fkey`",
+    "id": "dlq-mtqupyvs-cxgg",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:20:18.520Z",
+    "lastAttemptAt": "2026-09-07T06:20:18.520Z",
+    "nextRetryAt": "2026-09-07T06:25:18.520Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip,deflate,br",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqud88a-gmne",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:10:24.106Z",
+    "lastAttemptAt": "2026-09-07T06:10:24.106Z",
+    "nextRetryAt": "2026-09-07T06:15:24.106Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "284",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http",
+      "x-shopify-hmac-sha256": "z2qloTFrD9/iQv1mBKccKadmwWaQfl4wZ+qS0KYkORY="
+    },
+    "payload": {
+      "id": "1788761417857",
+      "name": "#SHPF-1351",
+      "customer": {
+        "first_name": "Sarah",
+        "last_name": "Jenkins",
+        "email": "sarah.j@gmail.com"
+      },
+      "line_items": [
+        {
+          "title": "Linen Summer Blazer",
+          "sku": "BLZ-LIN-01",
+          "quantity": 1,
+          "price": 450000
+        }
+      ],
+      "total_price": 450000,
+      "currency": "IDR",
+      "financial_status": "paid"
+    },
+    "errorMessage": "\nInvalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create()` invocation in\nD:\\Project\\next-dashboard\\.next\\dev\\server\\chunks\\[root-of-the-server]__096w-ax._.js:541:164\n\n  538     }\n  539 });\n  540 if (!customer) {\n→ 541     customer = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.create(\nForeign key constraint violated on the constraint: `Customer_tenantId_fkey`",
+    "id": "dlq-mtqud3ui-jivf",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:10:18.426Z",
+    "lastAttemptAt": "2026-09-07T06:10:18.426Z",
+    "nextRetryAt": "2026-09-07T06:15:18.426Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "payload": {
+      "id": "123",
+      "total_price": 150000
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqu6i41-jhaf",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:05:10.321Z",
+    "lastAttemptAt": "2026-09-07T06:05:10.321Z",
+    "nextRetryAt": "2026-09-07T06:10:10.321Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate",
+      "accept-language": "*",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "sec-fetch-mode": "cors",
+      "user-agent": "node",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqu67h6-yj87",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:04:56.539Z",
+    "lastAttemptAt": "2026-09-07T06:04:56.539Z",
+    "nextRetryAt": "2026-09-07T06:09:56.539Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "accept": "*/*",
+      "accept-encoding": "gzip,deflate,br",
+      "connection": "keep-alive",
+      "content-length": "13",
+      "content-type": "application/json",
+      "host": "localhost:3010",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+      "x-forwarded-for": "::1",
+      "x-forwarded-host": "localhost:3010",
+      "x-forwarded-port": "3010",
+      "x-forwarded-proto": "http"
+    },
+    "payload": {
+      "test": true
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqu5s8n-1zvo",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T06:04:36.791Z",
+    "lastAttemptAt": "2026-09-07T06:04:36.791Z",
+    "nextRetryAt": "2026-09-07T06:09:36.791Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "payload": {
+      "id": "123",
+      "total_price": 150000
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqtv3g3-b6m0",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T05:56:18.099Z",
+    "lastAttemptAt": "2026-09-07T05:56:18.099Z",
+    "nextRetryAt": "2026-09-07T06:01:18.099Z"
+  },
+  {
+    "platform": "shopify",
+    "event": "order.inbound",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "payload": {
+      "id": "123",
+      "total_price": 150000
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed for shopify",
+    "id": "dlq-mtqtuof5-gdut",
+    "retryCount": 0,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T05:55:58.625Z",
+    "lastAttemptAt": "2026-09-07T05:55:58.625Z",
+    "nextRetryAt": "2026-09-07T06:00:58.625Z"
+  },
+  {
+    "id": "dlq-seed-001",
+    "platform": "tiktok",
+    "event": "order.paid",
+    "headers": {
+      "x-tiktok-signature": "invalid_sig_hex_991823"
+    },
+    "payload": {
+      "order_id": "1928374619",
+      "buyer_email": "test.buyer@gmail.com",
+      "payment_info": {
+        "total_amount": 320000
+      }
+    },
+    "errorMessage": "Cryptographic HMAC SHA-256 signature verification failed (invalid signature token)",
+    "retryCount": 2,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T04:15:48.782Z",
+    "lastAttemptAt": "2026-09-07T04:45:48.782Z",
+    "nextRetryAt": "2026-09-07T05:45:48.782Z"
+  },
+  {
+    "id": "dlq-seed-002",
+    "platform": "shopify",
+    "event": "orders/create",
+    "headers": {
+      "x-shopify-hmac-sha256": "bad_hash_token_8829"
+    },
+    "payload": {
+      "id": "982341203",
+      "name": "#SHPF-9912",
+      "line_items": []
+    },
+    "errorMessage": "Missing required line items in incoming Shopify payload",
+    "retryCount": 1,
+    "maxRetries": 5,
+    "status": "FAILED",
+    "createdAt": "2026-09-07T03:15:48.782Z",
+    "lastAttemptAt": "2026-09-07T04:15:48.782Z",
+    "nextRetryAt": "2026-09-07T06:15:48.782Z"
+  }
+]

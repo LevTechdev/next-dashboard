@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { sendEmail, sendPasswordResetEmail, sendOtpEmail } from "./email";
 
+import { render } from "@react-email/render";
+import * as React from "react";
+
+import SecurityAlertEmail from "@/emails/SecurityAlertEmail";
+import AccountRecoveryEmail from "@/emails/AccountRecoveryEmail";
+
 const ORIGINAL_API_KEY = process.env.RESEND_API_KEY;
 const ORIGINAL_FROM = process.env.EMAIL_FROM;
+const ORIGINAL_RESEND_FROM = process.env.RESEND_FROM;
+const ORIGINAL_TRANSPORT = process.env.EMAIL_TRANSPORT;
 const ORIGINAL_SMTP: Record<string, string | undefined> = {
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
@@ -27,6 +35,8 @@ function clearSmtp() {
 beforeEach(() => {
   setKey(undefined);
   delete process.env.EMAIL_FROM;
+  delete process.env.RESEND_FROM;
+  delete process.env.EMAIL_TRANSPORT;
   clearSmtp();
   vi.resetModules();
   vi.restoreAllMocks();
@@ -36,6 +46,10 @@ afterEach(() => {
   setKey(ORIGINAL_API_KEY);
   if (ORIGINAL_FROM === undefined) delete process.env.EMAIL_FROM;
   else process.env.EMAIL_FROM = ORIGINAL_FROM;
+  if (ORIGINAL_RESEND_FROM === undefined) delete process.env.RESEND_FROM;
+  else process.env.RESEND_FROM = ORIGINAL_RESEND_FROM;
+  if (ORIGINAL_TRANSPORT === undefined) delete process.env.EMAIL_TRANSPORT;
+  else process.env.EMAIL_TRANSPORT = ORIGINAL_TRANSPORT;
   const host = ORIGINAL_SMTP.SMTP_HOST;
   if (host === undefined) delete process.env.SMTP_HOST;
   else process.env.SMTP_HOST = host;
@@ -93,7 +107,7 @@ describe("sendEmail — Resend configured", () => {
     );
   });
 
-  it("throws when resend reports an error", async () => {
+  it("falls back to { sent: false } outside production when resend errors", async () => {
     setKey("re_testkey123");
     vi.doMock("resend", () => ({
       Resend: class {
@@ -105,10 +119,34 @@ describe("sendEmail — Resend configured", () => {
       },
     }));
 
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     const { sendEmail: send } = await import("./email");
-    await expect(send({ to: "a@b.com", subject: "s", html: "h", text: "t" })).rejects.toThrow(
-      /rate_limit_exceeded/,
-    );
+    const result = await send({ to: "a@b.com", subject: "s", html: "h", text: "t" });
+    expect(result).toEqual({ sent: false });
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("rate_limit_exceeded"));
+  });
+
+  it("throws when resend reports an error in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      setKey("re_testkey123");
+      vi.doMock("resend", () => ({
+        Resend: class {
+          emails = {
+            send: vi
+              .fn()
+              .mockResolvedValue({ data: null, error: { message: "rate_limit_exceeded" } }),
+          };
+        },
+      }));
+
+      const { sendEmail: send } = await import("./email");
+      await expect(send({ to: "a@b.com", subject: "s", html: "h", text: "t" })).rejects.toThrow(
+        /rate_limit_exceeded/,
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -175,6 +213,42 @@ describe("sendEmail — SMTP configured (takes priority over Resend)", () => {
   });
 });
 
+describe("sendEmail — EMAIL_TRANSPORT override", () => {
+  it("uses Resend when EMAIL_TRANSPORT=resend even with SMTP configured", async () => {
+    setKey("re_testkey123");
+    process.env.EMAIL_TRANSPORT = "resend";
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.RESEND_FROM = "Dashboard <onboarding@resend.dev>";
+    const sendMock = vi.fn().mockResolvedValue({ data: { id: "email_1" }, error: null });
+    vi.doMock("resend", () => ({
+      Resend: class {
+        emails = { send: sendMock };
+      },
+    }));
+
+    const { sendEmail: send } = await import("./email");
+    const result = await send({
+      to: "u@example.com",
+      subject: "S",
+      html: "<p>h</p>",
+      text: "t",
+    });
+
+    expect(result).toEqual({ sent: true });
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "Dashboard <onboarding@resend.dev>" }),
+    );
+  });
+
+  it("throws when EMAIL_TRANSPORT=smtp but no SMTP_HOST is configured", async () => {
+    process.env.EMAIL_TRANSPORT = "smtp";
+    const { sendEmail: send } = await import("./email");
+    await expect(send({ to: "u@example.com", subject: "S", html: "h", text: "t" })).rejects.toThrow(
+      /EMAIL_TRANSPORT=smtp requires SMTP_HOST/,
+    );
+  });
+});
+
 describe("sendOtpEmail", () => {
   it("falls back to console (no transport) and includes the 6-digit code", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -198,8 +272,8 @@ describe("sendOtpEmail", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "u@example.com",
-        subject: expect.stringContaining("verification code"),
-        html: expect.stringContaining(">4</span>"),
+        subject: "Verify your email address",
+        html: expect.stringContaining("482913"),
         text: expect.stringContaining("482913"),
       }),
     );
@@ -252,5 +326,91 @@ describe("password-reset sender", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({ subject: expect.stringContaining("重置密码") }),
     );
+  });
+});
+
+const renderEmail = (component: React.ReactElement) => render(component);
+
+/**
+ * The two emails a user receives when their second factor is in trouble: the
+ * last-resort recovery link, and the "2FA was turned off" alert that carries
+ * the one-click "this wasn't me" revoke.
+ *
+ * Both are localized across the four supported locales — a security warning
+ * that arrives in a language the recipient cannot read is not a warning. These
+ * render the real templates, so a locale that silently falls back to English
+ * fails here.
+ */
+describe("SecurityAlertEmail", () => {
+  it("states what happened and offers the single revoke action", async () => {
+    const html = await renderEmail(
+      React.createElement(SecurityAlertEmail, {
+        revokeUrl: "https://app.test/en/security-alert?token=abc",
+        name: "Ada",
+        locale: "en",
+        happenedAt: "2026-09-21",
+      }),
+    );
+    expect(html).toContain("Two-factor authentication was turned off");
+    expect(html).toContain("Ada");
+    expect(html).toContain("https://app.test/en/security-alert?token=abc");
+    // The mail leads to the CONFIRMATION PAGE, not the action: a scanner that
+    // fetches it must not be able to spend the single-use link.
+    expect(html).not.toContain("/api/auth/security-alert/revoke");
+    expect(html).toContain("Review this sign-in change");
+    expect(html).toContain("expires in 7 days");
+  });
+
+  it("is translated in every supported locale", async () => {
+    const expectations: Record<string, string> = {
+      en: "Two-factor authentication was turned off",
+      id: "Autentikasi dua faktor dinonaktifkan",
+      ja: "二段階認証が無効になりました",
+      zh: "两步验证已被关闭",
+    };
+
+    for (const [locale, heading] of Object.entries(expectations)) {
+      const html = await renderEmail(
+        React.createElement(SecurityAlertEmail, { revokeUrl: "https://app.test/x", locale }),
+      );
+      expect(html, locale).toContain(heading);
+      expect(html, locale).toContain("https://app.test/x");
+      // Never the placeholder from the default props.
+      expect(html, locale).not.toContain("https://example.com");
+    }
+  });
+
+  it("falls back to English for an unknown locale rather than rendering nothing", async () => {
+    const html = await renderEmail(
+      React.createElement(SecurityAlertEmail, { revokeUrl: "https://app.test/x", locale: "fr" }),
+    );
+    expect(html).toContain("Two-factor authentication was turned off");
+  });
+});
+
+describe("AccountRecoveryEmail", () => {
+  it("is translated in every supported locale (it used to be English-only)", async () => {
+    const expectations: Record<string, string> = {
+      en: "Recover access to your account",
+      id: "Pulihkan akses ke akun Anda",
+      ja: "アカウントへのアクセスを復旧",
+      zh: "恢复账户访问权限",
+    };
+
+    for (const [locale, heading] of Object.entries(expectations)) {
+      const html = await renderEmail(
+        React.createElement(AccountRecoveryEmail, { url: "https://app.test/recover", locale }),
+      );
+      expect(html, locale).toContain(heading);
+      expect(html, locale).toContain("https://app.test/recover");
+    }
+  });
+
+  it("names the consequences before the user clicks", async () => {
+    const html = await renderEmail(
+      React.createElement(AccountRecoveryEmail, { url: "https://app.test/x", locale: "en" }),
+    );
+    expect(html).toContain("turns off two-factor authentication and signs out every device");
+    expect(html).toContain("works once and expires in 30 minutes");
   });
 });

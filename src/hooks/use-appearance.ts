@@ -5,6 +5,20 @@ import { useCallback, useEffect, useState } from "react";
 export type AccentKey = "default" | "green" | "indigo" | "rose" | "amber" | "custom";
 export type TextSizeKey = "sm" | "base" | "lg";
 export type DensityKey = "compact" | "regular" | "large";
+/**
+ * How the light/dark switch reveals itself (see use-theme-reveal.ts).
+ * `none` swaps instantly, which is also the automatic fallback for
+ * `prefers-reduced-motion` and browsers without the View Transitions API.
+ */
+export type ThemeSwitchKey = "circle" | "circle-blur" | "rectangle" | "polygon" | "none";
+export const THEME_SWITCH_KEYS: ThemeSwitchKey[] = [
+  "circle",
+  "circle-blur",
+  "rectangle",
+  "polygon",
+  "none",
+];
+export const DEFAULT_THEME_SWITCH: ThemeSwitchKey = "circle";
 
 export interface WidgetVisibility {
   quickActions: boolean;
@@ -19,6 +33,7 @@ export interface AppearanceSettings {
   customColor?: string;
   textSize: TextSizeKey;
   density: DensityKey;
+  themeSwitch: ThemeSwitchKey;
   widgets: WidgetVisibility;
 }
 
@@ -26,6 +41,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   accent: "default",
   textSize: "base",
   density: "regular",
+  themeSwitch: DEFAULT_THEME_SWITCH,
   widgets: {
     quickActions: true,
     revenueChart: true,
@@ -140,9 +156,14 @@ export function applyAppearance(settings: AppearanceSettings) {
 }
 
 export function saveAppearance(settings: AppearanceSettings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {}
   applyAppearance(settings);
-  window.dispatchEvent(new CustomEvent("appearance-changed"));
+  queueMicrotask(() => {
+    window.dispatchEvent(new CustomEvent("appearance-changed"));
+  });
 }
 
 export function useAppearance() {
@@ -164,7 +185,9 @@ export function useAppearance() {
         ...patch,
         widgets: { ...prev.widgets, ...(patch.widgets ?? {}) },
       };
-      saveAppearance(next);
+      queueMicrotask(() => {
+        saveAppearance(next);
+      });
       return next;
     });
   }, []);

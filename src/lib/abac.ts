@@ -1,5 +1,6 @@
 import "server-only";
 import type { Role } from "@/lib/permissions";
+import { normalizeRole } from "@/lib/permissions";
 import { getClientIp } from "@/lib/request-meta";
 
 /**
@@ -25,7 +26,7 @@ export function buildAbacContext(params: {
   tenantId?: string | null;
 }): AbacContext {
   return {
-    role: params.role,
+    role: normalizeRole(params.role) ?? params.role,
     userId: params.userId,
     tenantId: params.tenantId ?? null,
     ip: params.req ? getClientIp(params.req) : "unknown",
@@ -74,12 +75,12 @@ export function evaluateRule(rule: AbacRule, ctx: AbacContext): boolean {
 }
 
 // ── Resource-bound checks (BOLA/IDOR + tenant isolation) ──────────────
-/** Object-level ownership check for /[id] routes. SUPER_ADMIN bypasses. */
+/** Object-level ownership check for /[id] routes. ADMIN (merged super-admin) bypasses. */
 export function ownsResource(
   ctx: AbacContext,
   row: { userId?: string | null } | null | undefined,
 ): boolean {
-  if (ctx.role === "SUPER_ADMIN") return true;
+  if (normalizeRole(ctx.role) === "ADMIN") return true;
   return !!row && row.userId === ctx.userId;
 }
 
@@ -91,7 +92,7 @@ export function resourceInTenant(
   ctx: AbacContext,
   row: { tenantId?: string | null } | null | undefined,
 ): boolean {
-  if (ctx.role === "SUPER_ADMIN") return true;
+  if (normalizeRole(ctx.role) === "ADMIN") return true;
   if (!ctx.tenantId) return true;
   return !!row && row.tenantId === ctx.tenantId;
 }

@@ -1,5 +1,4 @@
-// eslint-disable-next-line storybook/no-renderer-packages
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { SparklesIcon, WindIcon } from "lucide-animated";
 
 /**

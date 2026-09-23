@@ -24,6 +24,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      - name: Database env policy
+        # No .env files exist in CI (gitignored) — the guard's tracked-files
+        # layer still runs, blocking any committed remote-DB URL.
+        run: node scripts/check-env-policy.mjs
       - run: npm run lint
       - run: npm run format:check
 
@@ -69,12 +73,36 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # Fast, named gate: a service worker must never register outside a
+      # production build (in dev it serves the previous build's chunks
+      # cache-first, so edits look ignored), and nothing may await
+      # navigator.serviceWorker.ready (it never settles without a
+      # registration). Also runs inside the full component suite below —
+      # this step just fails fast with an obvious job name.
+      - name: Service worker contract
+        run: npx vitest run --config vitest.components.config.ts src/components/__tests__/service-worker-contract.test.ts src/components/__tests__/pwa-register.test.tsx
       - run: npx vitest run --config vitest.components.config.ts --coverage
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-components
           path: coverage/components/
+
+  # Storybook stories as tests: the `storybook` vitest project (86 stories)
+  # renders every story in a real browser via @storybook/addon-vitest, so a
+  # broken story fails CI instead of surfacing as a dead Storybook entry.
+  test-storybook:
+    name: Storybook Stories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vitest run --config vitest.config.ts --project storybook
 
   test-api:
     name: API Integration Tests
@@ -172,7 +200,7 @@ jobs:
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [lint, typecheck, test, test-components, test-api, build, e2e]
+    needs: [lint, typecheck, test, test-components, test-storybook, test-api, build, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -2,11 +2,17 @@ import { requireAuth } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { verifyPassword } from "@/lib/auth";
+import { logSecurityEvent } from "@/lib/security-events";
+import { resolveSessionUserId } from "@/lib/session-user";
+import { isMfaReverificationDue } from "@/lib/mfa-policy";
 
 export async function GET(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
-  const userId = session.user.id;
+  const userId = await resolveSessionUserId(session);
+  if (!userId) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const select = {
     id: true,
@@ -15,6 +21,7 @@ export async function GET(req: Request) {
     phone: true,
     position: true,
     avatar: true,
+    coverImage: true,
     role: true,
     isActive: true,
     totpEnabled: true,
@@ -22,11 +29,7 @@ export async function GET(req: Request) {
     createdAt: true,
   } as const;
 
-  // Try the token's user id first, fall back to the first admin (mock-id dev setup).
-  let user = await prisma.user.findUnique({ where: { id: userId }, select });
-  if (!user) {
-    user = await prisma.user.findFirst({ where: { role: "ADMIN" }, select });
-  }
+  const user = await prisma.user.findUnique({ where: { id: userId }, select });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -43,26 +46,26 @@ export async function GET(req: Request) {
     totpVerifiedAt = evt?.createdAt ?? null;
   }
 
-  return NextResponse.json({ ...user, totpVerifiedAt });
+  // 30-day MFA freshness: flag when the factor is enrolled but has not been
+  // exercised (TOTP/backup-code/passkey verification) within the window, so
+  // the profile can surface the re-verification alert.
+  const mfaReverificationDue = await isMfaReverificationDue(user.id);
+
+  return NextResponse.json({ ...user, totpVerifiedAt, mfaReverificationDue });
 }
 
 export async function PUT(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
-  const userId = session.user.id;
+  const userId = await resolveSessionUserId(session);
+  if (!userId) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const body = await req.json();
   const { name, email, phone, position } = body;
 
-  // Try findUnique first, fallback to first admin
-  let existing = await prisma.user.findUnique({ where: { id: userId } });
-  if (!existing) {
-    existing = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-      orderBy: { createdAt: "asc" },
-    });
-  }
-
+  const existing = await prisma.user.findUnique({ where: { id: userId } });
   if (!existing) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -70,13 +73,13 @@ export async function PUT(req: Request) {
   // Check if email is taken by another user
   if (email) {
     const emailConflict = await prisma.user.findUnique({ where: { email } });
-    if (emailConflict && emailConflict.id !== existing.id) {
+    if (emailConflict && emailConflict.id !== userId) {
       return NextResponse.json({ error: "Email already in use" }, { status: 409 });
     }
   }
 
   const user = await prisma.user.update({
-    where: { id: existing.id },
+    where: { id: userId },
     data: {
       ...(name !== undefined && { name }),
       ...(email !== undefined && { email }),
@@ -100,20 +103,15 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   const { session, response } = await requireAuth(req);
   if (response) return response;
-  const userId = session.user.id;
+  const userId = await resolveSessionUserId(session);
+  if (!userId) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   const body = await req.json();
   const { password } = body;
 
-  // Try findUnique first, fallback to first admin
-  let user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    user = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-      orderBy: { createdAt: "asc" },
-    });
-  }
-
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -132,6 +130,16 @@ export async function DELETE(req: Request) {
   await prisma.auditLog.deleteMany({ where: { userId: user.id } });
   await prisma.order.updateMany({ where: { userId: user.id }, data: { userId: null } });
   await prisma.user.delete({ where: { id: user.id } });
+
+  // Wipe first, then record: the account trail survives the user row
+  // (SecurityEvent is SetNull on user, and this is a credential event).
+  await logSecurityEvent({
+    userId: null,
+    type: "ACCOUNT_DELETED",
+    req,
+    metadata: { email: user.email, role: user.role },
+    tenantId: user.tenantId,
+  });
 
   return NextResponse.json({ success: true, message: "Account deleted successfully" });
 }

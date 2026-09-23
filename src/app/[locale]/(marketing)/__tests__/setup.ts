@@ -41,8 +41,10 @@ vi.mock("next-intl", () => {
         .reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), obj);
     const t = (key: string, values?: Record<string, any>) =>
       interpolate(resolve(ns, key) ?? key, values);
+    // next-intl's t.raw() also resolves dotted paths (e.g. "hero.terminal.lines");
+    // mirror t() so array-valued keys survive the mock.
     t.raw = (key: string, values?: Record<string, any>) =>
-      interpolate((ns as Record<string, any>)[key] ?? key, values);
+      interpolate(resolve(ns, key) ?? key, values);
     t.rich = (key: string, values?: Record<string, any>) =>
       interpolate((ns as Record<string, any>)[key] ?? key, values);
     return t;
@@ -66,6 +68,26 @@ vi.mock("next/link", () => ({
     return React.createElement("a", { href, className, ...props }, children);
   },
 }));
+
+// ── Polyfill window.matchMedia ─────────────────────────────────────────────
+// gsap's ScrollTrigger queries matchMedia during registerPlugin() at module
+// load; jsdom does not implement it, which crashed the marketing page test
+// at import time.
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
 
 // ── Mock ResizeObserver (required by recharts ResponsiveContainer) ────────
 global.ResizeObserver = class {
@@ -137,6 +159,9 @@ vi.mock("framer-motion", () => {
   return {
     motion,
     AnimatePresence: ({ children }: any) => children,
+    // ProductStory wraps chapters in <MotionConfig reducedMotion="user">; the
+    // mock passes children through (keeps Portal/orchestration no-ops).
+    MotionConfig: ({ children }: any) => children,
     domAnimation: {},
     useMotionValue: (initial: any) => ({
       get: () => initial,

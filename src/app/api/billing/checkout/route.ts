@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, requirePermission } from "@/lib/api-guard";
+import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import {
   createSnapTransaction,
+  getMidtransClientKey,
+  getMidtransSnapScriptUrl,
   midtransConfigured,
   MIDTRANS_CHANNELS,
   MIDTRANS_USD_RATE,
@@ -16,13 +19,16 @@ export const dynamic = "force-dynamic";
 const VALID_GATEWAYS = new Set(["stripe", "midtrans"]);
 
 /**
- * Create a hosted checkout session for a paid plan. The Free plan never hits
- * this route — it is switched directly via POST /api/billing/subscription.
- * Returns { url } pointing at the provider's hosted checkout page.
+ * Create a checkout session for a paid plan. The Free plan never hits this
+ * route — it is switched directly via POST /api/billing/subscription.
  *
- * gateway=stripe (default) → Stripe Checkout (card).
+ * gateway=stripe (default) → Stripe Checkout (card); returns { url }.
  * gateway=midtrans → Midtrans Snap (local payments: DANA, GoPay, QRIS, VA,
- * card); an optional channel restricts Snap to one of those methods.
+ * card); an optional channel restricts Snap to one of those methods. Returns
+ * { token, clientKey, snapScriptUrl, url } — the billing UI spends the token
+ * through the embedded snap.js popup (clientKey + snapScriptUrl are resolved
+ * from the configured sandbox/production environment), and url is the hosted
+ * redirect kept as a fallback.
  */
 export async function POST(req: Request) {
   const { response: permResponse } = await requirePermission("create", "billing", req);
@@ -86,7 +92,7 @@ export async function POST(req: Request) {
 
     // Stash the pending transaction on the subscription so the webhook can
     // resolve it; the plan activates (status ACTIVE) once Midtrans settles.
-    await prisma.subscription.upsert({
+    const pendingSub = await prisma.subscription.upsert({
       where: { userId: session.user.id },
       update: {
         planId: plan.id,
@@ -108,7 +114,44 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ url: snap.redirect_url, orderId, gateway: "midtrans" });
+    // Ledger invoice keyed by the order id. It survives an abandoned popup
+    // (revert) so a VA/QRIS payment that settles AFTER the popup was closed
+    // can still be reconciled to the intended plan by the webhook — the
+    // subscription row's midtransOrderId is cleared on abandon, so the ledger
+    // is the only place that still records what the order was for.
+    await prisma.invoice.create({
+      data: {
+        invoiceNumber: `INV-${orderId}`,
+        planId: plan.id,
+        userId: session.user.id,
+        subscriptionId: pendingSub.id,
+        amount: grossAmountIdr,
+        currency: "IDR",
+        status: "PENDING",
+        description: `Midtrans checkout (${plan.name} plan)`,
+        periodStart: now,
+        periodEnd,
+        snapshotJson: buildInvoiceSnapshot({
+          plan,
+          amount: grossAmountIdr,
+          currency: "IDR",
+          description: `Midtrans checkout (${plan.name} plan)`,
+          periodStart: now,
+          periodEnd,
+        }),
+      },
+    });
+
+    return NextResponse.json({
+      gateway: "midtrans",
+      mode: "popup",
+      token: snap.token,
+      orderId,
+      clientKey: getMidtransClientKey(),
+      snapScriptUrl: getMidtransSnapScriptUrl(),
+      // Hosted fallback for clients where the popup cannot load.
+      url: snap.redirect_url,
+    });
   }
 
   // ── Stripe checkout (default) ──────────────────────────────────────────
@@ -160,7 +203,7 @@ export async function POST(req: Request) {
     subscription_data: {
       metadata: { userId: session.user.id, planId: plan.id, tenantId: tenantId ?? "" },
     },
-    success_url: `${origin}/${lang}/billing?checkout=success`,
+    success_url: `${origin}/${lang}/checkout/success`,
     cancel_url: `${origin}/${lang}/billing?checkout=cancelled`,
   });
 

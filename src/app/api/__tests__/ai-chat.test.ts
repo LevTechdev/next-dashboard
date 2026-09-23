@@ -122,6 +122,11 @@ describe("POST /api/ai/chat", () => {
 
   it("returns 503 with a clear error in real production without a key", async () => {
     mockShouldUseMockReply.mockReturnValue(false);
+    // Hermetic: .env.local may carry real provider keys — force the keyless
+    // branch regardless of the local environment.
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
 
     const res = await POST(mockRequest(chatBody()));
 
@@ -135,6 +140,10 @@ describe("POST /api/ai/chat", () => {
 
   it("streams from OpenAI when the mock does not apply and an OpenAI key exists", async () => {
     mockShouldUseMockReply.mockReturnValue(false);
+    // Hermetic: force the Gemini keys off so the OpenAI branch is taken even
+    // when .env.local defines a real GEMINI_API_KEY.
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
 
     const res = await POST(mockRequest(chatBody()));
@@ -206,6 +215,9 @@ describe("POST /api/ai/chat", () => {
 
   it("falls back to OpenAI when only GOOGLE_GENERATIVE_AI_API_KEY is set but empty", async () => {
     mockShouldUseMockReply.mockReturnValue(false);
+    // Hermetic: GEMINI_API_KEY from .env.local would win — clear it so the
+    // empty-Google-key fallback to OpenAI is what's under test.
+    vi.stubEnv("GEMINI_API_KEY", "");
     vi.stubEnv("OPENAI_API_KEY", "sk-test");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
 

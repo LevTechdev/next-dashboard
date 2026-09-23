@@ -9,10 +9,12 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { toast } from "sonner";
 import { ClockIcon, UsersIcon, DollarSignIcon } from "lucide-animated";
-import { ShoppingCart, Package, AlertTriangle, Megaphone, Gift, BellRing } from "lucide-react";
+import { Package, AlertTriangle, Megaphone, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { RealtimeToasts, useToastStack, type FloatingToast } from "@/components/realtime-toasts";
+import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 
 export type NotificationType =
   | "order"
@@ -23,6 +25,7 @@ export type NotificationType =
   | "discount"
   | "campaign"
   | "milestone"
+  | "billing"
   | "alert";
 
 export interface RealtimeNotification {
@@ -32,6 +35,10 @@ export interface RealtimeNotification {
   type: NotificationType;
   timestamp: Date;
   read?: boolean;
+  /** True when the event was reconstructed from a replayed SSE snapshot,
+   * i.e. it happened BEFORE this tab connected. Rendered without toast and
+   * flagged in the activity feed. */
+  replayed?: boolean;
 }
 
 interface RealtimeContextType {
@@ -44,6 +51,8 @@ interface RealtimeContextType {
   globalRefreshTrigger: number;
   triggerRefresh: () => void;
   connectionStatus: "connected" | "disconnected" | "connecting";
+  /** Reconnect backoff details while the stream is down (for the health badge tooltip). */
+  reconnectInfo: { attempt: number; retryAt: number | null };
   budgetThreshold: number;
   setBudgetThreshold: (threshold: number) => void;
 }
@@ -58,6 +67,7 @@ const RealtimeContext = createContext<RealtimeContextType>({
   globalRefreshTrigger: 0,
   triggerRefresh: () => {},
   connectionStatus: "connecting",
+  reconnectInfo: { attempt: 0, retryAt: null },
   budgetThreshold: 80,
   setBudgetThreshold: () => {},
 });
@@ -69,6 +79,8 @@ export function useRealtime() {
 const MAX_NOTIFICATIONS = 50;
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
+  const tDashboard = useTranslations("dashboard");
+  const locale = useLocale();
   const [lastGlobalUpdate, setLastGlobalUpdate] = useState<Date | null>(null);
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [globalRefreshTrigger, setGlobalRefreshTrigger] = useState(0);
@@ -76,6 +88,27 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     "connected" | "disconnected" | "connecting"
   >("connecting");
   const [budgetThreshold, setBudgetThresholdState] = useState<number>(80);
+  const [reconnectInfo, setReconnectInfo] = useState<{
+    attempt: number;
+    retryAt: number | null;
+  }>({ attempt: 0, retryAt: null });
+
+  // Boardui-style floating toast stack (bottom-right viewport surface).
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToastStack();
+
+  // Every toast lives in the bell feed too (the toast ID equals the feed
+  // entry ID). The two dismissal paths carry different semantics:
+  //   • auto-dismiss (6s expiry) keeps the feed entry UNREAD — the owner
+  //     "missed" the toast, so the bell surfaces it with a dot;
+  //   • explicit dismiss (X / Dismiss button) marks it READ — acknowledged.
+  // Either way the event is never lost after the toast window closes.
+  const handleToastDismiss = useCallback(
+    (id: string) => {
+      dismissToast(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    },
+    [dismissToast],
+  );
 
   // Hydration-safe: read persisted threshold from localStorage after mount
   useEffect(() => {
@@ -118,10 +151,30 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
-  const addNotification = useCallback((notification: RealtimeNotification) => {
-    setNotifications((prev) => [notification, ...prev].slice(0, MAX_NOTIFICATIONS));
-    showToast(notification);
-  }, []);
+  const addNotification = useCallback(
+    (notification: RealtimeNotification, options?: { silent?: boolean }) => {
+      setNotifications((prev) => [notification, ...prev].slice(0, MAX_NOTIFICATIONS));
+      // Replayed events predate the tab — never toast them.
+      if (!options?.silent && !notification.replayed) {
+        pushToast({
+          id: notification.id,
+          title: notification.title,
+          description: notification.description,
+          type: notification.type,
+          createdAt:
+            notification.timestamp instanceof Date ? notification.timestamp.getTime() : Date.now(),
+          action:
+            notification.type === "order"
+              ? { label: tDashboard("viewOrders"), href: `/${locale}/orders` }
+              : notification.type === "inventory"
+                ? { label: tDashboard("restock"), href: `/${locale}/inventory` }
+                : undefined,
+          presence: notification.type === "customer" ? "online" : undefined,
+        });
+      }
+    },
+    [],
+  );
 
   // Connect to the SSE endpoint for real-time updates. /api/realtime requires
   // an authenticated session (it returns 401 otherwise), so the connection is
@@ -149,6 +202,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       // intentional (the indicator must leave "Connected" when the session
       // ends) and matches the repo's existing pattern for this rule.
       setConnectionStatus("disconnected"); // eslint-disable-line react-hooks/set-state-in-effect
+      setReconnectInfo({ attempt: 0, retryAt: null });
       return cleanup;
     }
 
@@ -166,6 +220,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         es.onopen = () => {
           setConnectionStatus("connected");
           reconnectAttempts = 0;
+          setReconnectInfo({ attempt: 0, retryAt: null });
         };
 
         es.onmessage = (event) => {
@@ -173,9 +228,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             const data = JSON.parse(event.data);
             setLastGlobalUpdate(new Date(data.timestamp));
 
-            // Check if data actually changed (skip on initial connect)
+            // Check if data actually changed (skip on initial connect).
+            // Replayed snapshots predate this tab, so detected events are
+            // tagged and stay silent (no toast) but still populate the feed.
+            const isReplay = data.replayed === true;
             if (data.changed) {
-              detectAllChanges(data);
+              detectAllChanges(data, isReplay);
             }
 
             // Store current state for next comparison
@@ -187,8 +245,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
             // Signal pages to refresh
             setGlobalRefreshTrigger((prev) => prev + 1);
-          } catch (e) {
-            // Parse errors silently handled
+          } catch (_e) {
+            void _e;
           }
         };
 
@@ -197,12 +255,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           es.close();
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
           reconnectAttempts++;
+          const retryAt = Date.now() + delay;
+          setReconnectInfo({ attempt: reconnectAttempts, retryAt });
           reconnectTimeout = setTimeout(connect, delay);
         };
-      } catch (e) {
+      } catch (_e) {
+        void _e;
         setConnectionStatus("disconnected");
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
         reconnectAttempts++;
+        setReconnectInfo({ attempt: reconnectAttempts, retryAt: Date.now() + delay });
         reconnectTimeout = setTimeout(connect, delay);
       }
     };
@@ -213,7 +275,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated]);
 
   const detectAllChanges = useCallback(
-    (data: any) => {
+    (data: any, silent: boolean = false) => {
+      // Local push that tags events detected from a replayed snapshot so the
+      // feed can mark them as predating this tab (and skip the toast).
+      // (Was self-recursive — every detected change blew the call stack.)
+      const push = (n: RealtimeNotification): void =>
+        addNotification({ ...n, replayed: silent ? true : undefined });
+
       const now = new Date();
 
       // --- Detect new orders ---
@@ -223,12 +291,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         if (newOrders > 0) {
           const orderNotif: RealtimeNotification = {
             id: `order-${now.getTime()}`,
-            title: `${newOrders} New Order${newOrders > 1 ? "s" : ""}`,
-            description: `$${(data.stats.totalRevenue || 0).toLocaleString()} total revenue`,
+            title: tDashboard("newOrderTitle", { count: newOrders }),
+            description: tDashboard("orderRevenue", {
+              revenue: (data.stats.totalRevenue || 0).toLocaleString(),
+            }),
             type: "order",
             timestamp: now,
           };
-          addNotification(orderNotif);
+          push(orderNotif);
         }
 
         // --- Revenue milestone ---
@@ -239,10 +309,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           const prevMilestone = milestones.filter((m) => prevRevenue >= m).length;
           const currMilestone = milestones.filter((m) => currentRevenue >= m).length;
           if (currMilestone > prevMilestone) {
-            addNotification({
+            push({
               id: `milestone-${now.getTime()}`,
-              title: "🎉 Revenue Milestone Reached!",
-              description: `$${currentRevenue.toLocaleString()} total revenue`,
+              title: tDashboard("milestoneTitle"),
+              description: tDashboard("orderRevenue", {
+                revenue: currentRevenue.toLocaleString(),
+              }),
               type: "milestone",
               timestamp: now,
             });
@@ -252,10 +324,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         // --- New customers ---
         const newCustomers = (data.stats.totalCustomers || 0) - (prevStats?.totalCustomers || 0);
         if (newCustomers > 0) {
-          addNotification({
+          push({
             id: `customer-${now.getTime()}`,
-            title: `${newCustomers} New Customer${newCustomers > 1 ? "s" : ""}`,
-            description: `Total: ${data.stats.totalCustomers} customers`,
+            title: tDashboard("newCustomerTitle", { count: newCustomers }),
+            description: tDashboard("customerTotal", { count: data.stats.totalCustomers }),
             type: "customer",
             timestamp: now,
           });
@@ -273,10 +345,11 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             .slice(0, 2)
             .map((p: any) => `${p.name} (${p.stock} left)`)
             .join(", ");
-          addNotification({
+          push({
             id: `inventory-${now.getTime()}`,
-            title: `⚠️ ${currentLowStock} Low Stock Items`,
-            description: lowStockItems || `${currentLowStock} products need restocking`,
+            title: tDashboard("lowStockTitle", { count: currentLowStock }),
+            description:
+              lowStockItems || tDashboard("productsNeedRestock", { count: currentLowStock }),
             type: "inventory",
             timestamp: now,
           });
@@ -289,9 +362,11 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         const prevDiscountStr = JSON.stringify(prevDiscounts);
         const currDiscountStr = JSON.stringify(data.expiringDiscounts);
         if (prevDiscountStr !== currDiscountStr && prevDiscountStr !== "null") {
-          addNotification({
+          push({
             id: `discount-${now.getTime()}`,
-            title: `${data.expiringDiscounts.length} Discount${data.expiringDiscounts.length > 1 ? "s" : ""} Expiring Soon`,
+            title: tDashboard("discountsExpiringTitle", {
+              count: data.expiringDiscounts.length,
+            }),
             description: data.expiringDiscounts.map((d: any) => `${d.code}`).join(", "),
             type: "discount",
             timestamp: now,
@@ -303,10 +378,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (data.newProductsCount > 0) {
         const prevCount = parseInt(previousProductsRef.current || "0");
         if (prevCount > 0 && data.newProductsCount > prevCount) {
-          addNotification({
+          push({
             id: `product-${now.getTime()}`,
-            title: `${data.newProductsCount - prevCount} New Product${data.newProductsCount - prevCount > 1 ? "s" : ""} Added`,
-            description: `${data.stats.totalProducts} total products in catalog`,
+            title: tDashboard("newProductTitle", {
+              count: data.newProductsCount - prevCount,
+            }),
+            description: tDashboard("catalogTotal", { count: data.stats.totalProducts }),
             type: "product",
             timestamp: now,
           });
@@ -341,10 +418,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             (c: any) => !prevOverBudget.find((p: any) => p.id === c.id),
           );
           for (const campaign of newOverBudget) {
-            addNotification({
+            push({
               id: `budget-over-${now.getTime()}-${campaign.id}`,
-              title: `🚨 Budget Exhausted: ${campaign.name}`,
-              description: `Spent ${formatBudgetShort(campaign.spent)} of ${formatBudgetShort(campaign.budget)} budget`,
+              title: tDashboard("budgetExhaustedTitle", { name: campaign.name }),
+              description: tDashboard("budgetSpentOf", {
+                spent: formatBudgetShort(campaign.spent),
+                budget: formatBudgetShort(campaign.budget),
+              }),
               type: "campaign",
               timestamp: now,
             });
@@ -357,10 +437,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             (c: any) => !prevNearBudget.find((p: any) => p.id === c.id),
           );
           for (const campaign of newNearBudget) {
-            addNotification({
+            push({
               id: `budget-near-${now.getTime()}-${campaign.id}`,
-              title: `⚠️ Budget ${campaign.percentUsed}% Used: ${campaign.name}`,
-              description: `$${campaign.spent.toLocaleString()} of $${campaign.budget.toLocaleString()} spent`,
+              title: tDashboard("budgetNearTitle", {
+                percent: campaign.percentUsed,
+                name: campaign.name,
+              }),
+              description: tDashboard("budgetSpentOf", {
+                spent: campaign.spent.toLocaleString(),
+                budget: campaign.budget.toLocaleString(),
+              }),
               type: "campaign",
               timestamp: now,
             });
@@ -372,17 +458,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (data.alerts?.pendingOrders > 5) {
         const prevAlerts = tryParse(previousAlertsRef.current);
         if (prevAlerts?.pendingOrders && data.alerts.pendingOrders > prevAlerts.pendingOrders) {
-          addNotification({
+          push({
             id: `alert-${now.getTime()}`,
-            title: `🔔 ${data.alerts.pendingOrders} Pending Orders`,
-            description: "Orders awaiting processing attention",
+            title: tDashboard("pendingOrdersTitle", { count: data.alerts.pendingOrders }),
+            description: tDashboard("pendingOrdersDesc"),
             type: "alert",
             timestamp: now,
           });
         }
       }
     },
-    [addNotification, budgetThreshold],
+    [budgetThreshold],
   );
 
   return (
@@ -397,11 +483,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         globalRefreshTrigger,
         triggerRefresh,
         connectionStatus,
+        reconnectInfo,
         budgetThreshold,
         setBudgetThreshold,
       }}
     >
       {children}
+      {/* Boardui-style floating toast surface for live SSE events. */}
+      <RealtimeToasts toasts={toasts} onDismiss={handleToastDismiss} />
     </RealtimeContext.Provider>
   );
 }
@@ -422,25 +511,4 @@ function formatBudgetShort(amount: number): string {
     return `$${(amount / 1000).toFixed(0)}K`;
   }
   return `$${amount}`;
-}
-
-function showToast(notification: RealtimeNotification) {
-  const iconMap: Record<NotificationType, React.ElementType> = {
-    order: ShoppingCart,
-    customer: UsersIcon,
-    product: Package,
-    revenue: DollarSignIcon,
-    inventory: AlertTriangle,
-    discount: ClockIcon,
-    campaign: Megaphone,
-    milestone: Gift,
-    alert: BellRing,
-  };
-  const Icon = iconMap[notification.type];
-
-  toast(notification.title, {
-    description: notification.description,
-    icon: <Icon size={16} className="h-4 w-4" />,
-    duration: 4000,
-  });
 }

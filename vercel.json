@@ -1,5 +1,19 @@
 {
   "framework": "nextjs",
   "buildCommand": "npx prisma generate && npx next build",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/usage/digest?secret=${CRON_SECRET}",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/billing/trial/sweep?secret=${CRON_SECRET}",
+      "schedule": "15 2 * * *"
+    },
+    {
+      "path": "/api/billing/fx-rates?capture=1&secret=${CRON_SECRET}",
+      "schedule": "30 2 * * *"
+    }
+  ]
 }

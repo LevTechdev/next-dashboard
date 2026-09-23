@@ -47,5 +47,6 @@ describe("Notifications Page", () => {
     expect(screen.getByText("Inbox")).toBeInTheDocument();
     expect(screen.getByText("Alert Rules")).toBeInTheDocument();
     expect(screen.getByText("Email Preferences")).toBeInTheDocument();
+    expect(screen.getByText("Team Chat (Slack & Discord)")).toBeInTheDocument();
   });
 });

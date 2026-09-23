@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Next Dashboards brand mark: dark tile, lime grid, green spark -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#09090b"/>
+  <rect x="14" y="14" width="16" height="16" rx="4" fill="#84cc16"/>
+  <rect x="34" y="14" width="16" height="16" rx="4" fill="#16a34a"/>
+  <rect x="14" y="34" width="16" height="16" rx="4" fill="#16a34a"/>
+  <rect x="34" y="34" width="16" height="16" rx="4" fill="#365314"/>
+</svg>

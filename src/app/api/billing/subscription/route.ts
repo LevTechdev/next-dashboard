@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { NextResponse } from "next/server";
 import { requirePermission, requireAuth } from "@/lib/api-guard";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
   });
 
   // Create invoice for the new subscription period
+  const invoiceDescription = `${plan.name} Plan - ${now.toLocaleString("default", { month: "long", year: "numeric" })}`;
   await prisma.invoice.create({
     data: {
       invoiceNumber: `INV-${Date.now()}`,
@@ -95,9 +97,17 @@ export async function POST(req: Request) {
       amount: plan.price,
       currency: "USD",
       status: "PENDING",
-      description: `${plan.name} Plan - ${now.toLocaleString("default", { month: "long", year: "numeric" })}`,
+      description: invoiceDescription,
       periodStart: now,
       periodEnd,
+      snapshotJson: buildInvoiceSnapshot({
+        plan,
+        amount: plan.price,
+        currency: "USD",
+        description: invoiceDescription,
+        periodStart: now,
+        periodEnd,
+      }),
     },
   });
 

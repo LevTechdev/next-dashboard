@@ -41,6 +41,9 @@ export async function POST(req: Request) {
     data: {
       totpEnabled: false,
       totpSecret: null,
+      // The secret is gone, so its replay counter is meaningless. Clearing it
+      // means a future re-enrollment starts from a clean slate.
+      totpLastUsedStep: null,
     },
   });
 

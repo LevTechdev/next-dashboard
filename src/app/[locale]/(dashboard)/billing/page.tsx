@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, Fragment } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   CheckIcon,
   XIcon,
@@ -24,12 +26,24 @@ import {
   AlertTriangle,
   ChevronDown,
   Wallet,
+  Landmark,
+  Sliders,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
+import { TaxNexusEngine } from "@/components/billing/tax-nexus-engine";
+import { UsageQuotaCard } from "@/components/billing/usage-quota-card";
+import { QrisPaymentSystem } from "@/components/billing/qris-payment-system";
+import { InvoiceCustomizerDialog } from "@/components/billing/invoice-customizer-dialog";
+import { QrisBrandIcon, DanaBrandIcon } from "@/components/ui/brand-icons";
 import { AnimatedDisclosure } from "@/components/ui/animated-disclosure";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { CURRENCIES, SupportedCurrencyCode, type CurrencyConfig } from "@/lib/currency";
+import { cn, formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
+import { openSnapPopup } from "@/lib/snap-popup";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import {
@@ -114,15 +128,6 @@ function formatDate(dateStr: string | null) {
   });
 }
 
-function formatCurrencyUSD(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
 function daysRemaining(endDate: string | null): number {
   if (!endDate) return 0;
   const end = new Date(endDate);
@@ -156,18 +161,12 @@ const channelKey = (channel: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("")}`;
 
-/** Currency-aware invoice amount (plan prices stay USD; Midtrans invoices are IDR). */
-function formatInvoiceAmount(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currency || "USD"} ${amount}`;
-  }
+/** Normalizes a DB/source currency string to a supported code (defaults to USD). */
+function toSupportedCurrency(code: string): SupportedCurrencyCode {
+  const upper = (code || "USD").toUpperCase();
+  return (CURRENCIES as Record<string, CurrencyConfig>)[upper]
+    ? (upper as SupportedCurrencyCode)
+    : "USD";
 }
 
 function getPlanFeatures(plan: Plan) {
@@ -199,7 +198,20 @@ function getPlanFeatures(plan: Plan) {
 
 export default function BillingPage() {
   const tbilling = useTranslations("billing");
+  const { currency } = useCurrency();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Deep-link support: /billing?tab=plans opens the Plans tab directly
+  // (usage card and 402 banners link here). Reacts to query changes — a
+  // same-route click from the usage card swaps the URL query without
+  // remounting, so a mount-only effect would keep the old tab.
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab");
+  useEffect(() => {
+    const tab = tabParam || new URLSearchParams(window.location.search).get("tab");
+    if (tab) setActiveTab(tab);
+  }, [tabParam]);
 
   return (
     <div className="space-y-6">
@@ -226,6 +238,14 @@ export default function BillingPage() {
             <CreditCardIcon size={16} className="h-4 w-4" />
             {tbilling("tabPayment")}
           </TabsTrigger>
+          <TabsTrigger value="taxNexus" className="flex items-center gap-2">
+            <Landmark className="h-4 w-4" />
+            {tbilling("tabTaxNexus")}
+          </TabsTrigger>
+          <TabsTrigger value="qris" className="flex items-center gap-2">
+            <QrisBrandIcon size={16} />
+            {tbilling("tabQris")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -240,6 +260,12 @@ export default function BillingPage() {
         <TabsContent value="payment" className="mt-6">
           <PaymentTab />
         </TabsContent>
+        <TabsContent value="taxNexus" className="mt-6">
+          <TaxNexusEngine />
+        </TabsContent>
+        <TabsContent value="qris" className="mt-6">
+          <QrisPaymentSystem />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -249,7 +275,9 @@ export default function BillingPage() {
 
 function OverviewTab() {
   const tbilling = useTranslations("billing");
+  const { user } = useAuth();
   const tcommon = useTranslations("common");
+  const { currency, formatMoney } = useCurrency();
   const [subData, setSubData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<InvoicesResponse | null>(null);
@@ -402,7 +430,7 @@ function OverviewTab() {
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {sub
-                    ? `${formatCurrencyUSD(sub.plan.price)}/${sub.plan.interval.toLowerCase()} • ${tbilling("renews")} ${formatDate(sub.currentPeriodEnd)} (${daysLeft} ${tbilling("daysRemaining")})`
+                    ? `${formatMoney(sub.plan.price)}/${sub.plan.interval.toLowerCase()} • ${tbilling("renews")} ${formatDate(sub.currentPeriodEnd)} (${daysLeft} ${tbilling("daysRemaining")})`
                     : tbilling("choosePlan")}
                 </p>
                 {sub?.cancelAtPeriodEnd && (
@@ -416,17 +444,21 @@ function OverviewTab() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0 flex-wrap">
-              {sub?.stripeCustomerId && (
-                <Button variant="outline" onClick={handleOpenPortal} disabled={portalLoading}>
-                  {portalLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CreditCardIcon size={16} className="h-4 w-4 mr-2" />
-                  )}
-                  {tbilling("manageBilling")}
-                </Button>
-              )}
-              {sub?.cancelAtPeriodEnd ? (
+              {/* Owner-only mutations: CLIENT/CLIENT_ENTERPRISE viewers read
+                  the subscription state but never cancel/reactivate/manage it. */}
+              {!(user?.role === "CLIENT" || user?.role === "CLIENT_ENTERPRISE") &&
+                sub?.stripeCustomerId && (
+                  <Button variant="outline" onClick={handleOpenPortal} disabled={portalLoading}>
+                    {portalLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CreditCardIcon size={16} className="h-4 w-4 mr-2" />
+                    )}
+                    {tbilling("manageBilling")}
+                  </Button>
+                )}
+              {user?.role === "CLIENT" ||
+              user?.role === "CLIENT_ENTERPRISE" ? null : sub?.cancelAtPeriodEnd ? (
                 <Button variant="outline" onClick={handleReactivate}>
                   <RefreshCwIcon size={16} className="h-4 w-4 mr-2" /> {tbilling("reactivate")}
                 </Button>
@@ -443,6 +475,11 @@ function OverviewTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Live quota metering vs plan limits — self-serve for clients too:
+          GET /api/usage resolves the workspace plan for CLIENT members, and
+          client-tier viewers get the read-only card variant. */}
+      <UsageQuotaCard viewerRole={user?.role} />
 
       {/* Usage & Stats Grid */}
       {sub && (
@@ -514,59 +551,70 @@ function OverviewTab() {
           </div>
           {invoices && invoices.totals.totalInvoices > 0 && (
             <p className="text-sm text-gray-500">
-              {tbilling("totalPaid")}: {formatCurrencyUSD(invoices.totals.totalPaid)}
+              {tbilling("totalPaid")}: {formatMoney(invoices.totals.totalPaid)}
             </p>
           )}
         </CardHeader>
         <CardContent>
           {invoices && invoices.invoices.length > 0 ? (
             <div className="space-y-2">
-              {invoices.invoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "p-2 rounded-lg",
-                        inv.status === "PAID"
-                          ? "bg-emerald-50 dark:bg-emerald-900/20"
-                          : inv.status === "PENDING"
-                            ? "bg-amber-50 dark:bg-amber-900/20"
-                            : "bg-gray-100 dark:bg-gray-800",
-                      )}
-                    >
-                      <FileTextIcon
-                        size={16}
+              {invoices.invoices.map((inv) => {
+                const sourceCode = toSupportedCurrency(inv.currency);
+                return (
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
                         className={cn(
-                          "h-4 w-4",
+                          "p-2 rounded-lg",
                           inv.status === "PAID"
-                            ? "text-emerald-600"
+                            ? "bg-emerald-50 dark:bg-emerald-900/20"
                             : inv.status === "PENDING"
-                              ? "text-amber-600"
-                              : "text-gray-400",
+                              ? "bg-amber-50 dark:bg-amber-900/20"
+                              : "bg-gray-100 dark:bg-gray-800",
                         )}
-                      />
+                      >
+                        <FileTextIcon
+                          size={16}
+                          className={cn(
+                            "h-4 w-4",
+                            inv.status === "PAID"
+                              ? "text-emerald-600"
+                              : inv.status === "PENDING"
+                                ? "text-amber-600"
+                                : "text-gray-400",
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{inv.invoiceNumber}</p>
+                        <p className="text-xs text-gray-500">
+                          {inv.description || inv.plan?.name} • {formatDate(inv.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{inv.invoiceNumber}</p>
-                      <p className="text-xs text-gray-500">
-                        {inv.description || inv.plan?.name} • {formatDate(inv.createdAt)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-sm font-medium">
+                          {formatMoney(inv.amount, sourceCode)}
+                        </span>
+                        {currency !== sourceCode && (
+                          <span className="text-xs text-gray-400">
+                            {tbilling("convertedLabel", {
+                              amount: formatCurrency(inv.amount, sourceCode, sourceCode),
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
+                        {inv.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {" "}
-                    <span className="text-sm font-medium">
-                      {formatInvoiceAmount(inv.amount, inv.currency)}
-                    </span>
-                    <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
-                      {inv.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-sm text-gray-400">{tbilling("noInvoices")}</div>
@@ -583,9 +631,11 @@ function PlansTab() {
   const tbilling = useTranslations("billing");
   const tcommon = useTranslations("common");
   const locale = useLocale();
+  const { formatMoney } = useCurrency();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const [confirmPlan, setConfirmPlan] = useState<Plan | null>(null);
   const [paymentGateway, setPaymentGateway] = useState<"stripe" | "midtrans">("stripe");
@@ -618,28 +668,37 @@ function PlansTab() {
     setSwitching(plan.id);
     try {
       if (plan.price > 0) {
-        // Paid plan → hosted checkout. gateway selects the provider: Stripe
-        // (international card) or Midtrans (local payments) with a channel
-        // restriction (DANA / GoPay / QRIS / bank transfer / card).
         const res = await fetch("/api/billing/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             planId: plan.id,
-            locale,
             gateway: paymentGateway,
             channel: paymentGateway === "midtrans" ? paymentChannel : undefined,
           }),
         });
         if (res.ok) {
           const data = await res.json();
+          setConfirmPlan(null);
+          // Midtrans → spend the Snap token through the embedded popup; the
+          // hosted redirect stays as a fallback for popup-less clients.
+          if (data.token && data.snapScriptUrl && data.clientKey) {
+            await openSnapPopup({
+              token: data.token,
+              snapScriptUrl: data.snapScriptUrl,
+              clientKey: data.clientKey,
+              callbacks: {
+                onSuccess: () => {
+                  toast.success(tbilling("planUpdated"));
+                  fetchData();
+                },
+                onError: () => toast.error(tbilling("checkoutError")),
+              },
+            });
+            return;
+          }
           if (data.url) {
-            setConfirmPlan(null);
-            toast.info(
-              paymentGateway === "midtrans"
-                ? tbilling("checkoutLocalRedirect")
-                : tbilling("checkoutRedirect"),
-            );
+            toast.info(tbilling("checkoutRedirect"));
             window.location.href = data.url;
             return;
           }
@@ -680,6 +739,46 @@ function PlansTab() {
 
   return (
     <div className="space-y-8">
+      {/* Monthly / Yearly Billing Cycle Toggle (Matches Pricing Page) */}
+      <div className="flex justify-center pb-2">
+        <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-muted/60 border border-border shadow-xs">
+          <button
+            type="button"
+            onClick={() => setIsAnnual(false)}
+            className={cn(
+              "px-5 py-2 text-sm font-medium rounded-full transition-colors cursor-pointer",
+              !isAnnual
+                ? "bg-foreground text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAnnual(true)}
+            className={cn(
+              "px-5 py-2 text-sm font-medium rounded-full transition-colors inline-flex items-center gap-1.5 cursor-pointer",
+              isAnnual
+                ? "bg-foreground text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Yearly
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                isAnnual
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+              )}
+            >
+              Save 20%
+            </span>
+          </button>
+        </div>
+      </div>
+
       {/* Plan Comparison Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
@@ -700,7 +799,7 @@ function PlansTab() {
             >
               {plan.popular && !isCurrent && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold shadow-lg">
+                  <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg">
                     <ZapIcon size={12} className="h-3 w-3" />
                     {tbilling("mostPopular")}
                   </span>
@@ -727,22 +826,33 @@ function PlansTab() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">{formatCurrencyUSD(plan.price)}</span>
-                    <span className="text-sm text-gray-500">/{plan.interval.toLowerCase()}</span>
+                    <span className="text-3xl font-bold">
+                      {isAnnual
+                        ? formatMoney(
+                            Math.round(plan.yearlyPrice ? plan.yearlyPrice / 12 : plan.price),
+                          )
+                        : formatMoney(plan.price)}
+                    </span>
+                    <span className="text-sm text-gray-500">/month</span>
                   </div>
-                  {plan.yearlyPrice && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formatCurrencyUSD(plan.yearlyPrice)}/year (save{" "}
-                      {Math.round((1 - plan.yearlyPrice / (plan.price * 12)) * 100)}%)
+                  {isAnnual && plan.yearlyPrice ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatMoney(plan.yearlyPrice)}/year (save{" "}
+                      {Math.round((1 - plan.yearlyPrice / 12 / plan.price) * 100)}%)
                     </p>
-                  )}
+                  ) : plan.yearlyPrice ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Or {formatMoney(Math.round(plan.yearlyPrice / 12))}/mo billed yearly (save{" "}
+                      {Math.round((1 - plan.yearlyPrice / 12 / plan.price) * 100)}%)
+                    </p>
+                  ) : null}
                 </div>
 
                 <Button
                   variant={isCurrent ? "outline" : plan.popular ? "default" : "outline"}
                   className={cn(
                     "w-full mb-6",
-                    !isCurrent && plan.popular && "bg-indigo-600 hover:bg-indigo-700",
+                    !isCurrent && plan.popular && "bg-primary hover:bg-primary/90",
                   )}
                   disabled={isCurrent || switching === plan.id}
                   onClick={() => {
@@ -822,7 +932,7 @@ function PlansTab() {
                 <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
                   <span className="font-medium">{confirmPlan.name} Plan</span>
                   <span className="font-bold text-lg">
-                    {formatCurrencyUSD(confirmPlan.price)}/{confirmPlan.interval.toLowerCase()}
+                    {formatMoney(confirmPlan.price)}/{confirmPlan.interval.toLowerCase()}
                   </span>
                 </div>
 
@@ -927,9 +1037,12 @@ function PlansTab() {
 
 function InvoicesTab() {
   const tbilling = useTranslations("billing");
+  const { currency, formatMoney, currentConfig } = useCurrency();
   const [invoicesData, setInvoicesData] = useState<InvoicesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -941,6 +1054,27 @@ function InvoicesTab() {
       setLoading(false);
     }
   }, []);
+
+  const handleProcessInvoice = async (invoiceId: string) => {
+    try {
+      setProcessingInvoiceId(invoiceId);
+      const res = await fetch(`/api/billing/invoices/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PAID" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to process invoice");
+      }
+      toast.success(tbilling("invoicePaidSuccess"));
+      await fetchInvoices();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to process invoice");
+    } finally {
+      setProcessingInvoiceId(null);
+    }
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -959,16 +1093,38 @@ function InvoicesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Template Customizer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold">Invoices & Tax Slips</h2>
+          <p className="text-xs text-gray-500">
+            Automated PDF invoices with real Code 128 barcodes, digital QR audit, and instant
+            payment links.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setCustomizerOpen(true)}
+          className="gap-2 self-start sm:self-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs font-semibold cursor-pointer"
+        >
+          <Sliders className="h-4 w-4" />
+          Customize Invoice Template
+        </Button>
+      </div>
+
+      <InvoiceCustomizerDialog
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        sampleOrderId={invoices[0]?.id}
+      />
+
       {/* Summary */}
       {invoicesData && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-                <FileTextIcon
-                  size={20}
-                  className="h-5 w-5 text-emerald-600 dark:text-emerald-400"
-                />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <FileTextIcon size={20} className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("totalInvoices")}</p>
@@ -978,21 +1134,19 @@ function InvoicesTab() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <CreditCardIcon size={20} className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <CreditCardIcon size={20} className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">{tbilling("totalPaid")}</p>
-                <p className="text-xl font-bold">
-                  {formatCurrencyUSD(invoicesData.totals.totalPaid)}
-                </p>
+                <p className="text-xs text-gray-500">{tbilling("invoiceTotal")}</p>
+                <p className="text-xl font-bold">{formatMoney(invoicesData.totals.totalPaid)}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                <ClockIcon size={20} className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <ClockIcon size={20} className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs text-gray-500">{tbilling("pending")}</p>
@@ -1004,6 +1158,21 @@ function InvoicesTab() {
           </Card>
         </div>
       )}
+
+      {/* Display Currency explainer */}
+      <div className="rounded-lg border border-border/70 bg-card p-4 flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm">
+          <Wallet className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-foreground">{tbilling("displayCurrency")}</span>
+          <Badge variant="outline" className="ml-auto font-mono text-xs shrink-0">
+            {currentConfig.symbol} {currentConfig.code}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">{tbilling("displayCurrencyDesc")}</p>
+        <p className="text-xs text-muted-foreground">
+          {tbilling("currencyNote", { base: currentConfig.code })}
+        </p>
+      </div>
 
       {/* Invoices Table */}
       <Card>
@@ -1040,6 +1209,7 @@ function InvoicesTab() {
                     <th className="text-right py-3 px-2 font-medium text-gray-500">
                       {tbilling("dateCol")}
                     </th>
+                    <th className="text-right py-3 px-2 font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1047,6 +1217,11 @@ function InvoicesTab() {
                     const isExpanded = expandedInvoice === inv.id;
                     const detailsId = `invoice-details-${inv.id}`;
                     const toggleInvoice = () => setExpandedInvoice(isExpanded ? null : inv.id);
+                    // Multi-currency display: primary = selected display-currency conversion,
+                    // secondary ("~ ...") keeps the raw source-currency amount visible.
+                    const sourceCode = toSupportedCurrency(inv.currency);
+                    const convertedAmount = formatMoney(inv.amount, sourceCode);
+                    const sourceAmount = formatCurrency(inv.amount, sourceCode, sourceCode);
                     return (
                       <Fragment key={inv.id}>
                         <tr
@@ -1076,7 +1251,14 @@ function InvoicesTab() {
                               : "—"}
                           </td>
                           <td className="py-3 px-2 font-medium">
-                            {formatInvoiceAmount(inv.amount, inv.currency)}
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span>{convertedAmount}</span>
+                              {currency !== sourceCode && (
+                                <span className="text-xs text-gray-400">
+                                  {tbilling("convertedLabel", { amount: sourceAmount })}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-2">
                             <Badge variant={(STATUS_COLORS[inv.status] as any) || "outline"}>
@@ -1098,9 +1280,31 @@ function InvoicesTab() {
                               />
                             </span>
                           </td>
+                          <td className="py-3 px-2 text-right">
+                            {inv.status === "PENDING" ? (
+                              <Button
+                                size="sm"
+                                disabled={processingInvoiceId === inv.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProcessInvoice(inv.id);
+                                }}
+                                className="h-7 px-2.5 text-xs gap-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold cursor-pointer shadow-2xs"
+                              >
+                                {processingInvoiceId === inv.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                )}
+                                <span>Process</span>
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-mono">—</span>
+                            )}
+                          </td>
                         </tr>
                         <tr className="bg-gray-50 dark:bg-gray-800/30">
-                          <td colSpan={6} className="p-0">
+                          <td colSpan={7} className="p-0">
                             {/* Content-only disclosure: the summary row above is
                                 the trigger (it carries aria-expanded/controls +
                                 keyboard handling), this region provides the
@@ -1132,13 +1336,28 @@ function InvoicesTab() {
                                     Plan: <strong>{inv.plan.name}</strong>
                                   </span>
                                 )}
+                                {inv.status === "PENDING" && (
+                                  <Button
+                                    size="sm"
+                                    disabled={processingInvoiceId === inv.id}
+                                    onClick={() => handleProcessInvoice(inv.id)}
+                                    className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-8 ml-auto cursor-pointer shadow-2xs"
+                                  >
+                                    {processingInvoiceId === inv.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                    )}
+                                    <span>Process Invoice Payment</span>
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="ml-auto"
+                                  className={cn("text-xs", inv.status !== "PENDING" && "ml-auto")}
                                   onClick={() =>
                                     window.open(
-                                      `/api/billing/invoices/${inv.id}/download`,
+                                      `/api/billing/invoices/${inv.id}/download?currency=${currency}`,
                                       "_blank",
                                     )
                                   }
@@ -1268,18 +1487,52 @@ function PaymentTab() {
           <CardDescription>{tbilling("localPaymentsDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {PAYMENT_CHANNELS.map((ch) => (
-              <div
-                key={ch}
-                className="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300"
-              >
-                <Wallet className="h-4 w-4 text-indigo-500 shrink-0" />
-                {tbilling(channelKey(ch))}
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {PAYMENT_CHANNELS.map((ch) => {
+              const renderIcon = () => {
+                switch (ch) {
+                  case "dana":
+                    return <DanaBrandIcon size={18} />;
+                  case "qris":
+                    return <QrisBrandIcon size={18} className="text-primary" />;
+                  case "gopay":
+                    return <Wallet className="h-4 w-4 text-primary" />;
+                  case "bank_transfer":
+                    return <Building2 className="h-4 w-4 text-primary" />;
+                  case "credit_card":
+                    return <CreditCardIcon size={16} className="text-primary" />;
+                  default:
+                    return <Wallet className="h-4 w-4 text-primary" />;
+                }
+              };
+
+              return (
+                <div
+                  key={ch}
+                  className="flex items-center gap-3 rounded-lg border border-border/70 bg-card hover:border-primary/40 hover:bg-accent/30 transition-all p-3 text-sm group"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 group-hover:bg-primary/15 transition-colors shrink-0">
+                    {renderIcon()}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs text-foreground">
+                      {tbilling(channelKey(ch))}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {ch === "qris"
+                        ? "Instant QRIS ASPI"
+                        : ch === "bank_transfer"
+                          ? "Virtual Account BI-FAST"
+                          : ch === "dana" || ch === "gopay"
+                            ? "E-Wallet Direct Debit"
+                            : "Visa / Mastercard 3DS"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <p className="text-xs text-gray-400 mt-3">{tbilling("localPaymentsNote")}</p>
+          <p className="text-xs text-muted-foreground mt-3">{tbilling("localPaymentsNote")}</p>
         </CardContent>
       </Card>
     </div>

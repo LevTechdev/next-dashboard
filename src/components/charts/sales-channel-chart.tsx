@@ -10,7 +10,8 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/components/currency-provider";
+import { SalesChannelIcon } from "@/components/ui/brand-icons";
 
 interface ChannelData {
   name: string;
@@ -21,6 +22,7 @@ interface ChannelData {
 interface SalesChannelChartProps {
   data: ChannelData[];
   height?: number;
+  onClick?: (name: string) => void;
 }
 
 interface CustomTooltipProps {
@@ -30,18 +32,20 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  const { formatMoney } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-3">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-        {formatCurrency(payload[0].value)}
-      </p>
+    <div className="rounded-xl border border-white/50 bg-white/70 shadow-xl backdrop-blur-md dark:border-border dark:bg-card/95 p-3 pointer-events-none">
+      <div className="flex items-center gap-2 mb-1.5">
+        <SalesChannelIcon name={label || ""} size={15} />
+        <p className="text-xs font-medium text-gray-600 dark:text-muted-foreground">{label}</p>
+      </div>
+      <p className="text-sm font-bold tabular-nums">{formatMoney(payload[0].value)}</p>
     </div>
   );
 }
 
-export function SalesChannelChart({ data, height = 300 }: SalesChannelChartProps) {
+export function SalesChannelChart({ data, height = 300, onClick }: SalesChannelChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-gray-400" style={{ height }}>
@@ -88,8 +92,18 @@ export function SalesChannelChart({ data, height = 300 }: SalesChannelChartProps
         <Tooltip
           content={<CustomTooltip />}
           cursor={{ fill: "currentColor", className: "fill-gray-100 dark:fill-gray-800/50" }}
+          // Bar-following: pin to the hovered bar's top edge, not slot center.
+          position={{ y: 0 }}
+          offset={12}
+          animationDuration={80}
         />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={32}>
+        <Bar
+          dataKey="value"
+          radius={[0, 4, 4, 0]}
+          maxBarSize={32}
+          onClick={onClick ? (data) => onClick(data.name) : undefined}
+          style={{ cursor: onClick ? "pointer" : "default" }}
+        >
           {data.map((entry, index) => (
             <Cell key={index} fill={entry.color} />
           ))}

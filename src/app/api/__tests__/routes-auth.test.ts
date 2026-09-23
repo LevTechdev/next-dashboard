@@ -15,6 +15,8 @@ const {
   mockGetTokenFromRequest,
   mockGetTokenFromCookie,
   mockVerifyTotp,
+  mockSpendPrimaryTotp,
+  mockSpendBackupTotp,
   mockGenerateTotpSecret,
   mockCreateSession,
   mockListActiveSessions,
@@ -31,6 +33,7 @@ const {
   mockSetAuthCookies,
   mockClearAuthCookies,
   mockConsumeBackupCode,
+  mockWarnOnLowBackupCodes,
   mockLogSecurityEvent,
   mockIsPasswordBreached,
   mockIssueEmailOtp,
@@ -45,6 +48,7 @@ const {
   mockBuildSaml,
   mockVerifyOtp,
   mockIsOtpExpired,
+  mockResolveSessionUserId,
 } = vi.hoisted(() => {
   const model = <T extends Record<string, unknown>>(overrides: Partial<T> = {}) =>
     new Proxy<T>({} as T, {
@@ -96,10 +100,21 @@ const {
       }),
       tenant: deepModel({
         findUnique: vi.fn().mockResolvedValue({ id: "tenant-1", slug: "default" }),
+        create: vi.fn().mockResolvedValue({ id: "tenant-new-1" }),
       }),
       activityLog: deepModel({}),
       securityEvent: deepModel({}),
       backupCode: deepModel({}),
+      // Second-factor methods: login counts registered passkeys to decide
+      // whether the chooser offers the passkey card, and the trusted-device
+      // check reads the trust store before the 2FA gate. Unregistered models
+      // would make `prisma.webAuthnCredential` undefined and turn the
+      // requires2FA response into a 500.
+      webAuthnCredential: deepModel({}),
+      trustedDevice: deepModel({}),
+      // The spare authenticator is consulted only after the primary TOTP
+      // secret fails, so it must exist in the mock too.
+      backupAuthenticator: deepModel({}),
       ssoConnection: deepModel({
         findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi
@@ -108,6 +123,29 @@ const {
         deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       }),
       auditLog: deepModel({}),
+      // Tier system: register/SAML provisioning reads (and creates) the
+      // user's Starter subscription through @/lib/plan-tiers and
+      // @/lib/provisioning.
+      subscription: deepModel({
+        findFirst: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "sub-1" }),
+      }),
+      plan: deepModel({
+        findUnique: vi.fn().mockResolvedValue({
+          id: "plan-starter",
+          name: "Starter",
+          price: 0,
+          maxOrders: 100,
+          maxTeamMembers: 3,
+          hasAnalytics: false,
+          hasReports: false,
+          hasMultiChannel: false,
+          hasApiAccess: false,
+          hasRoleBasedAccess: false,
+          supportLevel: "email",
+        }),
+      }),
       $transaction: vi
         .fn()
         .mockImplementation((fns: any[]) =>
@@ -130,6 +168,8 @@ const {
     mockGetTokenFromRequest: vi.fn().mockReturnValue(null),
     mockGetTokenFromCookie: vi.fn().mockReturnValue(null),
     mockVerifyTotp: vi.fn().mockReturnValue(true),
+    mockSpendPrimaryTotp: vi.fn(),
+    mockSpendBackupTotp: vi.fn(),
     mockGenerateTotpSecret: vi.fn().mockResolvedValue("JBSWY3DPEHPK3PXP"),
     mockCreateSession: vi.fn().mockResolvedValue("sess-1"),
     mockListActiveSessions: vi.fn().mockResolvedValue([
@@ -176,6 +216,7 @@ const {
     mockSetAuthCookies: vi.fn(),
     mockClearAuthCookies: vi.fn(),
     mockConsumeBackupCode: vi.fn().mockResolvedValue(false),
+    mockWarnOnLowBackupCodes: vi.fn().mockResolvedValue(undefined),
     mockLogSecurityEvent: vi.fn().mockResolvedValue(undefined),
     mockIsPasswordBreached: vi.fn().mockResolvedValue(false),
     mockIssueEmailOtp: vi.fn().mockResolvedValue({ sent: true, code: "123456" }),
@@ -206,6 +247,7 @@ const {
     }),
     mockVerifyOtp: vi.fn().mockReturnValue(false),
     mockIsOtpExpired: vi.fn().mockReturnValue(false),
+    mockResolveSessionUserId: vi.fn().mockResolvedValue("user-1"),
   };
 });
 
@@ -234,6 +276,15 @@ vi.mock("@/lib/totp", () => ({
   totpKeyUri: (p: any) => `otpauth://totp/${p.issuer}:${p.email}?secret=${p.secret}`,
 }));
 
+// Verification against a stored secret now runs through the single-use guard
+// (RFC 6238 §5.2). The guard's own logic is covered in src/lib/totp-replay.test.ts;
+// these suites care about the ROUTE's contract, so the guard is mocked with its
+// real shape and driven by the same `mockVerifyTotp` the suites already set.
+vi.mock("@/lib/totp-replay", () => ({
+  spendPrimaryTotp: (...a: unknown[]) => mockSpendPrimaryTotp(...a),
+  spendBackupTotp: (...a: unknown[]) => mockSpendBackupTotp(...a),
+}));
+
 vi.mock("@/lib/sessions", () => ({
   createSession: mockCreateSession,
   listActiveSessions: mockListActiveSessions,
@@ -259,6 +310,10 @@ vi.mock("@/lib/backup-codes", () => ({
   consumeBackupCode: mockConsumeBackupCode,
   regenerateBackupCodes: mockRegenerateBackupCodes,
   countUnusedBackupCodes: mockCountUnusedBackupCodes,
+}));
+
+vi.mock("@/lib/backup-code-alerts", () => ({
+  warnOnLowBackupCodes: mockWarnOnLowBackupCodes,
 }));
 
 vi.mock("@/lib/security-events", () => ({
@@ -300,6 +355,15 @@ vi.mock("@/lib/tenancy", () => ({
 vi.mock("@/lib/api-guard", () => ({
   requireAuth: mockRequireAuth,
   requirePermission: vi.fn().mockResolvedValue({ role: "ADMIN", response: null }),
+}));
+
+// Resolve the session at this boundary so route tests queue exactly the prisma
+// calls the ROUTE makes — not also the hidden lookups inside the real resolver
+// (id → email), whose count shifts the sequential mockResolvedValueOnce queue
+// and silently poisons every test queued after it. The resolver's own contract
+// is covered by its dedicated tests.
+vi.mock("@/lib/session-user", () => ({
+  resolveSessionUserId: mockResolveSessionUserId,
 }));
 
 vi.mock("qrcode", () => ({ default: mockQrCode }));
@@ -351,7 +415,6 @@ import * as verifyEmailSendRoutes from "../auth/verify-email/send/route";
 import * as verifyEmailConfirmRoutes from "../auth/verify-email/confirm/route";
 import * as googleRoutes from "../auth/google/route";
 import * as samlLoginRoutes from "../auth/saml/login/route";
-import * as samlConnectionsRoutes from "../auth/saml/connections/route";
 import * as samlAcsRoutes from "../auth/saml/acs/route";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -403,6 +466,20 @@ beforeEach(() => {
   mockGetTokenFromRequest.mockReturnValue(null);
   mockGetTokenFromCookie.mockReturnValue(null);
   mockVerifyTotp.mockReturnValue(true);
+  // Default guard behaviour: whatever the verifyTotp mock says, mapped onto the
+  // guard's result shape so tests can still say "wrong code" / "replayed code".
+  mockSpendPrimaryTotp.mockImplementation(async (_userId: string, token: string) =>
+    mockVerifyTotp(token) ? { ok: true, timeStep: 100 } : { ok: false, reason: "INVALID" },
+  );
+  mockSpendBackupTotp.mockImplementation(async (_userId: string, token: string) => {
+    // The spare only counts when one is actually enrolled — the same rule the
+    // real guard enforces by looking the row up.
+    const row = (await mockPrisma.backupAuthenticator.findUnique()) as { id: string } | null;
+    if (!row) return { ok: false, reason: "NOT_ENROLLED" };
+    return mockVerifyTotp(token)
+      ? { ok: true, timeStep: 100, id: row.id }
+      : { ok: false, reason: "INVALID" };
+  });
   mockIsPasswordBreached.mockResolvedValue(false);
   mockIsDevFallbackAllowed.mockReturnValue(true);
   mockRequireAuth.mockResolvedValue({
@@ -536,6 +613,98 @@ describe("Login", () => {
       expect(body.message).toBe("Login successful");
     });
 
+    it("accepts a code from the SPARE authenticator when the primary secret fails", async () => {
+      // The whole point of a second enrolled authenticator: the phone holding
+      // the primary secret is gone, but the account keeps its factor.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "PRIMARY",
+      });
+      mockVerifyTotp.mockReturnValueOnce(false).mockReturnValueOnce(true);
+      (mockPrisma.backupAuthenticator.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        { id: "ba-1", secret: "SPARE" },
+      );
+
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", totpToken: "654321" }),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.token).toBe("jwt-token-xxx");
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "MFA_VERIFIED",
+          metadata: { method: "totp_backup" },
+        }),
+      );
+    });
+
+    it("reports a replayed code as such, and audits it", async () => {
+      // RFC 6238 §5.2: the code was already spent inside its own time step.
+      // "Invalid" would invite the user to retype the very value that keeps
+      // failing, so the route answers with a distinct code the client
+      // localizes, and records the attempt.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "PRIMARY",
+      });
+      mockSpendPrimaryTotp.mockResolvedValueOnce({ ok: false, reason: "REPLAY" });
+      mockSpendBackupTotp.mockResolvedValueOnce({ ok: false, reason: "INVALID" });
+
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", totpToken: "123456" }),
+      );
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toMatchObject({ code: "TOTP_REPLAY" });
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "MFA_CODE_REPLAYED" }),
+      );
+    });
+
+    it("still 401s when neither the primary nor a spare matches the code", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "PRIMARY",
+      });
+      mockVerifyTotp.mockReturnValue(false);
+      (mockPrisma.backupAuthenticator.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        { id: "ba-1", secret: "SPARE" },
+      );
+
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", totpToken: "000000" }),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it('refuses sign-in while a "this wasn\'t me" revoke demands a new password', async () => {
+      // Sessions were already revoked by the revoke link; the password is the
+      // only thing standing between the attacker and the account again.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        passwordResetRequired: true,
+      });
+      const res = await loginRoutes.POST(post({ email: "a@test.com", password: "pass" }));
+
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({
+        error: "PASSWORD_RESET_REQUIRED",
+        code: "PASSWORD_RESET_REQUIRED",
+      });
+      // No session, and the refusal is audited.
+      expect(mockCreateSession).not.toHaveBeenCalled();
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "LOGIN_FAILED",
+          metadata: { reason: "password_reset_required" },
+        }),
+      );
+    });
+
     it("succeeds with valid backup code when TOTP fails", async () => {
       mockPrisma.user.findUnique.mockResolvedValueOnce({
         ...mockUser,
@@ -553,6 +722,67 @@ describe("Login", () => {
         }),
       );
       expect(res.status).toBe(200);
+    });
+
+    it("recovers with a backup code ALONE when the authenticator is gone", async () => {
+      // The lost-device case: no totpToken at all, only a saved recovery code.
+      // The route must not fall into the requires2FA branch just because the
+      // TOTP code is absent — that is the whole point of a backup code.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      mockConsumeBackupCode.mockResolvedValueOnce(true);
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", backupCode: "abcd-1234" }),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.requires2FA).toBeUndefined();
+      expect(body.token).toBe("jwt-token-xxx");
+      expect(mockConsumeBackupCode).toHaveBeenCalledWith("user-1", "abcd-1234");
+      // The audit trail records the recovery explicitly, not as a plain MFA.
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "BACKUP_CODE_USED" }),
+      );
+      // How many codes are left rides back on the response so the recovery
+      // step can warn before the set empties, and the low-code alert fires.
+      expect(body.backupCodesRemaining).toBe(7);
+      expect(mockWarnOnLowBackupCodes).toHaveBeenCalledWith("user-1", 7);
+    });
+
+    it("keeps the recovered-code count off every other sign-in path", async () => {
+      // Only a backup-code sign-in consumes one; the field must not appear (and
+      // no alert must fire) for TOTP, trusted devices, or plain passwords.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", totpToken: "123456" }),
+      );
+      const body = await res.json();
+      expect(body.backupCodesRemaining).toBeUndefined();
+      expect(mockCountUnusedBackupCodes).not.toHaveBeenCalled();
+      expect(mockWarnOnLowBackupCodes).not.toHaveBeenCalled();
+    });
+
+    it("returns 401 when the backup code is already spent", async () => {
+      // consumeBackupCode only matches an unused row, so a replayed code falls
+      // through to the generic 2FA rejection instead of granting a session.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      mockConsumeBackupCode.mockResolvedValueOnce(false);
+      const res = await loginRoutes.POST(
+        post({ email: "a@test.com", password: "pass", backupCode: "abcd-1234" }),
+      );
+      expect(res.status).toBe(401);
+      expect(mockCreateSession).not.toHaveBeenCalled();
     });
 
     it("creates session and refresh token on successful login", async () => {
@@ -669,11 +899,18 @@ describe("Register", () => {
       expect(body.devOtp).toBe("123456");
     });
 
-    it("uses default tenant when found", async () => {
+    it("provisions a fresh personal workspace per signup (clean dashboard)", async () => {
       await registerRoutes.POST(post({ name: "Admin", email: "a@test.com", password: "pass123" }));
+      // New users get their OWN empty tenant — never the shared `default`
+      // workspace, whose seed data must not leak into a fresh account.
+      expect(mockPrisma.tenant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: "Admin's Workspace" }),
+        }),
+      );
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ tenantId: "tenant-1" }),
+          data: expect.objectContaining({ tenantId: "tenant-new-1" }),
         }),
       );
     });
@@ -930,16 +1167,17 @@ describe("TOTP Verify", () => {
       );
     });
 
-    it("falls back to first ADMIN when user not found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.user.findFirst.mockResolvedValueOnce({ id: "admin-1", email: "admin@test.com" });
+    it("returns 404 when the session resolves no user at all", async () => {
+      mockResolveSessionUserId.mockResolvedValueOnce(null);
       const res = await totpVerifyRoutes.POST(post({ token: "123456", secret: "SECRET" }));
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(404);
     });
 
-    it("returns 404 when no user found", async () => {
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
-      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+    it("returns 404 when the resolved id matches no row", async () => {
+      mockResolveSessionUserId.mockResolvedValueOnce("ghost-1");
+      // Deterministic: clearAllMocks does NOT drop leftover once-queues, so
+      // re-assert the default implementation instead of relying on it.
+      mockPrisma.user.findUnique.mockReset().mockResolvedValue(null);
       const res = await totpVerifyRoutes.POST(post({ token: "123456", secret: "SECRET" }));
       expect(res.status).toBe(404);
     });
@@ -1192,6 +1430,39 @@ describe("Step-Up Authentication", () => {
       mockVerifyTotp.mockReturnValueOnce(false);
       const res = await stepUpRoutes.POST(post({ purpose: "manage_2fa", totpToken: "000000" }));
       expect(res.status).toBe(401);
+    });
+
+    it("returns 428 totpRequired when a stale 2FA user offers only a password (30-day freshness gate)", async () => {
+      // securityEvent.findFirst resolves null → no MFA verification in the
+      // lookback window → staleness → password alone must NOT unlock.
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      mockVerifyPassword.mockResolvedValueOnce(true);
+      const res = await stepUpRoutes.POST(
+        post({ purpose: "change_password", password: "correct" }),
+      );
+      expect(res.status).toBe(428);
+      const body = await res.json();
+      expect(body.totpRequired).toBe(true);
+      expect(mockSignStepUpToken).not.toHaveBeenCalled();
+    });
+
+    it("unlocks and records MFA_VERIFIED when the stale user presents a TOTP code", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        totpEnabled: true,
+        totpSecret: "SECRET",
+      });
+      const res = await stepUpRoutes.POST(
+        post({ purpose: "change_password", totpToken: "123456" }),
+      );
+      expect(res.status).toBe(200);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "MFA_VERIFIED" }),
+      );
     });
 
     it("accepts all valid purposes", async () => {
@@ -2019,6 +2290,38 @@ describe("SAML ACS", () => {
       expect(res.status).toBe(403);
       const body = await res.json();
       expect(body.error).toContain("deactivated");
+    });
+
+    it('refuses SSO sign-in while a "this wasn\'t me" revoke demands a new password', async () => {
+      // Sessions were revoked, but the attacker used the account password — an
+      // IdP assertion must not be a side door back in.
+      mockPrisma.ssoConnection.findUnique.mockResolvedValueOnce({
+        id: "conn-1",
+        enabled: true,
+        tenantId: "tenant-1",
+        entryPoint: "https://idp.example.com",
+        idpCert: "cert",
+        spIssuer: "next-dashboard",
+      });
+      mockBuildSaml.mockReturnValueOnce({
+        validatePostResponseAsync: vi.fn().mockResolvedValue({
+          profile: { email: "user@test.com", name: "Test" },
+        }),
+      });
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
+        id: "user-1",
+        email: "user@test.com",
+        tenantId: "tenant-1",
+        isActive: true,
+        passwordResetRequired: true,
+      });
+
+      const res = await samlAcsRoutes.POST(
+        formDataRequest({ SAMLResponse: "response", RelayState: "conn-1" }),
+      );
+      expect(res.status).toBe(403);
+      expect((await res.json()).error).toBe("PASSWORD_RESET_REQUIRED");
+      expect(mockCreateSession).not.toHaveBeenCalled();
     });
 
     it("JIT-provisions new user and issues session on first login", async () => {

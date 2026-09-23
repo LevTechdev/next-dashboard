@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ClockIcon,
   BellIcon,
   RefreshCwIcon,
   DollarSignIcon,
   DownloadIcon,
-  SparklesIcon,
   UsersIcon,
 } from "lucide-animated";
 import {
@@ -18,14 +18,17 @@ import {
   Megaphone,
   Gift,
   BellRing,
+  CreditCard,
   Filter,
   ExternalLink,
+  History,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ScrollContainer } from "@/components/ui/scroll-container";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useRealtime, type NotificationType } from "@/components/realtime-provider";
 import { motion, AnimatePresence } from "framer-motion";
 import { useScrollFocusedIntoView } from "@/hooks/use-scroll-focused-into-view";
@@ -44,6 +47,9 @@ interface ActivityItem {
   isNew?: boolean;
   /** Epoch ms the item arrived via real-time; drives the "New" badge / count windows. */
   arrivedAt?: number;
+  /** True when reconstructed from a replayed SSE snapshot — the event predates
+   * this tab, so it never counts as "New". */
+  replayed?: boolean;
 }
 
 interface ApiNotification {
@@ -114,6 +120,12 @@ const TYPE_CONFIG: Record<
     bg: "bg-yellow-50 dark:bg-yellow-900/20",
     label: "Milestones",
   },
+  billing: {
+    icon: CreditCard,
+    color: "text-sky-600 dark:text-sky-400",
+    bg: "bg-sky-50 dark:bg-sky-900/20",
+    label: "Billing",
+  },
   alert: {
     icon: BellRing,
     color: "text-red-600 dark:text-red-400",
@@ -129,6 +141,7 @@ const FILTER_ORDER: (ActivityType | "all")[] = [
   "inventory",
   "campaign",
   "discount",
+  "billing",
   "alert",
   "milestone",
   "revenue",
@@ -155,6 +168,8 @@ function formatTimeAgo(date: Date): string {
 // ── Component ──
 
 export function ActivityFeed({ className }: { className?: string }) {
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
   const params = useParams();
   const locale = (params?.locale as string) || "en";
   const { notifications: realtimeNotifications, connectionStatus } = useRealtime();
@@ -224,8 +239,9 @@ export function ActivityFeed({ className }: { className?: string }) {
           title: n.title,
           description: n.description,
           timestamp: n.timestamp,
-          isNew: true,
-          arrivedAt: n.timestamp.getTime(),
+          isNew: !n.replayed,
+          arrivedAt: n.replayed ? undefined : n.timestamp.getTime(),
+          replayed: n.replayed,
         }));
         // Prepend and cap to MAX_VISIBLE
         return [...arrivals, ...prev].slice(0, MAX_VISIBLE);
@@ -322,52 +338,57 @@ export function ActivityFeed({ className }: { className?: string }) {
             </div>
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                Activity Feed
+                {t("activityFeedTitle")}
                 {newCount > 0 && (
                   <motion.span
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold"
+                    // Dynamic accent token (not a hardcoded indigo): the "new
+                    // items" chip follows Settings → Appearance.
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold"
                   >
-                    <SparklesIcon size={10} className="h-2.5 w-2.5" />+{newCount} new
+                    <BellIcon size={10} className="h-2.5 w-2.5" />
+                    {t("activityFeedNew", { count: newCount })}
                   </motion.span>
                 )}
               </CardTitle>
-              <CardDescription>Real-time system activity stream</CardDescription>
+              <CardDescription>{t("activityFeedDesc")}</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-1">
             {paused && (
+              <Tooltip content={tc("resumeLive")} side="bottom">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-primary animate-pulse"
+                  onClick={handlePauseToggle}
+                  aria-label={tc("resumeLive")}
+                >
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/70 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
+                  </span>
+                </Button>
+              </Tooltip>
+            )}
+            <Tooltip content={tc("exportCsv")} side="bottom">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-indigo-500 animate-pulse"
-                onClick={handlePauseToggle}
-                title="Resume live updates"
-                aria-label="Resume live updates"
+                className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                onClick={exportActivities}
+                aria-label={tc("exportCsv")}
               >
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500" />
-                </span>
+                <DownloadIcon size={14} className="h-3.5 w-3.5" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-gray-400 hover:text-gray-600"
-              onClick={exportActivities}
-              title="Export as CSV"
-              aria-label="Export activity feed as CSV"
-            >
-              <DownloadIcon size={14} className="h-3.5 w-3.5" />
-            </Button>
+            </Tooltip>
             <a
               href={`/${locale}/notifications`}
-              className="inline-flex items-center gap-1 text-[10px] text-indigo-500 hover:text-indigo-600 hover:underline px-1.5 py-0.5 rounded"
+              className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 hover:underline px-1.5 py-0.5 rounded"
             >
-              View all
+              {t("activityFeedViewAll")}
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
           </div>
@@ -408,7 +429,7 @@ export function ActivityFeed({ className }: { className?: string }) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 text-[10px] text-indigo-500 gap-1 px-2"
+              className="h-6 text-[10px] text-primary gap-1 px-2"
               onClick={handlePauseToggle}
             >
               <RefreshCwIcon size={12} className="h-3 w-3" />
@@ -448,7 +469,7 @@ export function ActivityFeed({ className }: { className?: string }) {
               className={cn(
                 "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all shrink-0",
                 isActive
-                  ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-300 dark:ring-indigo-700"
+                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700",
               )}
             >
@@ -459,7 +480,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                   className={cn(
                     "ml-0.5 px-1 py-0.5 rounded-full text-[8px] font-bold",
                     isActive
-                      ? "bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200"
+                      ? "bg-primary/20 text-primary"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
                   )}
                 >
@@ -490,7 +511,7 @@ export function ActivityFeed({ className }: { className?: string }) {
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <div className="relative h-8 w-8 mb-3">
               <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-gray-700" />
-              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-500 animate-spin" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
             </div>
             <p className="text-sm font-medium">Loading activity...</p>
           </div>
@@ -548,7 +569,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                   layout
                   className={cn(
                     "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group relative overflow-hidden",
-                    isNewItem && "bg-indigo-50/60 dark:bg-indigo-900/15",
+                    isNewItem && "bg-primary/5 dark:bg-primary/10",
                   )}
                 >
                   {/* New item glow indicator */}
@@ -559,7 +580,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                       transition={{ delay: 4, duration: 1 }}
                       className="absolute inset-0 pointer-events-none"
                     >
-                      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+                      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
                     </motion.div>
                   )}
 
@@ -568,7 +589,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                     className={cn(
                       "flex-shrink-0 p-2 rounded-lg transition-transform group-hover:scale-110 duration-200",
                       config.bg,
-                      isNewItem && "ring-2 ring-indigo-300 dark:ring-indigo-600",
+                      isNewItem && "ring-2 ring-primary/40",
                     )}
                   >
                     <Icon size={16} className={cn("h-4 w-4", config.color)} />
@@ -591,19 +612,29 @@ export function ActivityFeed({ className }: { className?: string }) {
                         variant="outline"
                         className={cn(
                           "text-[8px] px-1 py-0 h-4 capitalize shrink-0",
-                          isNewItem &&
-                            "border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400",
+                          isNewItem && "border-primary/50 dark:border-primary/50 text-primary",
                         )}
                       >
                         {item.type}
                       </Badge>
+                      {item.replayed && (
+                        <Tooltip side="top" content={t("activityFeedEarlierTip")}>
+                          <span
+                            tabIndex={0}
+                            className="inline-flex items-center gap-0.5 px-1 py-0 h-4 rounded border border-gray-200 dark:border-gray-700 text-[8px] text-gray-400 shrink-0 outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+                          >
+                            <History className="h-2.5 w-2.5" />
+                            {t("activityFeedEarlier")}
+                          </span>
+                        </Tooltip>
+                      )}
                       {isNewItem && (
                         <motion.span
                           initial={{ scale: 0.8, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0.8, opacity: 0 }}
                           transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-500 text-white"
+                          className="inline-flex items-center px-1 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary text-primary-foreground"
                         >
                           New
                         </motion.span>
@@ -629,7 +660,7 @@ export function ActivityFeed({ className }: { className?: string }) {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                      className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2"
+                      className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2"
                     />
                   )}
                 </motion.div>

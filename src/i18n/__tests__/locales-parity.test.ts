@@ -61,4 +61,17 @@ describe("locale parity", () => {
       expect(security?.lastPasskeyWarning, `${locale}.security.lastPasskeyWarning`).toBeTruthy();
     }
   });
+
+  it("every locale contains the core inventory keys used by InventoryPage", () => {
+    for (const [locale, messages] of Object.entries(LOCALES)) {
+      const inventory = messages.inventory as Record<string, unknown> | undefined;
+      expect(inventory?.searchPlaceholder, `${locale}.inventory.searchPlaceholder`).toBeTruthy();
+      expect(inventory?.categories, `${locale}.inventory.categories`).toBeTruthy();
+      expect(inventory?.categoriesDesc, `${locale}.inventory.categoriesDesc`).toBeTruthy();
+      expect(inventory?.stockList, `${locale}.inventory.stockList`).toBeTruthy();
+      expect(inventory?.tabReplenishment, `${locale}.inventory.tabReplenishment`).toBeTruthy();
+      expect(inventory?.tabPurchaseOrders, `${locale}.inventory.tabPurchaseOrders`).toBeTruthy();
+      expect(inventory?.tabWarehouses, `${locale}.inventory.tabWarehouses`).toBeTruthy();
+    }
+  });
 });

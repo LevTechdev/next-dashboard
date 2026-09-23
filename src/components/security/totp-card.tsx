@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
+  Eye,
+  EyeOff,
   Loader2,
   Shield,
   ShieldOff,
@@ -16,8 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { CodeSlots } from "@/components/ui/code-slots";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useRecoveryAction } from "@/components/security/use-recovery-action";
+import {
+  RecoveryImpactAcknowledgement,
+  RecoveryImpactNotice,
+  useRecoveryImpact,
+} from "@/components/security/recovery-guard";
 import type { SecurityData } from "@/components/security/use-security-data";
 
 export function TotpCard({ data }: { data: SecurityData }) {
@@ -38,12 +46,30 @@ export function TotpCard({ data }: { data: SecurityData }) {
   const [qrCode, setQrCode] = useState("");
   const [totpSecret, setTotpSecret] = useState("");
   const [totpCode, setTotpCode] = useState("");
+  // CodeSlots error state: set when the server rejects the code, cleared by
+  // the component's post-drain reset so the row is ready for another attempt.
+  const [totpRejected, setTotpRejected] = useState(false);
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [settingUp2FA, setSettingUp2FA] = useState(false);
 
   const [disable2FADialog, setDisable2FADialog] = useState(false);
   const [disablePassword, setDisablePassword] = useState("");
   const [disabling2FA, setDisabling2FA] = useState(false);
+  const [showDisablePassword, setShowDisablePassword] = useState(false);
+
+  // Disabling 2FA always needs an explicit acknowledgement: it is the one
+  // action that removes the factor every recovery path exists to protect.
+  const guard = useRecoveryImpact(data, disable2FADialog ? "disable2fa" : null);
+
+  const openDisableDialog = () => {
+    guard.setAcknowledged(false);
+    setDisable2FADialog(true);
+  };
+  const closeDisableDialog = () => {
+    setDisable2FADialog(false);
+    setDisablePassword("");
+    guard.setAcknowledged(false);
+  };
 
   const closeSetupDialog = () => {
     setTwoFADialogOpen(false);
@@ -86,12 +112,14 @@ export function TotpCard({ data }: { data: SecurityData }) {
       });
       if (!res.ok) {
         const err = await res.json();
+        setTotpRejected(true);
         throw new Error(err.error || t("enterValidCode"));
       }
       toast.success(t("twoFAEnabledToast"));
       closeSetupDialog();
       data.refresh();
     } catch (err: unknown) {
+      setTotpRejected(true);
       toast.error(err instanceof Error ? err.message : tcommon("error"));
     } finally {
       setVerifying2FA(false);
@@ -125,9 +153,15 @@ export function TotpCard({ data }: { data: SecurityData }) {
     }
   };
 
+  // Answer the Recovery readiness panel's "Set up 2FA" action: it is only ever
+  // offered while 2FA is off, so opening the enrollment flow is the fix.
+  useRecoveryAction("totp-card", () => {
+    if (!totpEnabled) void handleSetup2FA();
+  });
+
   return (
     <>
-      <Card>
+      <Card id="totp-card">
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -143,7 +177,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
               disabled={settingUp2FA}
               onCheckedChange={(next) => {
                 if (next) handleSetup2FA();
-                else setDisable2FADialog(true);
+                else openDisableDialog();
               }}
               aria-label={t("twoFactor")}
             />
@@ -170,7 +204,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
                   </div>
                 </div>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => setDisable2FADialog(true)}>
+              <Button variant="destructive" size="sm" onClick={openDisableDialog}>
                 <ShieldOff className="h-4 w-4 mr-2" /> {t("disable2FA")}
               </Button>
             </div>
@@ -208,36 +242,34 @@ export function TotpCard({ data }: { data: SecurityData }) {
           if (!open) closeSetupDialog();
         }}
       >
-        <DialogContent className="max-w-[480px] p-0 overflow-hidden backdrop-blur-sm bg-background/95 border-border shadow-2xl">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="flex items-center text-xl font-medium">
-              Setup authenticator app
+        <DialogContent className="max-w-[420px] p-0 overflow-hidden backdrop-blur-sm bg-background/95 border-border shadow-2xl">
+          <DialogHeader className="px-4 py-3.5 pb-0 sm:px-5">
+            <DialogTitle className="flex items-center text-lg font-medium">
+              {t("setup2FATitle")}
             </DialogTitle>
             <DialogDescription className="hidden">{t("setup2FADesc")}</DialogDescription>
           </DialogHeader>
 
-          <div className="px-6 space-y-6 pb-4">
+          <div className="px-4 sm:px-5 space-y-3.5 pb-3.5 pt-2.5">
             {/* Scan QR Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-base font-medium">
-                <Scan className="w-5 h-5" />
-                Scan QR code
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Scan className="w-4 h-4 text-primary" />
+                {t("scanQrTitle")}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Scan the QR code below or manually enter the secret key into your authenticator app.
-              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("scanQrHint")}</p>
 
-              <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-xl bg-card/50">
+              <div className="flex flex-col sm:flex-row gap-3 p-3 border rounded-xl bg-card/50">
                 {qrCode && (
-                  <div className="bg-white p-1 rounded-lg shrink-0 w-32 h-32 flex items-center justify-center">
+                  <div className="bg-white p-1 rounded-lg shrink-0 w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={qrCode} alt="TOTP QR Code" className="w-full h-full" />
                   </div>
                 )}
                 {totpSecret && (
-                  <div className="flex flex-col justify-center space-y-3 w-full">
-                    <p className="text-sm font-medium">Can&apos;t scan? Enter code manually:</p>
-                    <div className="bg-background border rounded-md px-3 py-2">
+                  <div className="flex flex-col justify-center space-y-2 w-full">
+                    <p className="text-xs font-medium">{t("manualEntryHint")}</p>
+                    <div className="bg-background border rounded-md px-3 py-1.5">
                       <code className="text-xs font-mono tracking-widest text-center block">
                         {totpSecret.match(/.{1,4}/g)?.join(" ")}
                         {/* Hidden element to satisfy the E2E test exactly if needed */}
@@ -247,13 +279,13 @@ export function TotpCard({ data }: { data: SecurityData }) {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="w-fit h-8"
+                      className="w-fit h-7 text-xs"
                       onClick={() => {
                         navigator.clipboard.writeText(totpSecret);
                         toast.success(t("secretCopied"));
                       }}
                     >
-                      <CopyIcon className="w-3.5 h-3.5 mr-2" /> Copy code
+                      <CopyIcon size={14} className="w-3 h-3 mr-1.5" /> {t("copySecret")}
                     </Button>
                   </div>
                 )}
@@ -261,51 +293,39 @@ export function TotpCard({ data }: { data: SecurityData }) {
             </div>
 
             {/* Verification Code Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-base font-medium">
-                <KeyRound className="w-5 h-5" />
-                Enter verification code
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <KeyRound className="w-4 h-4 text-primary" />
+                {t("verifyCodeLabel")}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Enter the 6-digit code on your authenticator app.
-              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t("verifyCodeHint")}</p>
 
-              <div className="relative flex justify-between gap-1 sm:gap-2 w-full max-w-sm">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex-1 aspect-square sm:h-14 border rounded-lg flex items-center justify-center text-xl sm:text-2xl font-mono transition-colors",
-                      totpCode.length === i
-                        ? "border-primary ring-1 ring-primary"
-                        : "border-border/50",
-                      totpCode[i] ? "text-foreground" : "text-transparent",
-                    )}
-                  >
-                    {totpCode[i] || ""}
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
+              {/* CodeSlots — same animated one-time-code control as the sign-in
+                  prompt, so enrolling 2FA feels identical to using it. */}
+              <div className="flex w-full max-w-sm justify-start pt-1">
+                <CodeSlots
                   value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="000000"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+                  onChange={(code) => {
+                    setTotpCode(code);
+                    if (code.length === 0 && totpRejected) setTotpRejected(false);
+                  }}
+                  status={totpRejected ? "error" : "idle"}
+                  disabled={verifying2FA}
                   autoFocus
+                  ariaLabel={t("verifyCodeLabel")}
+                  slotSize={44}
+                  gap={6}
                 />
               </div>
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 bg-muted/30 border-t flex sm:justify-between items-center w-full gap-2">
+          <DialogFooter className="px-4 sm:px-5 py-3 bg-muted/30 border-t flex sm:justify-between items-center w-full gap-2">
             <Button variant="secondary" onClick={closeSetupDialog} disabled={verifying2FA}>
-              Cancel
+              {tcommon("cancel")}
             </Button>
             <Button
-              className="bg-[#F25C38] hover:bg-[#D94C2B] text-white border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
               onClick={handleVerify2FA}
               disabled={totpCode.length < 6 || verifying2FA}
             >
@@ -314,7 +334,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("verifying")}
                 </>
               ) : (
-                "Verify"
+                t("verifyButton")
               )}
             </Button>
           </DialogFooter>
@@ -325,10 +345,7 @@ export function TotpCard({ data }: { data: SecurityData }) {
       <Dialog
         open={disable2FADialog}
         onOpenChange={(open) => {
-          if (!open) {
-            setDisable2FADialog(false);
-            setDisablePassword("");
-          }
+          if (!open) closeDisableDialog();
         }}
       >
         <DialogContent className="max-w-md">
@@ -344,30 +361,46 @@ export function TotpCard({ data }: { data: SecurityData }) {
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t("enterPassword")}
               </label>
-              <Input
-                type="password"
-                value={disablePassword}
-                onChange={(e) => setDisablePassword(e.target.value)}
-                placeholder={t("verifyPasswordPlaceholder")}
-                onKeyDown={(e) => e.key === "Enter" && !disabling2FA && handleDisable2FA()}
-              />
+              <div className="relative">
+                <Input
+                  type={showDisablePassword ? "text" : "password"}
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  placeholder={t("verifyPasswordPlaceholder")}
+                  className="pr-10"
+                  onKeyDown={(e) => e.key === "Enter" && !disabling2FA && handleDisable2FA()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDisablePassword(!showDisablePassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showDisablePassword ? (
+                    <EyeOff size={16} className="h-4 w-4" />
+                  ) : (
+                    <Eye size={16} className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+          {/* What this action costs, computed from the same facts the Recovery
+              readiness panel shows — and a checkbox that must be ticked. */}
+          <RecoveryImpactNotice impact={guard.impact} />
+          <RecoveryImpactAcknowledgement
+            impact={guard.impact}
+            acknowledged={guard.acknowledged}
+            onChange={guard.setAcknowledged}
+          />
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDisable2FADialog(false);
-                setDisablePassword("");
-              }}
-              disabled={disabling2FA}
-            >
+            <Button variant="outline" onClick={closeDisableDialog} disabled={disabling2FA}>
               {tcommon("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDisable2FA}
-              disabled={!disablePassword || disabling2FA}
+              disabled={!disablePassword || disabling2FA || guard.blocked}
             >
               {disabling2FA ? (
                 <>

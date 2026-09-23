@@ -37,21 +37,51 @@ export async function POST(req: Request) {
       metadata: { familyId: result.familyId },
       tenantId: actor?.tenantId ?? null,
     });
-    const res = NextResponse.json({ error: "Refresh token reuse detected" }, { status: 401 });
+    const res = NextResponse.json(
+      { error: "Refresh token reuse detected", code: "REFRESH_REUSE" },
+      { status: 401 },
+    );
     clearAuthCookies(res);
     return res;
   }
 
   if (result.status === "invalid") {
-    const res = NextResponse.json({ error: "Invalid or expired refresh token" }, { status: 401 });
+    // The `code` lets the client tell a genuinely dead session (token expired
+    // or revoked → force the login form) apart from a request that simply
+    // arrived without any session at all (anonymous visitor on a public page
+    // → leave the page alone). Both are 401s.
+    const res = NextResponse.json(
+      { error: "Invalid or expired refresh token", code: raw ? "SESSION_EXPIRED" : "NO_SESSION" },
+      { status: 401 },
+    );
     clearAuthCookies(res);
     return res;
+  }
+
+  // Benign concurrent rotation (multi-tab / lost response) inside the grace
+  // window — surface it as telemetry so a real replay pattern is still
+  // visible in the Security Center rather than silently absorbed.
+  if (result.graced) {
+    const actor = await prisma.user.findUnique({
+      where: { id: result.userId },
+      select: { tenantId: true },
+    });
+    await logSecurityEvent({
+      userId: result.userId,
+      type: "REFRESH_REUSE_GRACE",
+      req,
+      metadata: { familyId: result.familyId },
+      tenantId: actor?.tenantId ?? null,
+    });
   }
 
   const user = await prisma.user.findUnique({ where: { id: result.userId } });
   if (!user || !user.isActive) {
     await revokeFamily(result.familyId);
-    const res = NextResponse.json({ error: "Account unavailable" }, { status: 401 });
+    const res = NextResponse.json(
+      { error: "Account unavailable", code: "ACCOUNT_UNAVAILABLE" },
+      { status: 401 },
+    );
     clearAuthCookies(res);
     return res;
   }

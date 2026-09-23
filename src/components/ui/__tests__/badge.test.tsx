@@ -26,12 +26,13 @@ describe("Badge", () => {
       "font-medium",
       "transition-colors",
     );
-    // …and the default variant's colors.
+    // …and the default variant's colors (primary tokens, per the anti-slop
+    // theme protocol — the variant used to hardcode indigo).
     expect(el).toHaveClass(
-      "bg-indigo-100",
-      "text-indigo-800",
-      "dark:bg-indigo-900/30",
-      "dark:text-indigo-400",
+      "bg-primary/10",
+      "text-primary",
+      "dark:bg-primary/20",
+      "dark:text-primary",
     );
     expect(screen.getByText("New")).toBeInTheDocument();
   });

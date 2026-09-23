@@ -46,13 +46,13 @@ const TabsList = React.forwardRef<
         else if (ref) ref.current = node;
       }}
       className={cn(
-        "relative inline-flex h-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400",
+        "relative inline-flex h-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400",
         // Below md the tab labels + icons can overflow the viewport; make the
         // bar full-width, left-aligned and internally scrollable. From md up it
         // returns to a centered shrink-to-fit pill. Callers can override per
         // breakpoint (e.g. orders passes md:w-full md:justify-start to keep the
         // bar full-width on desktop too).
-        "w-full md:w-auto justify-start md:justify-center overflow-x-auto",
+        "w-full max-w-full md:w-auto justify-start md:justify-center overflow-x-auto",
         // No native scrollbar inside the menu (see .scrollbar-none in
         // globals.css: WebKit display:none, Firefox scrollbar-width:none);
         // scrolling still works via touch / trackpad / shift-wheel, and the
@@ -86,7 +86,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-100 data-[state=active]:shadow-sm",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-gray-900 dark:data-[state=active]:text-gray-100 data-[state=active]:shadow-sm",
       className,
     )}
     {...props}

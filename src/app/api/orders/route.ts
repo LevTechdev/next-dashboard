@@ -1,9 +1,57 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/api-guard";
+import { getTierFeaturesForUser } from "@/lib/plan-tiers";
 import { computeCommission } from "@/lib/affiliates";
 import { getTenantId, sameTenant } from "@/lib/tenancy";
+import { regenerateDashboardOg } from "@/lib/og-dashboard-server.mjs";
 import { withDecryptedCustomer } from "@/lib/pii";
+
+/**
+ * Money is stored in the tenant's major unit at two decimals. Keeping the
+ * rounding here means `quantity × price` products never leak float artefacts
+ * into a stored total, which is what makes the invoice ledger close exactly.
+ */
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Normalize the request's line items into OrderItem rows.
+ *
+ * Quantity is coerced to a positive integer and the line total is always
+ * RE-DERIVED from price × quantity rather than read from the payload — a
+ * client-supplied line total is exactly how an invoice ends up whose rows
+ * don't sum to its own subtotal.
+ */
+function normalizeItems(raw: unknown): Array<{
+  name: string;
+  productId: string | null;
+  quantity: number;
+  price: number;
+  total: number;
+}> {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      const item = (entry ?? {}) as {
+        name?: unknown;
+        productId?: unknown;
+        quantity?: unknown;
+        price?: unknown;
+      };
+      const quantity = Math.max(1, Math.trunc(Number(item.quantity) || 1));
+      const price = roundMoney(Number(item.price) || 0);
+      return {
+        name: String(item.name ?? "Item"),
+        productId: typeof item.productId === "string" ? item.productId : null,
+        quantity,
+        price,
+        total: roundMoney(price * quantity),
+      };
+    })
+    .filter((item) => Number.isFinite(item.total));
+}
 
 export async function GET(req: Request) {
   const { session, response } = await requirePermission("read", "orders", req);
@@ -34,8 +82,50 @@ export async function POST(req: Request) {
   if (response) return response;
   const tenantId = getTenantId(session!);
 
+  // Plan limit: REGULAR tier caps orders at 100/month.
+  const features = await getTierFeaturesForUser(session!.user.id);
+  if (features.maxOrders !== null) {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthCount = await prisma.order.count({
+      where: { tenantId, createdAt: { gte: monthStart } },
+    });
+    if (monthCount >= features.maxOrders) {
+      return new Response(
+        JSON.stringify({
+          error: "plan_limit_reached",
+          limit: "orders",
+          max: features.maxOrders,
+          used: monthCount,
+          requiredTier: "PRO",
+        }),
+        { status: 402, headers: { "content-type": "application/json" } },
+      );
+    }
+  }
+
   const body = await req.json();
   const orderNumber = "ORD-" + Date.now().toString(36).toUpperCase();
+
+  // The line items are the source of truth for the money fields. This route
+  // used to store the caller's totals verbatim while writing NO OrderItem
+  // rows at all, so an order created here rendered an empty item list next to
+  // a non-zero subtotal ("the items don't add up to the total") and quietly
+  // broke the invariant the invoice route relies on — totalAmount === Σ item
+  // totals. Callers that itemize now get a ledger that closes by construction.
+  const items = normalizeItems(body.items);
+  const discountAmount = parseFloat(body.discountAmount || 0) || 0;
+  const shippingAmount = parseFloat(body.shippingAmount || 0) || 0;
+  const taxAmount = parseFloat(body.taxAmount || 0) || 0;
+  // Without items (offline replays and non-itemizing integrations) the
+  // caller's own numbers still stand, exactly as before.
+  const totalAmount = items.length
+    ? roundMoney(items.reduce((sum, item) => sum + item.total, 0))
+    : parseFloat(body.totalAmount || 0) || 0;
+  const grandTotal = items.length
+    ? roundMoney(totalAmount - discountAmount + shippingAmount + taxAmount)
+    : parseFloat(body.grandTotal || 0) || 0;
 
   const order = await prisma.order.create({
     data: {
@@ -43,16 +133,17 @@ export async function POST(req: Request) {
       customerId: body.customerId,
       channelId: body.channelId,
       status: body.status || "PENDING",
-      totalAmount: parseFloat(body.totalAmount || 0),
-      discountAmount: parseFloat(body.discountAmount || 0),
-      shippingAmount: parseFloat(body.shippingAmount || 0),
-      taxAmount: parseFloat(body.taxAmount || 0),
-      grandTotal: parseFloat(body.grandTotal || 0),
+      totalAmount,
+      discountAmount,
+      shippingAmount,
+      taxAmount,
+      grandTotal,
       paymentMethod: body.paymentMethod,
       paymentStatus: body.paymentStatus || "UNPAID",
       shippingAddress: body.shippingAddress,
       notes: body.notes,
       tenantId,
+      ...(items.length ? { items: { create: items } } : {}),
     },
   });
 
@@ -88,6 +179,7 @@ export async function POST(req: Request) {
     },
   });
 
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json(order);
 }
 
@@ -125,5 +217,6 @@ export async function PUT(req: Request) {
     },
   });
 
+  regenerateDashboardOg(req.headers?.get("cookie"));
   return NextResponse.json(order);
 }

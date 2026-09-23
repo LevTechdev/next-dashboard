@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { midtransConfigured, verifyMidtransSignature } from "@/lib/midtrans";
 
 export const runtime = "nodejs";
@@ -53,12 +54,99 @@ export async function POST(req: Request) {
     where: { midtransOrderId: orderId },
     include: { plan: true },
   });
-  // Unknown order (not ours / already cleared) — acknowledge to stop retries.
-  if (!subscription) {
-    return NextResponse.json({ received: true });
-  }
 
   const status = body.transaction_status;
+
+  // Order no longer on a subscription row — either not ours, or the pending
+  // checkout was abandoned (the row's midtransOrderId was cleared). The
+  // INV-<orderId> ledger invoice created at checkout still knows what the
+  // order was for, so a VA/QRIS payment that settles after the popup closed
+  // is reconciled instead of being orphaned. Acknowledge otherwise.
+  const ledger = await prisma.invoice.findFirst({
+    where: { invoiceNumber: `INV-${orderId}` },
+    include: { plan: true },
+  });
+  if (!subscription) {
+    if (ledger && ledger.userId && ledger.planId && ledger.status !== "PAID") {
+      if (status === "settlement" || status === "capture") {
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+        await prisma.subscription.upsert({
+          where: { userId: ledger.userId },
+          update: {
+            planId: ledger.planId,
+            status: "ACTIVE",
+            gateway: "midtrans",
+            midtransOrderId: orderId,
+            cancelAtPeriodEnd: false,
+            currentPeriodStart: now,
+            currentPeriodEnd: periodEnd,
+          },
+          create: {
+            userId: ledger.userId,
+            planId: ledger.planId,
+            status: "ACTIVE",
+            gateway: "midtrans",
+            midtransOrderId: orderId,
+            currentPeriodStart: now,
+            currentPeriodEnd: periodEnd,
+          },
+        });
+
+        await prisma.invoice.update({
+          where: { id: ledger.id },
+          data: {
+            status: "PAID",
+            paidAt: now,
+            paymentMethod: body.payment_type ?? "midtrans",
+            amount: Number(grossAmount) || ledger.amount,
+          },
+        });
+
+        // Late-settled checkout: the checkout route already wrote a snapshot
+        // with the planned amount. Re-freeze it so the PDF renders the amount
+        // actually paid (Midtrans may round/fee-adjust gross_amount).
+        const { buildInvoiceSnapshot } = await import("@/lib/invoice-snapshot");
+        await prisma.invoice.update({
+          where: { id: ledger.id },
+          data: {
+            snapshotJson: buildInvoiceSnapshot({
+              plan: ledger.plan,
+              amount: Number(grossAmount) || ledger.amount,
+              currency: ledger.currency || "IDR",
+              description: ledger.description,
+              periodStart: ledger.periodStart,
+              periodEnd: ledger.periodEnd,
+            }),
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            action: "RECONCILE_LATE_MIDTRANS_PAYMENT",
+            entity: "Subscription",
+            entityId: ledger.id,
+            details: `Late settlement of abandoned Midtrans order ${orderId} reconciled to plan ${ledger.planId}`,
+            userId: ledger.userId,
+          },
+        });
+
+        return NextResponse.json({ received: true, reconciled: true, status: "ACTIVE" });
+      }
+
+      if (status === "deny" || status === "cancel" || status === "expire") {
+        // Abandoned checkout finally expired — close out the ledger line.
+        await prisma.invoice.update({
+          where: { id: ledger.id },
+          data: { status: "CANCELLED" },
+        });
+        return NextResponse.json({ received: true, ledger: "cancelled" });
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
 
   if (status === "settlement" || status === "capture") {
     const now = new Date();
@@ -96,6 +184,14 @@ export async function POST(req: Request) {
           periodEnd,
           paidAt: now,
           paymentMethod: body.payment_type ?? "midtrans",
+          snapshotJson: buildInvoiceSnapshot({
+            plan: subscription.plan ?? null,
+            amount,
+            currency: "IDR",
+            description: `${subscription.plan?.name ?? "Plan"} - Midtrans ${status}`,
+            periodStart: now,
+            periodEnd,
+          }),
         },
       });
     }
