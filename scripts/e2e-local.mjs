@@ -96,6 +96,23 @@ async function waitUntilPostgresUp(host, port, timeoutMs = 60_000) {
   return false;
 }
 
+/**
+ * Poll the container's own readiness gate until the server accepts SQL
+ * connections. This is the check the TCP probe above cannot make — see the
+ * call site for the P1001 race it closes.
+ */
+async function waitUntilPostgresAccepts(name, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const probe = run("docker", ["exec", name, "pg_isready", "-U", "postgres", "-h", "localhost"], {
+      capture: true,
+    });
+    if (probe.status === 0) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+}
+
 function run(bin, args, opts = {}) {
   // Windows needs a shell to resolve npx/npm.cmd; the args passed through
   // here are relative paths / flags (no spaces), so quoting is not a concern.
@@ -171,6 +188,17 @@ async function ensurePostgres(dbUrl) {
 
   if (!(await waitUntilPostgresUp(host, port))) {
     console.error(`[e2e-local:db] container "${name}" never became reachable on ${host}:${port}`);
+    process.exit(1);
+  }
+  // A TCP connect is not readiness: Docker's userland proxy binds the host
+  // port the moment the container starts, while initdb/postgres inside is
+  // still coming up — the probe then reports "up" and the first `prisma db
+  // push` dies with P1001 (CI: "Provision local Postgres" failed after 1m).
+  // Gate on the server's own readiness signal instead.
+  if (!(await waitUntilPostgresAccepts(name))) {
+    console.error(
+      `[e2e-local:db] container "${name}" never reported accepting connections (pg_isready)`,
+    );
     process.exit(1);
   }
   console.log(`[e2e-local:db] Postgres container "${name}" is ready`);
