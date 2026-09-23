@@ -732,6 +732,10 @@ model Subscription {
   planId               String
   plan                 Plan          @relation(fields: [planId], references: [id])
   status               String        @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE, TRIALING, INCOMPLETE
+  // Which of the plan's two rates this subscription is billed at: MONTHLY uses
+  // Plan.price, YEARLY uses Plan.yearlyPrice. Self-serve period switches flip
+  // this; the proration engine (src/lib/plan-change.ts) prices both directions.
+  billingInterval      String        @default("MONTHLY") // MONTHLY | YEARLY
   currentPeriodStart   DateTime      @default(now())
   currentPeriodEnd     DateTime
   cancelAtPeriodEnd    Boolean       @default(false)
