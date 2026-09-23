@@ -31,10 +31,13 @@ const e2ePort = process.env.E2E_PORT ?? "3010";
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: 2,
+  // 2 workers locally; 1 on CI. The 2-core GitHub runner could not sustain
+  // two Chromium workers plus `next dev`'s on-demand compiles: routes cold-
+  // compiled under contention blew test budgets, and one run died outright
+  // when the box starved. One worker serializes the same suite (~30 min on
+  // CI) and, combined with globalSetup route warming, makes the gate
+  // deterministic instead of load-dependent.
+  workers: process.env.CI ? 1 : 2,
   reporter: [["list"], ["html", { open: "never" }]],
   // 60s locally, 120s on CI: the local-runner job shares 2 workers on a
   // 2-core GitHub runner, where fetch-gated waits (FETCH_GATED = 45s) plus
