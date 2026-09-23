@@ -1,7 +1,5 @@
 # Next Dashboard
-# next-dashboard
-=======
-# Next Dashboard
+================
 
 A full-featured admin dashboard built with [Next.js](https://nextjs.org) 16, featuring real-time data, internationalization, and comprehensive test coverage.
 
