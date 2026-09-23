@@ -80,10 +80,24 @@ async function openBackupCodeStep(page: Page) {
   await expect(page.getByRole("heading", { name: "Enter a backup code" })).toBeVisible();
 }
 
-/** Fill the recovery step and submit. */
-async function submitBackupCode(page: Page, code: string) {
+/**
+ * Fill the recovery row. The row is the same CodeSlots control as the 2FA step
+ * (eight alphanumeric slots grouped xxxx-xxxx), so the eighth character submits
+ * on its own — there is no separate click to make.
+ */
+async function fillBackupCode(page: Page, code: string) {
   await page.getByPlaceholder("xxxx-xxxx").fill(code);
-  await page.getByRole("button", { name: /Verify & Login/ }).click();
+  // The sanitised value lives on the row (the visible input is deliberately
+  // value-less: the slots are the state). The dash is grouping only.
+  await expect(page.locator(".code-slots__row")).toHaveAttribute(
+    "data-value",
+    code.replace(/-/g, "").toLowerCase(),
+  );
+}
+
+/** Fill the recovery step and let auto-submit take it. */
+async function submitBackupCode(page: Page, code: string) {
+  await fillBackupCode(page, code);
 }
 
 test.describe("Backup-code recovery login", () => {
@@ -140,10 +154,9 @@ test.describe("Backup-code recovery login", () => {
     // A backup code is a full second factor, so "trust this device" applies.
     await expect(page.getByRole("checkbox")).toBeVisible();
 
-    // Typed codes are grouped as xxxx-xxxx as they are entered.
-    await page.getByPlaceholder("xxxx-xxxx").fill(backupCodes[0]);
-    await expect(page.getByPlaceholder("xxxx-xxxx")).toHaveValue(backupCodes[0]);
-    await page.getByRole("button", { name: /Verify & Login/ }).click();
+    // The code is grouped xxxx-xxxx as it is entered, and the full row submits
+    // itself the moment the last slot lands.
+    await fillBackupCode(page, backupCodes[0]);
 
     await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 20_000 });
 

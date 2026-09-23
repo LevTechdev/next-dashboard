@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert, ListOrdered } from "lucide-react";
 import { backupCodeStatus, BACKUP_CODE_LOW_THRESHOLD } from "@/lib/backup-code-status";
 import { useRecoveryAction } from "@/components/security/use-recovery-action";
 import type { SecurityData } from "@/components/security/use-security-data";
@@ -124,6 +124,40 @@ export function BackupCodesCard({ data }: { data: SecurityData }) {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* How-to-use. The codes are the last way in when the authenticator
+                is gone, so the card explains the ritual instead of leaving the
+                user to infer it from a count: where to keep them, how to spend
+                one at sign-in, and that they are single-use. */}
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <ListOrdered className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                {t("backupCodesHowToTitle")}
+              </p>
+              <ol className="mt-2 space-y-1.5">
+                {(
+                  [
+                    "backupCodesHowToStep1",
+                    "backupCodesHowToStep2",
+                    "backupCodesHowToStep3",
+                    "backupCodesHowToStep4",
+                  ] as const
+                ).map((key, i) => (
+                  <li
+                    key={key}
+                    className="flex items-start gap-2 text-[11px] leading-snug text-muted-foreground"
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary"
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0">{t(key)}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
             {needsAttention && (
               <div
                 role="status"
