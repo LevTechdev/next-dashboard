@@ -4,8 +4,6 @@ import {
   WifiIcon,
   CheckIcon,
   SearchIcon,
-  SunIcon,
-  MoonIcon,
   LogoutIcon,
   UserIcon,
   SettingsIcon,
@@ -20,6 +18,11 @@ import {
   Bell,
   KeyRound,
   Shield,
+  // The theme trio uses the plain, static glyphs. The animated set draws its
+  // own sun rays and moon craters, which read as decoration at 14px next to the
+  // flat Monitor icon — the trio should look like one control, not three styles.
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Particles } from "@/components/ui/particles";
 import { useTheme } from "next-themes";
@@ -453,7 +456,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                     )}
                     aria-label={tsettings("light")}
                   >
-                    <SunIcon size={14} className="h-3.5 w-3.5" />
+                    <Sun size={14} className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={(event) => chooseTheme("dark", event.currentTarget)}
@@ -465,7 +468,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                     )}
                     aria-label={tsettings("dark")}
                   >
-                    <MoonIcon size={14} className="h-3.5 w-3.5" />
+                    <Moon size={14} className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={(event) => chooseTheme("system", event.currentTarget)}
