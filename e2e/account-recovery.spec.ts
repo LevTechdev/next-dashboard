@@ -73,7 +73,9 @@ test.describe("Account recovery (authenticator AND recovery codes lost)", () => 
     await page.goto("/en/security");
     await expect(page.getByRole("heading", { name: "Security Center" })).toBeVisible();
     await expect(page.getByText("Not enabled").first()).toBeVisible();
-    await page.getByRole("button", { name: "Set up 2FA" }).click();
+    // The recovery-readiness panel renders its own "Set up 2FA" CTA — scope
+    // to the TOTP card or strict mode sees two buttons.
+    await page.locator("#totp-card").getByRole("button", { name: "Set up 2FA" }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Set up two-factor authentication")).toBeVisible();
