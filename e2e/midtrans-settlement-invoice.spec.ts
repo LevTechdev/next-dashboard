@@ -24,6 +24,10 @@ import { readFileSync } from "node:fs";
  */
 
 const dbUrl = (): string => {
+  // CI exports DATABASE_URL directly and has no .env files — prefer the
+  // process environment, then fall back to the local dev files.
+  const fromEnv = process.env.DATABASE_URL?.trim();
+  if (fromEnv) return fromEnv.split("?")[0];
   for (const f of [".env.local", ".env"]) {
     try {
       const env = readFileSync(f, "utf-8");
@@ -47,11 +51,30 @@ function psql(sql: string): string {
     .trim();
 }
 
+/**
+ * The sandbox server key, from the process environment first (CI provides it
+ * through the repository secret) and then the local .env.local. Null when
+ * neither has it — the tests then SKIP with an explicit annotation instead of
+ * failing: the webhook's signed-settlement behaviour is genuinely untestable
+ * without the key, and a red suite for a missing fixture is exactly the
+ * environment debt the quarantine registry used to hide.
+ */
+const serverKeyOrNull = (): string | null => {
+  const fromEnv = process.env.MIDTRANS_SANDBOX_SERVER_KEY?.trim();
+  if (fromEnv) return fromEnv;
+  try {
+    const env = readFileSync(".env.local", "utf-8");
+    const m = env.match(/^MIDTRANS_SANDBOX_SERVER_KEY=(.*)$/m);
+    return m ? m[1].trim() : null;
+  } catch {
+    return null;
+  }
+};
+
 const serverKey = (): string => {
-  const env = readFileSync(".env.local", "utf-8");
-  const m = env.match(/^MIDTRANS_SANDBOX_SERVER_KEY=(.*)$/m);
-  if (!m) throw new Error("MIDTRANS_SANDBOX_SERVER_KEY missing in .env.local");
-  return m[1].trim();
+  const key = serverKeyOrNull();
+  if (!key) throw new Error("MIDTRANS_SANDBOX_SERVER_KEY is not configured");
+  return key;
 };
 
 function signature(orderId: string, statusCode: string, grossAmount: string): string {
@@ -123,6 +146,13 @@ async function postNotification(
 }
 
 test.describe("Midtrans settlement → invoice", () => {
+  test.beforeEach(() => {
+    test.skip(
+      serverKeyOrNull() === null,
+      "MIDTRANS_SANDBOX_SERVER_KEY is not configured — set the repository secret (or .env.local) to run the signed-webhook specs.",
+    );
+  });
+
   test("signed settlement flips the invoice to PAID with the gateway payload", async () => {
     test.setTimeout(120_000);
     const gross = "205000.00"; // gateway may adjust gross (fees); webhoook re-freezes snapshot with this

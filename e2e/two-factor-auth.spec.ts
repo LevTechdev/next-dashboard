@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { generateSync } from "otplib";
 import {
+  acknowledgeRecoveryGuardIfShown,
   observeLoginResponse,
   registerFreshUser,
   TEST_PASSWORD,
@@ -32,13 +33,29 @@ let totpSecret = "";
  * Generate a TOTP code that still has ~10s of validity left in the current
  * 30s window. Generating right at a window boundary is flaky under load: the
  * code can expire between generation and server-side verification.
+ *
+ * Never repeats the PREVIOUS code for this secret: the login route's replay
+ * guard (src/lib/totp.ts) rejects a code already accepted inside its window,
+ * and consecutive tests in this file can otherwise land in the same 30s
+ * window — the second sign-in would be refused with a perfectly valid code.
+ * When that would happen, wait out the current window and take the next one.
  */
+const lastIssued = new Map<string, string>();
 async function freshCode(secret: string) {
-  const elapsed = Math.floor(Date.now() / 1000) % 30;
-  if (elapsed > 20) {
+  const waitForNextWindow = async () => {
+    const elapsed = Math.floor(Date.now() / 1000) % 30;
     await new Promise((r) => setTimeout(r, (30 - elapsed) * 1000 + 1000));
+  };
+  const elapsed = Math.floor(Date.now() / 1000) % 30;
+  if (elapsed > 20) await waitForNextWindow();
+
+  let code = generateSync({ secret });
+  if (lastIssued.get(secret) === code) {
+    await waitForNextWindow();
+    code = generateSync({ secret });
   }
-  return generateSync({ secret });
+  lastIssued.set(secret, code);
+  return code;
 }
 
 /**
@@ -341,6 +358,10 @@ test.describe("Two-Factor Authentication", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Disable two-factor authentication?")).toBeVisible();
     await dialog.getByPlaceholder("Enter your current password").fill(TEST_PASSWORD);
+    // This account would be left with no recovery path (fresh 2FA, no spare,
+    // no codes), so the dialog demands an explicit acknowledgement and keeps
+    // the confirm button disabled until it is ticked.
+    await acknowledgeRecoveryGuardIfShown(page);
     await dialog.getByRole("button", { name: "Disable 2FA" }).click();
 
     await expect(page.getByText("Two-factor authentication disabled")).toBeVisible();

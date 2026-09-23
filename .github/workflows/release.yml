@@ -1,10 +1,18 @@
 name: Release
 
 # Runs semantic-release AFTER CI has passed on main: analyzes conventional
-# commits since the last tag, bumps the version, updates package.json, regenerates
-# CHANGELOG.md entries for the new release, tags it, and publishes a GitHub
-# release. The curated changelog entries written before this gate (≤ v2.0.0)
-# are anchored by their git tag and are not re-derived from history.
+# commits since the last tag, bumps the version, regenerates the CHANGELOG, tags
+# the merge commit, and publishes a GitHub release. The tag list is the source of
+# truth for the product version — the UI reads it (NEXT_PUBLIC_APP_VERSION, see
+# src/lib/app-version.ts) instead of narrating a version of its own.
+#
+# Two gates protect a release (issue #7):
+#   1. this workflow only fires when CI succeeded on main;
+#   2. the job below then WAITS for the E2E workflow on the same commit and
+#      refuses to release while it is red. The E2E gate excludes the concrete
+#      environment debts listed in e2e/quarantine.json, which is what makes a
+#      hard gate survivable — those families are still measured weekly by
+#      .github/workflows/e2e-quarantine-sweep.yml.
 
 on:
   workflow_run:
@@ -38,6 +46,34 @@ jobs:
           node-version: "22"
           cache: "npm"
       - run: npm ci
+      - name: Require the E2E suite to be green for this commit
+        # Issue #7 asked for a main-only HARD gate: a red E2E suite must stop a
+        # release rather than be ignored (it was ignored for months because the
+        # gate ran inside ci.yml, where the suite was chronically red and took
+        # 25 minutes). The suite now runs once (e2e.yml) and this step waits for
+        # THAT run on exactly this commit, so the gate costs no extra CI time.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "Waiting for the E2E workflow on $SHA ..."
+          for attempt in $(seq 1 80); do
+            status=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | select(.name == "E2E")] | sort_by(.run_started_at) | last | "\(.status) \(.conclusion)"' 2>/dev/null || echo missing)
+            echo "attempt $attempt: E2E => $status"
+            case "$status" in
+              "completed success")
+                echo "E2E is green for $SHA — releasing."
+                exit 0 ;;
+              "completed "*)
+                echo "::error::E2E concluded '${status#completed }' for $SHA. The release is blocked until the suite is green; see issue #7 for the quarantine registry (e2e/quarantine.json) and the weekly sweep."
+                exit 1 ;;
+              *)
+                sleep 30 ;;
+            esac
+          done
+          echo "::error::Timed out waiting for the E2E workflow on $SHA."
+          exit 1
       - name: semantic-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

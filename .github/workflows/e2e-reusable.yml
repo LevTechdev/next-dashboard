@@ -11,6 +11,14 @@ name: E2E (reusable)
 
 on:
   workflow_call:
+    # The sandbox gateway key is a real (test-mode) credential, so it travels
+    # through the secrets map rather than inputs. Optional: when the repository
+    # secret is absent the key is empty and the signed-webhook specs SKIP with
+    # an explicit annotation (see e2e/midtrans-settlement-invoice.spec.ts)
+    # instead of failing the suite for a missing fixture.
+    secrets:
+      midtrans-sandbox-server-key:
+        required: false
     inputs:
       node-version:
         description: Node.js version
@@ -46,6 +54,15 @@ on:
         description: GOOGLE_CLIENT_SECRET placeholder for E2E
         required: true
         type: string
+      run-quarantined:
+        description: >-
+          Run the FULL suite, including the tests exempted in
+          e2e/quarantine.json (issue #7). Used by the weekly sweep workflow so
+          quarantined tests keep being exercised; the blocking gate leaves this
+          false and excludes them via --grep-invert.
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   e2e:
@@ -103,6 +120,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Seed database
         run: npm run db:seed
+      - name: Verify the E2E quarantine registry is still accurate
+        # Issue #7: e2e/quarantine.json lists the tests excluded from the
+        # blocking gate. This fails when an entry no longer matches exactly one
+        # test — i.e. when a quarantined test was renamed or actually repaired
+        # and its exemption was left behind.
+        run: node scripts/e2e-quarantine.mjs check
       - name: Verify seeded data yields non-zero dashboard stats
         # Fast browser-free guard against the "empty dashboard despite seeded
         # DB" bug class (seed rows missing tenantId while tenant-scoped API
@@ -111,7 +134,20 @@ jobs:
         # full browser-level assertion rides the E2E suite below.
         run: npm run check:seed
       - name: Run E2E tests
-        run: npm run test:e2e
+        # The blocking gate runs the suite MINUS the issue #7 quarantine (20
+        # tests at the time of writing), so a known-red environment case can no
+        # longer hold the whole release pipeline hostage. The weekly sweep runs
+        # the same suite with run-quarantined: true, so nothing here is allowed
+        # to rot unnoticed.
+        run: |
+          if [ "${{ inputs.run-quarantined }}" = "true" ]; then
+            echo "::notice::Quarantine sweep — running the FULL suite, exemptions included (issue #7)."
+            npm run test:e2e
+          else
+            EXCLUDE=$(node scripts/e2e-quarantine.mjs grep)
+            echo "::notice::Excluding the issue #7 quarantine from this run: $EXCLUDE"
+            npx playwright test --grep-invert "$EXCLUDE"
+          fi
         env:
           JWT_SECRET: ${{ inputs.jwt-secret }}
           NEXTAUTH_SECRET: ${{ inputs.nextauth-secret }}
@@ -130,6 +166,10 @@ jobs:
           # budget is E2E-only — src/lib/rate-limit.ts ignores this variable
           # when NODE_ENV=production, so it can never weaken a live deployment.
           E2E_LOGIN_THROTTLE_LIMIT: "500"
+          # Midtrans sandbox server key: enables the signed-webhook settlement
+          # specs. Empty when the repository secret is not set — those specs
+          # then skip with a visible annotation.
+          MIDTRANS_SANDBOX_SERVER_KEY: ${{ secrets.midtrans-sandbox-server-key }}
       - name: Verify SecurityEvent hash chain is intact
         # Fails when the tamper-evident audit chain is broken — either a
         # content/prevHash mismatch (the 409 GET /api/security/audit/verify

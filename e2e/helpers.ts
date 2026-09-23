@@ -853,3 +853,21 @@ export async function registerFreshUser(
   await expect(page).toHaveURL(/\/en\/dashboard/);
   return email;
 }
+
+/**
+ * Tick the recovery-impact acknowledgement in a guarded destructive dialog,
+ * when the dialog demands one.
+ *
+ * Disabling 2FA (or removing the spare authenticator) while the account would
+ * be left with no working recovery path renders a warning + checkbox
+ * (`data-testid="recovery-guard-ack"`) and keeps the confirm button DISABLED
+ * until it is ticked. Accounts that still have a recovery path see no checkbox
+ * at all, so this is a no-op there — the helper adapts to the account state
+ * instead of assuming one.
+ */
+export async function acknowledgeRecoveryGuardIfShown(page: Page): Promise<void> {
+  const ack = page.getByTestId("recovery-guard-ack");
+  if (await ack.isVisible().catch(() => false)) {
+    await ack.check();
+  }
+}

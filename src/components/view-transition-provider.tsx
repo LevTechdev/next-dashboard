@@ -107,6 +107,14 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       // Skip hash-only changes on the same page
       if (href === window.location.pathname + window.location.search) return;
 
+      // A bare "#" placeholder is not a navigation: the browser's own fragment
+      // handling jumps to the top of the document. Intercepting it pushes
+      // "/path#" through the router, which scrolls nothing — the placeholder
+      // silently stops working. Real in-page anchors ("#section") still flow
+      // through the view-transition scroll below, which is what lands them at
+      // the fixed-header offset.
+      if (link.hash === "#") return;
+
       e.preventDefault();
       navigatingRef.current = true;
 

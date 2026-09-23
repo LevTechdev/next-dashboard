@@ -11,7 +11,11 @@ import { logSecurityEvent } from "@/lib/security-events";
 import { sendNewSignInAlert } from "@/lib/security-notifications";
 import { recognizeSessionContext } from "@/lib/device-recognition";
 import { getRequestMeta } from "@/lib/request-meta";
-import { checkLoginRateLimit, loginThrottleLimit } from "@/lib/rate-limit";
+import {
+  checkLoginRateLimit,
+  loginThrottleLimit,
+  requestThrottleLimitOverride,
+} from "@/lib/rate-limit";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
 import { verifyOtp, isOtpExpired, MAX_OTP_ATTEMPTS } from "@/lib/email-otp";
 import {
@@ -120,7 +124,9 @@ export async function POST(req: Request) {
     // window keeps filling under hammering.
     const rl = await checkLoginRateLimit(req, {
       email: String(email).toLowerCase(),
-      limit: loginThrottleLimit(),
+      // An E2E spec may pin its own window (never honoured in production);
+      // otherwise the suite-wide budget applies.
+      limit: requestThrottleLimitOverride(req) ?? loginThrottleLimit(),
     });
     if (!rl.allowed) {
       // Attribute the throttle to the targeted account (by email) so its owner

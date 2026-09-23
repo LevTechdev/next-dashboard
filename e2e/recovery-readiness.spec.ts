@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { generateSync } from "otplib";
 import {
+  acknowledgeRecoveryGuardIfShown,
   observeLoginResponse,
   registerFreshUser,
   TEST_PASSWORD,
@@ -246,6 +247,9 @@ test.describe("Recovery readiness", () => {
     const spareCard = page.getByTestId("backup-authenticator-card");
     await spareCard.getByRole("button", { name: "Remove spare device" }).click();
     const confirm = page.getByRole("dialog");
+    // If this removal would leave no recovery path, the guard demands an
+    // acknowledgement before the confirm button enables.
+    await acknowledgeRecoveryGuardIfShown(page);
     await confirm.getByRole("button", { name: "Remove spare device" }).click();
 
     const panel = page.getByTestId("recovery-readiness-card");

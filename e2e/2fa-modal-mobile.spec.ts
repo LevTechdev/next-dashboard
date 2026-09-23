@@ -99,7 +99,11 @@ test.describe("2FA prompt at a 375px viewport", () => {
     await page.locator('input[type="email"]').fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Two-Factor Auth" })).toBeVisible();
+    // The verify-method chooser is the first post-password step; the TOTP
+    // prompt appears after picking the authenticator app.
+    await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
+    await page.getByRole("button", { name: /Use authenticator app/ }).click();
+    await expect(page.getByRole("heading", { name: "Two-Factor Auth", exact: true })).toBeVisible();
 
     // ── Contract 1: the prompt is inside the auth card and the viewport ─
     // The TOTP step is the login card's left column, not a separate modal:
