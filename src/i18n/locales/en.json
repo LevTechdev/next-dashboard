@@ -2118,6 +2118,7 @@
     "word3": "improved.",
     "word4": "next.",
     "heroSubtitle": "Stay up to date with the latest features, improvements, and bug fixes. We ship regularly based on your feedback.",
+    "versionSource": "This number is the latest tagged release.",
     "latestVersion": "Latest version:",
     "released": "Released April 14, 2026",
     "statReleases": "Total Releases",
@@ -2134,7 +2135,7 @@
     "ctaButton": "Go to Dashboard",
     "entries": [
       {
-        "version": "2.7.0",
+        "version": "1.1.0",
         "date": "September 22, 2026",
         "tag": "Security & Pricing",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2198,7 +2199,7 @@
         ]
       },
       {
-        "version": "2.6.0",
+        "version": "1.0.0",
         "date": "September 8, 2026",
         "tag": "Latest Release",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2234,7 +2235,7 @@
         ]
       },
       {
-        "version": "2.5.0",
+        "version": "0.9.0",
         "date": "April 14, 2026",
         "tag": "Latest Release",
         "tagColor": "bg-indigo-500/10 text-indigo-500",
@@ -2258,7 +2259,7 @@
         ]
       },
       {
-        "version": "2.4.0",
+        "version": "0.8.0",
         "date": "March 28, 2026",
         "tag": "Feature Release",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2282,7 +2283,7 @@
         ]
       },
       {
-        "version": "2.3.0",
+        "version": "0.7.0",
         "date": "March 10, 2026",
         "tag": "Improvement",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2306,7 +2307,7 @@
         ]
       },
       {
-        "version": "2.2.0",
+        "version": "0.6.0",
         "date": "February 20, 2026",
         "tag": "Feature Release",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2330,7 +2331,7 @@
         ]
       },
       {
-        "version": "2.1.0",
+        "version": "0.5.0",
         "date": "February 5, 2026",
         "tag": "Improvement",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2350,7 +2351,7 @@
         ]
       },
       {
-        "version": "2.0.0",
+        "version": "0.4.0",
         "date": "January 15, 2026",
         "tag": "Major Release",
         "tagColor": "bg-purple-500/10 text-purple-500",
@@ -2590,6 +2591,7 @@
     "chooseOtherMethod": "Try another method",
     "usePasskey": "Use a passkey",
     "usePasskeyDesc": "Sign in with the fingerprint, face, or PIN registered on this device.",
+    "trustDeviceHint": "Skips the code on this browser for 30 days.",
     "trustDeviceLabel": "Trust this device for 30 days — skip two-factor on future sign-ins from it.",
     "useBackupCode": "Use a backup code",
     "useBackupCodeDesc": "One of the 10 single-use codes you saved when you turned on two-factor.",
@@ -2808,6 +2810,11 @@
     "regenerate": "Regenerate",
     "regenerateTitle": "Regenerate backup codes?",
     "regenerateDesc": "Your existing codes will stop working immediately and be replaced with a new set.",
+    "backupCodesHowToTitle": "How to use these codes",
+    "backupCodesHowToStep1": "Save them somewhere outside your phone — a password manager, or a printed copy.",
+    "backupCodesHowToStep2": "At sign-in, choose \"Use a backup code\" when your authenticator is not available.",
+    "backupCodesHowToStep3": "Each code works once: a used code is burned and cannot be reused.",
+    "backupCodesHowToStep4": "Generate a fresh set here before you run out.",
     "saveCodesWarning": "Save these codes now — they are shown only once and each works a single time.",
     "download": "Download",
     "codesCopied": "Codes copied",
@@ -3529,6 +3536,28 @@
     "featuresIncluded": "Everything included:",
     "mostPopular": "Most Popular",
     "getStarted": "Get Started",
+    "currentPlan": "Current plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "switchToYearly": "Switch to yearly",
+    "switchToMonthly": "Switch to monthly",
+    "change": {
+      "title": "Confirm plan change",
+      "desc": "Review the prorated amounts, then confirm. The change takes effect immediately.",
+      "from": "From",
+      "to": "To",
+      "intervalMonthly": "monthly",
+      "intervalYearly": "yearly",
+      "creditLabel": "Credit for unused time",
+      "chargeLabel": "New plan, remaining period",
+      "dueToday": "Due today",
+      "immediateNote": "Effective immediately. Unused time on your old plan is credited pro-rata.",
+      "creditNoteNote": "Effective immediately. Your unused time more than covers this period, so nothing is due today — the remaining credit applies to your next invoice.",
+      "confirm": "Confirm change",
+      "cancel": "Cancel",
+      "success": "Your plan is now {plan}.",
+      "error": "Could not change your plan. Please try again."
+    },
     "contactSales": "Contact Sales",
     "faqTitle": "Frequently Asked Questions",
     "faqSubtitle": "Everything you need to know about our pricing and billing.",
@@ -3582,55 +3611,15 @@
       }
     },
     "perMonth": "/month",
-    "compareCols": [
-      "Features",
-      "Starter",
-      "Professional",
-      "Enterprise"
-    ],
+    "compareCols": ["Features", "Starter", "Professional", "Enterprise"],
     "compareRows": [
-      [
-        "Monthly Orders",
-        "100",
-        "1,000",
-        "Unlimited"
-      ],
-      [
-        "Team Members",
-        "3",
-        "10",
-        "Unlimited"
-      ],
-      [
-        "Analytics",
-        "Basic",
-        "Advanced",
-        "Advanced"
-      ],
-      [
-        "Support",
-        "Email",
-        "Priority",
-        "24/7 Dedicated"
-      ],
-      [
-        "API Access",
-        "-",
-        "Full",
-        "Full"
-      ],
-      [
-        "Custom Exports",
-        "-",
-        "-",
-        "Yes"
-      ],
-      [
-        "RBAC",
-        "-",
-        "Yes",
-        "Yes"
-      ]
+      ["Monthly Orders", "100", "1,000", "Unlimited"],
+      ["Team Members", "3", "10", "Unlimited"],
+      ["Analytics", "Basic", "Advanced", "Advanced"],
+      ["Support", "Email", "Priority", "24/7 Dedicated"],
+      ["API Access", "-", "Full", "Full"],
+      ["Custom Exports", "-", "-", "Yes"],
+      ["RBAC", "-", "Yes", "Yes"]
     ],
     "toastPlanNotFound": "Plan not found. Please try again.",
     "toastCheckoutFailed": "Checkout failed",
@@ -4010,6 +3999,11 @@
     "dropdownTitle": "Display Currency",
     "baseCurrencyLabel": "Base USD ($)",
     "fxRateNotice": "Real-time rates applied to gross metrics and charts",
+    "fxBadgeRate": "1 USD = {rate}",
+    "fxBadgeLive": "Live · {source}",
+    "fxBadgeFallback": "Reference rates",
+    "fxBadgeQuoted": "quoted {time} ago",
+    "refreshRates": "Refresh rates",
     "liveRateHint": "Rate quoted live from the market; shown in green. Gray means the built-in reference table is in use."
   },
   "health": {

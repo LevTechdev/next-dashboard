@@ -2118,6 +2118,7 @@
     "word3": "disempurnakan.",
     "word4": "berikutnya.",
     "heroSubtitle": "Ikuti terus fitur terbaru, penyempurnaan, dan perbaikan bug. Kami merilis secara rutin berdasarkan masukan Anda.",
+    "versionSource": "Nomor ini adalah rilis bertag terbaru.",
     "latestVersion": "Versi terbaru:",
     "released": "Dirilis 14 April 2026",
     "statReleases": "Total Rilis",
@@ -2134,7 +2135,7 @@
     "ctaButton": "Buka Dashboard",
     "entries": [
       {
-        "version": "2.7.0",
+        "version": "1.1.0",
         "date": "22 September 2026",
         "tag": "Keamanan & Harga",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2198,7 +2199,7 @@
         ]
       },
       {
-        "version": "2.6.0",
+        "version": "1.0.0",
         "date": "8 September 2026",
         "tag": "Rilis Terbaru",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2234,7 +2235,7 @@
         ]
       },
       {
-        "version": "2.5.0",
+        "version": "0.9.0",
         "date": "14 April 2026",
         "tag": "Rilis Terbaru",
         "tagColor": "bg-indigo-500/10 text-indigo-500",
@@ -2258,7 +2259,7 @@
         ]
       },
       {
-        "version": "2.4.0",
+        "version": "0.8.0",
         "date": "28 Maret 2026",
         "tag": "Rilis Fitur",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2282,7 +2283,7 @@
         ]
       },
       {
-        "version": "2.3.0",
+        "version": "0.7.0",
         "date": "10 Maret 2026",
         "tag": "Peningkatan",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2306,7 +2307,7 @@
         ]
       },
       {
-        "version": "2.2.0",
+        "version": "0.6.0",
         "date": "20 Februari 2026",
         "tag": "Rilis Fitur",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2330,7 +2331,7 @@
         ]
       },
       {
-        "version": "2.1.0",
+        "version": "0.5.0",
         "date": "5 Februari 2026",
         "tag": "Peningkatan",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2350,7 +2351,7 @@
         ]
       },
       {
-        "version": "2.0.0",
+        "version": "0.4.0",
         "date": "15 Januari 2026",
         "tag": "Rilis Besar",
         "tagColor": "bg-purple-500/10 text-purple-500",
@@ -2590,6 +2591,7 @@
     "chooseOtherMethod": "Coba metode lain",
     "usePasskey": "Gunakan passkey",
     "usePasskeyDesc": "Masuk dengan sidik jari, wajah, atau PIN yang terdaftar di perangkat ini.",
+    "trustDeviceHint": "Melewati kode di peramban ini selama 30 hari.",
     "trustDeviceLabel": "Percayai perangkat ini selama 30 hari — lewati verifikasi dua faktor untuk masuk berikutnya dari perangkat ini.",
     "useBackupCode": "Gunakan kode cadangan",
     "useBackupCodeDesc": "Salah satu dari 10 kode sekali pakai yang Anda simpan saat mengaktifkan verifikasi dua faktor.",
@@ -2808,6 +2810,11 @@
     "regenerate": "Buat ulang",
     "regenerateTitle": "Buat ulang kode cadangan?",
     "regenerateDesc": "Kode lama Anda langsung berhenti berfungsi dan diganti dengan yang baru.",
+    "backupCodesHowToTitle": "Cara memakai kode ini",
+    "backupCodesHowToStep1": "Simpan di luar ponsel Anda — pengelola kata sandi, atau cetak di kertas.",
+    "backupCodesHowToStep2": "Saat masuk, pilih \"Pakai kode cadangan\" bila aplikasi autentikator tidak tersedia.",
+    "backupCodesHowToStep3": "Setiap kode hanya berlaku sekali: kode yang sudah dipakai tidak bisa digunakan lagi.",
+    "backupCodesHowToStep4": "Buat set baru di sini sebelum kode Anda habis.",
     "saveCodesWarning": "Simpan kode ini sekarang — hanya ditampilkan sekali dan masing-masing sekali pakai.",
     "download": "Unduh",
     "codesCopied": "Kode disalin",
@@ -3529,6 +3536,28 @@
     "featuresIncluded": "Semua termasuk:",
     "mostPopular": "Paling Populer",
     "getStarted": "Mulai",
+    "currentPlan": "Paket saat ini",
+    "upgrade": "Tingkatkan",
+    "downgrade": "Turunkan",
+    "switchToYearly": "Ganti ke tahunan",
+    "switchToMonthly": "Ganti ke bulanan",
+    "change": {
+      "title": "Konfirmasi perubahan paket",
+      "desc": "Tinjau jumlah prorata berikut, lalu konfirmasi. Perubahan berlaku segera.",
+      "from": "Dari",
+      "to": "Ke",
+      "intervalMonthly": "bulanan",
+      "intervalYearly": "tahunan",
+      "creditLabel": "Kredit untuk waktu yang belum terpakai",
+      "chargeLabel": "Paket baru, sisa periode",
+      "dueToday": "Tagihan hari ini",
+      "immediateNote": "Berlaku segera. Waktu yang belum terpakai pada paket lama dikreditkan secara prorata.",
+      "creditNoteNote": "Berlaku segera. Waktu yang belum terpakai lebih dari cukup untuk periode ini, jadi tidak ada tagihan hari ini — sisa kredit dipakai untuk tagihan berikutnya.",
+      "confirm": "Konfirmasi perubahan",
+      "cancel": "Batal",
+      "success": "Paket Anda sekarang {plan}.",
+      "error": "Tidak dapat mengubah paket Anda. Silakan coba lagi."
+    },
     "contactSales": "Hubungi Sales",
     "faqTitle": "Pertanyaan yang Sering Diajukan",
     "faqSubtitle": "Segala hal yang perlu Anda ketahui tentang harga dan penagihan kami.",
@@ -3582,55 +3611,15 @@
       }
     },
     "perMonth": "/bulan",
-    "compareCols": [
-      "Fitur",
-      "Starter",
-      "Profesional",
-      "Enterprise"
-    ],
+    "compareCols": ["Fitur", "Starter", "Profesional", "Enterprise"],
     "compareRows": [
-      [
-        "Pesanan Bulanan",
-        "100",
-        "1.000",
-        "Tanpa batas"
-      ],
-      [
-        "Anggota Tim",
-        "3",
-        "10",
-        "Tanpa batas"
-      ],
-      [
-        "Analitik",
-        "Dasar",
-        "Lanjutan",
-        "Lanjutan"
-      ],
-      [
-        "Dukungan",
-        "Email",
-        "Prioritas",
-        "Khusus 24/7"
-      ],
-      [
-        "Akses API",
-        "-",
-        "Penuh",
-        "Penuh"
-      ],
-      [
-        "Ekspor Kustom",
-        "-",
-        "-",
-        "Yes"
-      ],
-      [
-        "RBAC",
-        "-",
-        "Yes",
-        "Yes"
-      ]
+      ["Pesanan Bulanan", "100", "1.000", "Tanpa batas"],
+      ["Anggota Tim", "3", "10", "Tanpa batas"],
+      ["Analitik", "Dasar", "Lanjutan", "Lanjutan"],
+      ["Dukungan", "Email", "Prioritas", "Khusus 24/7"],
+      ["Akses API", "-", "Penuh", "Penuh"],
+      ["Ekspor Kustom", "-", "-", "Yes"],
+      ["RBAC", "-", "Yes", "Yes"]
     ],
     "toastPlanNotFound": "Paket tidak ditemukan. Silakan coba lagi.",
     "toastCheckoutFailed": "Pembayaran gagal",
@@ -4010,6 +3999,11 @@
     "dropdownTitle": "Mata Uang Tampilan",
     "baseCurrencyLabel": "USD Dasar ($)",
     "fxRateNotice": "Nilai tukar real-time diterapkan ke metrik kotor dan grafik",
+    "fxBadgeRate": "1 USD = {rate}",
+    "fxBadgeLive": "Live · {source}",
+    "fxBadgeFallback": "Kurs acuan",
+    "fxBadgeQuoted": "dikutip {time} lalu",
+    "refreshRates": "Perbarui kurs",
     "liveRateHint": "Kurs diambil langsung dari pasar; ditampilkan hijau. Abu-abu berarti tabel referensi bawaan yang dipakai."
   },
   "health": {

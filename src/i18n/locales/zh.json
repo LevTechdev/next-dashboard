@@ -2052,6 +2052,7 @@
     "word3": "新改进。",
     "word4": "新计划。",
     "heroSubtitle": "随时了解最新功能、改进与修复。我们根据您的反馈定期发布。",
+    "versionSource": "此编号为最新的已标记发布版本。",
     "latestVersion": "最新版本：",
     "released": "发布于 2026 年 4 月 14 日",
     "statReleases": "总发布数",
@@ -2068,7 +2069,7 @@
     "ctaButton": "前往仪表盘",
     "entries": [
       {
-        "version": "2.7.0",
+        "version": "1.1.0",
         "date": "2026年9月22日",
         "tag": "安全与定价",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2132,7 +2133,7 @@
         ]
       },
       {
-        "version": "2.6.0",
+        "version": "1.0.0",
         "date": "2026年9月8日",
         "tag": "最新发布",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2168,7 +2169,7 @@
         ]
       },
       {
-        "version": "2.5.0",
+        "version": "0.9.0",
         "date": "2026年4月14日",
         "tag": "最新版本",
         "tagColor": "bg-indigo-500/10 text-indigo-500",
@@ -2192,7 +2193,7 @@
         ]
       },
       {
-        "version": "2.4.0",
+        "version": "0.8.0",
         "date": "2026年3月28日",
         "tag": "功能版本",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2216,7 +2217,7 @@
         ]
       },
       {
-        "version": "2.3.0",
+        "version": "0.7.0",
         "date": "2026年3月10日",
         "tag": "改进",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2240,7 +2241,7 @@
         ]
       },
       {
-        "version": "2.2.0",
+        "version": "0.6.0",
         "date": "2026年2月20日",
         "tag": "功能版本",
         "tagColor": "bg-emerald-500/10 text-emerald-500",
@@ -2264,7 +2265,7 @@
         ]
       },
       {
-        "version": "2.1.0",
+        "version": "0.5.0",
         "date": "2026年2月5日",
         "tag": "改进",
         "tagColor": "bg-blue-500/10 text-blue-500",
@@ -2284,7 +2285,7 @@
         ]
       },
       {
-        "version": "2.0.0",
+        "version": "0.4.0",
         "date": "2026年1月15日",
         "tag": "重要版本",
         "tagColor": "bg-purple-500/10 text-purple-500",
@@ -2524,6 +2525,7 @@
     "chooseOtherMethod": "尝试其他方式",
     "usePasskey": "使用通行密钥",
     "usePasskeyDesc": "使用本设备上注册的指纹、面容或 PIN 登录。",
+    "trustDeviceHint": "在此浏览器上 30 天内跳过验证码。",
     "trustDeviceLabel": "信任此设备 30 天 — 之后从该设备登录时跳过两步验证。",
     "useBackupCode": "使用备用代码",
     "useBackupCodeDesc": "启用两步验证时保存的 10 个一次性代码之一。",
@@ -2742,6 +2744,11 @@
     "regenerate": "重新生成",
     "regenerateTitle": "重新生成备用码？",
     "regenerateDesc": "您现有的码将立即失效并被新的一组替换。",
+    "backupCodesHowToTitle": "如何使用这些代码",
+    "backupCodesHowToStep1": "请保存在手机之外——密码管理器或打印出来。",
+    "backupCodesHowToStep2": "登录时若无法使用验证器应用，请选择“使用备用代码”。",
+    "backupCodesHowToStep3": "每个代码只能使用一次，用过的代码即作废。",
+    "backupCodesHowToStep4": "在剩余不多之前，先在这里生成新的一组。",
     "saveCodesWarning": "请立即保存这些码——它们只显示一次，且每个仅可使用一次。",
     "download": "下载",
     "codesCopied": "已复制备用码",
@@ -3529,6 +3536,28 @@
     "featuresIncluded": "全部包含：",
     "mostPopular": "最受欢迎",
     "getStarted": "开始使用",
+    "currentPlan": "当前方案",
+    "upgrade": "升级",
+    "downgrade": "降级",
+    "switchToYearly": "切换为按年",
+    "switchToMonthly": "切换为按月",
+    "change": {
+      "title": "确认方案变更",
+      "desc": "请核对按比例计算的金额后确认。变更立即生效。",
+      "from": "从",
+      "to": "至",
+      "intervalMonthly": "按月",
+      "intervalYearly": "按年",
+      "creditLabel": "未使用时间的抵扣",
+      "chargeLabel": "新方案 · 剩余周期",
+      "dueToday": "今日应付",
+      "immediateNote": "立即生效。旧方案未使用的时间按比例抵扣。",
+      "creditNoteNote": "立即生效。未使用时间已足以覆盖本期，因此今日无需付款——剩余抵扣将用于下次账单。",
+      "confirm": "确认变更",
+      "cancel": "取消",
+      "success": "您的方案已变更为 {plan}。",
+      "error": "无法变更方案，请重试。"
+    },
     "contactSales": "联系销售",
     "faqTitle": "常见问题",
     "faqSubtitle": "您需要了解的关于定价和计费的一切。",
@@ -3543,13 +3572,7 @@
       "starter": {
         "name": "入门版",
         "desc": "适合刚刚起步的小型企业。",
-        "features": [
-          "每月最多 100 个订单",
-          "最多 3 名团队成员",
-          "基础分析",
-          "标准导出",
-          "邮件支持"
-        ]
+        "features": ["每月最多 100 个订单", "最多 3 名团队成员", "基础分析", "标准导出", "邮件支持"]
       },
       "professional": {
         "name": "专业版",
@@ -3582,55 +3605,15 @@
       }
     },
     "perMonth": "/月",
-    "compareCols": [
-      "功能",
-      "入门版",
-      "专业版",
-      "企业版"
-    ],
+    "compareCols": ["功能", "入门版", "专业版", "企业版"],
     "compareRows": [
-      [
-        "每月订单",
-        "100",
-        "1,000",
-        "无限"
-      ],
-      [
-        "团队成员",
-        "3",
-        "10",
-        "无限"
-      ],
-      [
-        "分析",
-        "基础",
-        "高级",
-        "高级"
-      ],
-      [
-        "支持",
-        "邮件",
-        "优先",
-        "24/7 专属"
-      ],
-      [
-        "API 访问",
-        "-",
-        "完整",
-        "完整"
-      ],
-      [
-        "自定义导出",
-        "-",
-        "-",
-        "Yes"
-      ],
-      [
-        "RBAC",
-        "-",
-        "Yes",
-        "Yes"
-      ]
+      ["每月订单", "100", "1,000", "无限"],
+      ["团队成员", "3", "10", "无限"],
+      ["分析", "基础", "高级", "高级"],
+      ["支持", "邮件", "优先", "24/7 专属"],
+      ["API 访问", "-", "完整", "完整"],
+      ["自定义导出", "-", "-", "Yes"],
+      ["RBAC", "-", "Yes", "Yes"]
     ],
     "toastPlanNotFound": "未找到套餐，请重试。",
     "toastCheckoutFailed": "结账失败",
@@ -4010,6 +3993,11 @@
     "dropdownTitle": "显示货币",
     "baseCurrencyLabel": "基准货币 USD ($)",
     "fxRateNotice": "实时汇率已应用至大盘指标与图表",
+    "fxBadgeRate": "1 USD = {rate}",
+    "fxBadgeLive": "实时 · {source}",
+    "fxBadgeFallback": "参考汇率",
+    "fxBadgeQuoted": "{time}前获取",
+    "refreshRates": "刷新汇率",
     "liveRateHint": "汇率为实时市场报价，以绿色显示；灰色表示正在使用内置参考汇率表。"
   },
   "health": {
