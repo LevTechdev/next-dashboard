@@ -36,7 +36,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 2,
   reporter: [["list"], ["html", { open: "never" }]],
-  timeout: 60_000,
+  // 60s locally, 120s on CI: the local-runner job shares 2 workers on a
+  // 2-core GitHub runner, where fetch-gated waits (FETCH_GATED = 45s) plus
+  // argon2 login contention can exhaust a 60s test budget on cold routes —
+  // a class of red that never reproduces locally and isn't a product bug.
+  timeout: process.env.CI ? 120_000 : 60_000,
   // 20s: under 2 workers, a cold auth POST on the shared dev server can take
   // ~14s (first login after a seed triggers an argon2 rehash upgrade, plus
   // concurrent advisory-lock waiters) — the old 10s default flaked on
