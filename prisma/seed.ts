@@ -6,6 +6,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { createHash } from "node:crypto";
 import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
 
 const prisma = new PrismaClient();
@@ -1306,6 +1307,43 @@ async function main() {
     console.log(`✅ Pipeline session history seeded (${rows.length} sessions across 2 weeks)`);
   }
 
+  // ── Developer-portal demo rows ──────────────────────────────────────────
+  // One ACTIVE API key + one ACTIVE webhook endpoint for the seed admin, so
+  // the developer portal (integrations page, playground, delivery log) has
+  // data to stand on from a fresh seed. The raw key is deterministic (E2E may
+  // quote it) and its stored form is the sha256 the runtime verifies against.
+  // scripts/check-seeded-dashboard.ts asserts these rows exist.
+  {
+    const devKeyRaw = "dash_" + "d".repeat(64);
+    const devKeyHash = createHash("sha256").update(devKeyRaw).digest("hex");
+    await prisma.apiKey.upsert({
+      where: { key: devKeyHash },
+      update: { status: "ACTIVE" },
+      create: {
+        name: "Demo Integration Key",
+        key: devKeyHash,
+        prefix: "dash_dddddddd...",
+        permissions: "read",
+        status: "ACTIVE",
+        userId: admin.id,
+      },
+    });
+    await prisma.webhookEndpoint.upsert({
+      where: { id: "seed-webhook-demo" },
+      update: { status: "ACTIVE" },
+      create: {
+        id: "seed-webhook-demo",
+        name: "Demo Order Webhook",
+        url: "https://webhook.site/demo-order-endpoint",
+        secret: "seed-demo-hmac-secret",
+        subscribedEvents: ["order.created", "order.updated", "payment.completed"],
+        description: "Seeded demo endpoint for the delivery-log UI.",
+        status: "ACTIVE",
+        userId: admin.id,
+      },
+    });
+    console.log("✅ Developer-portal demo rows seeded (1 API key, 1 webhook endpoint)");
+  }
   console.log("\n🎉 Database seeded successfully!");
 }
 

@@ -7,7 +7,11 @@
  * /api/dashboard) filters by `where: { tenantId }`.
  *
  * Also fails when the seed writes ANY SecurityEvent or ActivityLog row with a
- * NULL tenantId — those rows belong to nobody under the strict audit-read
+ * NULL tenantId, and when the DEVELOPER-PORTAL fixture rows (one ACTIVE ApiKey
+ * plus one ACTIVE WebhookEndpoint for the seed admin) are missing — the rows
+ * the integrations/playground E2E specs stand on. A drifted shared DB that lost
+ * them (or a seed regression) fails here in seconds instead of as a 49s E2E
+ * timeout. — those rows belong to nobody under the strict audit-read
  * scoping, so the seed's demo activity logs must carry the default tenant id.
  *
  * Instead of importing prisma/seed.ts (which calls main() at module scope and
@@ -53,6 +57,10 @@ async function main(): Promise<void> {
   const admin = await prisma.user.findUnique({ where: { email: SEED_ADMIN_EMAIL } });
   check(`seed admin ${SEED_ADMIN_EMAIL} exists`, Boolean(admin));
   check("seed admin belongs to the default tenant", admin?.tenantId === tenant.id, admin?.tenantId);
+  if (!admin) {
+    console.error("\n❌ Seed admin missing — run `npm run db:seed` first.");
+    process.exit(1);
+  }
 
   // Replicate /api/dashboard's tenant-scoped queries exactly (same where
   // clauses, includes, ordering, take limits). If the seed's rows lack
@@ -98,6 +106,46 @@ async function main(): Promise<void> {
   check("zero NULL-tenant SecurityEvent rows", nullSecurityEvents === 0, nullSecurityEvents);
   check("zero NULL-tenant ActivityLog rows", nullActivityLogs === 0, nullActivityLogs);
 
+  // Developer-portal fixture: the integrations/destructive-glyphs/playground
+  // E2E families assume the seed ships the portal's starting rows. A shared
+  // dev DB that drifted (rows deleted, statuses flipped) invalidates those
+  // specs — this turns that drift into a fast CI failure instead.
+  const [activeApiKeys, activeWebhooks, demoWebhook] = await Promise.all([
+    prisma.apiKey.count({ where: { userId: admin.id, status: "ACTIVE" } }),
+    prisma.webhookEndpoint.count({ where: { userId: admin.id, status: "ACTIVE" } }),
+    prisma.webhookEndpoint.findUnique({
+      where: { id: "seed-webhook-demo" },
+      select: { status: true, subscribedEvents: true },
+    }),
+  ]);
+  check("seed admin has >=1 ACTIVE ApiKey (developer portal)", activeApiKeys > 0, activeApiKeys);
+  check(
+    "seed admin has >=1 ACTIVE WebhookEndpoint (developer portal)",
+    activeWebhooks > 0,
+    activeWebhooks,
+  );
+  // The demo endpoint's subscriptions must be events the API actually knows —
+  // a seeded subscription to an unknown event breaks the delivery-log contract
+  // the specs assert. Mirrors WEBHOOK_EVENTS in src/app/api/webhooks/route.ts.
+  const KNOWN_EVENTS = [
+    "order.created",
+    "order.updated",
+    "order.cancelled",
+    "order.refunded",
+    "customer.created",
+    "customer.updated",
+    "product.created",
+    "product.updated",
+    "product.low_stock",
+    "payment.completed",
+    "payment.failed",
+  ];
+  check(
+    "demo webhook subscribes only to KNOWN_EVENTS",
+    demoWebhook !== null && demoWebhook.subscribedEvents.every((e) => KNOWN_EVENTS.includes(e)),
+    demoWebhook?.subscribedEvents,
+  );
+
   if (failures.length > 0) {
     console.error(
       `\n❌ Seeded-dashboard check FAILED (${failures.length}): ${failures.join(", ")}`,
@@ -109,9 +157,7 @@ async function main(): Promise<void> {
     );
     process.exit(1);
   }
-  console.log(
-    "\n✅ Seeded-dashboard check passed — a fresh seed yields non-zero dashboard stats.",
-  );
+  console.log("\n✅ Seeded-dashboard check passed — a fresh seed yields non-zero dashboard stats.");
 }
 
 main()
