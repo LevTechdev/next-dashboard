@@ -6,6 +6,7 @@ const changelogTypes = changelogMessages.changelogPage.typeLabels;
 
 // ── Changelog Data ─────────────────────────────────────────────────────────
 import { typeConfig } from "../changelog/page";
+import { APP_VERSION } from "@/lib/app-version";
 
 describe("Changelog Data Structure", () => {
   it("has exactly 8 version entries", () => {
@@ -85,15 +86,22 @@ describe("Changelog Data Structure", () => {
     }
   });
 
-  it("has at least one feature item in Major Release (2.0.0)", () => {
-    const majorRelease = (changelog as any[]).find((e) => e.version === "2.0.0");
+  it("has a major release with a substantial feature list", () => {
+    // Found by TAG, not by a pinned version: releases are renumbered whenever
+    // semantic-release cuts a new tag, and a literal here is how this assertion
+    // went stale (it looked for a 2.0.0 that the release line never reached).
+    const majorRelease = (changelog as any[]).find((e) => e.tag === "Major Release");
     expect(majorRelease).toBeDefined();
     const featureItems = majorRelease.items.filter((i: any) => i.type === "feature");
     expect(featureItems.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("has the correct latest version (2.7.0)", () => {
-    expect(changelog[0].version).toBe("2.7.0");
+  it("agrees with the release source on the latest version", () => {
+    // The newest timeline entry carries the version the badge reports, which is
+    // the version the build was tagged with. Comparing against APP_VERSION
+    // (instead of a literal) is the assertion that keeps the changelog and the
+    // git tags from narrating two different products again.
+    expect(changelog[0].version).toBe(APP_VERSION);
     expect(changelog[0].tag).toBe("Security & Pricing");
   });
 });

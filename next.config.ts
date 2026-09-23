@@ -1,9 +1,50 @@
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+/**
+ * Release version, resolved once per build.
+ *
+ * semantic-release tags the release commit, so the newest tag IS the shipped
+ * version; it is injected here so the client bundle can report it ("Latest
+ * version: 1.1.0") without a runtime git call. A build with no tags in reach
+ * (shallow clone, tarball) falls back to package.json, which keeps the two in
+ * step with the tag line by convention and is asserted by app-version.test.ts.
+ */
+function resolveAppVersion(): string {
+  const explicit = process.env.NEXT_PUBLIC_APP_VERSION?.trim();
+  if (explicit) return explicit.replace(/^v/, "");
+  try {
+    const tag = execSync("git describe --tags --abbrev=0", {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    if (tag) return tag.replace(/^v/, "");
+  } catch {
+    // No git, no tags, or a shallow clone: fall through to package.json.
+  }
+  try {
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+      version?: string;
+    };
+    if (pkg.version) return pkg.version;
+  } catch {
+    // Unreadable package.json — the caller's literal fallback takes over.
+  }
+  return "0.0.0";
+}
+
+const appVersion = resolveAppVersion();
+
 const nextConfig: NextConfig = {
+  // Exposed to the client bundle so the changelog badge, and any future
+  // "About" surface, all read the same version the release was tagged with.
+  env: { NEXT_PUBLIC_APP_VERSION: appVersion },
   // Dev (next dev) and prod (next start) cannot safely share one .next dir —
   // a prod build in .next makes a fresh dev server 404. Give the prod server
   // its own build dir via NEXT_DIST_DIR so both can run side by side:
