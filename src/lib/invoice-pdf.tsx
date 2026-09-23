@@ -1,5 +1,6 @@
 import React from "react";
 import { Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
+import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
 
 // Register a basic font (Helvetica is built-in)
 const styles = StyleSheet.create({
@@ -65,8 +66,27 @@ const styles = StyleSheet.create({
   },
 });
 
-const formatMoney = (amount: number, currency = "USD") => {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+/**
+ * Money rendering for the PDF document, in the invoice's own currency.
+ *
+ * Deliberately mirrors the printable HTML invoice: values are converted to the
+ * requested currency once, rounded to that currency's minor unit (IDR and JPY
+ * have none), and then formatted with the currency's own symbol — so a rupiah
+ * invoice never prints a decimal fraction or a dollar sign.
+ */
+const money = (currency: string) => {
+  const code = (currency in CURRENCIES ? currency : "USD") as SupportedCurrencyCode;
+  const cfg = CURRENCIES[code];
+  const convert = (amountUsd: number) => {
+    const converted = amountUsd * cfg.rate;
+    return cfg.decimals === 0 ? Math.round(converted) : Number(converted.toFixed(cfg.decimals));
+  };
+  const format = (amountInCurrency: number) =>
+    `${cfg.symbol}${amountInCurrency.toLocaleString("en-US", {
+      minimumFractionDigits: cfg.decimals,
+      maximumFractionDigits: cfg.decimals,
+    })}`;
+  return { convert, format, cfg };
 };
 
 const formatDate = (date: Date) => {
@@ -89,12 +109,29 @@ export function InvoiceDocument({
   // Amounts render in the invoice/order's own currency when provided,
   // falling back to USD for legacy documents.
   const moneyCurrency: string = currency || order?.currency || "USD";
-  const subtotal = order.items.reduce(
-    (sum: number, item: any) => sum + item.price * item.quantity,
+  const { convert, format, cfg } = money(moneyCurrency);
+  const fmtMoney = (amountUsd: number) => format(convert(amountUsd));
+
+  // The order's own figures are authoritative when present. Recomputing a
+  // subtotal from the rows and inventing a flat 10% tax is what made this
+  // document disagree with the order and with the printable invoice — the real
+  // tax rate is the order's, and a discount or shipping line must survive.
+  const itemsSum = (order.items ?? []).reduce(
+    (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
     0,
   );
-  const tax = subtotal * 0.1; // Simulated 10% tax
-  const total = subtotal + tax;
+  const storedSubtotal = Number(order.subtotal ?? order.totalAmount);
+  const subtotal =
+    Number.isFinite(storedSubtotal) && storedSubtotal > 0 ? storedSubtotal : itemsSum;
+  const discount = Number(order.discountAmount ?? order.discount) || 0;
+  const tax = Number(order.taxAmount ?? order.tax) || 0;
+  const shipping = Number(order.shippingAmount ?? order.shipping) || 0;
+  const storedTotal = Number(order.grandTotal);
+  const total =
+    Number.isFinite(storedTotal) && storedTotal > 0
+      ? storedTotal
+      : subtotal - discount + tax + shipping;
+  const taxRatePercent = subtotal > 0 ? Math.round((tax / subtotal) * 1000) / 10 : 0;
 
   return (
     <Document>
@@ -146,10 +183,8 @@ export function InvoiceDocument({
             <View key={i} style={styles.tableRow}>
               <Text style={styles.col1}>{item.product?.name || "Unknown Item"}</Text>
               <Text style={styles.col2}>{item.quantity}</Text>
-              <Text style={styles.col3}>{formatMoney(item.price, moneyCurrency)}</Text>
-              <Text style={styles.col4}>
-                {formatMoney(item.price * item.quantity, moneyCurrency)}
-              </Text>
+              <Text style={styles.col3}>{fmtMoney(item.price)}</Text>
+              <Text style={styles.col4}>{fmtMoney(item.price * item.quantity)}</Text>
             </View>
           ))}
         </View>
@@ -159,16 +194,39 @@ export function InvoiceDocument({
             <View style={{ alignItems: "flex-end" }}>
               <View style={styles.summaryRow}>
                 <Text style={styles.textMuted}>Subtotal:</Text>
-                <Text>{formatMoney(subtotal, moneyCurrency)}</Text>
+                <Text>{fmtMoney(subtotal)}</Text>
               </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.textMuted}>Tax (10%):</Text>
-                <Text>{formatMoney(tax, moneyCurrency)}</Text>
-              </View>
+              {discount > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.textMuted}>Discount:</Text>
+                  <Text>-{fmtMoney(discount)}</Text>
+                </View>
+              )}
+              {shipping > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.textMuted}>Shipping:</Text>
+                  <Text>{fmtMoney(shipping)}</Text>
+                </View>
+              )}
+              {tax !== 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.textMuted}>
+                    Tax{taxRatePercent > 0 ? ` (${taxRatePercent}%)` : ""}:
+                  </Text>
+                  <Text>{fmtMoney(tax)}</Text>
+                </View>
+              )}
               <View style={styles.summaryTotal}>
                 <Text>Total Due:</Text>
-                <Text>{formatMoney(total, moneyCurrency)}</Text>
+                <Text>{fmtMoney(total)}</Text>
               </View>
+              {cfg.code !== "USD" && (
+                <Text style={[styles.textMuted, { marginTop: 6, textAlign: "right" }]}>
+                  Converted at 1 USD = {cfg.symbol}
+                  {cfg.rate.toLocaleString("en-US", { maximumFractionDigits: 2 })} and rounded to
+                  the nearest {cfg.decimals === 0 ? "whole unit" : "cent"}.
+                </Text>
+              )}
             </View>
           </View>
         </View>

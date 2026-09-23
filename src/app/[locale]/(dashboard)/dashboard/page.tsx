@@ -31,6 +31,7 @@ import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
 import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
+import { LiveFxBadge } from "@/components/currency/live-fx-badge";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
 import { useAuth } from "@/hooks/use-auth";
@@ -372,6 +373,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* The hero's revenue figure is converted at the provider's rates;
+              state which rates, or the number reads as a constant. */}
+          <LiveFxBadge />
           <RealtimeIndicator
             lastUpdated={lastUpdated}
             isRefreshing={isRefreshing}

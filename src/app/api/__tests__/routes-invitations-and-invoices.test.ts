@@ -374,6 +374,50 @@ describe("Order Invoice Route (/api/orders/[id]/invoice)", () => {
     expect(html).not.toContain("VAT / PPN");
     expect(html).toContain("$50.00");
   });
+
+  it("reconciles an IDR invoice in whole rupiah, rows and totals together", async () => {
+    // Reproduces the bug a rupiah reader reported: converted line by line at
+    // 0-decimal precision, the printed rows no longer summed to the printed
+    // Subtotal (each line rounded its own way, and the totals rounded from the
+    // USD figure). Two 33.333 lines are the minimal case — summed *after*=
+    // rounding they are Rp1,056,656; converted as a total they are Rp1,056,655.
+    mockPrisma.order.findUnique.mockResolvedValueOnce({
+      id: "ord_idr",
+      orderNumber: "ORD-IDR-1",
+      status: "COMPLETED",
+      totalAmount: 66.666,
+      grandTotal: 69.9993,
+      discountAmount: 0,
+      taxAmount: 3.3333,
+      shippingAmount: 0,
+      paymentStatus: "PAID",
+      paymentMethod: "BANK_TRANSFER",
+      invoiceSnapshot: null,
+      createdAt: new Date("2026-09-10"),
+      customer: { name: "Warga Rupiah", email: "rp@example.com", city: "Bandung" },
+      channel: { name: "Direct" },
+      items: [
+        { quantity: 1, price: 33.333, total: 33.333, product: { name: "Line A", sku: "SKU-A" } },
+        { quantity: 1, price: 33.333, total: 33.333, product: { name: "Line B", sku: "SKU-B" } },
+      ],
+    });
+
+    const req = new Request("http://localhost:3010/api/orders/ord_idr/invoice?currency=IDR");
+    const res = await orderInvoiceRoute.GET(req, { params: Promise.resolve({ id: "ord_idr" }) });
+    const html = await res.text();
+
+    // Rows: 2 × Rp528,328 — and the Subtotal is their sum, not the rounded total.
+    expect(html).toContain("Rp528,328");
+    expect(html).toContain("Rp1,056,656");
+    expect(html).not.toContain("Rp1,056,655");
+    // Tax Rp52,833 then grand total = subtotal + tax, on the displayed values.
+    expect(html).toContain("Rp52,833");
+    expect(html).toContain("Rp1,109,489");
+    // No dollar sign and no stray cents anywhere in a rupiah invoice.
+    expect(html).not.toContain("$");
+    // The rate that produced these figures is stated, not implied.
+    expect(html).toContain("Converted at 1 USD = Rp15,850");
+  });
 });
 
 describe("Tenant Branding → Invoice Integration", () => {
