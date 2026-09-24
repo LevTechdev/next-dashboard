@@ -96,7 +96,7 @@ test.describe("2FA prompt at a 375px viewport", () => {
 
     // ── Log out, then sign back in → the card swaps to the TOTP prompt ──
     await logoutViaHeader(page);
-    await page.locator('input[type="email"]').fill(email);
+    await page.locator('form:visible:has(input[type="password"]) input[type="email"]').fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
     // The verify-method chooser is the first post-password step; the TOTP

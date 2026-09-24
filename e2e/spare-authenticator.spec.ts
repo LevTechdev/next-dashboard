@@ -43,7 +43,7 @@ async function freshCode(secret: string) {
 async function loginWithSpare(page: Page) {
   await page.goto("/en/login");
   await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
-  await page.locator('input[type="email"]').fill(email);
+  await page.locator('form:visible:has(input[type="password"]) input[type="email"]').fill(email);
   await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
 
   // Inherit the suite's throttle backoff: back-to-back spec runs share one

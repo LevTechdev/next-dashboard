@@ -35,7 +35,13 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const { formatMoney } = useCurrency();
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-white/50 bg-white/70 shadow-xl backdrop-blur-md dark:border-border dark:bg-card/95 p-3 pointer-events-none">
+    // data-chart-tooltip="glass" — this tooltip mirrors the shared glass
+    // surface (translucent white + blur), so it must carry the same marker
+    // the glass-tooltip audit uses to verify the contract chart by chart.
+    <div
+      data-chart-tooltip="glass"
+      className="rounded-xl border border-white/50 bg-white/70 shadow-xl backdrop-blur-md dark:border-border dark:bg-card/95 p-3 pointer-events-none"
+    >
       <div className="flex items-center gap-2 mb-1.5">
         <SalesChannelIcon name={label || ""} size={15} />
         <p className="text-xs font-medium text-gray-600 dark:text-muted-foreground">{label}</p>

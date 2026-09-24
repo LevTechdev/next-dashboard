@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginAs } from "./helpers";
+import { loginAs, waitForStableLayout } from "./helpers";
 
 /**
  * Mobile modal geometry — the AI-copilot floating-sheet contract.
@@ -36,32 +36,31 @@ async function readDialogGeometry(page: Page, label: string): Promise<SheetGeome
   const dialog = page.getByRole("dialog");
   await expect(dialog, `${label}: dialog renders`).toBeVisible({ timeout: 30_000 });
 
-  // Wait for layout to settle (route can still be hydrating on a cold server)
-  // before reading geometry, so a half-painted DOM can't produce zeros.
-  await expect
-    .poll(
-      async () => {
-        const box = await dialog.boundingBox();
-        return !!box && box.width > 50 && box.height > 50;
-      },
-      { timeout: 15_000, message: `${label}: dialog never got real layout` },
-    )
-    .toBe(true);
-
-  return dialog.evaluate((el) => {
-    const cs = getComputedStyle(el);
-    const rect = el.getBoundingClientRect();
-    // Scrollbars shrink clientWidth; use the layout viewport for inset math.
-    const vw = document.documentElement.clientWidth;
-    return {
-      radius: parseFloat(cs.borderTopLeftRadius) || 0,
-      left: rect.left,
-      right: rect.right,
-      width: rect.width,
-      vw,
-      pageOverflowX:
-        document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    };
+  // DialogContent has a 200ms entry animation that scales the sheet up from
+  // 93%: a geometry read right after visibility fires measures the sheet
+  // MID-ANIMATION (319px instead of 343px at 375vw) and fails the width
+  // sanity check. waitForStableLayout re-samples across a double-rAF until
+  // the metrics stop moving, so the read lands on the settled sheet.
+  return waitForStableLayout<SheetGeometry>(page, dialog, {
+    timeout: 15_000,
+    message: `${label}: dialog geometry never settled`,
+    isReady: (g) => g.width > 50,
+    isStable: (a, b) => Math.abs(a.width - b.width) <= 0.5 && Math.abs(a.left - b.left) <= 0.5,
+    measure: (el) => {
+      const cs = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      // Scrollbars shrink clientWidth; use the layout viewport for inset math.
+      const vw = document.documentElement.clientWidth;
+      return {
+        radius: parseFloat(cs.borderTopLeftRadius) || 0,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        vw,
+        pageOverflowX:
+          document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      };
+    },
   });
 }
 

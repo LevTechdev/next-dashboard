@@ -564,7 +564,13 @@ export function CodeSlots({
           spellCheck={false}
           pattern={alphabet === "alphanumeric" ? "[a-zA-Z0-9]*" : "[0-9]*"}
           value=""
-          maxLength={length}
+          // No maxLength: the sanitizer (not the browser) is the single gate for
+          // what lands in the slots. With maxLength, a value-set that arrives
+          // with separators — e.g. autofill writing "cccc-e589" (9 chars) into an
+          // 8-char input — is truncated by the BROWSER before React ever sees
+          // it, so the dash survives and the last character is silently
+          // dropped (7 of 8 slots). Programmatic .fill() and real autofill both
+          // take this path; paste does not (the component sanitizes it first).
           id={inputId}
           placeholder={placeholder}
           aria-label={ariaLabel}

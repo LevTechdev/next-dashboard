@@ -58,6 +58,23 @@ export function forceLoginRedirect(reason: "expired" | "session-changed" = "expi
  */
 const TERMINAL_REFRESH_CODES = new Set(["SESSION_EXPIRED", "REFRESH_REUSE", "ACCOUNT_UNAVAILABLE"]);
 
+/**
+ * Session provenance: set the first time this JS context sees an
+ * authenticated `/api/auth/me` response through the fetch wrapper (the auth
+ * provider fetches it on mount and after every login).
+ *
+ * It enables the abort backstop below. A terminal rotation response can be
+ * lost client-side — the force-close navigation itself (or any navigation)
+ * aborts the in-flight fetch — while the server has already cleared the
+ * cookies. Every later rotation then answers `NO_SESSION` (no cookie
+ * presented), which is NOT terminal because anonymous visitors hit it all
+ * the time. Without provenance that is unrecoverable: the tab still renders
+ * the dashboard shell but can never re-authenticate — a zombie half-session.
+ * A tab that provably HAD a session and now provably has none is exactly the
+ * dead session this module exists to close out.
+ */
+let hadSession = false;
+
 const CSRF_COOKIE = "csrf_token";
 const CSRF_HEADER = "x-csrf-token";
 
@@ -142,7 +159,16 @@ function singleFlightRefresh(): Promise<{ ok: boolean; status: number }> {
         } catch {
           /* non-JSON body — leave the caller to handle the 401 */
         }
-        if (code && TERMINAL_REFRESH_CODES.has(code)) forceLoginRedirect("expired");
+        if (code && TERMINAL_REFRESH_CODES.has(code)) {
+          forceLoginRedirect("expired");
+        } else if (code === "NO_SESSION" && hadSession) {
+          // Abort backstop (see `hadSession`): the terminal response that
+          // should have force-closed us was lost to a navigation abort, and
+          // the server already cleared the cookies. The session cookies are
+          // provably gone from a tab that provably held a session — close it
+          // out instead of leaving a zombie shell that polls 401 forever.
+          forceLoginRedirect("expired");
+        }
       }
       return { ok: res.ok, status: res.status };
     })()
@@ -236,6 +262,12 @@ export function installAuthFetch(): void {
     }
 
     if (res.status !== 401 || !isSameOriginApi(url) || isAuthEndpoint(url)) {
+      // A 200 from /api/auth/me is the one response that proves this JS
+      // context held an authenticated session — record it for the abort
+      // backstop in singleFlightRefresh (see `hadSession`).
+      if (res.ok && isSameOriginApi(url) && url.includes("/api/auth/me")) {
+        hadSession = true;
+      }
       return res;
     }
 

@@ -22,6 +22,30 @@ export const SEED_ADMIN_PASSWORD = "admin123";
 export const FETCH_GATED = { timeout: 45_000 } as const;
 
 /**
+ * The email field of the SIGN-IN form — the form that also carries a password
+ * field.
+ *
+ * Why not a bare `input[type="email"]`: the login page swaps views (returning-
+ * user chooser / login / forgot-password) through `motion`, and AnimatePresence
+ * keeps the OUTGOING view mounted while it animates out. For that beat two
+ * email inputs exist in the DOM, and Playwright's strict mode counts hidden
+ * elements too, so an unscoped locator fails with "resolved to 2 elements"
+ * depending purely on animation timing. The password field is unique to the
+ * sign-in form, which makes this locator unambiguous in every view.
+ *
+ * `:visible` is the second guard: a long-lived dev server (a local gate run
+ * spans many suites) can keep a stale copy of the sign-in form mounted after
+ * a client remount. It never reaches the accessibility tree, but strict mode
+ * counts it — so restrict the match to forms that are actually rendered.
+ */
+export function signInEmailField(page: Page): Locator {
+  return page
+    .locator("form:visible")
+    .filter({ has: page.locator('input[type="password"]') })
+    .locator('input[type="email"]');
+}
+
+/**
  * Session cache for loginAs: token strings keyed by "email:password". Workers
  * share module state when the suite runs in the same process, and the goal is
  * to mint at most one argon2 login per credential per run.
@@ -200,14 +224,17 @@ export async function loginAs(
   // first goto can land on a Next.js 404 page. Re-issue the goto until the
   // login form renders instead of trusting a single shot — otherwise the
   // very first spec of a run (which is often the coldest) flakes.
+  // Scoped to the sign-in form — see signInEmailField() for why.
+  const emailInput = signInEmailField(page);
+
   await expect
     .poll(
       async () => {
-        if ((await page.locator('input[type="email"]').count()) === 0) {
+        if ((await emailInput.count()) === 0) {
           await page.goto("/en/login");
           await page.waitForLoadState("networkidle");
         }
-        return (await page.locator('input[type="email"]').count()) > 0;
+        return (await emailInput.count()) > 0;
       },
       { timeout: 45_000, message: "login page never served the form" },
     )
@@ -215,7 +242,6 @@ export async function loginAs(
   // Values typed before React hydrates are silently dropped (the submit never
   // enables). Retry the fills until the button enables — robust on a cold dev
   // server, where the login route may be the first page compiled in the run.
-  const emailInput = page.locator('input[type="email"]');
   const passwordInput = page.getByPlaceholder("Enter password");
   const submit = page.getByRole("button", { name: "Log in", exact: true });
   await expect
@@ -354,7 +380,10 @@ export async function fillRegistrationForm(
  * Assumes the "Verify your email" step (t("verifyEmailTitle")) is on screen.
  */
 export async function completeSignupOtp(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  // FETCH_GATED: the step renders only after the register POST resolves
+  // (argon2 + HIBP round-trip + a cold route compile on a long-lived dev
+  // server), which can blow past the 20s default expect timeout.
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible(FETCH_GATED);
   const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
   expect(code).toMatch(/^\d{6}$/);
   // The OTP input carries no maxLength attribute (the page slices to 6 digits
@@ -459,7 +488,12 @@ export async function waitForApiKeysTab(page: Page): Promise<void> {
   // The toolbar renders only after the api-keys fetch resolves on the remote
   // DB; under 2-worker argon2-login contention that fetch can exceed the 20s
   // default expect timeout, so grant explicit headroom.
-  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible({
+  // `.first()` because an EMPTY key list (fresh scratch-DB fixture) renders a
+  // second CTA in the empty-state card — the strict-mode ambiguity the
+  // integrations-tabs-mobile spec already documents.
+  await expect(
+    page.getByRole("button", { name: "Create API Key", exact: true }).first(),
+  ).toBeVisible({
     timeout: 45_000,
   });
 }
@@ -468,21 +502,31 @@ export async function waitForApiKeysTab(page: Page): Promise<void> {
  * The plan caps API keys per workspace. Specs in this suite leave their keys
  * behind, so once the cap is full POST /api/api-keys answers
  * 402 plan_limit_reached and the dialog stays open on its error toast.
- * Delete the oldest leftover key to reclaim a slot (leaving room for the one
- * about to be created). Plan-agnostic: the cap comes from the 402 itself.
+ * Delete a leftover key to reclaim a slot (leaving room for the one about to
+ * be created). Plan-agnostic: the cap comes from the 402 itself.
+ *
+ * Skip the seeded "Demo Integration Key" (it IS the fixture other specs
+ * assert); delete the OLDEST other key. Deleting one key per call means a
+ * caller that retries loops to convergence: the cap counts only the session
+ * user's OWN ACTIVE keys, so own keys are finite and one of them eventually
+ * crosses the limit.
  */
-async function reclaimApiKeySlot(page: Page): Promise<void> {
+async function reclaimApiKeySlot(page: Page): Promise<boolean> {
   const listed = await page.request.get("/api/api-keys");
-  if (!listed.ok()) return;
+  if (!listed.ok()) return false;
   const keys = (await listed.json()) as Array<{ id: string; name: string }>;
-  const oldest = keys[keys.length - 1];
-  if (!oldest) return;
-  await page.request.delete("/api/api-keys", { data: { id: oldest.id } });
+  const victim = keys
+    .filter((k) => k.name !== "Demo Integration Key")
+    // GET orders by createdAt desc — the array tail is the oldest.
+    .at(-1);
+  if (!victim) return false;
+  await page.request.delete("/api/api-keys", { data: { id: victim.id } });
   // The tab refetches the list, so the freed slot is visible before we retry.
-  await expect(page.getByRole("heading", { name: oldest.name, exact: true })).toHaveCount(
+  await expect(page.getByRole("heading", { name: victim.name, exact: true })).toHaveCount(
     0,
     FETCH_GATED,
   );
+  return true;
 }
 
 /** Submit the create-key dialog and return the POST response. */
@@ -500,20 +544,23 @@ async function submitCreateKey(page: Page, dialog: Locator): Promise<number> {
  * `dash_...` key scraped from the one-time reveal banner.
  */
 export async function createApiKey(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Create API Key", exact: true }).click();
+  // Toolbar button (`.first()`), NOT the empty-state duplicate the API Keys
+  // tab renders when the list is empty on a fresh scratch-DB fixture.
+  await page.getByRole("button", { name: "Create API Key", exact: true }).first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Create API Key")).toBeVisible();
   await dialog.getByPlaceholder("e.g., Production Integration").fill(name);
 
-  if ((await submitCreateKey(page, dialog)) === 402) {
-    // At the plan's key cap — free a slot and submit again (the dialog is
-    // still open, holding the name we already typed).
-    await reclaimApiKeySlot(page);
-    expect(
-      await submitCreateKey(page, dialog),
-      "create should succeed after reclaiming a slot",
-    ).toBe(200);
+  // At the plan's key cap (402) — free a slot and submit again, up to a few
+  // rounds: under 2 workers the sibling spec's create can consume the slot we
+  // just freed between our reclaim and our retry, so one attempt is not
+  // enough (the dialog stays open throughout, still holding the name).
+  let status = await submitCreateKey(page, dialog);
+  for (let round = 0; status === 402 && round < 4; round += 1) {
+    if (!(await reclaimApiKeySlot(page))) break;
+    status = await submitCreateKey(page, dialog);
   }
+  expect(status, "create should succeed after reclaiming a slot").toBe(200);
 
   // Both waits gate on the POST + refetch round-tripping the remote DB.
   await expect(dialog).not.toBeVisible(FETCH_GATED);

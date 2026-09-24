@@ -1,5 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
-import { SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, TEST_PASSWORD } from "./helpers";
+import {
+  FETCH_GATED,
+  SEED_ADMIN_EMAIL,
+  SEED_ADMIN_PASSWORD,
+  TEST_PASSWORD,
+  signInEmailField,
+} from "./helpers";
 
 /**
  * Auth-page locale smoke tests (ja + id).
@@ -110,20 +116,23 @@ async function loginOnPage(
   password: string = SEED_ADMIN_PASSWORD,
 ): Promise<void> {
   await page.goto(`/${locale}/login`);
+
+  // Scoped to the sign-in form — see signInEmailField() for why.
+  const emailInput = signInEmailField(page);
+
   await expect
     .poll(
       async () => {
-        if ((await page.locator('input[type="email"]').count()) === 0) {
+        if ((await emailInput.count()) === 0) {
           await page.goto(`/${locale}/login`);
           await page.waitForLoadState("networkidle");
         }
-        return (await page.locator('input[type="email"]').count()) > 0;
+        return (await emailInput.count()) > 0;
       },
       { timeout: 45_000, message: "login page never served the form" },
     )
     .toBe(true);
 
-  const emailInput = page.locator('input[type="email"]');
   const submit = page.getByRole("button", { name: s.login.button, exact: true });
   await expect
     .poll(
@@ -211,7 +220,10 @@ for (const [locale, s] of Object.entries(LOCALES)) {
       // ── OTP identity step, in the locale's language. Dev contract: with the
       //    mailer blanked the code renders inline ([data-testid="dev-otp"])
       //    and the step does NOT auto-submit — the explicit Verify button.
-      await expect(page.getByRole("heading", { name: s.otp.verifyTitle })).toBeVisible();
+      //    FETCH_GATED: this heading appears only after the register POST
+      //    resolves (argon2 + HIBP round-trip + a cold route compile on a
+      //    long-lived dev server), which can blow past the 20s default.
+      await expect(page.getByRole("heading", { name: s.otp.verifyTitle })).toBeVisible(FETCH_GATED);
       const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
       expect(code).toMatch(/^\d{6}$/);
       await page.getByPlaceholder("000000").fill(code);
