@@ -59,7 +59,8 @@
     "icons:fix-dry": "node scripts/fix-icon-sizes.js --dry",
     "doctor": "npx react-doctor@latest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "check:null-coercion": "node scripts/audit-null-coercion.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.16",

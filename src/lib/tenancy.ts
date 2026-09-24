@@ -36,6 +36,36 @@ export function sameTenant(
 }
 
 /**
+ * Resolve an ACTOR's workspace by user id — the single answer to "which
+ * workspace does this user belong to?" for code that has a userId but no
+ * session: Stripe/webhook payloads, best-effort audit writers, background
+ * jobs.
+ *
+ * Use this instead of coercing a missing tenant to a DEFINED `null`. A null is
+ * not "unknown, go find it" — it is "belongs to nobody", and every
+ * tenant-scoped read (audit log, activity feed, `tenantWhere` filters) then
+ * hides the row. That is exactly how a whole event family lost attribution
+ * before, so the rule is centralised here rather than re-derived per call
+ * site. Returns null only when the actor genuinely has no workspace.
+ */
+export async function resolveUserTenantId(
+  userId: string | null | undefined,
+): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true },
+    });
+    return user?.tenantId ?? null;
+  } catch {
+    // Infra hiccup — callers fall back to their own behaviour rather than
+    // failing the operation they were only trying to attribute.
+    return null;
+  }
+}
+
+/**
  * Effective workspace for a session. The JWT tenant claim wins; legacy
  * sessions without a claim operate on the default (first-created) workspace —
  * the same semantic `scripts/backfill-tenant.mjs` applies when backfilling

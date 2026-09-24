@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { buildInvoiceSnapshot } from "@/lib/invoice-snapshot";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
+import { resolveUserTenantId } from "@/lib/tenancy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,11 +70,18 @@ export async function POST(req: Request) {
       const checkout = event.data.object as Stripe.Checkout.Session;
       const userId = checkout.metadata?.userId;
       const planId = checkout.metadata?.planId;
-      const tenantId = checkout.metadata?.tenantId ?? null;
+      const metadataTenantId = checkout.metadata?.tenantId;
 
       if (!userId || !planId) {
         return NextResponse.json({ received: true });
       }
+
+      // Metadata is the preferred source, but a session created before the
+      // tenant was stamped must not write a NULL tenant: resolve the actor's
+      // workspace instead. A defined null here is not "unknown" — it is
+      // "belongs to nobody", which hides the audit row from every
+      // tenant-scoped read.
+      const tenantId = metadataTenantId ?? (await resolveUserTenantId(userId));
 
       const plan = await prisma.plan.findUnique({ where: { id: planId } });
       if (!plan) {
@@ -197,7 +205,7 @@ export async function POST(req: Request) {
           details: deleted
             ? "Subscription ended via Stripe"
             : `Subscription synced from Stripe (${stripeStatus(sub.status)})`,
-          tenantId: sub.metadata?.tenantId ?? null,
+          tenantId: sub.metadata?.tenantId ?? (await resolveUserTenantId(local.userId)),
         },
       });
       break;

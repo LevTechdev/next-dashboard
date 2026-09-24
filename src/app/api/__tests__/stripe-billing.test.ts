@@ -12,6 +12,7 @@ const {
   mockRequirePermission,
   mockRequireAuth,
   mockGetTenantId,
+  mockResolveUserTenantId,
 } = vi.hoisted(() => {
   const stripe = {
     customers: { create: vi.fn() },
@@ -78,6 +79,7 @@ const {
       response: null,
     }),
     mockGetTenantId: vi.fn(() => "tenant-1"),
+    mockResolveUserTenantId: vi.fn(),
   };
 });
 
@@ -93,7 +95,10 @@ vi.mock("@/lib/stripe", () => ({
   stripeConfigured: mockStripeConfigured,
 }));
 
-vi.mock("@/lib/tenancy", () => ({ getTenantId: mockGetTenantId }));
+vi.mock("@/lib/tenancy", () => ({
+  getTenantId: mockGetTenantId,
+  resolveUserTenantId: mockResolveUserTenantId,
+}));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Imports under test
@@ -369,6 +374,66 @@ describe("Billing Webhook", () => {
           action: "UPDATE_SUBSCRIPTION",
           tenantId: "tenant-1",
         }),
+      }),
+    );
+  });
+
+  it("attributes the audit row to the actor's workspace when checkout metadata carries no tenantId", async () => {
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
+    // Older checkout sessions (and integrations that never stamped the
+    // tenant) omit metadata.tenantId. Coercing that absence to a DEFINED null
+    // wrote an audit row belonging to nobody — invisible to every
+    // tenant-scoped read — so the route must resolve the actor instead.
+    mockResolveUserTenantId.mockResolvedValueOnce("tenant-resolved");
+    mockStripe.webhooks.constructEvent.mockReturnValueOnce({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          customer: "cus_123",
+          subscription: "sub_123",
+          amount_total: 2900,
+          currency: "usd",
+          payment_status: "paid",
+          metadata: { userId: "u-1", planId: "plan-pro" },
+        },
+      },
+    });
+
+    const res = await webhookRoutes.POST(webhookRequest({}));
+    expect(res.status).toBe(200);
+    expect(mockResolveUserTenantId).toHaveBeenCalledWith("u-1");
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "UPDATE_SUBSCRIPTION",
+          tenantId: "tenant-resolved",
+        }),
+      }),
+    );
+  });
+
+  it("prefers the metadata tenant over the resolved workspace", async () => {
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
+    mockResolveUserTenantId.mockResolvedValueOnce("tenant-resolved");
+    mockStripe.webhooks.constructEvent.mockReturnValueOnce({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          customer: "cus_123",
+          subscription: "sub_123",
+          amount_total: 2900,
+          currency: "usd",
+          payment_status: "paid",
+          metadata: { userId: "u-1", planId: "plan-pro", tenantId: "tenant-1" },
+        },
+      },
+    });
+
+    await webhookRoutes.POST(webhookRequest({}));
+    expect(mockResolveUserTenantId).not.toHaveBeenCalled();
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tenantId: "tenant-1" }),
       }),
     );
   });

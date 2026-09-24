@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getRequestMeta } from "@/lib/request-meta";
 import { computeHash, GENESIS_HASH } from "@/lib/audit-chain";
 import { forwardToSiem } from "@/lib/siem";
-import { tenantWhere } from "@/lib/tenancy";
+import { resolveUserTenantId, tenantWhere } from "@/lib/tenancy";
 
 export type SecurityEventType =
   | "SIGNIN_ALERT_SENT"
@@ -70,25 +70,6 @@ export type SecurityEventType =
 const isPgBouncer =
   typeof process.env.DATABASE_URL === "string" &&
   process.env.DATABASE_URL.includes("pgbouncer=true");
-
-/**
- * Resolve the workspace a user belongs to, so per-user events are always
- * tenant-attributed even when the call site forgets to pass `tenantId`.
- * Deployment-level events (no userId — e.g. pre-auth RATE_LIMITED) stay
- * unattributed by design.
- */
-async function resolveUserTenantId(userId: string | null): Promise<string | null> {
-  if (!userId) return null;
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { tenantId: true },
-    });
-    return user?.tenantId ?? null;
-  } catch {
-    return null;
-  }
-}
 
 export async function logSecurityEvent(params: {
   userId: string | null;

@@ -67,7 +67,14 @@ Next.js 16 (App Router, React 19) multi-tenant commercial analytics, billing, an
 - `src/lib/account-validator.ts`: Real-time phone carrier detection (DANA, OVO, GoPay, LinkAja) and card BIN/Luhn check (Visa, Mastercard, GPN, JCB).
 - `src/components/ui/bank-card-visual.tsx` & `src/components/ui/emoney-wallet-pass.tsx`: Tactile EMV physical card and mobile wallet pass design system.
 
-### 9. Context7 (Up-to-Date API Reference) — Mandatory for Library Work
+### 9. Null Coercion & Tenant Attribution (Strict)
+
+- **Never hand a defined `null` to a resolver.** `undefined` means "absent — derive it"; `null` means "belongs to nobody". Writing `session.user.tenantId ?? null` (or `metadata.tenantId ?? null`) into an audit/telemetry/notification writer silently drops attribution, and the row is then invisible to every `tenantWhere`-scoped read.
+- The rule, applied everywhere: **a non-null tenant always wins; a nullish one resolves from the actor** via `resolveUserTenantId(userId)` in `src/lib/tenancy.ts` (or the session equivalent). `src/lib/security-events.ts`'s `logSecurityEvent` does this centrally — do not re-derive it per call site.
+- Explicit nulls that ARE the contract stay: Prisma column values, JSON payload fields (`string | null`), and the canonical audit-hash payload in `src/lib/audit-hash.ts` (there a null is hashed data).
+- `npm run check:null-coercion` prints every `?? null` in `src/`, `prisma/` and `scripts/` with its line, and flags files whose intentional coercions are not documented in the script's `KNOWN_INTENTIONAL` map. Run it before adding a writer/resolver call site.
+
+### 10. Context7 (Up-to-Date API Reference) — Mandatory for Library Work
 
 - The Context7 MCP server is configured in `.vscode/mcp.json` (`context7` server, run via `npx -y @upstash/context7-mcp@latest`). It resolves library IDs (`resolve-library-id`) and pulls version-matched docs/code samples (`query-docs`, e.g. libraryId `/vercel/next.js`, `/prisma/prisma`, `/tailwindcss/tailwindcss`).
 - BEFORE writing code against any framework/package API (Next.js, Prisma, next-intl, Radix UI, framer-motion, recharts, stripe, midtrans, @react-pdf/renderer…), query Context7 to confirm the current signature instead of relying on training memory. If Context7 is unavailable, prefer reading `node_modules/<pkg>/README.md` and `*.d.ts` over guessing.
