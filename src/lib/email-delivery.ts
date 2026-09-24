@@ -42,6 +42,10 @@ export async function logEmailDelivery(params: {
       transport: params.transport ?? "none",
       ...(params.reason ? { reason: params.reason } : {}),
     },
-    tenantId: params.tenantId ?? null,
+    // Forward as-is (undefined when the caller omitted it): a nullish tenantId
+    // lets `logSecurityEvent` resolve the workspace from `userId`, so per-user
+    // email events stay attributed even when the transport call site has no
+    // session context.
+    tenantId: params.tenantId,
   });
 }

@@ -71,6 +71,25 @@ const isPgBouncer =
   typeof process.env.DATABASE_URL === "string" &&
   process.env.DATABASE_URL.includes("pgbouncer=true");
 
+/**
+ * Resolve the workspace a user belongs to, so per-user events are always
+ * tenant-attributed even when the call site forgets to pass `tenantId`.
+ * Deployment-level events (no userId — e.g. pre-auth RATE_LIMITED) stay
+ * unattributed by design.
+ */
+async function resolveUserTenantId(userId: string | null): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tenantId: true },
+    });
+    return user?.tenantId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function logSecurityEvent(params: {
   userId: string | null;
   type: SecurityEventType;
@@ -81,13 +100,24 @@ export async function logSecurityEvent(params: {
   try {
     const meta = params.req ? getRequestMeta(params.req) : null;
     const createdAt = new Date();
+    // Tenant attribution: a non-null tenantId wins; otherwise a per-user
+    // event resolves the workspace from the actor. `check:audit-chain`
+    // fails on any HASHED row without a tenant, so an unattributed write
+    // here would take the release gate down — resolve centrally instead of
+    // trusting every call site to remember.
+    //
+    // Nullish (undefined OR null) resolves from the actor on purpose: call
+    // sites routinely forward `session.user.tenantId ?? null`, and treating
+    // that explicit null as "no workspace" silently dropped attribution for
+    // whole event families (e.g. EMAIL_DELIVERY_*).
+    const tenantId = params.tenantId ?? (await resolveUserTenantId(params.userId));
     const event = {
       userId: params.userId,
       type: params.type,
       ip: meta?.ip ?? null,
       userAgent: meta?.userAgent ?? null,
       metadata: params.metadata ?? null,
-      tenantId: params.tenantId ?? null,
+      tenantId,
       createdAt,
     };
 

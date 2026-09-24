@@ -5,6 +5,10 @@ const prisma = new PrismaClient();
  * Idempotent migration: assign every legacy audit row without a tenant to the
  * default (first-created) workspace. Runs alongside `db:backfill-tenant`.
  *
+ * Exemption: actor-less rows (userId null — the pre-auth login throttle, an
+ * email attempt for an address with no account) are deployment-level telemetry
+ * with no workspace to attribute them to — mirrors scripts/check-audit-chain.ts.
+ *
  * SecurityEvent rows keep their tamper-evident hash: `tenantId` is NOT part of
  * the canonical chain payload (src/lib/audit-chain.ts hashes userId/type/ip/
  * userAgent/metadata/createdAt), so updating it never breaks verification.
@@ -17,7 +21,10 @@ if (!tenant) {
 console.log("default tenant:", tenant.id, `(${tenant.slug})`);
 
 const data = { tenantId: tenant.id };
-const se = await prisma.securityEvent.updateMany({ where: { tenantId: null }, data });
+const se = await prisma.securityEvent.updateMany({
+  where: { tenantId: null, userId: { not: null } },
+  data,
+});
 const al = await prisma.activityLog.updateMany({ where: { tenantId: null }, data });
 
 const seLeft = await prisma.securityEvent.count({ where: { tenantId: null } });

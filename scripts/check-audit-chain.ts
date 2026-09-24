@@ -21,13 +21,18 @@
  *      flows through logSecurityEvent, which always hashes), so any NULL-hash
  *      row means corruption or a legacy pre-hashing table — run
  *      `npm run repair:audit-chain` to re-chain it; or
- *   3. tenant attribution is broken — a hashed row with a NULL tenantId, or a
- *      tenantId that references NO existing Tenant (cross-tenant
- *      contamination: a deleted tenant, a bogus id, a cross-DB import). The
- *      chain is deliberately MULTI-tenant (the isolation fixture stamps
- *      tenant-b events into it), so the assertion is attribution integrity,
- *      not "default tenant only". tenantId is NOT part of the canonical hash
- *      payload, so only this check can catch this class.
+ *   3. tenant attribution is broken — a hashed row WITH AN ACTOR (userId set)
+ *      carrying a NULL tenantId, or a tenantId that references NO existing
+ *      Tenant (cross-tenant contamination: a deleted tenant, a bogus id, a
+ *      cross-DB import). The chain is deliberately MULTI-tenant (the isolation
+ *      fixture stamps tenant-b events into it), so the assertion is
+ *      attribution integrity, not "default tenant only". tenantId is NOT part
+ *      of the canonical hash payload, so only this check can catch this class.
+ *
+ *      Actor-LESS rows (userId null: the pre-auth login throttle, a
+ *      verification email requested for an unknown address) are
+ *      deployment-level telemetry — there is no workspace to attribute them to,
+ *      so they are exempt from check 3 by construction.
  *
  * NOTE: `npm run db:seed` DELETES all users, and SecurityEvent.userId has
  * onDelete: SetNull — so re-seeding mutates every event whose user is wiped,
@@ -57,16 +62,14 @@ async function main(): Promise<void> {
   console.log("🔎 Verifying SecurityEvent hash chain…");
 
   const result = await verifyAuditChain();
-  check(
-    "chain verifies clean (ok)",
-    result.ok,
-    { firstBreakSeq: result.firstBreakSeq, breaks: result.breaks.slice(0, 5) },
-  );
-  check(
-    "all hashed events verified",
-    result.verified === result.total,
-    { verified: result.verified, total: result.total },
-  );
+  check("chain verifies clean (ok)", result.ok, {
+    firstBreakSeq: result.firstBreakSeq,
+    breaks: result.breaks.slice(0, 5),
+  });
+  check("all hashed events verified", result.verified === result.total, {
+    verified: result.verified,
+    total: result.total,
+  });
 
   const nullHashed = await prisma.securityEvent.count({ where: { hash: null } });
   check("zero NULL-hash SecurityEvent rows", nullHashed === 0, { nullHashed });
@@ -74,35 +77,52 @@ async function main(): Promise<void> {
   // Tenant attribution: the chain is deliberately MULTI-tenant (the isolation
   // fixture stamps tenant-b events into it), so a "default-tenant-only"
   // assertion would be wrong. Assert attribution integrity instead — every
-  // hashed row must carry a non-NULL tenantId that references an EXISTING
-  // tenant. A row pointing at a deleted/bogus tenant (cross-tenant
-  // contamination) or missing attribution entirely is invisible to the hash
-  // chain itself, because tenantId is NOT part of the canonical payload.
-  const hashedRows = await prisma.securityEvent.findMany({
-    where: { hash: { not: null } },
-    select: { tenantId: true },
+  // hashed row that HAS AN ACTOR must carry a non-NULL tenantId, and any
+  // tenantId that appears must reference an EXISTING tenant. A row pointing at
+  // a deleted/bogus tenant (cross-tenant contamination) or missing attribution
+  // is invisible to the hash chain itself, because tenantId is NOT part of the
+  // canonical payload.
+  //
+  // EXEMPTED: actor-less rows (userId null). The login throttle records
+  // attempts that arrive BEFORE any identity is known (wrong email, credential
+  // stuffing, plain hammering), and a verification email can be requested for
+  // an address with no account — deployment-level telemetry with nothing to
+  // attribute from. logSecurityEvent resolves a tenant for every event that HAS
+  // an actor, so a userId + NULL tenantId pair is always a real bug.
+  const hashedWithActor = await prisma.securityEvent.count({
+    where: { hash: { not: null }, userId: { not: null } },
   });
-  const nullTenant = hashedRows.filter((r) => r.tenantId === null).length;
-  const tenantIds = [
-    ...new Set(hashedRows.map((r) => r.tenantId).filter((id): id is string => Boolean(id))),
-  ];
+  const nullTenant = await prisma.securityEvent.count({
+    where: { hash: { not: null }, userId: { not: null }, tenantId: null },
+  });
+  const exemptedActorless = await prisma.securityEvent.count({
+    where: { hash: { not: null }, userId: null, tenantId: null },
+  });
+  check(
+    "every hashed row with an actor carries a tenantId (actor-less telemetry exempt)",
+    nullTenant === 0,
+    { nullTenant, hashedWithActor, exemptedActorlessRows: exemptedActorless },
+  );
+
+  const attributedRows = await prisma.securityEvent.findMany({
+    where: { hash: { not: null }, tenantId: { not: null } },
+    select: { tenantId: true },
+    distinct: ["tenantId"],
+  });
+  const tenantIds = attributedRows.map((r) => r.tenantId).filter((id): id is string => Boolean(id));
   const tenants = await prisma.tenant.findMany({
     where: { id: { in: tenantIds } },
     select: { id: true },
   });
   const existing = new Set(tenants.map((t) => t.id));
   const orphaned = tenantIds.filter((id) => !existing.has(id));
-  check("zero hashed rows with NULL tenantId", nullTenant === 0, { nullTenant });
-  check(
-    "every hashed row's tenantId references an existing tenant",
-    orphaned.length === 0,
-    { orphanedTenantIds: orphaned, tenantsOnChain: tenantIds.length },
-  );
+  check("every hashed row's tenantId references an existing tenant", orphaned.length === 0, {
+    orphanedTenantIds: orphaned,
+    tenantsOnChain: tenantIds.length,
+  });
 
   if (failures.length > 0) {
-    console.error(
-      `\n❌ Audit-chain check FAILED (${failures.length}): ${failures.join(", ")}`,
-    );
+    console.error(`\n❌ Audit-chain check FAILED (${failures.length}): ${failures.join(", ")}`);
     console.error(
       "   The tamper-evident chain is broken or has rows outside it. If these are",
       "   legacy pre-hashing rows, re-chain them once with:",

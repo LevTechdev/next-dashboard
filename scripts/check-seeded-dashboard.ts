@@ -6,8 +6,9 @@
  * products/etc. WITHOUT a tenantId while every tenant-scoped API route (e.g.
  * /api/dashboard) filters by `where: { tenantId }`.
  *
- * Also fails when the seed writes ANY SecurityEvent or ActivityLog row with a
- * NULL tenantId, and when the DEVELOPER-PORTAL fixture rows (one ACTIVE ApiKey
+ * Also fails when the seed writes ANY ActivityLog row with a NULL tenantId, or
+ * a SecurityEvent row with a NULL tenantId that HAS an actor (see below), and
+ * when the DEVELOPER-PORTAL fixture rows (one ACTIVE ApiKey
  * plus one ACTIVE WebhookEndpoint for the seed admin) are missing — the rows
  * the integrations/playground E2E specs stand on. A drifted shared DB that lost
  * them (or a seed regression) fails here in seconds instead of as a 49s E2E
@@ -103,7 +104,21 @@ async function main(): Promise<void> {
     prisma.securityEvent.count({ where: { tenantId: null } }),
     prisma.activityLog.count({ where: { tenantId: null } }),
   ]);
-  check("zero NULL-tenant SecurityEvent rows", nullSecurityEvents === 0, nullSecurityEvents);
+  // Actor-less rows are exempt: the login throttle records pre-auth attempts
+  // (wrong email, hammering) and a verification email can be requested for an
+  // address with no account — deployment-level telemetry with no workspace to
+  // attribute it to. See scripts/check-audit-chain.ts for the same rule.
+  const exemptedActorless = await prisma.securityEvent.count({
+    where: { tenantId: null, userId: null },
+  });
+  const unattributedWithActor = await prisma.securityEvent.count({
+    where: { tenantId: null, userId: { not: null } },
+  });
+  check(
+    "every NULL-tenant SecurityEvent row is actor-less (no userId)",
+    nullSecurityEvents === exemptedActorless && unattributedWithActor === 0,
+    { nullSecurityEvents, exemptedActorless, unattributedWithActor },
+  );
   check("zero NULL-tenant ActivityLog rows", nullActivityLogs === 0, nullActivityLogs);
 
   // Developer-portal fixture: the integrations/destructive-glyphs/playground

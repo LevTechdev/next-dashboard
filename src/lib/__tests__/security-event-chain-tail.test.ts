@@ -16,11 +16,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * always the newest genuinely-chained row.
  */
 
-const { findFirst, create, executeRawUnsafe, forwardToSiem } = vi.hoisted(() => ({
+const { findFirst, create, executeRawUnsafe, forwardToSiem, userFindUnique } = vi.hoisted(() => ({
   findFirst: vi.fn(),
   create: vi.fn(),
   executeRawUnsafe: vi.fn(),
   forwardToSiem: vi.fn(async () => {}),
+  // Used by the tenant-attribution resolver (see the describe block below).
+  userFindUnique: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => {
@@ -31,6 +33,7 @@ vi.mock("@/lib/db", () => {
   return {
     prisma: {
       securityEvent: { findFirst: findFirst, create: create },
+      user: { findUnique: userFindUnique },
       // The non-pgbouncer path wraps the append in an advisory-locked
       // interactive transaction; run the callback against the same spies.
       $transaction: vi.fn(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx)),
@@ -54,6 +57,8 @@ beforeEach(() => {
     ...args.data,
   }));
   forwardToSiem.mockClear();
+  userFindUnique.mockReset();
+  userFindUnique.mockResolvedValue({ tenantId: "t-actor" });
 });
 
 /** The `data` payload handed to securityEvent.create. */
@@ -113,5 +118,56 @@ describe("logSecurityEvent — chain tail", () => {
   it("never throws when the append fails (best-effort logging)", async () => {
     findFirst.mockRejectedValue(new Error("db down"));
     await expect(logSecurityEvent({ userId: null, type: "LOGIN" })).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * Regression guard for tenant attribution.
+ *
+ * BUG (fixed): the resolver only ran when `tenantId` was `undefined`, but call
+ * sites routinely forward the session value as-is (`tenantId: actor?.tenantId
+ * ?? null`, `logEmailDelivery`), which is a DEFINED `null`. Those events were
+ * therefore stored with no tenant at all — an audit row that belongs to nobody
+ * under strict tenant scoping, and a hard failure for `check:audit-chain`
+ * ("every hashed row with an actor carries a tenantId").
+ *
+ * The rule under test: a NON-NULL tenantId always wins; otherwise an event
+ * with an actor resolves the actor's workspace, and an actor-less event stays
+ * unattributed (deployment-level telemetry — nothing to resolve from).
+ */
+describe("logSecurityEvent — tenant attribution", () => {
+  beforeEach(() => {
+    findFirst.mockResolvedValue({ hash: HASH_OF_PREVIOUS });
+  });
+
+  it("resolves the actor's workspace when tenantId is omitted", async () => {
+    await logSecurityEvent({ userId: "u1", type: "LOGIN" });
+    expect(userFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "u1" } }));
+    expect(createdData().tenantId).toBe("t-actor");
+  });
+
+  it("resolves anyway when a call site forwards an explicit null", async () => {
+    // The `logEmailDelivery` / `session.tenantId ?? null` shape that caused the
+    // unattributed EMAIL_DELIVERY_* rows.
+    await logSecurityEvent({ userId: "u1", type: "EMAIL_DELIVERY_FAILED", tenantId: null });
+    expect(createdData().tenantId).toBe("t-actor");
+  });
+
+  it("prefers an explicit tenant over the actor lookup", async () => {
+    await logSecurityEvent({ userId: "u1", type: "LOGIN", tenantId: "t-explicit" });
+    expect(createdData().tenantId).toBe("t-explicit");
+    expect(userFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("leaves an actor-less event unattributed without querying", async () => {
+    await logSecurityEvent({ userId: null, type: "RATE_LIMITED" });
+    expect(createdData().tenantId).toBeNull();
+    expect(userFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("stays unattributed when the actor lookup fails (best-effort)", async () => {
+    userFindUnique.mockRejectedValue(new Error("db down"));
+    await expect(logSecurityEvent({ userId: "u1", type: "LOGIN" })).resolves.toBeUndefined();
+    expect(createdData().tenantId).toBeNull();
   });
 });
