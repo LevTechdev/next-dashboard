@@ -210,6 +210,9 @@ export default function ProfilePage() {
 
   // Check for email verified query param (?verified=true after a successful
   // confirm-link click, ?verified=invalid when the token was bad/expired).
+  // The VerificationSuccessToaster deliberately does not consume ?verified:
+  // this page (and the Security Center) owns the marker, so the toast fires
+  // exactly once from here.
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
