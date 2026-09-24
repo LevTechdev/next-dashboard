@@ -1103,16 +1103,58 @@ async function main() {
   // trips the 409 coverage gate, while a $500 request succeeds.
   const seedProducts = await prisma.product.findMany({ take: 3, orderBy: { createdAt: "asc" } });
   // Affiliate platforms — every conversion block below reads whatever
-  // platforms exist. A freshly-provisioned database (CI makes one per run)
-  // has none, which used to silently skip the whole affiliate seed: no
-  // conversions, no lifecycle payout, and empty Conversions/Payouts tabs
-  // that the E2E suite asserts on. Upsert the catalog the UI offers (see
-  // src/lib/platform-connectors.ts) so the section is self-sufficient.
+  // platforms exist, and the affiliates page renders a card per platform
+  // (brand glyph + storefront link, see e2e/affiliates-platform-icons.spec.ts).
+  // A freshly-provisioned database (CI makes one per run) has none, which
+  // used to silently skip the whole affiliate seed: no conversions, no
+  // lifecycle payout, empty Conversions/Payouts tabs, five platform cards
+  // instead of six. Upsert the full catalog the UI offers (see
+  // src/lib/platform-connectors.ts and the brand-icon system) so the
+  // section is self-sufficient.
   await prisma.affiliatePlatform.createMany({
     data: [
-      { name: "TikTok Shop", slug: "tiktok-shop", color: "#FE2C55", sortOrder: 0 },
-      { name: "Shopee", slug: "shopee", color: "#EE4D2D", sortOrder: 1 },
-      { name: "Tokopedia", slug: "tokopedia", color: "#03AC0E", sortOrder: 2 },
+      {
+        name: "TikTok Shop",
+        slug: "tiktok-shop",
+        baseUrl: "https://shop.tiktok.com",
+        color: "#FE2C55",
+        sortOrder: 0,
+      },
+      {
+        name: "Shopee",
+        slug: "shopee",
+        baseUrl: "https://shopee.com",
+        color: "#EE4D2D",
+        sortOrder: 1,
+      },
+      {
+        name: "Tokopedia",
+        slug: "tokopedia",
+        baseUrl: "https://www.tokopedia.com",
+        color: "#03AC0E",
+        sortOrder: 2,
+      },
+      {
+        name: "Facebook",
+        slug: "facebook",
+        baseUrl: "https://www.facebook.com",
+        color: "#1877F2",
+        sortOrder: 3,
+      },
+      {
+        name: "Instagram",
+        slug: "instagram",
+        baseUrl: "https://www.instagram.com",
+        color: "#E1306C",
+        sortOrder: 4,
+      },
+      {
+        name: "Lazada",
+        slug: "lazada",
+        baseUrl: "https://www.lazada.com",
+        color: "#F57224",
+        sortOrder: 5,
+      },
     ],
     skipDuplicates: true,
   });
