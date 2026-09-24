@@ -46,6 +46,8 @@ async function main() {
 
   // Clean existing data
   await prisma.notification.deleteMany();
+  await prisma.apiKey.deleteMany();
+  await prisma.webhookEndpoint.deleteMany();
   await prisma.orderDiscount.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -1318,7 +1320,12 @@ async function main() {
     const devKeyHash = createHash("sha256").update(devKeyRaw).digest("hex");
     await prisma.apiKey.upsert({
       where: { key: devKeyHash },
-      update: { status: "ACTIVE" },
+      // userId is restored on update too: the truncate above now wipes these
+      // tables every seed, but on a DB seeded by an older seed version the
+      // surviving rows have NULL userId (user.deleteMany → SetNull), and a
+      // NULL-owner demo key neither shows an owner in the portal nor counts
+      // toward (nor fills) the admin's plan cap.
+      update: { status: "ACTIVE", userId: admin.id },
       create: {
         name: "Demo Integration Key",
         key: devKeyHash,
@@ -1330,7 +1337,7 @@ async function main() {
     });
     await prisma.webhookEndpoint.upsert({
       where: { id: "seed-webhook-demo" },
-      update: { status: "ACTIVE" },
+      update: { status: "ACTIVE", userId: admin.id },
       create: {
         id: "seed-webhook-demo",
         name: "Demo Order Webhook",
