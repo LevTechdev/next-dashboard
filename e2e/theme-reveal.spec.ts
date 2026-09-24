@@ -22,7 +22,7 @@
  * spec starts in a known state.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { loginAs, waitForLoginThrottleWindow } from "./helpers";
+import { FETCH_GATED, loginAs, waitForLoginThrottleWindow } from "./helpers";
 
 const REVEAL = "data-theme-reveal";
 
@@ -97,9 +97,18 @@ test.describe("Theme reveal", () => {
     await page.goto("/en/dashboard");
     await waitForLoginThrottleWindow();
 
-    await page.keyboard.press("ControlOrMeta+k");
     const paletteInput = page.getByPlaceholder("Search orders, customers, products...");
-    await expect(paletteInput).toBeVisible();
+    // The palette mounts inside the header and installs its ⌘K listener on
+    // hydration, so a hotkey pressed before that is silently dropped — the
+    // flake this test used to hit on cold CI machines. Retry within the
+    // fetch-gated budget, pressing ONLY when the dialog is not mounted (the
+    // handler is a toggle, so a blind retry would close an open palette).
+    await expect(async () => {
+      if ((await paletteInput.count()) === 0) {
+        await page.keyboard.press("ControlOrMeta+k");
+      }
+      await expect(paletteInput).toBeVisible({ timeout: 2_500 });
+    }).toPass(FETCH_GATED);
 
     await paletteInput.fill("toggle theme");
     const action = page.getByText("Toggle Theme", { exact: true }).first();

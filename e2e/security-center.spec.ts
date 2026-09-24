@@ -210,8 +210,10 @@ test.describe("Security Center", () => {
 async function generateOrRegenerateCodes(page: Page) {
   // Wait for client-side data to load before clicking: the "N unused code(s)
   // remaining" text only renders after hydration + fetch, and clicking before
-  // hydration completes silently drops the click (no POST fires).
-  await expect(page.getByText(/unused code/)).toBeVisible();
+  // hydration completes silently drops the click (no POST fires). FETCH_GATED:
+  // it is a fetch-gated wait — a cold CI machine (cold Turpoback compile +
+  // argon2 login + this page's /api fetch) has blown past the 20s default here.
+  await expect(page.getByText(/unused code/)).toBeVisible(FETCH_GATED);
 
   const regen = page.getByRole("button", { name: "Regenerate", exact: true });
   if (await regen.isVisible()) {
@@ -223,5 +225,5 @@ async function generateOrRegenerateCodes(page: Page) {
   } else {
     await page.getByRole("button", { name: "Generate codes", exact: true }).click();
   }
-  await expect(page.getByText(/Save these codes now/i)).toBeVisible();
+  await expect(page.getByText(/Save these codes now/i)).toBeVisible(FETCH_GATED);
 }
