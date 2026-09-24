@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { registerFreshUser, loginAs } from "./helpers";
+import { FETCH_GATED, registerFreshUser, loginAs } from "./helpers";
 
 /**
  * Security Center E2E.
@@ -61,9 +61,12 @@ test.describe("Security Center", () => {
 
     test("marks the current browser session as this device", async ({ page }) => {
       await page.goto("/en/security");
-      await expect(page.getByText("This device").first()).toBeVisible();
+      // FETCH_GATED: both texts render from the sessions list, which resolves
+      // only after the page's /api fetches come back — cold CI machines have
+      // blown past the 20s default here.
+      await expect(page.getByText("This device").first()).toBeVisible(FETCH_GATED);
       // The current login session shows as active.
-      await expect(page.getByText("active").first()).toBeVisible();
+      await expect(page.getByText("active").first()).toBeVisible(FETCH_GATED);
     });
 
     test("generates backup recovery codes", async ({ page }) => {
