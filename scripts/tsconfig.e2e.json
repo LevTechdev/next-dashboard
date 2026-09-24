@@ -10,6 +10,7 @@
     "seed-tenant-isolation.ts",
     "check-audit-chain.ts",
     "seed-chain-events.ts",
-    "repair-audit-chain.ts"
+    "repair-audit-chain.ts",
+    "verify-mail.ts"
   ]
 }

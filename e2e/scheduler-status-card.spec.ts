@@ -31,6 +31,7 @@ const JOB_ROWS = [
   "usage-digest",
   "auto-payout",
   "webhook-retry",
+  "email-outbox",
   "auto-reorder",
   "supabase-sync",
   "supabase-leaf-sync",

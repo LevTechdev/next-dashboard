@@ -76,6 +76,10 @@ interface AuthContextType {
     /** Which second factor the server expects / has just emailed. */
     method?: "totp" | "email_otp";
     emailSent?: boolean;
+    /** Durably queued for delivery after the response (see lib/email-outbox). */
+    emailQueued?: boolean;
+    /** True when the server's mail configuration cannot reach real recipients. */
+    mailMisconfigured?: boolean;
     /** Dev-mode inline OTP (no mailer configured). */
     devOtp?: string;
     /** Whether the account has registered passkeys (chooser option). */
@@ -106,6 +110,10 @@ interface AuthContextType {
     emailOtpRequired?: boolean;
     /** True when a configured transport accepted the verification email. */
     emailSent?: boolean;
+    /** True when it is durably queued (delivery continues after the response). */
+    emailQueued?: boolean;
+    /** True when the server's mail configuration cannot reach real recipients. */
+    mailMisconfigured?: boolean;
     /** Dev-only fallback: the raw 6-digit code (never present in production). */
     devOtp?: string;
   }>;

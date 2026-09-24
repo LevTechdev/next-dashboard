@@ -22,6 +22,7 @@ also be triggered manually through admin API routes or a small script.
 | `usage-digest`  | Daily at 02:00 server time           | `src/lib/usage-digest.ts`           | In-app notification + email (Resend) to workspace owners when any metric crosses 80%/100%                                  |
 | `auto-payout`   | Hourly evaluation, monthly execution | `src/lib/affiliate-auto-payout.ts`  | Creates one SCHEDULED payout per calendar cycle when available commission ≥ threshold                                      |
 | `webhook-retry` | Every 5-minute tick (due sweep)      | `src/lib/webhook-retry.ts`          | Re-dispatches RETRYING DLQ entries; promotes to terminal FAILED after 5 attempts                                           |
+| `email-outbox`  | Every 5-minute tick (due sweep)      | `src/lib/email-outbox.ts`           | Delivers queued mail whose send failed or was killed mid-flight (a slow SMTP handshake must never lose a signup code); retries transient failures with backoff, records permanent ones once |
 | `auto-reorder`  | Hourly (with auto-payout)            | `src/lib/inventory-auto-reorder.ts` | Drafts DRAFT purchase orders for active products at/below their velocity-based reorder point (cooldown 7 days per product) |
 
 ## Configuration

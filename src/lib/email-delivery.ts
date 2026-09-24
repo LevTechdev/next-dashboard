@@ -23,7 +23,7 @@ const EMAIL_EVENT: Record<EmailDeliveryStatus, SecurityEventType> = {
 export async function logEmailDelivery(params: {
   userId: string | null;
   status: EmailDeliveryStatus;
-  template: "verify_email" | "password_reset" | "new_sign_in";
+  template: "verify_email" | "password_reset" | "new_sign_in" | "other";
   to: string;
   /** Transport that handled (or would have handled) the message. */
   transport?: "smtp" | "resend" | "none";

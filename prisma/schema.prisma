@@ -1055,3 +1055,39 @@ model ChatDeliveryLog {
 
   @@index([createdAt])
 }
+
+/// Durable outbound-email queue.
+///
+/// WHY a table and not a fire-and-forget call: the transport handshake can
+/// outlive the request that triggered it (a cold SMTP/TLS connect to Gmail
+/// measured ~16s here), and a serverless host kills the function at that point —
+/// the message is gone while the user was told to check an inbox. Rows are
+/// written BEFORE any transport is touched, so a slow, failed, or killed attempt
+/// is retried by the scheduler with backoff instead of vanishing.
+///
+/// `params` holds only non-secret render inputs (links, amounts, names): a
+/// one-time code is never written here, so a `verify_email` row is re-issued
+/// with a fresh code at delivery time.
+model EmailOutbox {
+  id            String    @id @default(cuid())
+  to            String
+  template      String // verify_email | welcome | password_reset | account_recovery | security_alert | invoice
+  params        Json?
+  userId        String? // plain reference, no FK: delivery evidence outlives a deleted user
+  tenantId      String?
+  locale        String?
+  status        String    @default("PENDING") // PENDING | SENT | FAILED | CANCELLED
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  nextAttemptAt DateTime  @default(now())
+  claimedAt     DateTime? // lease marker, so two drains never send the same row twice
+  sentAt        DateTime?
+  transport     String? // smtp | resend | none
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([userId, template])
+  @@index([createdAt])
+}

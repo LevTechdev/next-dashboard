@@ -17,6 +17,7 @@ import {
   requestThrottleLimitOverride,
 } from "@/lib/rate-limit";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
+import { describeMailConfiguration } from "@/lib/email";
 import { verifyOtp, isOtpExpired, MAX_OTP_ATTEMPTS } from "@/lib/email-otp";
 import {
   findTrustedDevice,
@@ -241,26 +242,30 @@ export async function POST(req: Request) {
     // password has ALREADY been verified at this point, so issuing the code is
     // safe — the session is only granted once the code comes back and passes.
     if (!totpToken && !backupCode && !emailOtpCode && challengeEmailOtp === true) {
-      const { sent, code } = await issueEmailOtp({
+      const { sent, queued, code } = await issueEmailOtp({
         userId: user.id,
         email: user.email,
         locale,
       });
-      await logSecurityEvent({
-        userId: user.id,
-        type: "EMAIL_DELIVERY_SENT",
-        req,
-        metadata: { purpose: "login_challenge", sent },
-        tenantId: user.tenantId,
-      });
+      // Deliberately no EMAIL_DELIVERY_* event here: `issueEmailOtp` records the
+      // "no mailer configured" outcome itself, and the outbox drain records the
+      // authoritative SENT/FAILED once a transport has actually answered. An
+      // event written at this point would claim a delivery the transport has
+      // not been asked for yet.
       return NextResponse.json(
         {
           requires2FA: true,
           method: "email_otp",
           emailSent: sent,
+          // Durably queued, delivery continues after this response — the UI may
+          // promise "check your inbox" on either flag (see lib/email-outbox).
+          emailQueued: queued,
+          // Set when the configuration cannot reach real recipients (e.g. a
+          // sandbox sender), so the UI can warn instead of promising an email.
+          ...(describeMailConfiguration().warnings.length ? { mailMisconfigured: true } : {}),
           // Dev fallback (no mailer): surface the code inline so the flow stays
           // testable — same contract as the register flow's devOtp.
-          ...(isDevFallbackAllowed() && !sent ? { devOtp: code } : {}),
+          ...(isDevFallbackAllowed() && !sent && !queued ? { devOtp: code } : {}),
         },
         { status: 200 },
       );

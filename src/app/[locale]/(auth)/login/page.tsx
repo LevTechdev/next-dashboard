@@ -295,7 +295,13 @@ function LoginForm() {
         setEmailOtpHint(null);
         setTotpCode("");
         setTotpRejected(false);
-        toast.success(result.emailSent ? t("emailOtpSentToast") : t("developmentOtp"));
+        // Delivered, or durably queued for delivery after this response — both
+        // mean the code is on its way (see lib/email-outbox). A misconfigured
+        // server mailer is the one case where saying "check your inbox" would
+        // be a lie.
+        if (result.mailMisconfigured) toast.error(t("emailDeliveryMisconfigured"));
+        else if (result.emailSent || result.emailQueued) toast.success(t("emailOtpSentToast"));
+        else toast.success(t("developmentOtp"));
       } else {
         toast.error(result.error || t("errorGeneric"));
       }

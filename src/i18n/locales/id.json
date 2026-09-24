@@ -2576,6 +2576,7 @@
     },
     "strengthHint": "Gunakan 8+ karakter dengan huruf besar & kecil, angka, dan simbol.",
     "accountCreatedNoEmail": "Akun berhasil dibuat! Kami tidak dapat mengirim email verifikasi saat ini — Anda dapat memverifikasi nanti dari Pengaturan → Keamanan.",
+    "emailDeliveryMisconfigured": "Akun berhasil dibuat, tetapi pengirim email server tidak dapat menjangkau alamat sebenarnya — kode mungkin tidak akan pernah sampai. Hubungi admin workspace Anda.",
     "passkeySignIn": "Masuk dengan passkey",
     "passkeyAnyAccount": "Gunakan passkey yang tersimpan di perangkat ini — tanpa kata sandi.",
     "chooseVerifyTitle": "Pilih cara verifikasi",

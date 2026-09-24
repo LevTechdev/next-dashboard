@@ -2510,6 +2510,7 @@
     },
     "strengthHint": "è¯·ä½¿ç”¨ 8 ä½ä»¥ä¸Šå­—ç¬¦ï¼ŒåŒ…å«å¤§å°å†™å­—æ¯ã€æ•°å­—å’Œç¬¦å·ã€‚",
     "accountCreatedNoEmail": "账户已创建！目前无法发送验证邮件 — 您可以稍后在“设置 → 安全”中完成验证。",
+    "emailDeliveryMisconfigured": "账户已创建，但服务器的邮件发件人无法送达真实地址 — 验证码可能永远不会到达。请联系工作区管理员。",
     "passkeySignIn": "使用通行密钥登录",
     "passkeyAnyAccount": "使用此设备上保存的通行密钥 — 无需密码。",
     "chooseVerifyTitle": "选择验证方式",

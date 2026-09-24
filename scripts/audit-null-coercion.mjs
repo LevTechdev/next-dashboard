@@ -54,6 +54,14 @@ const KNOWN_INTENTIONAL = new Map([
   ["src/lib/abac.ts", 'AbacContext.tenantId: falsy means "tenancy off", not "no workspace"'],
   ["src/lib/api-key-auth.ts", "helper return contract: string | null"],
   ["src/lib/provisioning.ts", "tenant id returned to a caller that provisions on null"],
+  [
+    "src/lib/email-outbox.ts",
+    "queue columns written by the drain (userId/locale are nullable DB fields, never resolver inputs)",
+  ],
+  [
+    "src/lib/email-verification.ts",
+    "queued verify_email columns; attribution is the user's own row value, and a user with no tenant resolves to the same null",
+  ],
   ["prisma/seed.ts", "config-derived column values (env absent → column null)"],
 ]);
 

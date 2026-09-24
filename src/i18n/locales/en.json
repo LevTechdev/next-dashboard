@@ -2576,6 +2576,7 @@
     },
     "strengthHint": "Use 8+ characters with upper & lowercase, a number, and a symbol.",
     "accountCreatedNoEmail": "Account created! We couldn't send the verification email right now — you can verify later from Settings → Security.",
+    "emailDeliveryMisconfigured": "Account created, but the server's mail sender cannot reach real addresses — the code may never arrive. Please contact your workspace admin.",
     "passkeySignIn": "Sign in with a passkey",
     "passkeyAnyAccount": "Use a passkey saved on this device — no password needed.",
     "chooseVerifyTitle": "Choose how to verify",

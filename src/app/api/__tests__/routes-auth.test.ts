@@ -371,6 +371,9 @@ vi.mock("qrcode", () => ({ default: mockQrCode }));
 vi.mock("@/lib/email", () => ({
   sendPasswordResetEmail: mockSendPasswordResetEmail,
   sendEmail: vi.fn().mockResolvedValue({ sent: true }),
+  // Routes ask whether the mailer can actually reach real recipients (a sandbox
+  // sender cannot) so they can warn instead of promising an inbox message.
+  describeMailConfiguration: () => ({ transport: "none", from: undefined, warnings: [] }),
 }));
 
 vi.mock("@/lib/step-up", () => ({
