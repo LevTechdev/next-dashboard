@@ -1286,46 +1286,53 @@ html[data-theme-reveal="polygon"]::view-transition-new(root) {
   }
 }
 
-@theme inline {
-  @keyframes shimmer-slide {
-    to {
-      transform: translate(calc(100cqw - 100%), 0);
-    }
+/* Keyframes for the shimmer button + marquee utilities (ShimmerButton,
+   Marquee). They live at the TOP LEVEL of this stylesheet on purpose: the
+   pipeline is Tailwind v3 (postcss.config.mjs + tailwind.config.ts). A v4
+   `@theme inline { … }` wrapper is not understood by v3, so it was passed
+   through verbatim and then rejected by Next's CSS parser as an unknown
+   at-rule — once per client CSS transform, which produced the 44k-line
+   "Unknown at rule: @theme" warning storm that bloated every CI job log to
+   ~90 MB and saturated the dev server. The matching `animate-*` utilities are
+   declared in tailwind.config.ts (theme.extend.animation). */
+@keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
   }
+}
 
-  @keyframes spin-around {
-    0% {
-      transform: translateZ(0) rotate(0);
-    }
-    15%,
-    35% {
-      transform: translateZ(0) rotate(90deg);
-    }
-    65%,
-    85% {
-      transform: translateZ(0) rotate(270deg);
-    }
-    100% {
-      transform: translateZ(0) rotate(360deg);
-    }
+@keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
   }
-
-  @keyframes marquee {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(calc(-100% - var(--gap)));
-    }
+  15%,
+  35% {
+    transform: translateZ(0) rotate(90deg);
   }
+  65%,
+  85% {
+    transform: translateZ(0) rotate(270deg);
+  }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
 
-  @keyframes marquee-vertical {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(calc(-100% - var(--gap)));
-    }
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
   }
 }
 

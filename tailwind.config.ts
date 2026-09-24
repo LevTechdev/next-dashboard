@@ -38,6 +38,14 @@ const config: Config = {
       },
       animation: {
         "progress-sweep": "progress-sweep 1.5s ease-in-out infinite",
+        // ShimmerButton (--speed set inline) + Marquee (--duration) drive the
+        // timing from CSS vars the components own. Keyframes live in
+        // globals.css; without these entries `animate-shimmer-slide` etc. are
+        // not real v3 utilities and the elements render motionless.
+        "shimmer-slide": "shimmer-slide var(--speed, 3s) ease-in-out infinite alternate",
+        "spin-around": "spin-around calc(var(--speed, 3s) * 2) infinite linear",
+        marquee: "marquee var(--duration, 40s) linear infinite",
+        "marquee-vertical": "marquee-vertical var(--duration, 40s) linear infinite",
         // Boardui tooltip: blur + scale from 0.9 on the way in, per side.
         slideDownFadeIn: "slideDownFadeIn 0.2s ease-out",
         slideUpFadeIn: "slideUpFadeIn 0.2s ease-out",
