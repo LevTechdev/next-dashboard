@@ -46,6 +46,15 @@ export type RotateResult =
   | { status: "invalid" };
 
 /**
+ * Durable "stay signed in" grant lifetime, stamped on a refresh-token family
+ * by POST /api/auth/stay-login when the user accepts the stay-login alert.
+ * Matches the 7-day refresh lifetime: the grant can never outlive the family
+ * that honors it, and it dies with logout, theft revocation, and password
+ * change (they all revoke the family).
+ */
+export const STAY_LOGIN_GRANT_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
  * Benign-replay leeway. A rotation is a single-use exchange, but a browser can
  * legitimately present the SAME token twice within a moment: two tabs
  * restoring a session, or a retry after a response was lost in flight. Without

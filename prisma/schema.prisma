@@ -138,6 +138,7 @@ model RefreshToken {
   sessionId String? // links to the Session for device info + revocation
   usedAt    DateTime? // set when rotated (consumed) — reuse ⇒ revoke family
   revokedAt DateTime?
+  stayLoginUntil DateTime? // durable "stay signed in" grant for the family (see /api/auth/stay-login)
   expiresAt DateTime
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -145,6 +146,7 @@ model RefreshToken {
   @@index([userId])
   @@index([familyId])
   @@index([tokenHash])
+  @@index([familyId, stayLoginUntil])
 }
 
 /// FIDO2 / WebAuthn passkey credential registered to a user.

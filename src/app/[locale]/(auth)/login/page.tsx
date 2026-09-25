@@ -151,6 +151,11 @@ function LoginForm() {
   // "Trust this device for 30 days" — granted only while completing a second
   // factor; the server skips 2FA for the TTL on the matching device profile.
   const [trustDevice, setTrustDevice] = useState(false);
+  // "Stay signed in" — stamps a durable 7-day grant on this device's
+  // refresh-token family so the session survives the browser closing. Unlike
+  // device trust it never skips 2FA; the dashboard stay-login sentinel just
+  // goes dormant while the grant is live.
+  const [staySignedIn, setStaySignedIn] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -222,7 +227,17 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(
+        email,
+        password,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        staySignedIn,
+      );
       if (result.requires2FA) {
         setSavedEmail(email);
         setSavedPassword(password);
@@ -1359,6 +1374,14 @@ function LoginForm() {
                       </button>
                     </div>
                   </div>
+
+                  <TrustDeviceToggle
+                    className="mt-5"
+                    checked={staySignedIn}
+                    onChange={setStaySignedIn}
+                    label={t("staySignedInLabel")}
+                    hint={t("staySignedInHint")}
+                  />
 
                   <Button
                     type="submit"

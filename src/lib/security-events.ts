@@ -45,6 +45,9 @@ export type SecurityEventType =
   | "ACCOUNT_RECOVERY_REQUESTED"
   | "ACCOUNT_RECOVERY_COMPLETED"
   | "SAML_LOGIN"
+  /** The user accepted the dashboard's stay-login alert (or asked at login):
+   *  a durable stayLoginUntil grant was stamped on their refresh-token family. */
+  | "STAY_LOGIN_GRANTED"
   | "APIKEY_CREATED"
   | "ACCOUNT_LOCKED"
   | "ACCOUNT_DELETED"

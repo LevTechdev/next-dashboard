@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyPassword, hashPassword, needsRehash, signToken, type AuthUser } from "@/lib/auth";
 import { spendBackupTotp, spendPrimaryTotp } from "@/lib/totp-replay";
 import { createSession } from "@/lib/sessions";
-import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
+import { newFamilyId, createRefreshToken, STAY_LOGIN_GRANT_MS } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { consumeBackupCode, countUnusedBackupCodes } from "@/lib/backup-codes";
 import { warnOnLowBackupCodes } from "@/lib/backup-code-alerts";
@@ -112,6 +112,7 @@ export async function POST(req: Request) {
       challengeEmailOtp,
       passkeyAsserted,
       trustDevice,
+      staySignedIn,
       locale,
     } = body;
 
@@ -456,6 +457,17 @@ export async function POST(req: Request) {
     const familyId = newFamilyId();
     const sessionId = await createSession({ userId: user.id, token, req, familyId });
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
+    // Durable "stay signed in": when the user asked for it at login, stamp the
+    // grant on the family so the session survives the browser being closed
+    // without ever widening what the TOKENS can do (rotation cadence, theft
+    // revocation, and the 7-day hard cap are untouched — the grant is a UX
+    // promise, not a credential).
+    if (staySignedIn === true) {
+      await prisma.refreshToken.updateMany({
+        where: { familyId, revokedAt: null },
+        data: { stayLoginUntil: new Date(Date.now() + STAY_LOGIN_GRANT_MS) },
+      });
+    }
     await logSecurityEvent({ userId: user.id, type: "LOGIN", req, tenantId: user.tenantId });
     // Email the user ONLY when this sign-in is not recognized — a device
     // profile (OS+browser) or IP the account hasn't used in the last 90 days.

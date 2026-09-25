@@ -70,6 +70,12 @@ interface AuthContextType {
      * single-use backup codes. Consumed server-side on success.
      */
     backupCode?: string,
+    /**
+     * Durable "stay signed in": stamp a 7-day grant on the new refresh-token
+     * family (server-side, survives the browser closing; the dashboard
+     * sentinel goes dormant for its 12-hour window on top of it).
+     */
+    staySignedIn?: boolean,
   ) => Promise<{
     success: boolean;
     requires2FA?: boolean;
@@ -256,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passkeyAsserted?: boolean,
       trustDevice?: boolean,
       backupCode?: string,
+      staySignedIn?: boolean,
     ) => {
       setError(null);
       try {
@@ -271,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             passkeyAsserted,
             trustDevice,
             backupCode,
+            staySignedIn,
           }),
         });
 
