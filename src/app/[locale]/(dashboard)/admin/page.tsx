@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { AuditHealthCard } from "@/components/admin/audit-health-card";
+import { MailHealthCard } from "@/components/admin/mail-health-card";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -257,6 +258,8 @@ export default function AdminDashboardPage() {
 
       {/* Audit-event attribution + mail-outbox health (ADMIN-only endpoint). */}
       <AuditHealthCard />
+      {/* Live mail-delivery health: transport, sender sanity, failures + resend. */}
+      <MailHealthCard />
 
       <Card>
         <CardHeader className="pb-4 border-b border-zinc-100 dark:border-zinc-800">

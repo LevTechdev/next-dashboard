@@ -321,6 +321,107 @@ function auditTemplate(
 }
 
 /**
+ * One-click operator resend: take the most recent FAILED row, reset its
+ * attempt budget, and drain it immediately (claim → deliver → record) so a
+ * fixed configuration can be verified end-to-end without waiting for the
+ * scheduler. Returns what happened; `none` when there is nothing failed to
+ * resend (not an error — the panel just has no button to show).
+ */
+export async function resendLatestFailedOutboxEmail(): Promise<
+  | { status: "sent"; id: string; to: string; template: string; transport: MailTransport }
+  | { status: "failed"; id: string; to: string; template: string; reason: string }
+  | { status: "none" }
+> {
+  const row = (await prisma.emailOutbox.findFirst({
+    where: { status: "FAILED" },
+    orderBy: { updatedAt: "desc" },
+  })) as unknown as EmailOutboxRow | null;
+  if (!row) return { status: "none" };
+
+  // Re-arm: a FAILED row has by definition exhausted its budget, and the
+  // operator just (presumably) fixed the cause.
+  const claimed = await prisma.emailOutbox.updateMany({
+    where: { id: row.id, status: "FAILED" },
+    data: { status: "SENDING", claimedAt: new Date(), attempts: 0 },
+  });
+  if (claimed.count === 0) return { status: "none" };
+
+  const resendRow: EmailOutboxRow = { ...row, status: "SENDING", attempts: 0 };
+  let sent = false;
+  let transport: MailTransport | undefined;
+  let reason: string | undefined;
+  let transient = false;
+  try {
+    const outcome = await deliverRow(resendRow);
+    sent = outcome.sent;
+    transport = outcome.transport;
+    reason = outcome.reason;
+    transient = !sent && isTransientMailError(outcome.reason ?? "");
+  } catch (err) {
+    reason = errorText(err);
+    transient = isTransientMailError(err);
+  }
+
+  const failureReason = (reason ?? "transport did not accept the message").slice(0, 500);
+  if (sent) {
+    await prisma.emailOutbox.update({
+      where: { id: row.id },
+      data: { status: "SENT", sentAt: new Date(), attempts: 1, transport, lastError: null },
+    });
+    await logEmailDelivery({
+      userId: row.userId,
+      status: "sent",
+      template: auditTemplate(row.template),
+      to: row.to,
+      transport: transport ?? "none",
+      tenantId: row.tenantId,
+    });
+    return {
+      status: "sent",
+      id: row.id,
+      to: row.to,
+      template: row.template,
+      transport: transport ?? "none",
+    };
+  }
+
+  // Back to FAILED either way; a transient read gets one pending retry.
+  if (transient) {
+    await prisma.emailOutbox.update({
+      where: { id: row.id },
+      data: {
+        status: "PENDING",
+        attempts: 1,
+        transport,
+        lastError: failureReason,
+        nextAttemptAt: new Date(Date.now() + backoffMs(1)),
+      },
+    });
+  } else {
+    await prisma.emailOutbox.update({
+      where: { id: row.id },
+      data: { status: "FAILED", attempts: 1, transport, lastError: failureReason },
+    });
+  }
+  await logEmailDelivery({
+    userId: row.userId,
+    status: "failed",
+    template: auditTemplate(row.template),
+    to: row.to,
+    transport: transport ?? "none",
+    reason: failureReason.slice(0, 200),
+    tenantId: row.tenantId,
+  });
+  return {
+    status: "failed",
+    id: row.id,
+    to: row.to,
+    template: row.template,
+    reason: failureReason,
+  };
+}
+
+/**
  * Delivery health for the admin surface: how much mail is waiting, how much
  * has permanently failed, and whether anything has been stuck for long enough
  * that a human should look. `stuck` counts rows that exhausted their attempts
