@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { withDecryptedCustomer } from "@/lib/pii";
 import { requireAuth } from "@/lib/api-guard";
 import { getTenantId } from "@/lib/tenancy";
+import type { SupportedCurrencyCode } from "@/lib/currency";
 
 export async function GET(req: Request) {
   const { session, response } = await requireAuth(req);
@@ -11,18 +12,19 @@ export async function GET(req: Request) {
   try {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
     const [
       totalRevenue,
       totalOrders,
       totalCustomers,
       totalProducts,
+
       recentOrders,
       topProducts,
       salesChannels,
       ordersLastYear,
       customersLastYear,
       productsLastYear,
+      orderCurrencies,
     ] = await Promise.all([
       prisma.order.aggregate({ where: { tenantId }, _sum: { grandTotal: true } }),
       prisma.order.count({ where: { tenantId } }),
@@ -57,6 +59,16 @@ export async function GET(req: Request) {
         where: { tenantId, createdAt: { gte: oneYearAgo } },
         select: { createdAt: true },
         orderBy: { createdAt: "asc" },
+      }),
+      // The dominant denomination of this tenant's orders — the revenue
+      // figures below are raw sums of Order.grandTotal, so the client must
+      // format them in the orders' currency, not guess from magnitude.
+      prisma.order.groupBy({
+        by: ["currency"],
+        where: { tenantId },
+        _count: { _all: true },
+        orderBy: { _count: { currency: "desc" } },
+        take: 1,
       }),
     ]);
 
@@ -240,7 +252,10 @@ export async function GET(req: Request) {
     }
     const channelTrend = Array.from(channelTrendMap.values());
 
+    const dominantCurrency = (orderCurrencies[0]?.currency ?? "USD") as SupportedCurrencyCode;
+
     return NextResponse.json({
+      currency: dominantCurrency,
       stats: {
         totalRevenue: totalRevenue._sum.grandTotal || 0,
         totalOrders,
@@ -271,6 +286,7 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Dashboard API error:", error);
     return NextResponse.json({
+      currency: "USD",
       stats: {
         totalRevenue: 0,
         totalOrders: 0,

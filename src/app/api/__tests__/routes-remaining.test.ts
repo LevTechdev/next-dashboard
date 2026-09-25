@@ -102,6 +102,9 @@ const {
         aggregate: vi.fn().mockResolvedValue({
           _sum: { grandTotal: 50000 },
         }),
+        // The dashboard reports the dominant order denomination alongside the
+        // raw grandTotal sums so clients format without magnitude guessing.
+        groupBy: vi.fn().mockResolvedValue([{ currency: "USD", _count: { _all: 42 } }]),
         count: vi.fn().mockResolvedValue(42),
       }),
 

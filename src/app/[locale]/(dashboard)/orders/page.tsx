@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -33,6 +33,7 @@ import { PaginationBar } from "@/components/ui/pagination-bar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sparkline } from "@/components/ui/sparkline";
 import { formatCurrency, formatDateTime, getStatusColor, cn } from "@/lib/utils";
+import type { SupportedCurrencyCode } from "@/lib/currency";
 import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { useNow } from "@/hooks/use-now";
@@ -140,6 +141,29 @@ export default function OrdersPage() {
   const totalRevenue = dateFiltered.reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
   const pendingCount = dateFiltered.filter((o: any) => o.status === "PENDING").length;
   const avgOrderValue = dateFiltered.length > 0 ? totalRevenue / dateFiltered.length : 0;
+  // The rows' own denomination (dominant among the filtered set): revenue
+  // figures are raw grandTotal sums, so format in that currency instead of
+  // letting the >1000 magnitude heuristic guess.
+  const dominantCurrency = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const o of dateFiltered) {
+      const c = o.currency || "USD";
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    let best = "USD";
+    let bestCount = -1;
+    for (const [c, n] of counts) {
+      if (n > bestCount) {
+        best = c;
+        bestCount = n;
+      }
+    }
+    return best as SupportedCurrencyCode;
+  }, [dateFiltered]);
+  const revenueMoney = useCallback(
+    (v: number) => formatMoney(v, dominantCurrency),
+    [formatMoney, dominantCurrency],
+  );
 
   // Trend pills (dashboard parity): compare the filtered window with the
   // immediately preceding window of equal length. Without an explicit range
@@ -349,7 +373,7 @@ export default function OrdersPage() {
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-900/20",
             formatter: (v: number) =>
-              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : formatMoney(v),
+              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : revenueMoney(v),
             sparkData: sparkData.revenue,
           },
           {
@@ -367,7 +391,7 @@ export default function OrdersPage() {
             color: "text-purple-600 dark:text-purple-400",
             bg: "bg-purple-50 dark:bg-purple-900/20",
             formatter: (v: number) =>
-              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : formatMoney(v),
+              currency === "IDR" && v > 1000000 ? formatCompactMoney(v) : revenueMoney(v),
           },
         ].map((stat, i) => (
           <PremiumStatCard key={stat.title} {...stat} delay={i * 0.08} />
