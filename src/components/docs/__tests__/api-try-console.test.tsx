@@ -227,12 +227,17 @@ describe("ApiTryConsole", () => {
     fireEvent.change(keyInput, { target: { value: "dash_wrong" } });
     fireEvent.click(screen.getByRole("button", { name: "Send request" }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(
-      screen.getByText(
-        "Request rejected — check that the key is a valid dash_ key, ACTIVE, unexpired, and allowed from your IP.",
-      ),
-    ).toBeInTheDocument();
+    // Wait for the COMMITTED error render, not just the fetch call: the
+    // state update lands in a microtask after fetch resolves, and a bare
+    // "fetch was called" wait raced it under CI coverage instrumentation
+    // (observed as a one-off failure on PR #12).
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Request rejected — check that the key is a valid dash_ key, ACTIVE, unexpired, and allowed from your IP.",
+        ),
+      ).toBeInTheDocument(),
+    );
     expect(screen.queryByText("Sign in")).not.toBeInTheDocument();
   });
 

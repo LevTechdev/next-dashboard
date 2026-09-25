@@ -2732,6 +2732,7 @@
     "thisDevice": "このデバイス",
     "sessionTrustedDevice": "信頼済みデバイス",
     "sessionStayGranted": "サインイン維持許可",
+    "sessionStayUntil": "{date} までサインイン維持",
     "active": "アクティブ",
     "revoke": "取り消す",
     "revokeAll": "他のすべてのセッションを取り消す",
