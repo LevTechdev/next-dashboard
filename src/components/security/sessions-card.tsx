@@ -134,7 +134,12 @@ export function SessionsCard({ data }: { data: SecurityData }) {
                   )}
                   {s.stayLoginUntil && (
                     <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
-                      {t("sessionStayGranted")}
+                      {t("sessionStayUntil", {
+                        date: new Date(s.stayLoginUntil).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        }),
+                      })}
                     </Badge>
                   )}
                   {typeof s.recognized === "boolean" && !s.current && (
@@ -167,23 +172,34 @@ export function SessionsCard({ data }: { data: SecurityData }) {
             </div>
           ))
         )}
-        {others.length > 0 && (
-          <Button variant="destructive" size="sm" onClick={revokeAllOthers} className="mt-2">
-            <Trash2 className="h-4 w-4 mr-1" />
-            {t("revokeAll")}
-          </Button>
-        )}
-        {sessions.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={signOutEverywhere}
-            disabled={signingOutEverywhere}
-            className="mt-2 border-zinc-300 dark:border-zinc-700"
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            {t("signOutEverywhere")}
-          </Button>
+        {/* Session CTAs: full-width and clearly separated on tablet/mobile
+            (stacked with a real gap), right-aligned inline on desktop. */}
+        {(others.length > 0 || sessions.length > 0) && (
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {others.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={revokeAllOthers}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {t("revokeAll")}
+              </Button>
+            )}
+            {sessions.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={signOutEverywhere}
+                disabled={signingOutEverywhere}
+                className="w-full border-zinc-300 dark:border-zinc-700 sm:w-auto"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                {t("signOutEverywhere")}
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

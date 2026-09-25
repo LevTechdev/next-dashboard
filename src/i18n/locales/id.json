@@ -2798,6 +2798,7 @@
     "thisDevice": "Perangkat ini",
     "sessionTrustedDevice": "Perangkat terpercaya",
     "sessionStayGranted": "Tetap masuk diberikan",
+    "sessionStayUntil": "Tetap masuk hingga {date}",
     "active": "aktif",
     "revoke": "Cabut",
     "revokeAll": "Cabut semua sesi lain",

@@ -2732,6 +2732,7 @@
     "thisDevice": "当前设备",
     "sessionTrustedDevice": "受信任设备",
     "sessionStayGranted": "已授予保持登录",
+    "sessionStayUntil": "保持登录至 {date}",
     "active": "活跃",
     "revoke": "撤销",
     "revokeAll": "撤销所有其他会话",

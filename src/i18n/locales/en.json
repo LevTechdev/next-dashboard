@@ -2798,6 +2798,7 @@
     "thisDevice": "This device",
     "sessionTrustedDevice": "Trusted device",
     "sessionStayGranted": "Stay signed in granted",
+    "sessionStayUntil": "Stay signed in until {date}",
     "active": "active",
     "revoke": "Revoke",
     "revokeAll": "Revoke all other sessions",
