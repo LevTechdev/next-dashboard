@@ -269,6 +269,20 @@ if (command === "db") {
 const env = buildEnv();
 console.log(`[e2e-local] DATABASE_URL=${env.DATABASE_URL}`);
 console.log(`[e2e-local] DIRECT_URL=${env.DIRECT_URL}`);
+
+// In CI, publish the resolved DB URLs to GITHUB_ENV so the workflow's
+// post-suite verification steps (check:seed, check:audit-chain) inherit the
+// SAME database the suite just ran against — they execute in fresh shells
+// that would otherwise have no DATABASE_URL at all (PrismaClientInitialization
+// Error the moment the suite itself goes green and those steps first run).
+if (process.env.GITHUB_ENV) {
+  const fs = await import("node:fs");
+  fs.appendFileSync(
+    process.env.GITHUB_ENV,
+    `DATABASE_URL=${env.DATABASE_URL}\nDIRECT_URL=${env.DIRECT_URL}\n`,
+  );
+  console.log(`[e2e-local] exported DATABASE_URL/DIRECT_URL to GITHUB_ENV`);
+}
 console.log(`[e2e-local] mailer keys blanked, AI_MOCK=${env.AI_MOCK}`);
 console.log(`[e2e-local] running: ${command}${extraArgs.length ? ` ${extraArgs.join(" ")}` : ""}`);
 
