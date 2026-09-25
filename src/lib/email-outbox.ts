@@ -124,6 +124,42 @@ export async function enqueueEmail(input: EnqueueEmailInput): Promise<{ id: stri
 }
 
 /**
+ * Record a delivery that was never even attempted because no mailer is
+ * configured, as a terminal FAILED row the mail-health panel can show — the
+ * "no mailer" outcome used to be invisible there, because the only enqueue
+ * path is skipped when the transport is `none`.
+ *
+ * The row is written FAILED and stays FAILED: the automatic drain filters on
+ * status PENDING/SENDING so it can never re-issue a queued verify_email code
+ * (which would invalidate the code the page just displayed) — but it IS a
+ * legitimate target for the operator's one-click resend, whose deliverRow
+ * generates a fresh code anyway. `params` stays code-free; a one-time code is
+ * never stored.
+ */
+export async function recordNoMailerDelivery(input: {
+  to: string;
+  template: EmailTemplate;
+  userId?: string | null;
+  tenantId?: string | null;
+}): Promise<{ id: string }> {
+  const row = await prisma.emailOutbox.create({
+    data: {
+      to: input.to,
+      template: input.template,
+      userId: input.userId ?? null,
+      tenantId: input.tenantId ?? undefined,
+      status: "FAILED",
+      attempts: 1,
+      maxAttempts: 1,
+      transport: "none",
+      lastError: "No mailer configured — the message was never attempted (no-mailer trace)",
+    },
+    select: { id: true },
+  });
+  return row;
+}
+
+/**
  * Start a drain off the response path.
  *
  * Inside a request, `after()` is the right tool: the response is flushed first,
