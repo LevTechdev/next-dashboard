@@ -133,6 +133,10 @@ export async function POST(req: Request) {
       customerId: body.customerId,
       channelId: body.channelId,
       status: body.status || "PENDING",
+      // The caller states the denomination of the amounts it is sending; USD
+      // remains the historical default. Money surfaces read this column —
+      // they never infer a currency from magnitude.
+      currency: typeof body.currency === "string" && body.currency ? body.currency : "USD",
       totalAmount,
       discountAmount,
       shippingAmount,

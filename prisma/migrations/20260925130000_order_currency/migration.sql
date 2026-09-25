@@ -1,0 +1,12 @@
+-- Orders carry the currency their money is denominated in.
+--
+-- Before this column the invoice route assumed every stored amount was USD and
+-- multiplied by the presentation rate (USD→IDR 15,850), while the dashboard
+-- treated large untyped amounts as raw rupiah — so a Rp899,000 seed product
+-- printed as Rp14,248,150,000 on its invoice. Tagging the order makes both
+-- surfaces read the same denomination from the row.
+--
+-- "USD" is the pre-existing implicit default, so the backfill is a no-op for
+-- legacy rows. Product.price stays untyped (catalog seed data) — the order is
+-- the monetary record.
+ALTER TABLE "Order" ADD COLUMN "currency" TEXT NOT NULL DEFAULT 'USD';

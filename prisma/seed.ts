@@ -876,6 +876,10 @@ async function main() {
         userId: pick([admin.id, manager.id, staff.id]),
         channelId: channel.id,
         status,
+        // The catalog prices above are rupiah-denominated (Rp899,000, not
+        // $899k) — tag the order so every money surface reads the same
+        // denomination instead of guessing from magnitude.
+        currency: "IDR",
         totalAmount,
         discountAmount,
         shippingAmount,

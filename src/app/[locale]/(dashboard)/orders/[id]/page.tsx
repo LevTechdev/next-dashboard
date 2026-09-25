@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { useCurrency } from "@/components/currency-provider";
+import type { SupportedCurrencyCode } from "@/lib/currency";
 
 interface FulfillmentStamp {
   label: string;
@@ -374,10 +375,13 @@ export default function OrderDetailPage() {
                         {item.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Qty: {item.quantity} × {formatCurrency(item.price)}
+                        Qty: {item.quantity} ×
+                        {formatCurrency(item.price, order.currency as SupportedCurrencyCode)}
                       </p>
                     </div>
-                    <span className="text-sm font-medium">{formatCurrency(item.total)}</span>
+                    <span className="text-sm font-medium">
+                      {formatCurrency(item.total, order.currency as SupportedCurrencyCode)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -385,29 +389,46 @@ export default function OrderDetailPage() {
               <div className="border-t mt-4 pt-4 space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">{torders("subtotal")}</span>
-                  <span>{formatCurrency(order.totalAmount)}</span>
+                  <span>
+                    {formatCurrency(order.totalAmount, order.currency as SupportedCurrencyCode)}
+                  </span>
                 </div>
                 {order.shippingAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{torders("shipping")}</span>
-                    <span>{formatCurrency(order.shippingAmount)}</span>
+                    <span>
+                      {formatCurrency(
+                        order.shippingAmount,
+                        order.currency as SupportedCurrencyCode,
+                      )}
+                    </span>
                   </div>
                 )}
                 {order.discountAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{torders("discount")}</span>
-                    <span className="text-red-500">-{formatCurrency(order.discountAmount)}</span>
+                    <span className="text-red-500">
+                      -
+                      {formatCurrency(
+                        order.discountAmount,
+                        order.currency as SupportedCurrencyCode,
+                      )}
+                    </span>
                   </div>
                 )}
                 {order.taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{torders("tax")}</span>
-                    <span>{formatCurrency(order.taxAmount)}</span>
+                    <span>
+                      {formatCurrency(order.taxAmount, order.currency as SupportedCurrencyCode)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base border-t pt-2">
                   <span>{torders("totalLabel")}</span>
-                  <span>{formatCurrency(order.grandTotal)}</span>
+                  <span>
+                    {formatCurrency(order.grandTotal, order.currency as SupportedCurrencyCode)}
+                  </span>
                 </div>
               </div>
             </CardContent>

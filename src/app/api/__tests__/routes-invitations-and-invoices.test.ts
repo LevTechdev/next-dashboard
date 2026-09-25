@@ -418,6 +418,90 @@ describe("Order Invoice Route (/api/orders/[id]/invoice)", () => {
     // The rate that produced these figures is stated, not implied.
     expect(html).toContain("Converted at 1 USD = Rp15,850");
   });
+
+  it("prints a rupiah-denominated order in its own currency, never ×15,850", async () => {
+    // The headline bug: rupiah seed prices (Rp899,000) were treated as USD and
+    // multiplied by the presentation rate, printing Rp14,248,150,000 on an
+    // order the dashboard correctly showed as Rp899,000. Order.currency now
+    // carries the true denomination and the invoice respects it.
+    mockPrisma.order.findUnique.mockResolvedValueOnce({
+      id: "ord_idr_native",
+      orderNumber: "ORD-IDR-2",
+      status: "COMPLETED",
+      currency: "IDR",
+      totalAmount: 899000,
+      grandTotal: 997890,
+      discountAmount: 0,
+      taxAmount: 98890,
+      shippingAmount: 0,
+      paymentStatus: "PAID",
+      paymentMethod: "QRIS",
+      invoiceSnapshot: null,
+      createdAt: new Date("2026-09-20"),
+      customer: { name: "Pedagang Rupiah", email: "rp2@example.com", city: "Surabaya" },
+      channel: { name: "Direct" },
+      items: [
+        {
+          quantity: 1,
+          price: 899000,
+          total: 899000,
+          product: { name: "Wireless Bluetooth Headphones", sku: "ELEC-001" },
+        },
+      ],
+    });
+
+    // No ?currency param: the order's own denomination is the presentation.
+    const req = new Request("http://localhost:3010/api/orders/ord_idr_native/invoice");
+    const res = await orderInvoiceRoute.GET(req, {
+      params: Promise.resolve({ id: "ord_idr_native" }),
+    });
+    const html = await res.text();
+
+    // The stored amount prints as-is — the invoice shows the same Rp899,000
+    // the order page does, not the 15,850-fold blowup.
+    expect(html).toContain("Rp899,000");
+    expect(html).toContain("Rp997,890");
+    expect(html).not.toContain("14,248");
+    expect(html).not.toContain("$");
+    // Same-denomination rendering is not a conversion — no rate note.
+    expect(html).not.toContain("Converted");
+  });
+
+  it("forces a presentation currency across a foreign-denominated order via true base", async () => {
+    // The template customizer may still ask for a specific presentation; a
+    // rupiah order shown in USD must divide by the stored rate, not pass the
+    // rupiah figure through as dollars.
+    mockPrisma.order.findUnique.mockResolvedValueOnce({
+      id: "ord_idr_usd",
+      orderNumber: "ORD-IDR-3",
+      status: "COMPLETED",
+      currency: "IDR",
+      totalAmount: 1585000,
+      grandTotal: 1585000,
+      discountAmount: 0,
+      taxAmount: 0,
+      shippingAmount: 0,
+      paymentStatus: "PAID",
+      paymentMethod: "QRIS",
+      invoiceSnapshot: null,
+      createdAt: new Date("2026-09-20"),
+      customer: { name: "Dollar Reader", email: "usd@example.com", city: "Medan" },
+      channel: { name: "Direct" },
+      items: [
+        { quantity: 1, price: 1585000, total: 1585000, product: { name: "Line A", sku: "SKU-A" } },
+      ],
+    });
+
+    const req = new Request("http://localhost:3010/api/orders/ord_idr_usd/invoice?currency=USD");
+    const res = await orderInvoiceRoute.GET(req, {
+      params: Promise.resolve({ id: "ord_idr_usd" }),
+    });
+    const html = await res.text();
+
+    // Rp1,585,000 ÷ 15,850 = $100.00.
+    expect(html).toContain("$100.00");
+    expect(html).not.toContain("Rp");
+  });
 });
 
 describe("Tenant Branding → Invoice Integration", () => {

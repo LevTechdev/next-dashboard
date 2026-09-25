@@ -415,6 +415,11 @@ model Order {
   channelId       String?
   channel         SalesChannel?  @relation(fields: [channelId], references: [id])
   status          String         @default("PENDING") // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  // Currency the stored amounts are denominated in. "USD" (the historical
+  // implicit default) or a SupportedCurrencyCode from lib/currency.ts. Every
+  // money surface (order detail, invoice) MUST read this instead of guessing
+  // a denomination from magnitude.
+  currency        String         @default("USD")
   totalAmount     Float          @default(0)
   discountAmount  Float          @default(0)
   shippingAmount  Float          @default(0)

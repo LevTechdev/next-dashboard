@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/api-guard";
 import { getTenantBranding } from "@/lib/tenant-branding";
 import QRCode from "qrcode";
 import { generateBarcodeSvg } from "@/lib/barcode";
-import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
+import { CURRENCIES, toBaseUsd, type SupportedCurrencyCode } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -119,14 +119,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const showBarcode = searchParams.get("barcode") !== "false";
     const showQr = searchParams.get("qr") !== "false";
 
-    // Invoice currency: the caller chooses the presentation currency
-    // (?currency=IDR|USD|JPY|EUR|SGD|CNY). Amounts are stored in USD base, so
-    // they are converted to the requested currency for display — line items,
-    // totals, and the grand total all render in the same chosen currency.
-    const currencyParam = (searchParams.get("currency") || "USD").toUpperCase();
-    const currencyCode: SupportedCurrencyCode = (
-      currencyParam in CURRENCIES ? currencyParam : "USD"
-    ) as SupportedCurrencyCode;
+    // Invoice currency: the ORDER's own denomination (Order.currency) is the
+    // default presentation currency — rupiah orders print as rupiah. The
+    // caller may still force a presentation currency for the template
+    // customizer (?currency=IDR|USD|JPY|EUR|SGD|CNY), but an explicit value
+    // that DIFFERS from the order's denomination converts via the stored
+    // amounts' true base rather than pretending they were USD.
+    const orderCurrency =
+      order.currency && order.currency in CURRENCIES
+        ? (order.currency as SupportedCurrencyCode)
+        : "USD";
+    const currencyParam = (searchParams.get("currency") || "").toUpperCase();
+    const currencyCode: SupportedCurrencyCode = currencyParam
+      ? currencyParam in CURRENCIES
+        ? (currencyParam as SupportedCurrencyCode)
+        : "USD"
+      : orderCurrency;
     const currencyCfg = CURRENCIES[currencyCode];
     /**
      * Currency-space rounding.
@@ -138,7 +146,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
      * and its sum. All displayed money is now derived in this space, and the
      * totals are the labelled arithmetic performed on those displayed values.
      */
-    const toCurrency = (usd: number) => {
+    const toCurrency = (amount: number) => {
+      // Stored amounts already denominated in the presentation currency pass
+      // through untouched — re-multiplying is the Rp14-billion-invoice bug.
+      if (currencyCode === orderCurrency) return amount;
+      const usd = toBaseUsd(amount, orderCurrency === "USD" ? undefined : orderCurrency);
       const converted = usd * currencyCfg.rate;
       return currencyCfg.decimals === 0
         ? Math.round(converted)
@@ -294,11 +306,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // A one-line provenance note: which rate produced these figures, and why a
     // 0-decimal currency can differ from a naive multiply-by-rate.
     const rateNote =
-      currencyCode === "USD"
+      currencyCode === orderCurrency
         ? ""
-        : `Converted at 1 USD = ${currencyCfg.symbol}${currencyCfg.rate.toLocaleString("en-US", {
-            maximumFractionDigits: 2,
-          })} and rounded to the nearest ${currencyCfg.decimals === 0 ? "whole unit" : "cent"}.`;
+        : orderCurrency === "USD"
+          ? `Converted at 1 USD = ${currencyCfg.symbol}${currencyCfg.rate.toLocaleString("en-US", {
+              maximumFractionDigits: 2,
+            })} and rounded to the nearest ${currencyCfg.decimals === 0 ? "whole unit" : "cent"}.`
+          : `Converted from ${CURRENCIES[orderCurrency].code} at market rate and rounded to the nearest ${currencyCfg.decimals === 0 ? "whole unit" : "cent"}.`;
 
     const isPaid = order.paymentStatus === "PAID";
     const paymentGateway =
