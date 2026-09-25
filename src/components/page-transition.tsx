@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ReactNode, useState, useEffect, useRef } from "react";
+import { Slide } from "loading-dev";
 import { useViewTransition } from "@/components/view-transition-provider";
 import PageProgressBar from "./page-progress-bar";
 
@@ -83,10 +84,9 @@ export default function PageTransition({ children, className }: PageTransitionPr
         aria-hidden={!showOverlay}
       >
         <div className="flex flex-col items-center gap-3">
-          <div className="relative h-7 w-7" role="presentation">
-            <div className="absolute inset-0 rounded-full border-2 border-zinc-200 dark:border-zinc-800" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-zinc-900 dark:border-t-white animate-spin" />
-          </div>
+          {/* loading-dev's Slide — replaces the hand-rolled border ring; the
+              inheriting color keeps it theme-aware in both modes. */}
+          <Slide size={28} />
           <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
             Loading
           </span>
