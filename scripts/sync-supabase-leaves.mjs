@@ -188,12 +188,13 @@ function readWatermarkFromDb(url) {
 }
 
 /**
- * Persisted clean-run state: the watermark plus, per table, how many local
- * rows were excluded from the merge (FK orphans pointing at dev-seed users
- * the remote has never seen, and conflict-key duplicates of remote rows
- * under another id). The excluded totals must be remembered across runs —
- * those rows stay local forever, so without the tally every later run would
- * re-report the same phantom shortfall.
+ * Persisted clean-run state: the watermark, per table the rows excluded from
+ * the merge (FK orphans pointing at dev-seed users the remote has never
+ * seen, and conflict-key duplicates of remote rows under another id), and —
+ * for the last run only — an operator-facing orphan report (count + sample
+ * fingerprints per table) the scheduler card reads. The excluded totals must
+ * be remembered across runs — those rows stay local forever, so without the
+ * tally every later run would re-report the same phantom shortfall.
  */
 function readPersistedState() {
   try {
@@ -203,18 +204,20 @@ function readPersistedState() {
       raw.excluded && typeof raw.excluded === "object"
         ? Object.fromEntries(Object.entries(raw.excluded).filter(([, v]) => typeof v === "number"))
         : {};
-    return { watermark: raw.watermark, excluded };
+    const orphanReport =
+      raw.orphanReport && typeof raw.orphanReport === "object" ? raw.orphanReport : {};
+    return { watermark: raw.watermark, excluded, orphanReport };
   } catch {
     return null;
   }
 }
 
-function persistState(watermark, excluded) {
+function persistState(watermark, excluded, orphanReport = {}) {
   try {
     mkdirSync(dirname(WATERMARK_PATH), { recursive: true });
     writeFileSync(
       WATERMARK_PATH,
-      `${JSON.stringify({ watermark, excluded, at: new Date().toISOString() }, null, 2)}\n`,
+      `${JSON.stringify({ watermark, excluded, orphanReport, at: new Date().toISOString() }, null, 2)}\n`,
     );
   } catch {
     // Best-effort: a lost watermark just means a full-leaf load next run.
@@ -228,9 +231,10 @@ function persistState(watermark, excluded) {
  * exceed any sane timeout, while this moves thousands of rows in seconds.
  * Windows note: psql needs a real file path (no /tmp virtual paths) and
  * multi-MB `-c` argv blows the command-line limit, hence the -f temp file.
- * Returns the number of staged rows the merge could not take — FK orphans
- * plus rows whose conflict key already exists remotely under another id
- * (0 when nothing new was staged) — which the verify step subtracts.
+ * Returns `{ excluded, orphans, samples }`: the rows the merge could not
+ * take (FK orphans + conflict-key replays — the verify step subtracts it),
+ * the orphan component alone, and up to 6 orphan row fingerprints for the
+ * operator-facing report (0/[] when nothing new was staged).
  */
 function applyTable(table, watermark) {
   const stamp = Date.now();
@@ -278,7 +282,7 @@ function applyTable(table, watermark) {
     const bytes = existsSync(csvPath) ? statSync(csvPath).size : 0;
     if (bytes === 0) {
       console.log(`[leaf-sync] ${table}: nothing new`);
-      return 0;
+      return { excluded: 0, orphans: 0, samples: [] };
     }
 
     // 2. Stage + merge on the remote in one transaction. The staging table
@@ -325,6 +329,23 @@ function applyTable(table, watermark) {
           return `(SELECT count(*)::int FROM leaf_stage s WHERE ${notNull} AND NOT EXISTS (SELECT 1 FROM public."${fk.refTable}" r WHERE ${match}))`;
         })
         .join(" + ") || "0";
+    const sampleBranches = fks.map((fk) => {
+      const notNull = fk.pairs.map(([c]) => `s."${c}" IS NOT NULL`).join(" AND ");
+      const match = fk.pairs.map(([c, rc]) => `r."${rc}" = s."${c}"`).join(" AND ");
+      const fingerprint = `s."id" || ' [' || ${fk.pairs
+        .map(([c]) => `'${c}=' || coalesce(s."${c}"::text, 'NULL')`)
+        .join(" || ' ' || ")} || ']'`;
+      return `SELECT ${fingerprint} AS x FROM leaf_stage s WHERE ${notNull} AND NOT EXISTS (SELECT 1 FROM public."${fk.refTable}" r WHERE ${match}) LIMIT 3`;
+    });
+    const sampleStmt =
+      fks.length > 0
+        ? // Each branch needs its own parentheses: a bare `LIMIT 3 UNION ALL`
+          // is a syntax error — LIMIT binds inside a set operation only when
+          // the branch is parenthesized.
+          `SELECT 'leafsync-samples|${table}|' || coalesce(string_agg(x, ' ; '), '') FROM (${sampleBranches
+            .map((b) => `(${b})`)
+            .join(" UNION ALL ")}) samples`
+        : null;
     const insertWithMeta = [
       // Postgres only allows a data-modifying CTE at the TOP level, so the
       // INSERT..RETURNING and the leaf_meta UPDATE sharing its result must
@@ -352,6 +373,11 @@ function applyTable(table, watermark) {
       `UPDATE leaf_meta SET orphans = (${orphanExpr});`,
       "COMMIT;",
       `SELECT 'leafsync-meta|${table}|' || staged::text || '|' || inserted::text || '|' || orphans::text FROM leaf_meta;`,
+      // Orphan fingerprints, read in the SAME file (same psql connection —
+      // the session temp table is invisible to a second one). A single-line
+      // aggregate separated by ' ; ' parses trivially: cuids contain no
+      // semicolons, and the sentinel can never collide with the meta row.
+      ...(sampleStmt ? [sampleStmt] : []),
     ].join("\n");
     writeFileSync(sqlPath, sql, "utf-8");
     const out = run("psql", [remoteUrl, "-v", "ON_ERROR_STOP=1", "-tA", "-f", sqlPath]);
@@ -367,8 +393,17 @@ function applyTable(table, watermark) {
         `[leaf-sync] ${table}: ${skipped + orphans} staged rows not copied (orphans=${orphans}, conflict-key already remote=${skipped})`,
       );
     }
+    const samplesMatch = out.match(new RegExp(`^leafsync-samples\\|${table}\\|(.*)$`, "m"));
+    const orphanSamples =
+      samplesMatch && samplesMatch[1]
+        ? samplesMatch[1]
+            .split(" ; ")
+            .map((s) => s.trim().replace(/\|/g, " "))
+            .filter(Boolean)
+            .slice(0, 6)
+        : [];
     console.log(`[leaf-sync] ${table}: merged (${(bytes / 1024).toFixed(0)} KB payload)`);
-    return orphans + skipped;
+    return { excluded: orphans + skipped, orphans, samples: orphanSamples };
   } finally {
     rmSync(csvPath, { force: true });
     rmSync(sqlPath, { force: true });
@@ -388,7 +423,13 @@ console.log(
 );
 
 let excludedForVerify = {};
+let freshOrphanReport = {};
 let pendingWatermark = null;
+// Scope bridges for the verify/persist block below (the sync block may not
+// run under --verify-only): whether the run was a full load, and the state
+// file the run started from.
+let fullLoadRef = false;
+let persistedRef = null;
 if (VERIFY_ONLY) {
   // --verify-only writes nothing, so it has no per-run tally; it verifies
   // against the exclusions the last CLEAN run persisted (a missing file
@@ -407,14 +448,16 @@ if (VERIFY_ONLY) {
   const persisted = readPersistedState();
   const watermark = persisted?.watermark ?? null;
   const fullLoad = !watermark;
+  fullLoadRef = fullLoad;
+  persistedRef = persisted;
   if (watermark) {
     console.log(`[leaf-sync] incremental (createdAt > ${watermark}, last clean run)`);
   } else {
     console.log("[leaf-sync] no clean-run watermark — full leaf-table load");
   }
-  const freshExcluded = {};
+  const fresh = {};
   for (const t of LEAF_TABLES) {
-    freshExcluded[t] = applyTable(t, watermark) ?? 0;
+    fresh[t] = applyTable(t, watermark) ?? { excluded: 0, orphans: 0, samples: [] };
   }
   // applyTable returns the per-run tally of permanently-unstorable rows:
   // FK orphans, plus rows skipped because their conflict key is already on
@@ -427,10 +470,14 @@ if (VERIFY_ONLY) {
   // new rows, so its tally ADDS to what earlier clean runs excluded — those
   // rows stay local forever and must keep being accounted for.
   excludedForVerify = {};
+  freshOrphanReport = {};
   for (const t of LEAF_TABLES) {
     excludedForVerify[t] = fullLoad
-      ? freshExcluded[t]
-      : (persisted?.excluded[t] ?? 0) + freshExcluded[t];
+      ? fresh[t].excluded
+      : (persisted?.excluded[t] ?? 0) + fresh[t].excluded;
+    if (fresh[t].orphans > 0) {
+      freshOrphanReport[t] = { count: fresh[t].orphans, samples: fresh[t].samples };
+    }
   }
   pendingWatermark = readWatermarkFromDb(localUrl);
 }
@@ -458,7 +505,15 @@ let ok = true;
 for (const t of LEAF_TABLES) {
   const excluded = excludedForVerify[t] ?? 0;
   const expectedMin = after.local[t] - excluded;
-  if (after.remote[t] < expectedMin) {
+  if (!Number.isFinite(expectedMin)) {
+    // Fail CLOSED on broken bookkeeping: a NaN here (a missing tally entry)
+    // makes every comparison false, which would let a short remote pass
+    // vacuously — the exact silent drift this job exists to prevent.
+    console.error(
+      `[leaf-sync] MISMATCH ${t}: verify accounting is corrupt (excluded=${excluded}) — refusing to pass`,
+    );
+    ok = false;
+  } else if (after.remote[t] < expectedMin) {
     console.error(
       `[leaf-sync] MISMATCH ${t}: remote=${after.remote[t]} < local=${after.local[t]} - ${excluded} orphan-excluded`,
     );
@@ -479,8 +534,37 @@ for (const t of LEAF_TABLES) {
 }
 
 // Persist the watermark + orphan tally ONLY after a clean verify — writing
-// it earlier would let a failed run skip never-synced rows forever.
-if (ok && pendingWatermark) persistState(pendingWatermark, excludedForVerify);
+// it earlier would let a failed run skip never-synced rows forever. The
+// operator-facing orphan report rides in the same clean-run state file for
+// the scheduler card to read: a FULL load re-derives the complete standing
+// picture (every local row is re-examined, so the report REPLACES the old
+// one — reconciled orphans drop out); an incremental run only sees new rows,
+// so its report MERGES into the previous one (reconciled rows may linger
+// until the next full load). The samples cap keeps the file bounded.
+if (ok && pendingWatermark) {
+  const mergedReport = {};
+  for (const t of LEAF_TABLES) {
+    const prev = fullLoadRef ? {} : (persistedRef?.orphanReport?.[t] ?? {});
+    const fresh = freshOrphanReport[t];
+    if (!fresh) {
+      if (prev.count) mergedReport[t] = prev;
+      continue;
+    }
+    mergedReport[t] = {
+      count: (prev.count ?? 0) + fresh.count,
+      samples: [...(prev.samples ?? []), ...fresh.samples].slice(0, 6),
+    };
+  }
+  persistState(pendingWatermark, excludedForVerify, mergedReport);
+  const reported = Object.entries(mergedReport).filter(([, r]) => (r.count ?? 0) > 0);
+  if (reported.length > 0) {
+    console.log("[leaf-sync] orphan report (see data/leaf-sync-watermark.json):");
+    for (const [t, rep] of reported) {
+      console.log(`[leaf-sync]   ${t}: ${rep.count} unsyncable rows`);
+      for (const s of rep.samples ?? []) console.log(`[leaf-sync]     ${s}`);
+    }
+  }
+}
 
 if (!ok) process.exit(1);
 console.log("[leaf-sync] OK — leaf tables in sync");

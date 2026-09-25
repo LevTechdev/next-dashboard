@@ -222,16 +222,40 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
         return { job: name, skipped: true, reason: "no remote URL configured" };
       }
       const { execFileSync } = await import("node:child_process");
-      // Incremental top-up of the three leaf tables (Session, RefreshToken,
-      // SecurityEvent) — seconds, not the full sync's 30-minute truncate/
-      // restore, so it can run between nightly refreshes without holding a
-      // pooler connection for half an hour.
+      // Incremental top-up of the five leaf tables (Session, RefreshToken,
+      // SecurityEvent, RecoveryReadinessSnapshot, FxRateSnapshot) — seconds,
+      // not the full sync's 30-minute truncate/restore, so it can run between
+      // nightly refreshes without holding a pooler connection for half an hour.
       const out = runCliSync(execFileSync, [leafSyncScriptPath()], {
         encoding: "utf-8",
         timeout: 12 * 60_000,
         cwd: process.cwd(),
       });
-      return { job: name, output: out.trim().split("\n").slice(-1)[0] ?? "" };
+      // The script persists an operator-facing orphan report in its clean-run
+      // state file (data/leaf-sync-watermark.json, gitignored): local rows
+      // that can never sync because their FK targets (dev-seed users/tenants)
+      // don't exist remotely. Surfacing it here is what makes the tally
+      // actionable — samples name the exact refs to reconcile.
+      let orphanReport: unknown;
+      try {
+        const fs = await import("node:fs");
+        const path = await import("node:path");
+        const raw = fs.readFileSync(
+          path.join(process.cwd(), "data", "leaf-sync-watermark.json"),
+          "utf-8",
+        );
+        const parsed = JSON.parse(raw) as { orphanReport?: unknown };
+        if (parsed.orphanReport && typeof parsed.orphanReport === "object") {
+          orphanReport = parsed.orphanReport;
+        }
+      } catch {
+        // No state file / no report — the card just shows nothing.
+      }
+      return {
+        job: name,
+        output: out.trim().split("\n").slice(-1)[0] ?? "",
+        ...(orphanReport ? { orphanReport } : {}),
+      };
     }
     case "supabase-sync": {
       if (!supabaseSyncConfigured()) {

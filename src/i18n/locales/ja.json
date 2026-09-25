@@ -996,6 +996,7 @@
       "jobAutoReorder": "発注書自動ドラフト（毎時チェック）",
       "jobSupabaseSync": "Supabase ミラー同期",
       "jobSupabaseLeafSync": "Supabaseリーフ同期（30分）",
+      "leafOrphans": "{table}: ローカルの {n} 行を同期できません（リモートにFKターゲットがありません）",
       "jobBackupVerify": "バックアップ復元検証",
       "jobRecoveryDrift": "復旧準備度スキャン",
       "jobFxSnapshot": "日次為替レートの記録",
