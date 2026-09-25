@@ -2796,6 +2796,8 @@
     "signOutEverywhereDesc": "Semua sesi — termasuk sesi ini — akan dikeluarkan, dan semua perangkat terpercaya akan dicabut. Anda perlu masuk kembali dengan faktor kedua.",
     "signedOutEverywhere": "Keluar dari semua perangkat.",
     "thisDevice": "Perangkat ini",
+    "sessionTrustedDevice": "Perangkat terpercaya",
+    "sessionStayGranted": "Tetap masuk diberikan",
     "active": "aktif",
     "revoke": "Cabut",
     "revokeAll": "Cabut semua sesi lain",

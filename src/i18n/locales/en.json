@@ -2796,6 +2796,8 @@
     "signOutEverywhereDesc": "Every session — including this one — will be signed out, and every trusted device will be untrusted. You will need to sign in again with your second factor.",
     "signedOutEverywhere": "Signed out of all devices.",
     "thisDevice": "This device",
+    "sessionTrustedDevice": "Trusted device",
+    "sessionStayGranted": "Stay signed in granted",
     "active": "active",
     "revoke": "Revoke",
     "revokeAll": "Revoke all other sessions",

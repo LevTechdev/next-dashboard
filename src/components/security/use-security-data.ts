@@ -18,6 +18,10 @@ export interface SessionRow {
   current: boolean;
   /** Both device profile and IP seen on an earlier session of this user. */
   recognized?: boolean;
+  /** This device holds a live 30-day trust cookie (2FA skip). */
+  trusted?: boolean;
+  /** ISO expiry of the session family's live stay-login grant, if any. */
+  stayLoginUntil?: string | null;
 }
 
 export interface SecurityEventRow {

@@ -2730,6 +2730,8 @@
     "signOutEverywhereDesc": "現在のセッションを含むすべてのセッションがサインアウトされ、信頼済みデバイスもすべて解除されます。再度セカンドファクターでサインインが必要です。",
     "signedOutEverywhere": "すべてのデバイスからサインアウトしました。",
     "thisDevice": "このデバイス",
+    "sessionTrustedDevice": "信頼済みデバイス",
+    "sessionStayGranted": "サインイン維持許可",
     "active": "アクティブ",
     "revoke": "取り消す",
     "revokeAll": "他のすべてのセッションを取り消す",

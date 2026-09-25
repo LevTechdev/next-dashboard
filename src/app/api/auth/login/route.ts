@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyPassword, hashPassword, needsRehash, signToken, type AuthUser } from "@/lib/auth";
 import { spendBackupTotp, spendPrimaryTotp } from "@/lib/totp-replay";
 import { createSession } from "@/lib/sessions";
-import { newFamilyId, createRefreshToken, STAY_LOGIN_GRANT_MS } from "@/lib/refresh-tokens";
+import { newFamilyId, createRefreshToken, stampStayLoginGrant } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { consumeBackupCode, countUnusedBackupCodes } from "@/lib/backup-codes";
 import { warnOnLowBackupCodes } from "@/lib/backup-code-alerts";
@@ -457,16 +457,14 @@ export async function POST(req: Request) {
     const familyId = newFamilyId();
     const sessionId = await createSession({ userId: user.id, token, req, familyId });
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
-    // Durable "stay signed in": when the user asked for it at login, stamp the
-    // grant on the family so the session survives the browser being closed
-    // without ever widening what the TOKENS can do (rotation cadence, theft
-    // revocation, and the 7-day hard cap are untouched — the grant is a UX
-    // promise, not a credential).
-    if (staySignedIn === true) {
-      await prisma.refreshToken.updateMany({
-        where: { familyId, revokedAt: null },
-        data: { stayLoginUntil: new Date(Date.now() + STAY_LOGIN_GRANT_MS) },
-      });
+    // Durable "stay signed in": when the user asked for it at login, or the
+    // sign-in happened on an ALREADY-TRUSTED device (they explicitly trusted
+    // this tablet/browser for 30 days — re-prompting it every 10 minutes is
+    // noise), stamp the grant on the family. The grant never widens what the
+    // TOKENS can do (rotation cadence, theft revocation, and the 7-day hard
+    // cap are untouched — it is a UX promise, not a credential).
+    if (staySignedIn === true || trusted) {
+      await stampStayLoginGrant(familyId, true);
     }
     await logSecurityEvent({ userId: user.id, type: "LOGIN", req, tenantId: user.tenantId });
     // Email the user ONLY when this sign-in is not recognized — a device

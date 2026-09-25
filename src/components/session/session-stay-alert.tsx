@@ -59,6 +59,17 @@ interface StayLoginStatus {
   until: string | null;
 }
 
+/**
+ * Whether this context is an INSTALLED PWA (display-mode: standalone).
+ * Installed apps have deliberate, launch-like lifetimes — the user pinned
+ * them to a dock/home-screen the way they would a native app — so the
+ * 10-minute re-auth rhythm never applies; the server grant governs instead.
+ */
+function isInstalledPwa(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
+
 export function SessionStayAlert({
   /** Test/e2e override: start the countdown at this many ms (skips the
    * ?stayDemo=1 query-param dance so real-timer tests stay sub-second). */
@@ -114,6 +125,14 @@ export function SessionStayAlert({
       setVisible(false);
     };
     (async () => {
+      // Installed PWAs are exempt from the alert rhythm entirely: the app
+      // was deliberately installed, so its sessions live and die by the
+      // server grant (stamped automatically for trusted devices at login),
+      // not by a wall-clock countdown.
+      if (isInstalledPwa()) {
+        adopt();
+        return;
+      }
       try {
         const res = await fetch("/api/auth/stay-login");
         if (res.ok) {

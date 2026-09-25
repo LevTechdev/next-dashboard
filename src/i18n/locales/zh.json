@@ -2730,6 +2730,8 @@
     "signOutEverywhereDesc": "所有会话（包括当前会话）都将退出，所有受信任设备也将被取消信任。您需要使用双重验证重新登录。",
     "signedOutEverywhere": "已退出所有设备。",
     "thisDevice": "当前设备",
+    "sessionTrustedDevice": "受信任设备",
+    "sessionStayGranted": "已授予保持登录",
     "active": "活跃",
     "revoke": "撤销",
     "revokeAll": "撤销所有其他会话",

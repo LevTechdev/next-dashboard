@@ -124,6 +124,19 @@ export function SessionsCard({ data }: { data: SecurityData }) {
                       {t("thisDevice")}
                     </Badge>
                   )}
+                  {/* Device-policy badges: trusted = 30-day 2FA skip cookie;
+                      a live stay grant = the long session window. Revoking
+                      the session kills both (the family dies with it). */}
+                  {s.trusted && (
+                    <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+                      {t("sessionTrustedDevice")}
+                    </Badge>
+                  )}
+                  {s.stayLoginUntil && (
+                    <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                      {t("sessionStayGranted")}
+                    </Badge>
+                  )}
                   {typeof s.recognized === "boolean" && !s.current && (
                     <Badge
                       className={
