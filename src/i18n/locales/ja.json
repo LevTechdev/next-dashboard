@@ -3612,15 +3612,55 @@
       }
     },
     "perMonth": "/月",
-    "compareCols": ["機能", "スターター", "プロフェッショナル", "エンタープライズ"],
+    "compareCols": [
+      "機能",
+      "スターター",
+      "プロフェッショナル",
+      "エンタープライズ"
+    ],
     "compareRows": [
-      ["月間注文数", "100", "1,000", "無制限"],
-      ["チームメンバー", "3", "10", "無制限"],
-      ["分析", "基本", "高度", "高度"],
-      ["サポート", "メール", "優先", "24時間専任"],
-      ["APIアクセス", "-", "フル", "フル"],
-      ["カスタムエクスポート", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "月間注文数",
+        "100",
+        "1,000",
+        "無制限"
+      ],
+      [
+        "チームメンバー",
+        "3",
+        "10",
+        "無制限"
+      ],
+      [
+        "分析",
+        "基本",
+        "高度",
+        "高度"
+      ],
+      [
+        "サポート",
+        "メール",
+        "優先",
+        "24時間専任"
+      ],
+      [
+        "APIアクセス",
+        "-",
+        "フル",
+        "フル"
+      ],
+      [
+        "カスタムエクスポート",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "プランが見つかりません。もう一度お試しください。",
     "toastCheckoutFailed": "チェックアウトに失敗しました",
@@ -4733,6 +4773,29 @@
     "deleteUser": "ユーザーを削除",
     "deletedToast": "ユーザーを削除しました",
     "deactivatedToast": "アカウントを無効化しました（最後の管理者）。",
+    "auditHealthTitle": "監査とメールの健全性",
+    "auditHealthDesc": "改ざん検知可能な監査チェーンの整合性、監査イベントのテナント帰属、永続メールアウトボックス — CI と同じチェックです。",
+    "auditHealthRefresh": "更新",
+    "auditHealthLoadFailed": "監査の健全性を読み込めませんでした。",
+    "auditHealthLoadFailedStatus": "監査の健全性を読み込めませんでした（ステータス {status}）。",
+    "auditHealthStatusOk": "正常",
+    "auditHealthStatusWarn": "滞留",
+    "auditHealthStatusBad": "要対応",
+    "auditHealthChainTitle": "監査チェーン",
+    "auditHealthChainDesc": "ハッシュ化されたすべてのセキュリティイベントは、保存値と一致し前のイベントにリンクしています。",
+    "auditHealthChainVerified": "検証済みイベント",
+    "auditHealthChainBreaks": "チェーン断絶",
+    "auditHealthChainFirstBreak": "イベント #{seq} で最初の断絶 — npm run repair:audit-chain で再構築してください。",
+    "auditHealthAttributionTitle": "テナント帰属",
+    "auditHealthAttributionDesc": "アクターのないイベントはデプロイレベルのテレメトリとして除外し、帰属付きイベントはすべて実在するワークスペースを指す必要があります。",
+    "auditHealthAttributionMissing": "テナントのないイベント",
+    "auditHealthAttributionOrphan": "存在しないテナントを指すイベント",
+    "auditHealthAttributionNullHash": "チェーン外の行",
+    "auditHealthMailTitle": "メールアウトボックス",
+    "auditHealthMailDesc": "永続アウトボックスで待機中のメール。ここでの失敗はユーザーに届かないメールです。",
+    "auditHealthMailPending": "送信待ち",
+    "auditHealthMailFailed": "失敗",
+    "auditHealthMailStuck": "滞留",
     "loadFailed": "ユーザーの読み込みに失敗しました",
     "loadFailedStatus": "ユーザーの読み込みに失敗しました ({status})"
   }

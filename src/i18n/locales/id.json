@@ -3612,15 +3612,55 @@
       }
     },
     "perMonth": "/bulan",
-    "compareCols": ["Fitur", "Starter", "Profesional", "Enterprise"],
+    "compareCols": [
+      "Fitur",
+      "Starter",
+      "Profesional",
+      "Enterprise"
+    ],
     "compareRows": [
-      ["Pesanan Bulanan", "100", "1.000", "Tanpa batas"],
-      ["Anggota Tim", "3", "10", "Tanpa batas"],
-      ["Analitik", "Dasar", "Lanjutan", "Lanjutan"],
-      ["Dukungan", "Email", "Prioritas", "Khusus 24/7"],
-      ["Akses API", "-", "Penuh", "Penuh"],
-      ["Ekspor Kustom", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "Pesanan Bulanan",
+        "100",
+        "1.000",
+        "Tanpa batas"
+      ],
+      [
+        "Anggota Tim",
+        "3",
+        "10",
+        "Tanpa batas"
+      ],
+      [
+        "Analitik",
+        "Dasar",
+        "Lanjutan",
+        "Lanjutan"
+      ],
+      [
+        "Dukungan",
+        "Email",
+        "Prioritas",
+        "Khusus 24/7"
+      ],
+      [
+        "Akses API",
+        "-",
+        "Penuh",
+        "Penuh"
+      ],
+      [
+        "Ekspor Kustom",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "Paket tidak ditemukan. Silakan coba lagi.",
     "toastCheckoutFailed": "Pembayaran gagal",
@@ -4733,6 +4773,29 @@
     "deleteUser": "Hapus pengguna",
     "deletedToast": "Pengguna dihapus",
     "deactivatedToast": "Akun dinonaktifkan (admin terakhir).",
+    "auditHealthTitle": "Kesehatan audit & surat",
+    "auditHealthDesc": "Integritas rantai audit anti-pemalsuhan, atribusi tenant pada peristiwa audit, dan outbox surat tahan lama — pemeriksaan yang sama dengan CI.",
+    "auditHealthRefresh": "Segarkan",
+    "auditHealthLoadFailed": "Tidak dapat memuat kesehatan audit.",
+    "auditHealthLoadFailedStatus": "Tidak dapat memuat kesehatan audit (status {status}).",
+    "auditHealthStatusOk": "Sehat",
+    "auditHealthStatusWarn": "Tertunda",
+    "auditHealthStatusBad": "Perlu perhatian",
+    "auditHealthChainTitle": "Rantai audit",
+    "auditHealthChainDesc": "Setiap peristiwa keamanan yang di-hash tetap menghasilkan hash yang sama dan terhubung ke pendahulunya.",
+    "auditHealthChainVerified": "Peristiwa terverifikasi",
+    "auditHealthChainBreaks": "Putusan rantai",
+    "auditHealthChainFirstBreak": "Putusan pertama pada peristiwa #{seq} — susun ulang rantai dengan npm run repair:audit-chain.",
+    "auditHealthAttributionTitle": "Atribusi tenant",
+    "auditHealthAttributionDesc": "Peristiwa tanpa aktor adalah telemetri deployment dan dikecualikan; setiap peristiwa teratribusi harus menunjuk ke ruang kerja yang aktif.",
+    "auditHealthAttributionMissing": "Peristiwa tanpa tenant",
+    "auditHealthAttributionOrphan": "Peristiwa menunjuk tenant yang sudah tiada",
+    "auditHealthAttributionNullHash": "Baris di luar rantai",
+    "auditHealthMailTitle": "Outbox surat",
+    "auditHealthMailDesc": "Surat yang menunggu di outbox tahan lama; kegagalan di sini adalah surel yang tak pernah diterima pengguna.",
+    "auditHealthMailPending": "Menunggu",
+    "auditHealthMailFailed": "Gagal",
+    "auditHealthMailStuck": "Mandek",
     "loadFailed": "Gagal memuat pengguna",
     "loadFailedStatus": "Gagal memuat pengguna ({status})"
   }

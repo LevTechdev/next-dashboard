@@ -76,4 +76,23 @@ test.describe("Admin user management", () => {
     await expect(dialog.first()).toBeHidden();
     expect(deleteCalls).toHaveLength(0);
   });
+
+  test("audit-health card reports chain, attribution, and outbox", async ({ page }) => {
+    await loginAs(page);
+    await page.goto("/en/admin");
+    await page.waitForURL("**/en/admin**");
+
+    // The card hydrates from GET /api/admin/audit-health (the CI gate's
+    // dashboard twin). On a seeded DB the chain verifies and attribution is
+    // intact, so both sections read healthy; the outbox may legitimately hold
+    // pending rows, so only its presence is asserted.
+    const chain = page.getByTestId("audit-chain-health");
+    await expect(chain).toBeVisible();
+    await expect(chain).toContainText(/\d+\/\d+/);
+    await expect(chain).toHaveAttribute("data-state", "ok");
+
+    await expect(page.getByTestId("audit-attribution-health")).toHaveAttribute("data-state", "ok");
+
+    await expect(page.getByTestId("audit-mail-health")).toBeVisible();
+  });
 });

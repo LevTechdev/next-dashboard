@@ -3612,15 +3612,55 @@
       }
     },
     "perMonth": "/month",
-    "compareCols": ["Features", "Starter", "Professional", "Enterprise"],
+    "compareCols": [
+      "Features",
+      "Starter",
+      "Professional",
+      "Enterprise"
+    ],
     "compareRows": [
-      ["Monthly Orders", "100", "1,000", "Unlimited"],
-      ["Team Members", "3", "10", "Unlimited"],
-      ["Analytics", "Basic", "Advanced", "Advanced"],
-      ["Support", "Email", "Priority", "24/7 Dedicated"],
-      ["API Access", "-", "Full", "Full"],
-      ["Custom Exports", "-", "-", "Yes"],
-      ["RBAC", "-", "Yes", "Yes"]
+      [
+        "Monthly Orders",
+        "100",
+        "1,000",
+        "Unlimited"
+      ],
+      [
+        "Team Members",
+        "3",
+        "10",
+        "Unlimited"
+      ],
+      [
+        "Analytics",
+        "Basic",
+        "Advanced",
+        "Advanced"
+      ],
+      [
+        "Support",
+        "Email",
+        "Priority",
+        "24/7 Dedicated"
+      ],
+      [
+        "API Access",
+        "-",
+        "Full",
+        "Full"
+      ],
+      [
+        "Custom Exports",
+        "-",
+        "-",
+        "Yes"
+      ],
+      [
+        "RBAC",
+        "-",
+        "Yes",
+        "Yes"
+      ]
     ],
     "toastPlanNotFound": "Plan not found. Please try again.",
     "toastCheckoutFailed": "Checkout failed",
@@ -4733,6 +4773,29 @@
     "deleteUser": "Delete user",
     "deletedToast": "User deleted",
     "deactivatedToast": "Account deactivated (last admin).",
+    "auditHealthTitle": "Audit & mail health",
+    "auditHealthDesc": "Tamper-evident audit-chain integrity, tenant attribution on audit events, and the durable mail outbox — the same checks CI runs.",
+    "auditHealthRefresh": "Refresh",
+    "auditHealthLoadFailed": "Could not load audit health.",
+    "auditHealthLoadFailedStatus": "Could not load audit health (status {status}).",
+    "auditHealthStatusOk": "Healthy",
+    "auditHealthStatusWarn": "Backlog",
+    "auditHealthStatusBad": "Attention",
+    "auditHealthChainTitle": "Audit chain",
+    "auditHealthChainDesc": "Every hashed security event still re-hashes to its stored value and links to its predecessor.",
+    "auditHealthChainVerified": "Verified events",
+    "auditHealthChainBreaks": "Chain breaks",
+    "auditHealthChainFirstBreak": "First break at event #{seq} — re-chain with npm run repair:audit-chain.",
+    "auditHealthAttributionTitle": "Tenant attribution",
+    "auditHealthAttributionDesc": "Actor-less events are deployment telemetry and exempt; every attributed event must point at a live workspace.",
+    "auditHealthAttributionMissing": "Events missing a tenant",
+    "auditHealthAttributionOrphan": "Events pointing at a dead tenant",
+    "auditHealthAttributionNullHash": "Rows outside the chain",
+    "auditHealthMailTitle": "Mail outbox",
+    "auditHealthMailDesc": "Queued mail waiting on the durable outbox; failures here are the emails users never receive.",
+    "auditHealthMailPending": "Pending",
+    "auditHealthMailFailed": "Failed",
+    "auditHealthMailStuck": "Stuck",
     "loadFailed": "Failed to load users",
     "loadFailedStatus": "Failed to load users ({status})"
   }

@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { AuditHealthCard } from "@/components/admin/audit-health-card";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -253,6 +254,9 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Audit-event attribution + mail-outbox health (ADMIN-only endpoint). */}
+      <AuditHealthCard />
 
       <Card>
         <CardHeader className="pb-4 border-b border-zinc-100 dark:border-zinc-800">
