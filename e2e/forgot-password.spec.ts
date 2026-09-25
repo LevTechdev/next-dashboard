@@ -122,8 +122,13 @@ test.describe("Forgot Password", () => {
 
     // 4. The OLD password must now be rejected.
     await page.goto("/en/login");
-    await page.locator('form:visible:has(input[type="password"]) input[type="email"]').fill(email);
-    await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
+    // Both fields scoped to the visible sign-in form: AnimatePresence keeps
+    // the outgoing view mounted for a beat (and a long-lived dev server can
+    // keep a stale form copy around), so an unscoped placeholder lookup hits
+    // two elements — see signInEmailField() in e2e/helpers.ts.
+    const loginForm = page.locator('form:visible:has(input[type="password"])');
+    await loginForm.locator('input[type="email"]').fill(email);
+    await loginForm.locator('input[type="password"]').fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page.getByText(/invalid|failed|incorrect/i).first()).toBeVisible();
     await expect(page).toHaveURL(/\/en\/login/);
