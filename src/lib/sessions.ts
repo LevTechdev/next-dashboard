@@ -78,21 +78,53 @@ export async function touchSession(userId: string, token: string): Promise<void>
   }
 }
 
-/** Revoke one session (must belong to the user). Returns true if a row changed. */
+/**
+ * Kill a refresh-token family entirely: revoke every live token in it and
+ * clear any durable stay-login grant. A revoked SESSION whose family survives
+ * is a re-entry path — the device's still-valid refresh cookie mints a fresh
+ * (Session-less) access token and walks right back past the revocation check.
+ */
+async function revokeFamiliesByIds(familyIds: Array<string | null>): Promise<number> {
+  const ids = [...new Set(familyIds.filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) return 0;
+  const [tokens] = await Promise.all([
+    prisma.refreshToken.updateMany({
+      where: { familyId: { in: ids }, revokedAt: null },
+      data: { revokedAt: new Date(), stayLoginUntil: null },
+    }),
+  ]);
+  return tokens.count;
+}
+
+/** Revoke one session (must belong to the user) and its refresh-token family. */
 export async function revokeSession(userId: string, sessionId: string): Promise<boolean> {
+  const target = await prisma.session.findFirst({
+    where: { id: sessionId, userId, revokedAt: null },
+    select: { familyId: true },
+  });
+  if (!target) return false;
   const res = await prisma.session.updateMany({
     where: { id: sessionId, userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+  // Without this, the revoked device's still-valid refresh cookie mints a
+  // fresh access token and walks back in; its stay-login grant dies too.
+  await revokeFamiliesByIds([target.familyId]);
   return res.count > 0;
 }
 
 /** Revoke every session for the user EXCEPT the one matching currentToken. */
 export async function revokeOtherSessions(userId: string, currentToken: string): Promise<number> {
+  const others = await prisma.session.findMany({
+    where: { userId, revokedAt: null, tokenHash: { not: hashToken(currentToken) } },
+    select: { familyId: true },
+  });
   const res = await prisma.session.updateMany({
     where: { userId, revokedAt: null, tokenHash: { not: hashToken(currentToken) } },
     data: { revokedAt: new Date() },
   });
+  // The other devices' refresh cookies must not outlive their sessions.
+  await revokeFamiliesByIds(others.map((s) => s.familyId));
   return res.count;
 }
 
@@ -102,10 +134,15 @@ export async function revokeOtherSessions(userId: string, currentToken: string):
  * the just-used token is only re-checked after the response is sent.
  */
 export async function revokeAllSessions(userId: string): Promise<number> {
+  const all = await prisma.session.findMany({
+    where: { userId, revokedAt: null },
+    select: { familyId: true },
+  });
   const res = await prisma.session.updateMany({
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+  await revokeFamiliesByIds(all.map((s) => s.familyId));
   return res.count;
 }
 
