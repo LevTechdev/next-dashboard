@@ -46,11 +46,39 @@ export function signInEmailField(page: Page): Locator {
 }
 
 /**
- * Session cache for loginAs: token strings keyed by "email:password". Workers
- * share module state when the suite runs in the same process, and the goal is
- * to mint at most one argon2 login per credential per run.
+ * Session cache for loginAs: the minted cookie pair keyed by "email:password".
+ * Workers share module state when the suite runs in the same process, and the
+ * goal is to mint at most one argon2 login per credential per run.
+ *
+ * BOTH cookies are cached, and the age is tracked, because a cached ACCESS
+ * token is only valid for 15 minutes (ACCESS_MAX_AGE in src/lib/auth.ts).
+ * Reusing one past that lifetime is how a single random spec kept dying in a
+ * long CI run: the page still rendered, then its first data fetch 401'd and the
+ * app hard-navigated to /en/login?reason=expired. Without the refresh cookie
+ * the client had no way to renew the token, so the page died instead of
+ * refreshing silently.
  */
-const sessionTokens = new Map<string, string>();
+const sessionTokens = new Map<string, { token: string; refreshToken?: string; mintedAt: number }>();
+
+/**
+ * Reuse margin for a cached access token: well inside its 15-minute lifetime, so
+ * a spec that starts just under the wire cannot have it expire mid-test. Past
+ * this age the cache is skipped and a real login is minted instead.
+ */
+const CACHED_TOKEN_MAX_AGE_MS = 12 * 60_000;
+
+/** Snapshot the minted cookie pair from a context's jar for later reuse. */
+async function rememberSession(page: Page, credKey: string): Promise<void> {
+  const jar = await page.context().cookies();
+  const token = jar.find((c) => c.name === "token" && c.value.length > 0);
+  if (!token) return;
+  const refreshToken = jar.find((c) => c.name === "refresh_token" && c.value.length > 0);
+  sessionTokens.set(credKey, {
+    token: token.value,
+    ...(refreshToken ? { refreshToken: refreshToken.value } : {}),
+    mintedAt: Date.now(),
+  });
+}
 
 // ── Login-throttle awareness ─────────────────────────────────────────────────
 //
@@ -163,23 +191,42 @@ export async function loginAs(
   // dashboard. The seed admin is shared, so the cache hit rate is high; a
   // revoked/expired cached token falls through to the form path below.
   const credKey = `${email}:${password}`;
-  const cachedToken = sessionTokens.get(credKey);
-  if (cachedToken) {
+  const cached = sessionTokens.get(credKey);
+  if (cached && Date.now() - cached.mintedAt < CACHED_TOKEN_MAX_AGE_MS) {
     await page.context().addCookies([
       {
         name: "token",
-        value: cachedToken,
+        value: cached.token,
         domain: "localhost",
         path: "/",
         httpOnly: true,
         sameSite: "Lax",
       },
+      // The refresh cookie rides along so the app can renew the token itself
+      // instead of force-logging the browser out mid-spec.
+      ...(cached.refreshToken
+        ? [
+            {
+              name: "refresh_token",
+              value: cached.refreshToken,
+              domain: "localhost",
+              path: "/",
+              httpOnly: true,
+              sameSite: "Lax" as const,
+            },
+          ]
+        : []),
     ]);
     await page.goto("/en/dashboard");
-    if (page.url().includes("/en/dashboard")) {
+    // The URL alone is not proof of a live session: the dashboard shell renders
+    // for a token the server has already rejected, and the spec that follows
+    // then dies on its first data fetch. Probe a guarded route first —
+    // requireAuth enforces JWT validity AND session revocation (isTokenRevoked).
+    const probe = await page.request.get("/api/profile", { timeout: 45_000 }).catch(() => null);
+    if (page.url().includes("/en/dashboard") && (!probe || probe.ok())) {
       return;
-    } // Token dead (server restart with a changed JWT secret, revocation, etc.)
-    // — clear and fall through to the form path.
+    } // Token dead (expiry, revocation, changed JWT secret, …) — drop it and
+    // fall through to a real login.
     sessionTokens.delete(credKey);
   }
 
@@ -201,11 +248,8 @@ export async function loginAs(
       timeout: 90_000,
     });
     if (apiLogin.ok()) {
-      const minted = (await page.context().cookies()).find(
-        (c) => c.name === "token" && c.value.length > 0,
-      );
-      if (minted) {
-        sessionTokens.set(credKey, minted.value);
+      await rememberSession(page, credKey);
+      if (sessionTokens.has(credKey)) {
         await page.goto("/en/dashboard");
         await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
         return;
@@ -273,14 +317,9 @@ export async function loginAs(
   // behind a parallel worker's login — give the redirect real headroom.
   await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
 
-  // Cache the minted token for later workers/tests (best-effort: the cookie
-  // must exist and the dashboard URL proves the session is live).
-  const minted = (await page.context().cookies()).find(
-    (c) => c.name === "token" && c.value.length > 0,
-  );
-  if (minted) {
-    sessionTokens.set(credKey, minted.value);
-  }
+  // Cache the minted cookie pair for later workers/tests (best-effort: the
+  // token must exist and the dashboard URL proves the session is live).
+  await rememberSession(page, credKey);
 }
 
 /**
