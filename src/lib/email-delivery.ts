@@ -23,7 +23,7 @@ const EMAIL_EVENT: Record<EmailDeliveryStatus, SecurityEventType> = {
 export async function logEmailDelivery(params: {
   userId: string | null;
   status: EmailDeliveryStatus;
-  template: "verify_email" | "password_reset" | "new_sign_in";
+  template: "verify_email" | "password_reset" | "new_sign_in" | "other";
   to: string;
   /** Transport that handled (or would have handled) the message. */
   transport?: "smtp" | "resend" | "none";
@@ -42,6 +42,10 @@ export async function logEmailDelivery(params: {
       transport: params.transport ?? "none",
       ...(params.reason ? { reason: params.reason } : {}),
     },
-    tenantId: params.tenantId ?? null,
+    // Forward as-is (undefined when the caller omitted it): a nullish tenantId
+    // lets `logSecurityEvent` resolve the workspace from `userId`, so per-user
+    // email events stay attributed even when the transport call site has no
+    // session context.
+    tenantId: params.tenantId,
   });
 }

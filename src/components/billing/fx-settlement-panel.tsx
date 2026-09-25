@@ -12,6 +12,7 @@ import {
   rankSettlementRails,
   SPREADS_AS_OF,
 } from "@/lib/settlement-rails";
+import { relativeStamp } from "@/lib/relative-stamp";
 import { cn } from "@/lib/utils";
 
 /**
@@ -215,15 +216,6 @@ export function FxSettlementPanel({
       </p>
     </section>
   );
-}
-
-/** "2m ago" / "3h ago" / "5d ago" — compact provenance stamp. */
-function relativeStamp(iso: string): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86_400) return `${Math.floor(seconds / 3600)}h`;
-  return `${Math.floor(seconds / 86_400)}d`;
 }
 
 function percent(fraction: number): string {

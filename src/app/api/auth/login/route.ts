@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyPassword, hashPassword, needsRehash, signToken, type AuthUser } from "@/lib/auth";
 import { spendBackupTotp, spendPrimaryTotp } from "@/lib/totp-replay";
 import { createSession } from "@/lib/sessions";
-import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
+import { newFamilyId, createRefreshToken, stampStayLoginGrant } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { consumeBackupCode, countUnusedBackupCodes } from "@/lib/backup-codes";
 import { warnOnLowBackupCodes } from "@/lib/backup-code-alerts";
@@ -11,8 +11,13 @@ import { logSecurityEvent } from "@/lib/security-events";
 import { sendNewSignInAlert } from "@/lib/security-notifications";
 import { recognizeSessionContext } from "@/lib/device-recognition";
 import { getRequestMeta } from "@/lib/request-meta";
-import { checkLoginRateLimit, loginThrottleLimit } from "@/lib/rate-limit";
+import {
+  checkLoginRateLimit,
+  loginThrottleLimit,
+  requestThrottleLimitOverride,
+} from "@/lib/rate-limit";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
+import { describeMailConfiguration } from "@/lib/email";
 import { verifyOtp, isOtpExpired, MAX_OTP_ATTEMPTS } from "@/lib/email-otp";
 import {
   findTrustedDevice,
@@ -107,6 +112,7 @@ export async function POST(req: Request) {
       challengeEmailOtp,
       passkeyAsserted,
       trustDevice,
+      staySignedIn,
       locale,
     } = body;
 
@@ -120,7 +126,9 @@ export async function POST(req: Request) {
     // window keeps filling under hammering.
     const rl = await checkLoginRateLimit(req, {
       email: String(email).toLowerCase(),
-      limit: loginThrottleLimit(),
+      // An E2E spec may pin its own window (never honoured in production);
+      // otherwise the suite-wide budget applies.
+      limit: requestThrottleLimitOverride(req) ?? loginThrottleLimit(),
     });
     if (!rl.allowed) {
       // Attribute the throttle to the targeted account (by email) so its owner
@@ -235,26 +243,30 @@ export async function POST(req: Request) {
     // password has ALREADY been verified at this point, so issuing the code is
     // safe — the session is only granted once the code comes back and passes.
     if (!totpToken && !backupCode && !emailOtpCode && challengeEmailOtp === true) {
-      const { sent, code } = await issueEmailOtp({
+      const { sent, queued, code } = await issueEmailOtp({
         userId: user.id,
         email: user.email,
         locale,
       });
-      await logSecurityEvent({
-        userId: user.id,
-        type: "EMAIL_DELIVERY_SENT",
-        req,
-        metadata: { purpose: "login_challenge", sent },
-        tenantId: user.tenantId,
-      });
+      // Deliberately no EMAIL_DELIVERY_* event here: `issueEmailOtp` records the
+      // "no mailer configured" outcome itself, and the outbox drain records the
+      // authoritative SENT/FAILED once a transport has actually answered. An
+      // event written at this point would claim a delivery the transport has
+      // not been asked for yet.
       return NextResponse.json(
         {
           requires2FA: true,
           method: "email_otp",
           emailSent: sent,
+          // Durably queued, delivery continues after this response — the UI may
+          // promise "check your inbox" on either flag (see lib/email-outbox).
+          emailQueued: queued,
+          // Set when the configuration cannot reach real recipients (e.g. a
+          // sandbox sender), so the UI can warn instead of promising an email.
+          ...(describeMailConfiguration().warnings.length ? { mailMisconfigured: true } : {}),
           // Dev fallback (no mailer): surface the code inline so the flow stays
           // testable — same contract as the register flow's devOtp.
-          ...(isDevFallbackAllowed() && !sent ? { devOtp: code } : {}),
+          ...(isDevFallbackAllowed() && !sent && !queued ? { devOtp: code } : {}),
         },
         { status: 200 },
       );
@@ -445,6 +457,15 @@ export async function POST(req: Request) {
     const familyId = newFamilyId();
     const sessionId = await createSession({ userId: user.id, token, req, familyId });
     const refreshToken = await createRefreshToken(user.id, familyId, sessionId);
+    // Durable "stay signed in": when the user asked for it at login, or the
+    // sign-in happened on an ALREADY-TRUSTED device (they explicitly trusted
+    // this tablet/browser for 30 days — re-prompting it every 10 minutes is
+    // noise), stamp the grant on the family. The grant never widens what the
+    // TOKENS can do (rotation cadence, theft revocation, and the 7-day hard
+    // cap are untouched — it is a UX promise, not a credential).
+    if (staySignedIn === true || trusted) {
+      await stampStayLoginGrant(familyId, true);
+    }
     await logSecurityEvent({ userId: user.id, type: "LOGIN", req, tenantId: user.tenantId });
     // Email the user ONLY when this sign-in is not recognized — a device
     // profile (OS+browser) or IP the account hasn't used in the last 90 days.

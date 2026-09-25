@@ -45,6 +45,9 @@ next-env.d.ts
 
 .vercel
 .env*
+# The template is not a secret — it is how a fresh clone learns which env vars
+# exist (it is ignored above by `.env*`, which is why the mail keys went missing).
+!.env.example
 
 # Windows reserved names & embedded repos
 /nul

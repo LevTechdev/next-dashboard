@@ -46,6 +46,29 @@ export type RotateResult =
   | { status: "invalid" };
 
 /**
+ * Durable "stay signed in" grant lifetime, stamped on a refresh-token family
+ * by POST /api/auth/stay-login when the user accepts the stay-login alert.
+ * Matches the 7-day refresh lifetime: the grant can never outlive the family
+ * that honors it, and it dies with logout, theft revocation, and password
+ * change (they all revoke the family).
+ */
+export const STAY_LOGIN_GRANT_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Stamp (or clear) the durable stay-login grant on a family. Idempotent.
+ * Used by the stay-login alert's POST endpoint AND by the login route when the
+ * sign-in happened on an already-trusted device — a tablet the user explicitly
+ * trusted for 30 days should not be re-prompted every 10 minutes just because
+ * they never happened to click "Stay signed in".
+ */
+export async function stampStayLoginGrant(familyId: string, granted: boolean): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { familyId, revokedAt: null },
+    data: { stayLoginUntil: granted ? new Date(Date.now() + STAY_LOGIN_GRANT_MS) : null },
+  });
+}
+
+/**
  * Benign-replay leeway. A rotation is a single-use exchange, but a browser can
  * legitimately present the SAME token twice within a moment: two tabs
  * restoring a session, or a retry after a response was lost in flight. Without

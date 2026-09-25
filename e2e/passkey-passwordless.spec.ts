@@ -77,7 +77,9 @@ test.describe("Passwordless passkey sign-in", () => {
     await page.goto("/en/login");
     const fingerprint = page.getByRole("button", { name: "Sign in with a passkey" });
     await expect(fingerprint).toBeVisible();
-    await expect(page.locator('input[type="email"]')).toHaveValue("");
+    await expect(
+      page.locator('form:visible:has(input[type="password"]) input[type="email"]'),
+    ).toHaveValue("");
 
     await waitForLoginThrottleWindow();
     await fingerprint.click();
@@ -98,7 +100,9 @@ test.describe("Passwordless passkey sign-in", () => {
     await fingerprint.click();
 
     await expect(page).toHaveURL(/\/en\/login/, { timeout: 30_000 });
-    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(
+      page.locator('form:visible:has(input[type="password"]) input[type="email"]'),
+    ).toBeVisible();
     await expect(page.locator("[data-sonner-toast]").first()).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -7,6 +7,7 @@ import {
   isDevFallbackAllowed,
   sanitizeVerifyEmailRedirect,
 } from "@/lib/email-verification";
+import { describeMailConfiguration } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -50,10 +51,12 @@ export async function POST(req: Request) {
 
     // 2. Email OTP (inline code flow).
     let sent = false;
+    let queued = false;
     let code = "";
     try {
       const result = await issueEmailOtp({ userId: user.id, email: user.email, locale });
       sent = result.sent;
+      queued = result.queued;
       code = result.code;
     } catch (err) {
       console.error("[verify-email] OTP issue error:", err);
@@ -61,7 +64,7 @@ export async function POST(req: Request) {
       code = String(Math.floor(100000 + Math.random() * 900000));
     }
     console.log(
-      `[verify-email] OTP issued for ${user.email}, sent=${sent}, devFallback=${isDevFallbackAllowed()}`,
+      `[verify-email] OTP issued for ${user.email}, sent=${sent}, queued=${queued}, devFallback=${isDevFallbackAllowed()}`,
     );
 
     await prisma.user.update({
@@ -75,15 +78,25 @@ export async function POST(req: Request) {
     const origin = req.headers.get("origin") || `http://localhost:${process.env.PORT || 3010}`;
     const verificationUrl = `${origin}/api/auth/verify-email/confirm?token=${token}&locale=${locale}&from=${from}`;
 
-    if (!sent) {
+    // Only when nothing was queued: with the durable outbox a queued-but-not-
+    // yet-sent message would otherwise print a one-time code to the server log,
+    // where it is readable by anyone with log access AND already stale (the
+    // drain re-issues a fresh code at delivery time).
+    if (!sent && !queued) {
       // No mailer configured — log both so they can be used in development.
       console.log(`[verify-email] Verification link for ${user.email}: ${verificationUrl}`);
       console.log(`[verify-email] OTP for ${user.email}: ${code}`);
     }
 
     const devFallback = isDevFallbackAllowed();
+    const mailWarnings = describeMailConfiguration().warnings;
     return NextResponse.json({
       success: true,
+      // Whether the code is already delivered, or durably queued for delivery
+      // off the response path (see lib/email-outbox).
+      emailSent: sent,
+      emailQueued: queued,
+      ...(mailWarnings.length ? { mailMisconfigured: true } : {}),
       ...(devFallback ? { verificationUrl } : {}),
       ...(devFallback ? { devOtp: code } : {}),
     });

@@ -266,6 +266,20 @@ interface DynamicPattern {
 
 const DYNAMIC_KEY_PATTERNS: DynamicPattern[] = [
   {
+    // Admin mail-health card: the five outbox queue-depth cells render their
+    // labels from a fixed status list.
+    name: "admin mail-health queue depths",
+    templates: ["mailHealthQueue_${}"],
+    namespace: "admin",
+    keys: [
+      "mailHealthQueue_pending",
+      "mailHealthQueue_sending",
+      "mailHealthQueue_sent",
+      "mailHealthQueue_failed",
+      "mailHealthQueue_stuck",
+    ],
+  },
+  {
     // Careers page: perks and roles are declarative lists rendered with
     // `${key}Title` / `${key}Desc` / `${role.id}Title` templates, so every
     // generated key is listed here (and exists in all four locales).

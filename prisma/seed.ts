@@ -6,6 +6,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { createHash } from "node:crypto";
 import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
 
 const prisma = new PrismaClient();
@@ -45,6 +46,8 @@ async function main() {
 
   // Clean existing data
   await prisma.notification.deleteMany();
+  await prisma.apiKey.deleteMany();
+  await prisma.webhookEndpoint.deleteMany();
   await prisma.orderDiscount.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -873,6 +876,10 @@ async function main() {
         userId: pick([admin.id, manager.id, staff.id]),
         channelId: channel.id,
         status,
+        // The catalog prices above are rupiah-denominated (Rp899,000, not
+        // $899k) — tag the order so every money surface reads the same
+        // denomination instead of guessing from magnitude.
+        currency: "IDR",
         totalAmount,
         discountAmount,
         shippingAmount,
@@ -1099,6 +1106,62 @@ async function main() {
   // full-balance payout then exceeds the QRIS settlement cash (~$1,183) and
   // trips the 409 coverage gate, while a $500 request succeeds.
   const seedProducts = await prisma.product.findMany({ take: 3, orderBy: { createdAt: "asc" } });
+  // Affiliate platforms — every conversion block below reads whatever
+  // platforms exist, and the affiliates page renders a card per platform
+  // (brand glyph + storefront link, see e2e/affiliates-platform-icons.spec.ts).
+  // A freshly-provisioned database (CI makes one per run) has none, which
+  // used to silently skip the whole affiliate seed: no conversions, no
+  // lifecycle payout, empty Conversions/Payouts tabs, five platform cards
+  // instead of six. Upsert the full catalog the UI offers (see
+  // src/lib/platform-connectors.ts and the brand-icon system) so the
+  // section is self-sufficient.
+  await prisma.affiliatePlatform.createMany({
+    data: [
+      {
+        name: "TikTok Shop",
+        slug: "tiktok-shop",
+        baseUrl: "https://shop.tiktok.com",
+        color: "#FE2C55",
+        sortOrder: 0,
+      },
+      {
+        name: "Shopee",
+        slug: "shopee",
+        baseUrl: "https://shopee.com",
+        color: "#EE4D2D",
+        sortOrder: 1,
+      },
+      {
+        name: "Tokopedia",
+        slug: "tokopedia",
+        baseUrl: "https://www.tokopedia.com",
+        color: "#03AC0E",
+        sortOrder: 2,
+      },
+      {
+        name: "Facebook",
+        slug: "facebook",
+        baseUrl: "https://www.facebook.com",
+        color: "#1877F2",
+        sortOrder: 3,
+      },
+      {
+        name: "Instagram",
+        slug: "instagram",
+        baseUrl: "https://www.instagram.com",
+        color: "#E1306C",
+        sortOrder: 4,
+      },
+      {
+        name: "Lazada",
+        slug: "lazada",
+        baseUrl: "https://www.lazada.com",
+        color: "#F57224",
+        sortOrder: 5,
+      },
+    ],
+    skipDuplicates: true,
+  });
   const seedPlatforms = await prisma.affiliatePlatform.findMany({ take: 3 });
   if (seedProducts.length > 0 && seedPlatforms.length > 0) {
     const conversionSpecs = [
@@ -1231,6 +1294,32 @@ async function main() {
     console.log("✅ Affiliate lifecycle seeded (PENDING → APPROVED → payout SCHEDULED)");
   }
 
+  // Scheduler ledger demo — the Settings card's job rows show a green dot
+  // only once a run has been recorded, and data/scheduler-runs.json (the
+  // ledger store) does not exist on a freshly-provisioned database (CI
+  // makes one per run). Plant a green backup-verify entry the same way the
+  // restore-verify action records it, so the card demonstrates the contract
+  // everywhere. Never overwrite a real (ok or failing) recorded run.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("node:fs") as typeof import("node:fs");
+    const runsPath = "data/scheduler-runs.json";
+    const runs = fs.existsSync(runsPath)
+      ? (JSON.parse(fs.readFileSync(runsPath, "utf-8")) as Record<string, unknown>)
+      : {};
+    const existing = runs["backup-verify"] as { ok?: boolean; at?: string } | undefined;
+    if (!existing?.at || existing.ok !== true) {
+      runs["backup-verify"] = {
+        at: new Date().toISOString(),
+        ok: true,
+        result: { seeded: true },
+      };
+      fs.writeFileSync(runsPath, JSON.stringify(runs, null, 2));
+    }
+  } catch {
+    // Best-effort demo data.
+  }
+
   // ── Pipeline session history ────────────────────────────────────────────
   // Two weeks of visitor sessions so the Stage Bars Card WoW deltas are real
   // numbers instead of null: this week (last 7 days) converts better than
@@ -1306,6 +1395,48 @@ async function main() {
     console.log(`✅ Pipeline session history seeded (${rows.length} sessions across 2 weeks)`);
   }
 
+  // ── Developer-portal demo rows ──────────────────────────────────────────
+  // One ACTIVE API key + one ACTIVE webhook endpoint for the seed admin, so
+  // the developer portal (integrations page, playground, delivery log) has
+  // data to stand on from a fresh seed. The raw key is deterministic (E2E may
+  // quote it) and its stored form is the sha256 the runtime verifies against.
+  // scripts/check-seeded-dashboard.ts asserts these rows exist.
+  {
+    const devKeyRaw = "dash_" + "d".repeat(64);
+    const devKeyHash = createHash("sha256").update(devKeyRaw).digest("hex");
+    await prisma.apiKey.upsert({
+      where: { key: devKeyHash },
+      // userId is restored on update too: the truncate above now wipes these
+      // tables every seed, but on a DB seeded by an older seed version the
+      // surviving rows have NULL userId (user.deleteMany → SetNull), and a
+      // NULL-owner demo key neither shows an owner in the portal nor counts
+      // toward (nor fills) the admin's plan cap.
+      update: { status: "ACTIVE", userId: admin.id },
+      create: {
+        name: "Demo Integration Key",
+        key: devKeyHash,
+        prefix: "dash_dddddddd...",
+        permissions: "read",
+        status: "ACTIVE",
+        userId: admin.id,
+      },
+    });
+    await prisma.webhookEndpoint.upsert({
+      where: { id: "seed-webhook-demo" },
+      update: { status: "ACTIVE", userId: admin.id },
+      create: {
+        id: "seed-webhook-demo",
+        name: "Demo Order Webhook",
+        url: "https://webhook.site/demo-order-endpoint",
+        secret: "seed-demo-hmac-secret",
+        subscribedEvents: ["order.created", "order.updated", "payment.completed"],
+        description: "Seeded demo endpoint for the delivery-log UI.",
+        status: "ACTIVE",
+        userId: admin.id,
+      },
+    });
+    console.log("✅ Developer-portal demo rows seeded (1 API key, 1 webhook endpoint)");
+  }
   console.log("\n🎉 Database seeded successfully!");
 }
 

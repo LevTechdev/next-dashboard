@@ -174,14 +174,62 @@ async function assertGlideTo(
   // Checked only up to the settling sample — after the glide, late layout
   // shifts (hero video metadata, lazy sections) can clamp window.scrollY
   // downward, which is a layout event, not a scroll reversal.
+  //
+  // Two tolerance sources, both measurement artifacts rather than real
+  // up-scrolls:
+  //   · Easing quantization — 100ms buckets coalesce under headless jank, so
+  //     a short glide's eased curve steps far more per bucket than a long
+  //     one's. Proportional: 0.5% of the glide distance, ≥1px floor.
+  //   · View-transition snapshots — cross-page morphs reset scroll in the
+  //     old snapshot mid-glide; window.scrollY is briefly read from the
+  //     snapshot before the live page resumes (observed: 300→58→resume).
+  //     Clamp at the pre-glide floor so a snapshot reset reads as flat, not
+  //     as a reversal.
   const peak = Math.max(...ys);
   let settleIdx = ys.findIndex((y) => y >= peak - 20);
   if (settleIdx < 0) settleIdx = ys.length - 1;
-  for (let i = 1; i <= settleIdx; i++) {
+  const reversalTolerance = Math.max(1, Math.round((end - start) * 0.005));
+  const snapshotFloor = start + 2;
+  // Walk with recovery-scan. A view-transition snapshot reset reads as a deep
+  // dip (observed 652→56→resume and 647→2 across TWO buckets) that RECOVERS
+  // to its pre-dip level — no real scroll reversal ever snaps back up. Under
+  // load the recovery can take several buckets, so the scan is unbounded:
+  // a dip whose level is restored anywhere later in the trace is skipped as
+  // an artifact (max 2 per glide); a dip that never recovers fails as the
+  // reversal the contract forbids.
+  let blips = 0;
+  let i = 1;
+  while (i <= settleIdx) {
+    // Before the glide has actually lifted off (samples still at/below the
+    // start — Lenis takes a few frames to spool up, and a top-of-page start
+    // cannot go "below" 0), plain flatness is fine. Once underway, the
+    // snapshot floor applies.
+    const floor =
+      ys[i - 1] <= start + 2
+        ? ys[i - 1] - 1
+        : Math.max(ys[i - 1] - reversalTolerance, snapshotFloor);
+    if (ys[i] < floor) {
+      const recovers = ys
+        .slice(i + 1, settleIdx + 1)
+        .some((y) => y >= ys[i - 1] - reversalTolerance);
+      if (recovers) {
+        blips += 1;
+        expect(
+          blips,
+          `${label}: at most 2 view-transition snapshot blips (sample ${i})`,
+        ).toBeLessThanOrEqual(2);
+        // Resume the walk at the recovery point.
+        let k = i + 1;
+        while (k <= settleIdx && ys[k] < ys[i - 1] - reversalTolerance) k += 1;
+        i = k;
+        continue;
+      }
+    }
     expect(
       ys[i],
       `${label}: scrollY never goes back up during the glide (sample ${i})`,
-    ).toBeGreaterThanOrEqual(ys[i - 1] - 1);
+    ).toBeGreaterThanOrEqual(floor);
+    i += 1;
   }
 
   // Lands with the section top at the fixed-header offset the delegation
@@ -514,7 +562,14 @@ test.describe("reduced-motion native fallback — every delegated anchor path", 
     // real routes now, so a '#' probe anchor stands in for the placeholder.)
     await gotoReducedMotionSettled(page, "/en");
 
-    // Lenis is off, so pre-scrolling programmatically is safe (no desync).
+    // Lenis is off, but html { scroll-behavior: smooth } still animates ANY
+    // programmatic scroll — including this pre-scroll. Waiting it out is not
+    // optional: on a slow runner the fragment navigation below can land
+    // inside the smooth animation's window and be swallowed by it (observed:
+    // scrollY stuck at 9848 with "#" in the URL — the jump never happened).
+    // Jump to the exact bottom (not scrollHeight, which late-loading sections
+    // keep pushing down) and then wait until the position is actually at
+    // rest before clicking, so the click competes with nothing.
     await page.evaluate(() => {
       document.querySelectorAll("#e2e-hash-probe").forEach((n) => n.remove());
       const a = document.createElement("a");
@@ -526,7 +581,17 @@ test.describe("reduced-motion native fallback — every delegated anchor path", 
       document.body.appendChild(a);
       window.scrollTo(0, document.body.scrollHeight);
     });
-    await page.waitForTimeout(600);
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const max =
+              document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            return Math.round(window.scrollY) >= max - 2;
+          }),
+        { timeout: 8_000, message: "pre-scroll to the document bottom must settle" },
+      )
+      .toBe(true);
 
     // Programmatic click (page.click is intercepted by the Next dev-overlay
     // portal over the fixed probe). The browser's own fragment handling must

@@ -38,9 +38,7 @@ test.describe("Profile email verification", () => {
     await expect(page.getByRole("heading", { name: "My Profile" })).toBeVisible();
     await expect(page.getByText("Email Not Verified")).toBeVisible();
     await expect(page.getByText("Unverified").first()).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Send Verification Email" }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Send Verification Email" })).toBeEnabled();
 
     // ── Send → dev link inline + 60s cooldown ─────────────────────────────
     await page.getByRole("button", { name: "Send Verification Email" }).click();
@@ -78,9 +76,7 @@ test.describe("Profile email verification", () => {
 
     // Bad token with from=profile → redirected back to the profile with the
     // ?verified=invalid query and an error toast.
-    await page.goto(
-      "/api/auth/verify-email/confirm?token=deadbeefdeadbeef&locale=en&from=profile",
-    );
+    await page.goto("/api/auth/verify-email/confirm?token=deadbeefdeadbeef&locale=en&from=profile");
     // Same URL-stripping caveat as the success test: assert the profile path
     // and rely on the error toast below to prove the invalid outcome.
     await expect(page).toHaveURL(/\/en\/profile/);
@@ -148,4 +144,3 @@ test.describe("Profile email verification", () => {
     await expect(page.getByText("Email Verified", { exact: true })).not.toBeVisible();
   });
 });
-

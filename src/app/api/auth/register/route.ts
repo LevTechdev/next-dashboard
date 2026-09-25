@@ -7,6 +7,7 @@ import { newFamilyId, createRefreshToken } from "@/lib/refresh-tokens";
 import { setAuthCookies } from "@/lib/auth-cookies";
 import { logSecurityEvent } from "@/lib/security-events";
 import { issueEmailOtp, isDevFallbackAllowed } from "@/lib/email-verification";
+import { describeMailConfiguration } from "@/lib/email";
 import { ensureStarterSubscription, provisionPersonalTenant } from "@/lib/provisioning";
 
 export const dynamic = "force-dynamic";
@@ -115,9 +116,11 @@ export async function POST(req: Request) {
     const emailOtpRequired = true;
     let devOtp: string | undefined;
     let emailSent = false;
+    let emailQueued = false;
     try {
       const issued = await issueEmailOtp({ userId: user.id, email: user.email, locale });
       emailSent = issued.sent;
+      emailQueued = issued.queued;
       devOtp = issued.code; // always capture — gated on isDevFallbackAllowed at response
     } catch (err) {
       console.error("[register] OTP issue error:", err);
@@ -143,14 +146,24 @@ export async function POST(req: Request) {
       Object.entries(user).filter(([key]) => !SENSITIVE_USER_KEYS.has(key)),
     );
 
+    // A mail configuration that cannot reach real recipients (today: Resend's
+    // sandbox sender, which only delivers to the account owner) must not be
+    // reported as "we emailed you" — the user would wait for a message that the
+    // provider rejected.
+    const mailWarnings = describeMailConfiguration().warnings;
+
     const response = NextResponse.json({
       token,
       user: safeUser,
       message: "Account created successfully",
       emailOtpRequired,
-      // True when a configured transport (SMTP/Resend) accepted the message —
-      // lets the UI tell "check your inbox" apart from "no mailer configured".
+      // `emailSent`: a configured transport accepted it during this call.
+      // `emailQueued`: it is durably queued and will be retried until it is.
+      // Together they let the UI tell "check your inbox" apart from "no mailer
+      // configured" without ever promising an email that cannot arrive.
       emailSent,
+      emailQueued,
+      ...(mailWarnings.length ? { mailMisconfigured: true } : {}),
       ...(isDevFallbackAllowed() && devOtp ? { devOtp } : {}), // devOtp gated: only in non-production
     });
 

@@ -77,7 +77,9 @@ async function headerIdentity(page: Page): Promise<string> {
 async function loginViaForm(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/en/login");
   await page.waitForLoadState("networkidle");
-  const emailInput = page.locator('input[type="email"]');
+  // Scoped to the sign-in form: the login page can briefly hold two email
+  // inputs while a view transition animates out (see signInEmailField).
+  const emailInput = page.locator('form:visible:has(input[type="password"]) input[type="email"]');
   await expect(emailInput).toBeVisible({ timeout: 45_000 });
   const submit = page.getByRole("button", { name: /log in/i }).first();
   await expect
@@ -136,13 +138,11 @@ test.describe("revoked refresh token force-close", () => {
     expect(leftover.find((c) => c.name === "refresh_token")?.value ?? "").toBe("");
 
     // The form is actually usable again — signing in lands on the dashboard.
-    await page.locator('input[type="email"]').fill(SEED_ADMIN_EMAIL);
-    await page.locator('input[type="password"]').fill(SEED_ADMIN_PASSWORD);
-    await page
-      .getByRole("button", { name: /log in/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
+    // Reuse the polled helper instead of raw fill+click: the page just
+    // force-redirected here, and filling before React attaches silently
+    // drops the input (button stays disabled — the exact failure this
+    // helper's hydration poll exists to absorb).
+    await loginViaForm(page, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD);
   });
 
   test("a dead tab never adopts another account that signs in afterwards", async ({

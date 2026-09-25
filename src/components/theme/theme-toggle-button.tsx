@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { SunIcon, MoonIcon } from "lucide-animated";
+// Static glyphs, not the animated set: the theme switch is a control, and the
+// animated sun/moon read as decoration (and flicker on every hover/press).
+import { Moon, Sun } from "lucide-react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { themeRevealOriginFromEvent, useThemeReveal } from "@/hooks/use-theme-reveal";
@@ -64,9 +66,9 @@ export function ThemeToggleButton({
         )}
       >
         {isDark ? (
-          <SunIcon size={16} className={cn("h-4 w-4", iconClassName, activeClassName)} />
+          <Sun size={16} className={cn("h-4 w-4 shrink-0", iconClassName, activeClassName)} />
         ) : (
-          <MoonIcon size={16} className={cn("h-4 w-4", iconClassName)} />
+          <Moon size={16} className={cn("h-4 w-4 shrink-0", iconClassName)} />
         )}
       </button>
     </Tooltip>

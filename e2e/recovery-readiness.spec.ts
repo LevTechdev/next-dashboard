@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { generateSync } from "otplib";
 import {
+  acknowledgeRecoveryGuardIfShown,
   observeLoginResponse,
   registerFreshUser,
   TEST_PASSWORD,
@@ -63,7 +64,7 @@ async function freshCode(secret: string) {
 async function signIn(page: Page) {
   await page.goto("/en/login");
   await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
-  await page.locator('input[type="email"]').fill(email);
+  await page.locator('form:visible:has(input[type="password"]) input[type="email"]').fill(email);
   await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
 
   await waitForLoginThrottleWindow();
@@ -246,6 +247,9 @@ test.describe("Recovery readiness", () => {
     const spareCard = page.getByTestId("backup-authenticator-card");
     await spareCard.getByRole("button", { name: "Remove spare device" }).click();
     const confirm = page.getByRole("dialog");
+    // If this removal would leave no recovery path, the guard demands an
+    // acknowledgement before the confirm button enables.
+    await acknowledgeRecoveryGuardIfShown(page);
     await confirm.getByRole("button", { name: "Remove spare device" }).click();
 
     const panel = page.getByTestId("recovery-readiness-card");

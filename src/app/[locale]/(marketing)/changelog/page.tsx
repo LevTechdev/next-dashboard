@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 import { FlipRevealText } from "@/components/ui/flip-reveal-text";
+import { APP_VERSION } from "@/lib/app-version";
 
 interface ChangelogEntry {
   version: string;
@@ -148,17 +149,24 @@ export default function ChangelogPage({ params }: { params: Promise<{ locale: st
           ════════════════════════ */}
       <section className="-mt-8 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          {/* The released version, read from the same source the tag comes from
+              (next.config injects the newest git tag). The timeline below is
+              product narrative; this pill is the release, so the two can never
+              disagree about which version is live. */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-background">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-medium text-muted-foreground">
               {t("latestVersion")}{" "}
-              <span className="text-foreground font-semibold">{latest?.version ?? "2.6.0"}</span>
+              <span data-testid="release-version" className="text-foreground font-semibold">
+                {APP_VERSION}
+              </span>
             </span>
             <span className="text-[10px] text-muted-foreground/50">—</span>
             <span className="text-[10px] text-muted-foreground">
               {latest?.date ?? t("released")}
             </span>
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">{t("versionSource")}</p>
         </div>
       </section>
 

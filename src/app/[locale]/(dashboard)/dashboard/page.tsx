@@ -1,7 +1,7 @@
 "use client";
 import { FlipFadeText } from "@/components/ui/flip-fade-text";
 
-import { useEffect, type ComponentProps, type ComponentType } from "react";
+import { useCallback, useEffect, type ComponentProps, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -29,8 +29,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
 import { useCurrency } from "@/components/currency-provider";
+import type { SupportedCurrencyCode } from "@/lib/currency";
+import { CURRENCIES as CURRENCY_CODES } from "@/lib/currency";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
+import { LiveFxBadge } from "@/components/currency/live-fx-badge";
 import { useRealtime } from "@/components/realtime-provider";
 import { useAppearance } from "@/hooks/use-appearance";
 import { useAuth } from "@/hooks/use-auth";
@@ -45,6 +48,9 @@ import { motion } from "framer-motion";
 import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist";
 
 interface DashboardData {
+  /** The dominant denomination of the tenant's orders — every revenue figure
+   *  in this payload is a raw sum of Order.grandTotal in that currency. */
+  currency?: keyof typeof CURRENCY_CODES;
   stats: {
     totalRevenue: number;
     totalOrders: number;
@@ -251,6 +257,14 @@ export default function DashboardPage() {
     },
   );
 
+  // Revenue figures are sums of Order.grandTotal — pass the orders' own
+  // denomination so formatting never guesses from magnitude.
+  const orderCurrency = data?.currency as SupportedCurrencyCode | undefined;
+  const revenueMoney = useCallback(
+    (v: number) => (orderCurrency ? formatMoney(v, orderCurrency) : formatMoney(v)),
+    [formatMoney, orderCurrency],
+  );
+
   // Also refresh when global trigger fires
   useEffect(() => {
     if (globalRefreshTrigger > 0 && !loading) {
@@ -286,6 +300,7 @@ export default function DashboardPage() {
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       isCurrency: true,
+      formatter: revenueMoney,
       sparkData: revenueSparkData,
     },
     {
@@ -296,6 +311,7 @@ export default function DashboardPage() {
       color: "text-teal-600 dark:text-teal-400",
       bg: "bg-teal-50 dark:bg-teal-900/20",
       isCurrency: true,
+      formatter: revenueMoney,
     },
     {
       title: tdash("totalOrders"),
@@ -323,6 +339,7 @@ export default function DashboardPage() {
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-50 dark:bg-amber-900/20",
       isCurrency: true,
+      formatter: revenueMoney,
     },
     {
       title: tdash("totalProducts"),
@@ -372,6 +389,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* The hero's revenue figure is converted at the provider's rates;
+              state which rates, or the number reads as a constant. */}
+          <LiveFxBadge />
           <RealtimeIndicator
             lastUpdated={lastUpdated}
             isRefreshing={isRefreshing}
@@ -512,9 +532,9 @@ export default function DashboardPage() {
                     <div className="text-right shrink-0 ml-3">
                       <p
                         className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
-                        title={formatMoney(order.grandTotal)}
+                        title={revenueMoney(order.grandTotal)}
                       >
-                        {formatMoney(order.grandTotal)}
+                        {revenueMoney(order.grandTotal)}
                       </p>
                       <p className="text-[10px] text-gray-500 whitespace-nowrap">
                         {formatDateTime(order.createdAt)}

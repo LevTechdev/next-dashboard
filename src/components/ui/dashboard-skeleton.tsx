@@ -1,3 +1,5 @@
+import { Slide } from "loading-dev";
+
 import { Card, CardContent } from "./card";
 
 interface DashboardSkeletonProps {
@@ -22,7 +24,9 @@ export function DashboardSkeleton({
           <div className="h-8 w-48 shimmer rounded" />
           <div className="h-4 w-64 shimmer rounded" />
         </div>
-        <div className="h-8 w-24 shimmer rounded" />
+        {/* Route-change affordance: loading-dev's Slide, colored by the
+            theme's primary token so it follows the user's accent. */}
+        <Slide className="text-primary" size={24} aria-hidden />
       </div>
 
       {/* Stat cards */}

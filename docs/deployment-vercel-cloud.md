@@ -60,11 +60,21 @@ Set the following environment variables in your **Vercel Project Dashboard** und
 | `GEMINI_MODEL` | Stable model alias (defaults to flash) | `gemini-flash-latest` |
 | `OPENAI_API_KEY` | Fallback OpenAI API key (optional) | `sk-...` |
 
-### ✉️ Email Notifications (Resend)
+### ✉️ Email Notifications (SMTP or Resend)
+
 | Variable | Description | Example / Format |
 | :--- | :--- | :--- |
+| `EMAIL_TRANSPORT` | `auto` (default; SMTP when `SMTP_HOST` is set, else Resend), `smtp`, or `resend` | `auto` |
+| `SMTP_HOST` | SMTP relay (leave unset to use Resend) | `smtp.gmail.com` |
+| `SMTP_PORT` / `SMTP_SECURE` | Port and TLS mode must agree: `465`/`true` or `587`/`false` | `465` / `true` |
+| `SMTP_USER` / `SMTP_PASS` | SMTP credentials — Gmail needs an App Password, not the account password | `ops@your-domain.com` |
+| `EMAIL_FROM` | The From address users see; must be one the chosen transport may send as | `Billing <billing@your-domain.com>` |
 | `RESEND_API_KEY` | API Key from Resend.com | `re_...` |
-| `EMAIL_FROM` | Sender address verified in Resend | `billing@your-domain.com` |
+| `RESEND_FROM` | Optional Resend-only override of `EMAIL_FROM` | `Billing <billing@your-domain.com>` |
+
+> **⚠️ Resend's sandbox sender drops every real user.** `onboarding@resend.dev` only delivers to the Resend account owner's own address; every other recipient is rejected by Resend while the app reports success. Verify a domain in Resend (Domains → Add Domain → DNS records) and point `RESEND_FROM`/`EMAIL_FROM` at it. The mailer refuses to hand a real recipient to that sender: with `SMTP_HOST` configured it sends over SMTP instead and logs the exact remediation, and the signup/login responses report `mailMisconfigured` so a user is never told to check an inbox that will stay empty.
+
+> **Delivery is durable, not fire-and-forget.** Messages are written to the `EmailOutbox` table before any transport is touched and sent off the response path, with retries (5 attempts, exponential backoff) on the scheduler's `email-outbox` job — a slow SMTP handshake can no longer be killed by the function timeout with the message lost. Set the `SMTP_*` variables for the **Runtime** environment in Vercel (Settings → Environment Variables), not only for the build. Verify a deployment's mail path with `npm run verify:mail -- you@example.com` (local only; it refuses to run in production).
 
 ---
 

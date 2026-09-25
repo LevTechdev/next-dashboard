@@ -122,7 +122,7 @@ test.describe("Forgot Password", () => {
 
     // 4. The OLD password must now be rejected.
     await page.goto("/en/login");
-    await page.locator('input[type="email"]').fill(email);
+    await page.locator('form:visible:has(input[type="password"]) input[type="email"]').fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page.getByText(/invalid|failed|incorrect/i).first()).toBeVisible();

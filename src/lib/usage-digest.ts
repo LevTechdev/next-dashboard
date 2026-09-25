@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { getTierFeaturesForUser, API_KEY_LIMITS } from "@/lib/plan-tiers";
+import { resolveUserTenantId } from "@/lib/tenancy";
 
 /**
  * Daily quota digest for workspace owners.
@@ -74,9 +75,7 @@ export interface WorkspaceDigest {
 export async function computeDigestFor(userId: string): Promise<WorkspaceDigest | null> {
   const { start } = calendarPeriod();
   const features = await getTierFeaturesForUser(userId);
-  const tenantId = (
-    await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } })
-  )?.tenantId;
+  const tenantId = await resolveUserTenantId(userId);
 
   const [ordersUsed, teamUsed, apiKeysUsed, notifGrouped] = await Promise.all([
     prisma.order.count({ where: { tenantId, createdAt: { gte: start } } }),

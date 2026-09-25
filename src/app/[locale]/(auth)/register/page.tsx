@@ -82,14 +82,18 @@ export default function RegisterPage() {
         Array.isArray(locale) ? locale[0] : locale,
       );
       if (result.success) {
-        if (result.emailOtpRequired && result.emailSent) {
-          // The transport accepted the message — hold the user on the code
-          // entry step and start the resend cooldown.
+        if (result.emailOtpRequired && (result.emailSent || result.emailQueued)) {
+          // Delivered, or durably queued for delivery after this response (see
+          // lib/email-outbox) — either way the code is on its way, so hold the
+          // user on the code entry step and start the resend cooldown.
           setOtpRequired(true);
           setDevOtp(result.devOtp ?? null);
           setOtpError(null);
           startCooldown();
-          toast.success(t("accountCreatedCheckEmail"));
+          // ...unless the server's mail sender cannot reach real recipients:
+          // promising an inbox message would send the user to an empty inbox.
+          if (result.mailMisconfigured) toast.error(t("emailDeliveryMisconfigured"));
+          else toast.success(t("accountCreatedCheckEmail"));
         } else if (result.emailOtpRequired && !result.emailSent && !result.devOtp) {
           // Production send failure with no inline fallback: don't wall the
           // user behind an email that will never arrive. The account is

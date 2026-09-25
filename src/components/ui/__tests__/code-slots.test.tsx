@@ -201,3 +201,65 @@ describe("CodeSlots", () => {
     expect(filled()).toHaveLength(0);
   });
 });
+
+/**
+ * Recovery-code mode: the login page's backup-code step reuses this control
+ * with `alphabet="alphanumeric"` and `groupSize={4}` (xxxx-xxxx). The digit-only
+ * sanitizer would swallow every letter, so these contracts matter: letters must
+ * survive, the grouping must be purely visual, and the reported value must be
+ * the 8 raw characters the server hashes.
+ */
+describe("CodeSlots — alphanumeric recovery codes", () => {
+  function RecoveryHarness({ onComplete }: { onComplete?: (code: string) => void }) {
+    const [value, setValue] = useState("");
+    return (
+      <CodeSlots
+        length={8}
+        alphabet="alphanumeric"
+        groupSize={4}
+        value={value}
+        onChange={setValue}
+        onComplete={onComplete}
+        placeholder="xxxx-xxxx"
+        autoFocus
+        ariaLabel="Backup code"
+      />
+    );
+  }
+
+  it("accepts letters, lowercases them, and keeps the raw 8 characters", () => {
+    render(<RecoveryHarness />);
+    for (const ch of "A1B2C3D4") {
+      fireEvent.keyDown(input(), { key: ch });
+    }
+    expect(filled()).toHaveLength(8);
+    expect(row()).toHaveAttribute("data-value", "a1b2c3d4");
+  });
+
+  it("draws the group separator without folding it into the value", () => {
+    render(<RecoveryHarness />);
+    // 8 slots + one divider between the two groups of four.
+    expect(slots()).toHaveLength(8);
+    expect(document.querySelectorAll(".code-slots__sep")).toHaveLength(1);
+    expect(document.querySelectorAll(".code-slots__sep + .code-slots__slot")).toHaveLength(1);
+  });
+
+  it("normalises a pasted dashed code and fires onComplete once", () => {
+    const onComplete = vi.fn();
+    render(<RecoveryHarness onComplete={onComplete} />);
+    fireEvent.paste(input(), {
+      clipboardData: { getData: () => "AB12-CD34" },
+    });
+    expect(row()).toHaveAttribute("data-value", "ab12cd34");
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onComplete).toHaveBeenCalledWith("ab12cd34");
+  });
+
+  it("still rejects punctuation and whitespace", () => {
+    render(<RecoveryHarness />);
+    for (const ch of "a-! 1") {
+      fireEvent.keyDown(input(), { key: ch });
+    }
+    expect(row()).toHaveAttribute("data-value", "a1");
+  });
+});

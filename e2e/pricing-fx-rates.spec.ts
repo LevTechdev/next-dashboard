@@ -19,6 +19,12 @@ test.describe("Pricing in local currency", () => {
     page,
   }) => {
     await page.goto("/en/pricing");
+    // Hydration barrier: the currency switcher is React state, so a click that
+    // lands before hydration is silently dropped (the button renders visible
+    // from SSR). networkidle = initial client fetches are done and the handler
+    // is attached — the same barrier every interactive spec here uses. Without
+    // it this test flaked whenever a sibling spec kept the dev server busy.
+    await page.waitForLoadState("networkidle");
 
     // ── 1. Switching currency converts every plan's list price. ──
     const idr = page.getByTestId("fx-currency-IDR");

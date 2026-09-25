@@ -123,6 +123,53 @@ jobs:
           name: coverage-api
           path: coverage/api/
 
+  # Seed-fixture gate: seeds a SCRATCH Postgres and asserts the fixture rows
+  # the E2E suite stands on (developer-portal ApiKey/WebhookEndpoint, tenant-
+  # scoped business rows, audit-chain integrity) actually exist. This is the
+  # fix for the shared-DB drift bug class: a dev/CI database whose seed rows
+  # were deleted made whole E2E families fail while passing locally (issue:
+  # integrations + destructive-glyphs + playground went red in CI with zero
+  # code changes). ~40s, no browser, no dev server.
+  seed-fixture:
+    name: Seed Fixture
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: seedcheck
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - name: Push schema
+        run: npx prisma db push --skip-generate
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/seedcheck"
+      - name: Seed
+        run: npm run db:seed
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/seedcheck"
+      - name: Assert fixture rows
+        # check:seed includes the developer-portal guard (ACTIVE ApiKey +
+        # ACTIVE WebhookEndpoint for the seed admin, known-event webhook
+        # subscriptions) plus the tenant-scoped dashboard assertions.
+        run: npm run check:seed
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/seedcheck"
+
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getRequestMeta } from "@/lib/request-meta";
 import { computeHash, GENESIS_HASH } from "@/lib/audit-chain";
 import { forwardToSiem } from "@/lib/siem";
-import { tenantWhere } from "@/lib/tenancy";
+import { resolveUserTenantId, tenantWhere } from "@/lib/tenancy";
 
 export type SecurityEventType =
   | "SIGNIN_ALERT_SENT"
@@ -45,6 +45,9 @@ export type SecurityEventType =
   | "ACCOUNT_RECOVERY_REQUESTED"
   | "ACCOUNT_RECOVERY_COMPLETED"
   | "SAML_LOGIN"
+  /** The user accepted the dashboard's stay-login alert (or asked at login):
+   *  a durable stayLoginUntil grant was stamped on their refresh-token family. */
+  | "STAY_LOGIN_GRANTED"
   | "APIKEY_CREATED"
   | "ACCOUNT_LOCKED"
   | "ACCOUNT_DELETED"
@@ -81,13 +84,24 @@ export async function logSecurityEvent(params: {
   try {
     const meta = params.req ? getRequestMeta(params.req) : null;
     const createdAt = new Date();
+    // Tenant attribution: a non-null tenantId wins; otherwise a per-user
+    // event resolves the workspace from the actor. `check:audit-chain`
+    // fails on any HASHED row without a tenant, so an unattributed write
+    // here would take the release gate down — resolve centrally instead of
+    // trusting every call site to remember.
+    //
+    // Nullish (undefined OR null) resolves from the actor on purpose: call
+    // sites routinely forward `session.user.tenantId ?? null`, and treating
+    // that explicit null as "no workspace" silently dropped attribution for
+    // whole event families (e.g. EMAIL_DELIVERY_*).
+    const tenantId = params.tenantId ?? (await resolveUserTenantId(params.userId));
     const event = {
       userId: params.userId,
       type: params.type,
       ip: meta?.ip ?? null,
       userAgent: meta?.userAgent ?? null,
       metadata: params.metadata ?? null,
-      tenantId: params.tenantId ?? null,
+      tenantId,
       createdAt,
     };
 

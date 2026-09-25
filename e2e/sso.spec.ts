@@ -77,7 +77,10 @@ test.describe("SSO / Enterprise settings", () => {
 
 /** Wait for client-side data to load (hydration + GET) before interacting. */
 async function waitForSsoState(page: Page) {
-  await expect(page.getByText(/No SSO connection|Enabled/).first()).toBeVisible();
+  // Any settled state: empty, enabled, or DISABLED (a prior crashed run can
+  // leave a connection behind with its enable switch off — the regex must
+  // recognize it or the normalize-below helpers can never run).
+  await expect(page.getByText(/No SSO connection|Enabled|Disabled/).first()).toBeVisible();
 }
 
 /** Guarantee the page shows the empty state, deleting any prior connection. */
@@ -86,6 +89,7 @@ async function ensureEmptySso(page: Page) {
   await waitForSsoState(page);
   const empty = page.getByText("No SSO connection");
   if (!(await empty.isVisible())) {
+    // The Remove button exists in both the Enabled and Disabled card states.
     await page.getByRole("button", { name: "Remove connection", exact: true }).click();
     const dialog = page.getByRole("alertdialog");
     await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
@@ -93,22 +97,30 @@ async function ensureEmptySso(page: Page) {
   }
 }
 
-/** Guarantee a connection is configured, creating one if needed. */
+/** Guarantee a connection is configured AND enabled, creating one if needed. */
 async function ensureConfiguredSso(page: Page) {
   await page.goto("/en/sso");
   await waitForSsoState(page);
-  if (!(await page.getByText("Enabled").first().isVisible())) {
-    await page.getByRole("button", { name: "Configure SSO", exact: true }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("Configure SAML SSO")).toBeVisible();
-    await dialog.getByPlaceholder("e.g. Okta").fill("Okta");
-    await dialog
-      .getByPlaceholder("https://idp.example.com/sso")
-      .fill("https://acme.okta.com/app/next-dashboard/sso/saml");
-    await dialog
-      .getByPlaceholder(/BEGIN CERTIFICATE/)
-      .fill("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA");
-    await dialog.getByRole("button", { name: "Save connection", exact: true }).click();
+  if (await page.getByText("Enabled").first().isVisible()) return;
+  // A connection exists but is disabled (dirty local DB) — the card shows
+  // Edit / Enable SSO / Remove connection and NO "Configure SSO" button, so
+  // re-enable instead of trying to create a second connection.
+  const enable = page.getByRole("button", { name: "Enable SSO", exact: true });
+  if (await enable.isVisible()) {
+    await enable.click();
     await expect(page.getByText("Enabled").first()).toBeVisible();
+    return;
   }
+  await page.getByRole("button", { name: "Configure SSO", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Configure SAML SSO")).toBeVisible();
+  await dialog.getByPlaceholder("e.g. Okta").fill("Okta");
+  await dialog
+    .getByPlaceholder("https://idp.example.com/sso")
+    .fill("https://acme.okta.com/app/next-dashboard/sso/saml");
+  await dialog
+    .getByPlaceholder(/BEGIN CERTIFICATE/)
+    .fill("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA");
+  await dialog.getByRole("button", { name: "Save connection", exact: true }).click();
+  await expect(page.getByText("Enabled").first()).toBeVisible();
 }

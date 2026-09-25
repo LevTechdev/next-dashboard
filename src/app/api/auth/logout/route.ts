@@ -29,5 +29,14 @@ export async function POST(req: Request) {
 
   const response = NextResponse.json({ success: true, message: "Logged out successfully" });
   clearAuthCookies(response);
+  // The stay-login grant is family-scoped, so family revocation above already
+  // killed it server-side; this clears the client-readable hint cookie.
+  response.cookies.set("stay_login", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return response;
 }

@@ -28,6 +28,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { useRealtimeData } from "@/hooks/use-realtime-data";
 import { useNow } from "@/hooks/use-now";
 import { RealtimeIndicator } from "@/components/realtime-indicator";
+import { LiveFxBadge } from "@/components/currency/live-fx-badge";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { Sparkline } from "@/components/ui/sparkline";
 import {
@@ -457,6 +458,9 @@ export default function AnalyticsPage() {
               </Button>
             </Tooltip>
           )}
+          {/* Revenue, AOV, and the funnel's gross value are all converted at the
+              live mid-market rate; name the rate and its age here. */}
+          <LiveFxBadge className="hidden lg:inline-flex" />
           <RealtimeIndicator lastUpdated={lastUpdated} isRefreshing={isRefreshing} />
           <Button
             variant="ghost"

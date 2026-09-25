@@ -19,6 +19,10 @@ jobs:
   e2e:
     name: Playwright E2E
     uses: ./.github/workflows/e2e-reusable.yml
+    # Optional test-mode gateway credential; when the secret is unset the
+    # midtrans signed-webhook specs skip with an annotation.
+    secrets:
+      midtrans-sandbox-server-key: ${{ secrets.MIDTRANS_SANDBOX_SERVER_KEY }}
     with:
       database-url: "postgresql://postgres:postgres@localhost:5432/testdb"
       jwt-secret: "ci-e2e-secret"

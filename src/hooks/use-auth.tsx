@@ -70,12 +70,22 @@ interface AuthContextType {
      * single-use backup codes. Consumed server-side on success.
      */
     backupCode?: string,
+    /**
+     * Durable "stay signed in": stamp a 7-day grant on the new refresh-token
+     * family (server-side, survives the browser closing; the dashboard
+     * sentinel goes dormant for its 12-hour window on top of it).
+     */
+    staySignedIn?: boolean,
   ) => Promise<{
     success: boolean;
     requires2FA?: boolean;
     /** Which second factor the server expects / has just emailed. */
     method?: "totp" | "email_otp";
     emailSent?: boolean;
+    /** Durably queued for delivery after the response (see lib/email-outbox). */
+    emailQueued?: boolean;
+    /** True when the server's mail configuration cannot reach real recipients. */
+    mailMisconfigured?: boolean;
     /** Dev-mode inline OTP (no mailer configured). */
     devOtp?: string;
     /** Whether the account has registered passkeys (chooser option). */
@@ -106,6 +116,10 @@ interface AuthContextType {
     emailOtpRequired?: boolean;
     /** True when a configured transport accepted the verification email. */
     emailSent?: boolean;
+    /** True when it is durably queued (delivery continues after the response). */
+    emailQueued?: boolean;
+    /** True when the server's mail configuration cannot reach real recipients. */
+    mailMisconfigured?: boolean;
     /** Dev-only fallback: the raw 6-digit code (never present in production). */
     devOtp?: string;
   }>;
@@ -248,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passkeyAsserted?: boolean,
       trustDevice?: boolean,
       backupCode?: string,
+      staySignedIn?: boolean,
     ) => {
       setError(null);
       try {
@@ -263,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             passkeyAsserted,
             trustDevice,
             backupCode,
+            staySignedIn,
           }),
         });
 

@@ -40,7 +40,9 @@ async function loadModule(): Promise<ClientRefresh> {
 const assign = vi.fn();
 
 function setPathname(pathname: string) {
-  vi.stubGlobal("location", { pathname, assign });
+  // `origin` backs isSameOriginApi in the fetch wrapper (same-origin gate for
+  // provenance marking and CSRF header injection).
+  vi.stubGlobal("location", { pathname, origin: "http://localhost:3000", assign });
 }
 
 /** A 401 refresh response carrying a machine-readable `code`. */
@@ -211,6 +213,40 @@ describe("terminal refresh-code handling", () => {
     const { refreshAccessToken } = await loadModule();
 
     await expect(refreshAccessToken()).resolves.toBe(true);
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it("force-closes a proven session when refresh says NO_SESSION (abort backstop)", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/auth/me")) return refreshResponse(200, { id: "u1" });
+      return refreshResponse(401, { code: "NO_SESSION" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { refreshAccessTokenDetailed, forceLoginRedirect } = await loadModule();
+    void forceLoginRedirect; // loaded for its side effect only
+
+    // The wrapper is what records provenance — install it and pass /me
+    // through it, exactly as the auth provider does on mount.
+    const { installAuthFetch } = await import("@/lib/client-refresh");
+    installAuthFetch();
+    // The wrapper's single-flight call goes through nativeFetch (bound from
+    // the stubbed global at install time), so the mock serves every request —
+    // and the wrapped /me marks provenance before the rotation runs.
+    await window.fetch("http://localhost:3000/api/auth/me");
+
+    await refreshAccessTokenDetailed();
+
+    expect(assign).toHaveBeenCalledWith("/en" + "/login?reason=expired");
+  });
+
+  it("never force-closes a NO_SESSION for a tab that never had a session", async () => {
+    const fetchMock = vi.fn(async () => refreshResponse(401, { code: "NO_SESSION" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { refreshAccessTokenDetailed } = await loadModule();
+
+    await refreshAccessTokenDetailed();
+
     expect(assign).not.toHaveBeenCalled();
   });
 

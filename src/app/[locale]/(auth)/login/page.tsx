@@ -15,7 +15,10 @@ import {
   ChevronRightIcon,
   KeyRoundIcon,
   AlertTriangle,
+  CheckIcon,
+  ShieldCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AuthTestimonial } from "@/components/auth/auth-testimonial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +35,64 @@ import { backupCodeStatus } from "@/lib/backup-code-status";
 import { toast } from "sonner";
 
 import { useTranslations } from "next-intl";
+
+/**
+ * "Trust this device for 30 days" — the opt-in that lets a device the user
+ * vouches for skip the second factor.
+ *
+ * It reads as ONE control: a bordered row with a shield mark, a checkbox that
+ * fills with the tenant accent, and a one-line hint. Before this it was a bare
+ * native checkbox floating next to two lines of grey text, which read as an
+ * afterthought on every one of the four second-factor steps.
+ */
+function TrustDeviceToggle({
+  checked,
+  onChange,
+  label,
+  hint,
+  className,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex cursor-pointer select-none items-start gap-3 rounded-xl border p-3 transition-colors",
+        checked
+          ? "border-primary/50 bg-primary/5"
+          : "border-zinc-200 bg-white/60 hover:border-primary/40 dark:border-zinc-800 dark:bg-zinc-900/60",
+        className,
+      )}
+    >
+      <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-zinc-300 bg-white transition-colors checked:border-primary checked:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 dark:border-zinc-600 dark:bg-zinc-800"
+        />
+        <CheckIcon
+          aria-hidden
+          strokeWidth={3}
+          className="pointer-events-none absolute h-3 w-3 text-primary-foreground opacity-0 transition-opacity peer-checked:opacity-100"
+        />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200">
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+          {label}
+        </span>
+        <span className="mt-1 block text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+          {hint}
+        </span>
+      </span>
+    </label>
+  );
+}
 
 function LoginForm() {
   const t = useTranslations("auth");
@@ -90,6 +151,11 @@ function LoginForm() {
   // "Trust this device for 30 days" — granted only while completing a second
   // factor; the server skips 2FA for the TTL on the matching device profile.
   const [trustDevice, setTrustDevice] = useState(false);
+  // "Stay signed in" — stamps a durable 7-day grant on this device's
+  // refresh-token family so the session survives the browser closing. Unlike
+  // device trust it never skips 2FA; the dashboard stay-login sentinel just
+  // goes dormant while the grant is live.
+  const [staySignedIn, setStaySignedIn] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,7 +227,17 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(
+        email,
+        password,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        staySignedIn,
+      );
       if (result.requires2FA) {
         setSavedEmail(email);
         setSavedPassword(password);
@@ -234,7 +310,13 @@ function LoginForm() {
         setEmailOtpHint(null);
         setTotpCode("");
         setTotpRejected(false);
-        toast.success(result.emailSent ? t("emailOtpSentToast") : t("developmentOtp"));
+        // Delivered, or durably queued for delivery after this response — both
+        // mean the code is on its way (see lib/email-outbox). A misconfigured
+        // server mailer is the one case where saying "check your inbox" would
+        // be a lie.
+        if (result.mailMisconfigured) toast.error(t("emailDeliveryMisconfigured"));
+        else if (result.emailSent || result.emailQueued) toast.success(t("emailOtpSentToast"));
+        else toast.success(t("developmentOtp"));
       } else {
         toast.error(result.error || t("errorGeneric"));
       }
@@ -294,15 +376,6 @@ function LoginForm() {
         setIsLoading(false);
       }
     }
-  };
-
-  /** Format a backup code as xxxx-xxxx as it is typed (case-insensitive). */
-  const formatBackupCode = (raw: string): string => {
-    const clean = raw
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toLowerCase()
-      .slice(0, 8);
-    return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
   };
 
   /**
@@ -635,7 +708,7 @@ function LoginForm() {
                       >
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                           {isLoading ? (
-                            <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                            <LoaderCircleIcon className="h-5 w-5 shrink-0 animate-spin" />
                           ) : (
                             <MailIcon className="h-5 w-5" />
                           )}
@@ -690,7 +763,7 @@ function LoginForm() {
                         >
                           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                             {isLoading ? (
-                              <LoaderCircleIcon className="h-5 w-5 animate-spin" />
+                              <LoaderCircleIcon className="h-5 w-5 shrink-0 animate-spin" />
                             ) : (
                               <Fingerprint className="h-5 w-5" />
                             )}
@@ -708,17 +781,13 @@ function LoginForm() {
                       )}
                     </div>
 
-                    <label className="mt-5 flex items-start gap-2.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={trustDevice}
-                        onChange={(e) => setTrustDevice(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
-                      />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
-                        {t("trustDeviceLabel")}
-                      </span>
-                    </label>
+                    <TrustDeviceToggle
+                      className="mt-5"
+                      checked={trustDevice}
+                      onChange={setTrustDevice}
+                      label={t("trustDeviceLabel")}
+                      hint={t("trustDeviceHint")}
+                    />
 
                     {/* Everything lost — offer the last resort from the chooser
                         too, before the user gives up on the account. */}
@@ -807,7 +876,10 @@ function LoginForm() {
                       >
                         {isLoading ? (
                           <>
-                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            <LoaderCircleIcon
+                              size={16}
+                              className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                            />{" "}
                             {t("verifying")}
                           </>
                         ) : (
@@ -816,17 +888,13 @@ function LoginForm() {
                       </Button>
                     </form>
 
-                    <label className="mt-4 flex items-start gap-2.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={trustDevice}
-                        onChange={(e) => setTrustDevice(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
-                      />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
-                        {t("trustDeviceLabel")}
-                      </span>
-                    </label>
+                    <TrustDeviceToggle
+                      className="mt-4"
+                      checked={trustDevice}
+                      onChange={setTrustDevice}
+                      label={t("trustDeviceLabel")}
+                      hint={t("trustDeviceHint")}
+                    />
 
                     <div className="mt-4 flex flex-col gap-2">
                       <button
@@ -867,36 +935,33 @@ function LoginForm() {
                     >
                       <div className="space-y-2">
                         <Label className="text-zinc-700">{t("backupCodeLabel")}</Label>
-                        <Input
-                          value={backupCodeInput}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            // A shrinking value means backspace — never re-insert
-                            // the dash the user just deleted.
-                            if (raw.length < backupCodeInput.length) {
-                              setBackupCodeInput(
-                                raw
-                                  .replace(/[^a-zA-Z0-9]/g, "")
-                                  .toLowerCase()
-                                  .slice(0, 8),
-                              );
-                              return;
-                            }
-                            setBackupCodeInput(formatBackupCode(raw));
-                            setBackupRejected(false);
-                          }}
-                          placeholder={t("backupCodePlaceholder")}
-                          autoComplete="one-time-code"
-                          spellCheck={false}
-                          disabled={isLoading}
-                          autoFocus
-                          aria-invalid={backupRejected}
-                          className={`h-12 rounded-xl text-center font-mono text-base tracking-[0.25em] ${
-                            backupRejected
-                              ? "border-destructive focus-visible:ring-destructive/40"
-                              : ""
-                          }`}
-                        />
+                        {/* Same CodeSlots control as the 2FA step — eight
+                            alphanumeric slots grouped xxxx-xxxx. A recovery
+                            code is a second factor too, so it should feel like
+                            the same lock rather than a plain text box. */}
+                        <div className="flex w-full justify-center pt-1">
+                          <CodeSlots
+                            length={8}
+                            alphabet="alphanumeric"
+                            groupSize={4}
+                            value={backupCodeInput}
+                            onChange={(code) => {
+                              setBackupCodeInput(code);
+                              if (code.length === 0 && backupRejected) setBackupRejected(false);
+                            }}
+                            onComplete={(code) => {
+                              void handleBackupCodeVerification(code);
+                            }}
+                            status={backupRejected ? "error" : "idle"}
+                            disabled={isLoading}
+                            autoFocus
+                            ariaLabel={t("backupCodeLabel")}
+                            placeholder={t("backupCodePlaceholder")}
+                            slotSize={34}
+                            gap={5}
+                            radius={10}
+                          />
+                        </div>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                           {t("backupCodeSingleUse")}
                         </p>
@@ -909,7 +974,10 @@ function LoginForm() {
                       >
                         {isLoading ? (
                           <>
-                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            <LoaderCircleIcon
+                              size={16}
+                              className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                            />{" "}
                             {t("verifying")}
                           </>
                         ) : (
@@ -917,17 +985,12 @@ function LoginForm() {
                         )}
                       </Button>
 
-                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={trustDevice}
-                          onChange={(e) => setTrustDevice(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
-                        />
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
-                          {t("trustDeviceLabel")}
-                        </span>
-                      </label>
+                      <TrustDeviceToggle
+                        checked={trustDevice}
+                        onChange={setTrustDevice}
+                        label={t("trustDeviceLabel")}
+                        hint={t("trustDeviceHint")}
+                      />
 
                       {/* Dead end: no authenticator AND no codes left. */}
                       <button
@@ -1008,7 +1071,10 @@ function LoginForm() {
                         >
                           {recoveryLoading ? (
                             <>
-                              <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                              <LoaderCircleIcon
+                                size={16}
+                                className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                              />{" "}
                               {t("verifying")}
                             </>
                           ) : (
@@ -1078,7 +1144,10 @@ function LoginForm() {
                         {" "}
                         {isLoading ? (
                           <>
-                            <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                            <LoaderCircleIcon
+                              size={16}
+                              className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                            />{" "}
                             {t("verifying")}
                           </>
                         ) : (
@@ -1086,17 +1155,12 @@ function LoginForm() {
                         )}
                       </Button>
 
-                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={trustDevice}
-                          onChange={(e) => setTrustDevice(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary/40 cursor-pointer"
-                        />
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
-                          {t("trustDeviceLabel")}
-                        </span>
-                      </label>
+                      <TrustDeviceToggle
+                        checked={trustDevice}
+                        onChange={setTrustDevice}
+                        label={t("trustDeviceLabel")}
+                        hint={t("trustDeviceHint")}
+                      />
 
                       {/* Lost the device (or wiped the app)? The saved
                           single-use backup codes are the way back in. */}
@@ -1214,7 +1278,10 @@ function LoginForm() {
                     >
                       {forgotLoading ? (
                         <>
-                          <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />
+                          <LoaderCircleIcon
+                            size={16}
+                            className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                          />
                           {t("sendingResetLink")}
                         </>
                       ) : cooldownLeft > 0 ? (
@@ -1308,6 +1375,14 @@ function LoginForm() {
                     </div>
                   </div>
 
+                  <TrustDeviceToggle
+                    className="mt-5"
+                    checked={staySignedIn}
+                    onChange={setStaySignedIn}
+                    label={t("staySignedInLabel")}
+                    hint={t("staySignedInHint")}
+                  />
+
                   <Button
                     type="submit"
                     className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20 mt-2"
@@ -1315,7 +1390,10 @@ function LoginForm() {
                   >
                     {isLoading ? (
                       <>
-                        <LoaderCircleIcon size={16} className="h-4 w-4 mr-2 animate-spin" />{" "}
+                        <LoaderCircleIcon
+                          size={16}
+                          className="mr-2 h-4 w-4 shrink-0 animate-spin"
+                        />{" "}
                         {t("loggingIn")}
                       </>
                     ) : (
@@ -1409,7 +1487,10 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-primary">
-          <LoaderCircleIcon size={32} className="h-8 w-8 animate-spin text-primary-foreground" />
+          <LoaderCircleIcon
+            size={32}
+            className="h-8 w-8 shrink-0 animate-spin text-primary-foreground"
+          />
         </div>
       }
     >

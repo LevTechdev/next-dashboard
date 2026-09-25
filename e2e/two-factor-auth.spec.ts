@@ -1,8 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { generateSync } from "otplib";
 import {
+  acknowledgeRecoveryGuardIfShown,
   observeLoginResponse,
   registerFreshUser,
+  signInEmailField,
   TEST_PASSWORD,
   waitForLoginThrottleWindow,
 } from "./helpers";
@@ -32,13 +34,29 @@ let totpSecret = "";
  * Generate a TOTP code that still has ~10s of validity left in the current
  * 30s window. Generating right at a window boundary is flaky under load: the
  * code can expire between generation and server-side verification.
+ *
+ * Never repeats the PREVIOUS code for this secret: the login route's replay
+ * guard (src/lib/totp.ts) rejects a code already accepted inside its window,
+ * and consecutive tests in this file can otherwise land in the same 30s
+ * window — the second sign-in would be refused with a perfectly valid code.
+ * When that would happen, wait out the current window and take the next one.
  */
+const lastIssued = new Map<string, string>();
 async function freshCode(secret: string) {
-  const elapsed = Math.floor(Date.now() / 1000) % 30;
-  if (elapsed > 20) {
+  const waitForNextWindow = async () => {
+    const elapsed = Math.floor(Date.now() / 1000) % 30;
     await new Promise((r) => setTimeout(r, (30 - elapsed) * 1000 + 1000));
+  };
+  const elapsed = Math.floor(Date.now() / 1000) % 30;
+  if (elapsed > 20) await waitForNextWindow();
+
+  let code = generateSync({ secret });
+  if (lastIssued.get(secret) === code) {
+    await waitForNextWindow();
+    code = generateSync({ secret });
   }
-  return generateSync({ secret });
+  lastIssued.set(secret, code);
+  return code;
 }
 
 /**
@@ -58,7 +76,7 @@ async function fillLoginTotp(page: Page, code: string) {
 async function loginWithTotp(page: Page) {
   await page.goto("/en/login");
   await page.waitForLoadState("networkidle");
-  await page.locator('input[type="email"]').fill(email);
+  await signInEmailField(page).fill(email);
   await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
   // Inherit the suite's login-throttle backoff: back-to-back runs can trip the
   // 10-attempts/120s limit, and a throttled submit simply bounces back to
@@ -146,7 +164,7 @@ test.describe("Two-Factor Authentication", () => {
     //    sign-in WITH trust demonstrates the skip).
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await waitForLoginThrottleWindow();
     const firstTrustPost = observeLoginResponse(
@@ -176,7 +194,7 @@ test.describe("Two-Factor Authentication", () => {
     //    keeps background traffic alive so networkidle can never settle.)
     await page.goto("/en/login");
     await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await waitForLoginThrottleWindow();
     const trustedPost = observeLoginResponse(
@@ -209,7 +227,7 @@ test.describe("Two-Factor Authentication", () => {
 
     await page.goto("/en/login");
     await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await waitForLoginThrottleWindow();
     const reTrustPost = observeLoginResponse(
@@ -236,7 +254,7 @@ test.describe("Two-Factor Authentication", () => {
     //    chooser appears first (new UX: 2FA users pick app vs. email code).
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Choose how to verify" })).toBeVisible();
@@ -268,7 +286,7 @@ test.describe("Two-Factor Authentication", () => {
     //    same per-IP limit), and a still-open window is absorbed below.
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await waitForLoginThrottleWindow();
     const passwordPost = observeLoginResponse(
@@ -341,6 +359,10 @@ test.describe("Two-Factor Authentication", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Disable two-factor authentication?")).toBeVisible();
     await dialog.getByPlaceholder("Enter your current password").fill(TEST_PASSWORD);
+    // This account would be left with no recovery path (fresh 2FA, no spare,
+    // no codes), so the dialog demands an explicit acknowledgement and keeps
+    // the confirm button disabled until it is ticked.
+    await acknowledgeRecoveryGuardIfShown(page);
     await dialog.getByRole("button", { name: "Disable 2FA" }).click();
 
     await expect(page.getByText("Two-factor authentication disabled")).toBeVisible();
@@ -353,7 +375,7 @@ test.describe("Two-Factor Authentication", () => {
   test("signs in without a TOTP prompt after 2FA is disabled", async ({ page }) => {
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
-    await page.locator('input[type="email"]').fill(email);
+    await signInEmailField(page).fill(email);
     await page.getByPlaceholder("Enter password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Log in", exact: true }).click();
 

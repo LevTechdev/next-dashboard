@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/api-guard";
 import { getTenantBranding } from "@/lib/tenant-branding";
 import QRCode from "qrcode";
 import { generateBarcodeSvg } from "@/lib/barcode";
-import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
+import { CURRENCIES, toBaseUsd, type SupportedCurrencyCode } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -119,26 +119,51 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const showBarcode = searchParams.get("barcode") !== "false";
     const showQr = searchParams.get("qr") !== "false";
 
-    // Invoice currency: the caller chooses the presentation currency
-    // (?currency=IDR|USD|JPY|EUR|SGD|CNY). Amounts are stored in USD base, so
-    // they are converted to the requested currency for display — line items,
-    // totals, and the grand total all render in the same chosen currency.
-    const currencyParam = (searchParams.get("currency") || "USD").toUpperCase();
-    const currencyCode: SupportedCurrencyCode = (
-      currencyParam in CURRENCIES ? currencyParam : "USD"
-    ) as SupportedCurrencyCode;
+    // Invoice currency: the ORDER's own denomination (Order.currency) is the
+    // default presentation currency — rupiah orders print as rupiah. The
+    // caller may still force a presentation currency for the template
+    // customizer (?currency=IDR|USD|JPY|EUR|SGD|CNY), but an explicit value
+    // that DIFFERS from the order's denomination converts via the stored
+    // amounts' true base rather than pretending they were USD.
+    const orderCurrency =
+      order.currency && order.currency in CURRENCIES
+        ? (order.currency as SupportedCurrencyCode)
+        : "USD";
+    const currencyParam = (searchParams.get("currency") || "").toUpperCase();
+    const currencyCode: SupportedCurrencyCode = currencyParam
+      ? currencyParam in CURRENCIES
+        ? (currencyParam as SupportedCurrencyCode)
+        : "USD"
+      : orderCurrency;
     const currencyCfg = CURRENCIES[currencyCode];
-    const fmtMoney = (n: number) => {
-      const converted = n * currencyCfg.rate;
-      const formatted =
-        currencyCfg.decimals === 0
-          ? Math.round(converted).toLocaleString("en-US")
-          : converted.toLocaleString("en-US", {
-              minimumFractionDigits: currencyCfg.decimals,
-              maximumFractionDigits: currencyCfg.decimals,
-            });
-      return `${currencyCfg.symbol}${formatted}`;
+    /**
+     * Currency-space rounding.
+     *
+     * IDR and JPY have no minor unit, so every converted figure must land on a
+     * whole unit. Rounding each line and each total independently is what made a
+     * printed IDR invoice stop adding up: the line column was rounded one way and
+     * Subtotal/Total another, leaving a few rupiah of daylight between the column
+     * and its sum. All displayed money is now derived in this space, and the
+     * totals are the labelled arithmetic performed on those displayed values.
+     */
+    const toCurrency = (amount: number) => {
+      // Stored amounts already denominated in the presentation currency pass
+      // through untouched — re-multiplying is the Rp14-billion-invoice bug.
+      if (currencyCode === orderCurrency) return amount;
+      const usd = toBaseUsd(amount, orderCurrency === "USD" ? undefined : orderCurrency);
+      const converted = usd * currencyCfg.rate;
+      return currencyCfg.decimals === 0
+        ? Math.round(converted)
+        : Number(converted.toFixed(currencyCfg.decimals));
     };
+    /** Format an ALREADY-CONVERTED amount (display space). */
+    const formatCurrency = (amountInCurrency: number) =>
+      `${currencyCfg.symbol}${amountInCurrency.toLocaleString("en-US", {
+        minimumFractionDigits: currencyCfg.decimals,
+        maximumFractionDigits: currencyCfg.decimals,
+      })}`;
+    /** Convert from the stored USD base, then format (unit prices). */
+    const fmtMoney = (usd: number) => formatCurrency(toCurrency(usd));
 
     // Generate Code 128 vector barcode
     const barcodeSvg = showBarcode
@@ -265,6 +290,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         { totalAmount: snapshot.subtotal, grandTotal: snapshot.grandTotal },
       ));
     }
+
+    // Printed arithmetic in the invoice's own currency: the Subtotal is the sum
+    // of the DISPLAYED line totals, and the grand total follows from the
+    // displayed fees — so the column, the sum, and "Total Due / Paid" agree to
+    // the last rupiah (or cent).
+    const subtotalDisplay =
+      lineItems.length > 0
+        ? lineItems.reduce((sum, li) => sum + toCurrency(li.lineTotal), 0)
+        : toCurrency(subtotal);
+    const discountDisplay = toCurrency(discount);
+    const taxDisplay = toCurrency(tax);
+    const shippingDisplay = toCurrency(shipping);
+    const grandTotalDisplay = subtotalDisplay - discountDisplay + taxDisplay + shippingDisplay;
+    // A one-line provenance note: which rate produced these figures, and why a
+    // 0-decimal currency can differ from a naive multiply-by-rate.
+    const rateNote =
+      currencyCode === orderCurrency
+        ? ""
+        : orderCurrency === "USD"
+          ? `Converted at 1 USD = ${currencyCfg.symbol}${currencyCfg.rate.toLocaleString("en-US", {
+              maximumFractionDigits: 2,
+            })} and rounded to the nearest ${currencyCfg.decimals === 0 ? "whole unit" : "cent"}.`
+          : `Converted from ${CURRENCIES[orderCurrency].code} at market rate and rounded to the nearest ${currencyCfg.decimals === 0 ? "whole unit" : "cent"}.`;
 
     const isPaid = order.paymentStatus === "PAID";
     const paymentGateway =
@@ -467,6 +515,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     font-weight: 800;
     color: #18181b;
   }
+  .totals-note {
+    text-align: right;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #a1a1aa;
+    margin-top: 6px;
+  }
   .footer {
     display: flex;
     justify-content: space-between;
@@ -651,8 +706,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           </td>
           <td style="font-family: monospace; font-size: 11px; color: #71717a;">ORD-STD</td>
           <td style="text-align: center;">1</td>
-          <td style="text-align: right;">${fmtMoney(subtotal)}</td>
-          <td style="text-align: right; font-weight: 600;">${fmtMoney(subtotal)}</td>
+          <td style="text-align: right;">${formatCurrency(subtotalDisplay)}</td>
+          <td style="text-align: right; font-weight: 600;">${formatCurrency(subtotalDisplay)}</td>
         </tr>`
       }
     </tbody>
@@ -661,39 +716,40 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   <div class="totals">
     <div class="totals-row">
       <span>Subtotal</span>
-      <span>${fmtMoney(subtotal)}</span>
+      <span>${formatCurrency(subtotalDisplay)}</span>
     </div>
     ${
-      discount > 0
+      discountDisplay > 0
         ? `
     <div class="totals-row">
       <span style="color: #b91c1c;">Discount</span>
-      <span style="color: #b91c1c;">−${fmtMoney(discount)}</span>
+      <span style="color: #b91c1c;">−${formatCurrency(discountDisplay)}</span>
     </div>`
         : ""
     }
     ${
-      shipping > 0
+      shippingDisplay > 0
         ? `
     <div class="totals-row">
       <span>Shipping & Logistics</span>
-      <span>${fmtMoney(shipping)}</span>
+      <span>${formatCurrency(shippingDisplay)}</span>
     </div>`
         : ""
     }
     ${
-      tax !== 0
+      taxDisplay !== 0
         ? `
     <div class="totals-row">
       <span>${taxLabel}</span>
-      <span>${fmtMoney(tax)}</span>
+      <span>${formatCurrency(taxDisplay)}</span>
     </div>`
         : ""
     }
     <div class="totals-row grand">
       <span>Total Due / Paid</span>
-      <span>${fmtMoney(grandTotal)}</span>
+      <span>${formatCurrency(grandTotalDisplay)}</span>
     </div>
+    ${rateNote ? `<div class="totals-note">${rateNote}</div>` : ""}
   </div>
 
   <div class="footer">

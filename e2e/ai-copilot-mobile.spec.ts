@@ -11,7 +11,12 @@ import { loginAs } from "./helpers";
  * The panel itself also clears the dock (`bottom-[calc(5.5rem+...)]`), so
  * the dock stays interactive while chatting.
  */
-test.use({ ...devices["iPhone 13"] });
+// The iPhone descriptor's defaultBrowserType is webkit, but the CI gate
+// installs only chromium (npx playwright install --with-deps chromium) — the
+// launch then fails with "Executable doesn't exist ... webkit-<build>". This
+// contract is about mobile VIEWPORT geometry (dock, safe area, breakpoints),
+// not the engine, so keep the iPhone metrics and pin the browser to chromium.
+test.use({ ...devices["iPhone 13"], defaultBrowserType: "chromium" });
 
 test("mobile: copilot button sits above the dock and the dock stays visible when the panel opens", async ({
   page,

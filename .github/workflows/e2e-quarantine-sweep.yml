@@ -1,0 +1,42 @@
+name: E2E (quarantine sweep)
+
+# The blocking E2E gate runs the FULL suite. This weekly workflow re-runs the
+# same suite (run-quarantined: true) between releases so a flaky or
+# environment-dependent family surfaces midweek instead of only when a release
+# waits on it. e2e/quarantine.json is empty since 2026-09-23 — every entry was
+# repaired and the registry's check step now guards against stale exemptions
+# only. If an environment debt ever needs parking again, re-add it there and
+# this sweep is the mechanism that keeps it honest.
+#
+# Deliberately named "E2E (quarantine sweep)" rather than "E2E": the release
+# gate in .github/workflows/release.yml waits on the run whose workflow name is
+# exactly "E2E", so this sweep can never satisfy (or confuse) it.
+
+on:
+  schedule:
+    # Mondays 04:20 UTC — after the nightly data jobs, before the workday.
+    - cron: "20 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-quarantine-sweep
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: Quarantine sweep (full suite)
+    uses: ./.github/workflows/e2e-reusable.yml
+    secrets:
+      midtrans-sandbox-server-key: ${{ secrets.MIDTRANS_SANDBOX_SERVER_KEY }}
+    with:
+      artifact-suffix: "-sweep"
+      run-quarantined: true
+      database-url: "postgresql://postgres:postgres@localhost:5432/testdb"
+      jwt-secret: "ci-e2e-secret"
+      nextauth-secret: "ci-e2e-secret"
+      nextauth-url: "http://localhost:3010"
+      google-client-id: "ci-placeholder"
+      google-client-secret: "ci-placeholder"

@@ -22,11 +22,63 @@ export const SEED_ADMIN_PASSWORD = "admin123";
 export const FETCH_GATED = { timeout: 45_000 } as const;
 
 /**
- * Session cache for loginAs: token strings keyed by "email:password". Workers
- * share module state when the suite runs in the same process, and the goal is
- * to mint at most one argon2 login per credential per run.
+ * The email field of the SIGN-IN form — the form that also carries a password
+ * field.
+ *
+ * Why not a bare `input[type="email"]`: the login page swaps views (returning-
+ * user chooser / login / forgot-password) through `motion`, and AnimatePresence
+ * keeps the OUTGOING view mounted while it animates out. For that beat two
+ * email inputs exist in the DOM, and Playwright's strict mode counts hidden
+ * elements too, so an unscoped locator fails with "resolved to 2 elements"
+ * depending purely on animation timing. The password field is unique to the
+ * sign-in form, which makes this locator unambiguous in every view.
+ *
+ * `:visible` is the second guard: a long-lived dev server (a local gate run
+ * spans many suites) can keep a stale copy of the sign-in form mounted after
+ * a client remount. It never reaches the accessibility tree, but strict mode
+ * counts it — so restrict the match to forms that are actually rendered.
  */
-const sessionTokens = new Map<string, string>();
+export function signInEmailField(page: Page): Locator {
+  return page
+    .locator("form:visible")
+    .filter({ has: page.locator('input[type="password"]') })
+    .locator('input[type="email"]');
+}
+
+/**
+ * Session cache for loginAs: the minted cookie pair keyed by "email:password".
+ * Workers share module state when the suite runs in the same process, and the
+ * goal is to mint at most one argon2 login per credential per run.
+ *
+ * BOTH cookies are cached, and the age is tracked, because a cached ACCESS
+ * token is only valid for 15 minutes (ACCESS_MAX_AGE in src/lib/auth.ts).
+ * Reusing one past that lifetime is how a single random spec kept dying in a
+ * long CI run: the page still rendered, then its first data fetch 401'd and the
+ * app hard-navigated to /en/login?reason=expired. Without the refresh cookie
+ * the client had no way to renew the token, so the page died instead of
+ * refreshing silently.
+ */
+const sessionTokens = new Map<string, { token: string; refreshToken?: string; mintedAt: number }>();
+
+/**
+ * Reuse margin for a cached access token: well inside its 15-minute lifetime, so
+ * a spec that starts just under the wire cannot have it expire mid-test. Past
+ * this age the cache is skipped and a real login is minted instead.
+ */
+const CACHED_TOKEN_MAX_AGE_MS = 12 * 60_000;
+
+/** Snapshot the minted cookie pair from a context's jar for later reuse. */
+async function rememberSession(page: Page, credKey: string): Promise<void> {
+  const jar = await page.context().cookies();
+  const token = jar.find((c) => c.name === "token" && c.value.length > 0);
+  if (!token) return;
+  const refreshToken = jar.find((c) => c.name === "refresh_token" && c.value.length > 0);
+  sessionTokens.set(credKey, {
+    token: token.value,
+    ...(refreshToken ? { refreshToken: refreshToken.value } : {}),
+    mintedAt: Date.now(),
+  });
+}
 
 // ── Login-throttle awareness ─────────────────────────────────────────────────
 //
@@ -139,23 +191,42 @@ export async function loginAs(
   // dashboard. The seed admin is shared, so the cache hit rate is high; a
   // revoked/expired cached token falls through to the form path below.
   const credKey = `${email}:${password}`;
-  const cachedToken = sessionTokens.get(credKey);
-  if (cachedToken) {
+  const cached = sessionTokens.get(credKey);
+  if (cached && Date.now() - cached.mintedAt < CACHED_TOKEN_MAX_AGE_MS) {
     await page.context().addCookies([
       {
         name: "token",
-        value: cachedToken,
+        value: cached.token,
         domain: "localhost",
         path: "/",
         httpOnly: true,
         sameSite: "Lax",
       },
+      // The refresh cookie rides along so the app can renew the token itself
+      // instead of force-logging the browser out mid-spec.
+      ...(cached.refreshToken
+        ? [
+            {
+              name: "refresh_token",
+              value: cached.refreshToken,
+              domain: "localhost",
+              path: "/",
+              httpOnly: true,
+              sameSite: "Lax" as const,
+            },
+          ]
+        : []),
     ]);
     await page.goto("/en/dashboard");
-    if (page.url().includes("/en/dashboard")) {
+    // The URL alone is not proof of a live session: the dashboard shell renders
+    // for a token the server has already rejected, and the spec that follows
+    // then dies on its first data fetch. Probe a guarded route first —
+    // requireAuth enforces JWT validity AND session revocation (isTokenRevoked).
+    const probe = await page.request.get("/api/profile", { timeout: 45_000 }).catch(() => null);
+    if (page.url().includes("/en/dashboard") && (!probe || probe.ok())) {
       return;
-    } // Token dead (server restart with a changed JWT secret, revocation, etc.)
-    // — clear and fall through to the form path.
+    } // Token dead (expiry, revocation, changed JWT secret, …) — drop it and
+    // fall through to a real login.
     sessionTokens.delete(credKey);
   }
 
@@ -177,11 +248,8 @@ export async function loginAs(
       timeout: 90_000,
     });
     if (apiLogin.ok()) {
-      const minted = (await page.context().cookies()).find(
-        (c) => c.name === "token" && c.value.length > 0,
-      );
-      if (minted) {
-        sessionTokens.set(credKey, minted.value);
+      await rememberSession(page, credKey);
+      if (sessionTokens.has(credKey)) {
         await page.goto("/en/dashboard");
         await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
         return;
@@ -200,14 +268,17 @@ export async function loginAs(
   // first goto can land on a Next.js 404 page. Re-issue the goto until the
   // login form renders instead of trusting a single shot — otherwise the
   // very first spec of a run (which is often the coldest) flakes.
+  // Scoped to the sign-in form — see signInEmailField() for why.
+  const emailInput = signInEmailField(page);
+
   await expect
     .poll(
       async () => {
-        if ((await page.locator('input[type="email"]').count()) === 0) {
+        if ((await emailInput.count()) === 0) {
           await page.goto("/en/login");
           await page.waitForLoadState("networkidle");
         }
-        return (await page.locator('input[type="email"]').count()) > 0;
+        return (await emailInput.count()) > 0;
       },
       { timeout: 45_000, message: "login page never served the form" },
     )
@@ -215,7 +286,6 @@ export async function loginAs(
   // Values typed before React hydrates are silently dropped (the submit never
   // enables). Retry the fills until the button enables — robust on a cold dev
   // server, where the login route may be the first page compiled in the run.
-  const emailInput = page.locator('input[type="email"]');
   const passwordInput = page.getByPlaceholder("Enter password");
   const submit = page.getByRole("button", { name: "Log in", exact: true });
   await expect
@@ -247,14 +317,9 @@ export async function loginAs(
   // behind a parallel worker's login — give the redirect real headroom.
   await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 45_000 });
 
-  // Cache the minted token for later workers/tests (best-effort: the cookie
-  // must exist and the dashboard URL proves the session is live).
-  const minted = (await page.context().cookies()).find(
-    (c) => c.name === "token" && c.value.length > 0,
-  );
-  if (minted) {
-    sessionTokens.set(credKey, minted.value);
-  }
+  // Cache the minted cookie pair for later workers/tests (best-effort: the
+  // token must exist and the dashboard URL proves the session is live).
+  await rememberSession(page, credKey);
 }
 
 /**
@@ -354,7 +419,10 @@ export async function fillRegistrationForm(
  * Assumes the "Verify your email" step (t("verifyEmailTitle")) is on screen.
  */
 export async function completeSignupOtp(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  // FETCH_GATED: the step renders only after the register POST resolves
+  // (argon2 + HIBP round-trip + a cold route compile on a long-lived dev
+  // server), which can blow past the 20s default expect timeout.
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible(FETCH_GATED);
   const code = (await page.getByTestId("dev-otp").textContent())?.trim() ?? "";
   expect(code).toMatch(/^\d{6}$/);
   // The OTP input carries no maxLength attribute (the page slices to 6 digits
@@ -459,7 +527,12 @@ export async function waitForApiKeysTab(page: Page): Promise<void> {
   // The toolbar renders only after the api-keys fetch resolves on the remote
   // DB; under 2-worker argon2-login contention that fetch can exceed the 20s
   // default expect timeout, so grant explicit headroom.
-  await expect(page.getByRole("button", { name: "Create API Key", exact: true })).toBeVisible({
+  // `.first()` because an EMPTY key list (fresh scratch-DB fixture) renders a
+  // second CTA in the empty-state card — the strict-mode ambiguity the
+  // integrations-tabs-mobile spec already documents.
+  await expect(
+    page.getByRole("button", { name: "Create API Key", exact: true }).first(),
+  ).toBeVisible({
     timeout: 45_000,
   });
 }
@@ -468,21 +541,31 @@ export async function waitForApiKeysTab(page: Page): Promise<void> {
  * The plan caps API keys per workspace. Specs in this suite leave their keys
  * behind, so once the cap is full POST /api/api-keys answers
  * 402 plan_limit_reached and the dialog stays open on its error toast.
- * Delete the oldest leftover key to reclaim a slot (leaving room for the one
- * about to be created). Plan-agnostic: the cap comes from the 402 itself.
+ * Delete a leftover key to reclaim a slot (leaving room for the one about to
+ * be created). Plan-agnostic: the cap comes from the 402 itself.
+ *
+ * Skip the seeded "Demo Integration Key" (it IS the fixture other specs
+ * assert); delete the OLDEST other key. Deleting one key per call means a
+ * caller that retries loops to convergence: the cap counts only the session
+ * user's OWN ACTIVE keys, so own keys are finite and one of them eventually
+ * crosses the limit.
  */
-async function reclaimApiKeySlot(page: Page): Promise<void> {
+async function reclaimApiKeySlot(page: Page): Promise<boolean> {
   const listed = await page.request.get("/api/api-keys");
-  if (!listed.ok()) return;
+  if (!listed.ok()) return false;
   const keys = (await listed.json()) as Array<{ id: string; name: string }>;
-  const oldest = keys[keys.length - 1];
-  if (!oldest) return;
-  await page.request.delete("/api/api-keys", { data: { id: oldest.id } });
+  const victim = keys
+    .filter((k) => k.name !== "Demo Integration Key")
+    // GET orders by createdAt desc — the array tail is the oldest.
+    .at(-1);
+  if (!victim) return false;
+  await page.request.delete("/api/api-keys", { data: { id: victim.id } });
   // The tab refetches the list, so the freed slot is visible before we retry.
-  await expect(page.getByRole("heading", { name: oldest.name, exact: true })).toHaveCount(
+  await expect(page.getByRole("heading", { name: victim.name, exact: true })).toHaveCount(
     0,
     FETCH_GATED,
   );
+  return true;
 }
 
 /** Submit the create-key dialog and return the POST response. */
@@ -500,20 +583,23 @@ async function submitCreateKey(page: Page, dialog: Locator): Promise<number> {
  * `dash_...` key scraped from the one-time reveal banner.
  */
 export async function createApiKey(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Create API Key", exact: true }).click();
+  // Toolbar button (`.first()`), NOT the empty-state duplicate the API Keys
+  // tab renders when the list is empty on a fresh scratch-DB fixture.
+  await page.getByRole("button", { name: "Create API Key", exact: true }).first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Create API Key")).toBeVisible();
   await dialog.getByPlaceholder("e.g., Production Integration").fill(name);
 
-  if ((await submitCreateKey(page, dialog)) === 402) {
-    // At the plan's key cap — free a slot and submit again (the dialog is
-    // still open, holding the name we already typed).
-    await reclaimApiKeySlot(page);
-    expect(
-      await submitCreateKey(page, dialog),
-      "create should succeed after reclaiming a slot",
-    ).toBe(200);
+  // At the plan's key cap (402) — free a slot and submit again, up to a few
+  // rounds: under 2 workers the sibling spec's create can consume the slot we
+  // just freed between our reclaim and our retry, so one attempt is not
+  // enough (the dialog stays open throughout, still holding the name).
+  let status = await submitCreateKey(page, dialog);
+  for (let round = 0; status === 402 && round < 4; round += 1) {
+    if (!(await reclaimApiKeySlot(page))) break;
+    status = await submitCreateKey(page, dialog);
   }
+  expect(status, "create should succeed after reclaiming a slot").toBe(200);
 
   // Both waits gate on the POST + refetch round-tripping the remote DB.
   await expect(dialog).not.toBeVisible(FETCH_GATED);
@@ -852,4 +938,22 @@ export async function registerFreshUser(
   await page.goto("/en/dashboard");
   await expect(page).toHaveURL(/\/en\/dashboard/);
   return email;
+}
+
+/**
+ * Tick the recovery-impact acknowledgement in a guarded destructive dialog,
+ * when the dialog demands one.
+ *
+ * Disabling 2FA (or removing the spare authenticator) while the account would
+ * be left with no working recovery path renders a warning + checkbox
+ * (`data-testid="recovery-guard-ack"`) and keeps the confirm button DISABLED
+ * until it is ticked. Accounts that still have a recovery path see no checkbox
+ * at all, so this is a no-op there — the helper adapts to the account state
+ * instead of assuming one.
+ */
+export async function acknowledgeRecoveryGuardIfShown(page: Page): Promise<void> {
+  const ack = page.getByTestId("recovery-guard-ack");
+  if (await ack.isVisible().catch(() => false)) {
+    await ack.check();
+  }
 }

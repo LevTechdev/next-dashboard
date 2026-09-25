@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import ChangelogPage from "../changelog/page";
+import { APP_VERSION } from "@/lib/app-version";
 
 vi.mock("framer-motion", async () => {
   const actual = await vi.importActual("framer-motion");
@@ -42,22 +43,31 @@ describe("Changelog Page", () => {
     expect(screen.getByText(/Stay up to date with the latest/)).toBeInTheDocument();
   });
 
-  it("renders the latest version badge", () => {
-    expect(screen.getByText("2.7.0")).toBeInTheDocument();
+  it("renders the latest version badge from the release source, not from the copy", () => {
+    // The badge reports the version the build was tagged with
+    // (NEXT_PUBLIC_APP_VERSION -> git tag). It must NOT be hand-written copy: a
+    // hardcoded string here is how the page ended up claiming a version no tag
+    // had ever been cut for.
+    expect(screen.getByTestId("release-version")).toHaveTextContent(APP_VERSION);
     expect(screen.getByText("Latest version:")).toBeInTheDocument();
     // The date appears in the badge and on the timeline entry
     expect(screen.getAllByText("September 22, 2026").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders all version entries in the timeline", () => {
-    expect(screen.getByText("v2.7.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.6.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.5.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.4.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.3.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.2.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.1.0")).toBeInTheDocument();
-    expect(screen.getByText("v2.0.0")).toBeInTheDocument();
+  it("renders all version entries in the timeline, on the released line", () => {
+    // Timeline versions are the release line itself — the newest entry always
+    // carries the version the badge reports (asserted against APP_VERSION
+    // below), so the page and the git tags cannot disagree.
+    expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
+    for (const version of ["v1.0.0", "v0.9.0", "v0.8.0", "v0.7.0", "v0.6.0", "v0.5.0", "v0.4.0"]) {
+      expect(screen.getByText(version)).toBeInTheDocument();
+    }
+  });
+
+  it("names the release the timeline's newest entry describes", () => {
+    // One source of truth: badge version === newest entry version.
+    expect(screen.getByTestId("release-version")).toHaveTextContent(APP_VERSION);
+    expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
   });
 
   it("renders version tags", () => {

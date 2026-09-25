@@ -81,16 +81,48 @@ test.describe("Glass tooltip audit", () => {
     await page.goto("/en/analytics");
 
     // The analytics page opens on the funnel tab; the channels tab carries
-    // the donut + trend area + activity rings, all GlassChartTooltip-backed.
-    const channelsTab = page.getByRole("tab", { name: /channel/i }).first();
-    if (await channelsTab.isVisible().catch(() => false)) {
-      await channelsTab.click();
-    }
+    // the bar chart + donut + trend area, all glass-tooltip-backed. The tab
+    // MUST be clicked — waiting for hydration instead of skipping (an early
+    // isVisible()===false used to skip the click, leaving the funnel panel
+    // active where no audited chart exists).
+    const channelsTab = page.getByRole("tab", { name: /Sales by Channel/i });
+    await expect(channelsTab).toBeVisible({ timeout: FETCH_GATED.timeout });
+    await channelsTab.click();
 
-    const surface = page.locator(".recharts-surface").first();
-    await expect(surface).toBeVisible({ timeout: FETCH_GATED.timeout });
-    await hoverCenter(page, surface, 7);
-    await hoverCenter(page, surface, 4);
+    // Scope bars to the channels PANEL by CONTENT (the heading inside it):
+    // this page has multiple Radix tablists and Radix panels carry no
+    // accessible name, while Radix's generated `radix-_r_N_-content-*` ids
+    // can churn between SSR and the hydrated client — a captured id waits on
+    // a node that hydration has since replaced. A has-filter re-resolves on
+    // every retry, so it survives that churn.
+    const panel = page
+      .locator('[role="tabpanel"]')
+      .filter({ has: page.getByRole("heading", { name: /Sales by Channel/i }) });
+    await expect(panel).toBeVisible({ timeout: FETCH_GATED.timeout });
+    // Hover a BAR LAYER, not the bare surface center: a surface-center hover
+    // can land in empty plot space (or in the donut's hole). A bar's own
+    // bounding box is always filled — the same "stable target" trick the
+    // dashboard test uses with the tallest bar. Target the recharts bar
+    // LAYER (`g.recharts-bar-rectangle`), not a shape inside it: recharts
+    // renders the shape as <rect> for square corners but as <path> when the
+    // bar has a radius, so the layer is the only stable handle. Pick the
+    // largest layer — its center cannot fall in the axis gutter.
+    const barLayers = panel.locator(".recharts-bar-rectangle");
+    await expect(barLayers.first()).toBeVisible({ timeout: FETCH_GATED.timeout });
+    const layerCount = await barLayers.count();
+    let target = barLayers.first();
+    let bestArea = -1;
+    for (let i = 0; i < layerCount; i += 1) {
+      const b = await barLayers.nth(i).boundingBox();
+      const area = b ? b.width * b.height : 0;
+      if (area > bestArea) {
+        bestArea = area;
+        target = barLayers.nth(i);
+      }
+    }
+    await target.scrollIntoViewIfNeeded();
+    await hoverCenter(page, target, 7);
+    await hoverCenter(page, target, 4);
 
     await expectGlassTooltip(page, "analytics");
     await expect(page.locator(".recharts-tooltip-wrapper .recharts-default-tooltip")).toHaveCount(

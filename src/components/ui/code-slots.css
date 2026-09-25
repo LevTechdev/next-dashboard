@@ -75,6 +75,18 @@
   place-items: center;
 }
 
+/*
+ * Group divider (xxxx-xxxx recovery codes). A neutral hairline rather than a
+ * hyphen glyph, so it can't be mistaken for a typed character.
+ */
+.code-slots__sep {
+  align-self: center;
+  height: 2px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--cs-ink) 28%, transparent);
+  pointer-events: none;
+}
+
 .code-slots__slot {
   position: relative;
   width: var(--cs-size);

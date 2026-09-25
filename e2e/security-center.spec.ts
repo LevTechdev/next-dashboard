@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { registerFreshUser, loginAs } from "./helpers";
+import { FETCH_GATED, registerFreshUser, loginAs } from "./helpers";
 
 /**
  * Security Center E2E.
@@ -61,9 +61,12 @@ test.describe("Security Center", () => {
 
     test("marks the current browser session as this device", async ({ page }) => {
       await page.goto("/en/security");
-      await expect(page.getByText("This device").first()).toBeVisible();
+      // FETCH_GATED: both texts render from the sessions list, which resolves
+      // only after the page's /api fetches come back — cold CI machines have
+      // blown past the 20s default here.
+      await expect(page.getByText("This device").first()).toBeVisible(FETCH_GATED);
       // The current login session shows as active.
-      await expect(page.getByText("active").first()).toBeVisible();
+      await expect(page.getByText("active").first()).toBeVisible(FETCH_GATED);
     });
 
     test("generates backup recovery codes", async ({ page }) => {
@@ -207,8 +210,10 @@ test.describe("Security Center", () => {
 async function generateOrRegenerateCodes(page: Page) {
   // Wait for client-side data to load before clicking: the "N unused code(s)
   // remaining" text only renders after hydration + fetch, and clicking before
-  // hydration completes silently drops the click (no POST fires).
-  await expect(page.getByText(/unused code/)).toBeVisible();
+  // hydration completes silently drops the click (no POST fires). FETCH_GATED:
+  // it is a fetch-gated wait — a cold CI machine (cold Turpoback compile +
+  // argon2 login + this page's /api fetch) has blown past the 20s default here.
+  await expect(page.getByText(/unused code/)).toBeVisible(FETCH_GATED);
 
   const regen = page.getByRole("button", { name: "Regenerate", exact: true });
   if (await regen.isVisible()) {
@@ -220,5 +225,5 @@ async function generateOrRegenerateCodes(page: Page) {
   } else {
     await page.getByRole("button", { name: "Generate codes", exact: true }).click();
   }
-  await expect(page.getByText(/Save these codes now/i)).toBeVisible();
+  await expect(page.getByText(/Save these codes now/i)).toBeVisible(FETCH_GATED);
 }

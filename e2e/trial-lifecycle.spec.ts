@@ -20,6 +20,10 @@ import { readFileSync } from "node:fs";
  */
 
 const dbUrl = () => {
+  // CI exports DATABASE_URL directly and has no .env files — prefer the
+  // process environment, then fall back to the local dev files.
+  const fromEnv = process.env.DATABASE_URL?.trim();
+  if (fromEnv) return fromEnv.split("?")[0];
   for (const envFile of [".env.local", ".env"]) {
     try {
       const line = readFileSync(envFile, "utf-8")

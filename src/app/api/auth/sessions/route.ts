@@ -44,6 +44,31 @@ export async function GET(req: Request) {
   }
   const seenBefore = (times: number[] | undefined, at: number) => (times ?? []).some((t) => t < at);
 
+  // Live 30-day trust cookies, keyed by device|browser (the same profile
+  // strings Session.device/browser carry).
+  const trustedDevices = await prisma.trustedDevice.findMany({
+    where: {
+      userId: session.user.id,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    select: { device: true, browser: true },
+  });
+  const trustedKeys = new Set(trustedDevices.map((d) => `${d.device}|${d.browser}`));
+
+  // Live stay-login grants per refresh-token family (a session inherits its
+  // family's grant — the durable 7-day window behind "Stay signed in").
+  const familyIds = [...new Set(sessions.map((s) => s.familyId).filter(Boolean))] as string[];
+  const grants = familyIds.length
+    ? await prisma.refreshToken.findMany({
+        where: { familyId: { in: familyIds }, revokedAt: null, stayLoginUntil: { gt: new Date() } },
+        select: { familyId: true, stayLoginUntil: true },
+      })
+    : [];
+  const grantByFamily = new Map(
+    grants.map((g) => [g.familyId, g.stayLoginUntil?.toISOString() ?? null]),
+  );
+
   return NextResponse.json(
     sessions.map((s) => {
       const at = s.createdAt.getTime();
@@ -64,6 +89,12 @@ export async function GET(req: Request) {
         createdAt: s.createdAt,
         current: currentHash != null && s.tokenHash === currentHash,
         recognized,
+        // Device-policy context: whether this device holds a 30-day trust
+        // cookie (2FA skip), and whether its refresh family carries a live
+        // stay-login grant (the long session window). Both feed the UI's
+        // trust badges and the per-device policy the user can revoke.
+        trusted: trustedKeys.has(`${s.device ?? ""}|${s.browser ?? ""}`),
+        stayLoginUntil: grantByFamily.get(s.familyId ?? "") ?? null,
       };
     }),
   );

@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { getRequestMeta } from "@/lib/request-meta";
+import { resolveUserTenantId } from "@/lib/tenancy";
 
 /**
  * Append an audit entry for a destructive action (delete / revoke / remove).
@@ -37,7 +38,13 @@ export async function writeDeletionAudit(params: {
         entityId: params.entityId ?? null,
         details,
         userId: params.session.user.id,
-        tenantId: params.session.user.tenantId ?? null,
+        // Attribution rule (mirrors logSecurityEvent): a non-null session
+        // claim wins, nullish resolves the actor's workspace. Writing the
+        // coerced `?? null` straight through produced actor-bearing rows with
+        // no tenant, which the tenant-scoped audit-log read can never show —
+        // a deletion recorded into nowhere.
+        tenantId:
+          params.session.user.tenantId ?? (await resolveUserTenantId(params.session.user.id)),
       },
     });
   } catch {

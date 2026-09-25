@@ -1,29 +1,37 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 
 /**
- * Verification success toasts, app-wide.
+ * Toasts for flows that complete through a full-page redirect.
  *
- * Flows that complete with a full-page redirect (email-verification confirm
- * link) or that may complete on any dashboard page (2FA enable, password
- * change) land here: when the URL carries a `verified=`/`verification=`
- * success marker, a celebratory green toast is shown once and the marker is
- * stripped from the address bar — so a refresh or share never replays it.
+ * Ownership split — one toast per marker, by design:
+ *
+ * - `?verified=true|invalid` is owned by the landing pages themselves
+ *   (profile, Security Center — the only targets the confirm route's
+ *   `from` whitelist redirects to). The pages strip the marker
+ *   synchronously with `history.replaceState` and re-fetch server truth
+ *   (the param alone must never flip the verified badge), so a page-local
+ *   toast is the single source. This watcher deliberately does not touch
+ *   that marker: its previous async `router.replace()` strip left the
+ *   marker in the URL across effect re-runs, firing a second (and under
+ *   StrictMode a third) duplicate toast for one bad link.
+ *
+ * - Redirect-only markers with no page-local handler land here. The strip
+ *   is synchronous for the same reason: by the time this effect re-runs
+ *   (StrictMode double-invoke, provider identity churn), the marker is
+ *   already gone from the URL, so it cannot fire twice.
  *
  * Markers:
- * - ?verified=true / ?verification=success → email verified
- * - ?verified=invalid / ?verification=expired → failure variant (error toast)
- * - ?2fa=enabled / ?password=changed → same treatment for security actions
- *   completed on redirects.
+ * - ?verified=true|invalid → owned by the landing pages (NOT this watcher)
+ * - ?verification=success → email verified (helper-emitted, no landing page)
+ * - ?2fa=enabled / ?2fa=disabled → 2FA change completed via redirect
+ * - ?password=changed → password change completed via redirect
  */
 export function VerificationSuccessToaster() {
-  const pathname = usePathname();
-  const router = useRouter();
   const t = useTranslations("verificationSuccess");
 
   useEffect(() => {
@@ -38,8 +46,7 @@ export function VerificationSuccessToaster() {
       });
     };
 
-    let consumed = false;
-
+    // Synchronous URL strip — see doc comment for why this is not router.replace.
     const consume = (keys: string[]) => {
       let changed = false;
       for (const k of keys) {
@@ -49,19 +56,20 @@ export function VerificationSuccessToaster() {
         }
       }
       if (changed) {
-        consumed = true;
         const qs = params.toString();
-        router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+        window.history.replaceState({}, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
       }
+      return changed;
     };
 
-    // Email verification (confirm link: security center + profile variants)
-    if (params.get("verified") === "true" || params.get("verification") === "success") {
-      fire("emailVerified", "success");
-    } else if (params.get("verified") === "invalid") {
-      fire("emailVerifyFailed", "error");
-    }
-    consume(["verified", "verification"]);
+    // NOTE: ?verified=... is intentionally NOT consumed here — the landing
+    // pages (profile, Security Center) own that marker and fire their own
+    // page-local toast (see ownership note above).
+
+    // ?verification=success is the helper-emitted variant with no landing
+    // page — this watcher is its single owner.
+    if (params.get("verification") === "success") fire("emailVerified", "success");
+    consume(["verification"]);
 
     // 2FA enable/disable completed via redirect
     if (params.get("2fa") === "enabled") fire("twoFactorEnabled", "success");
@@ -71,9 +79,7 @@ export function VerificationSuccessToaster() {
     // Password change completed via redirect
     if (params.get("password") === "changed") fire("passwordChanged", "success");
     consume(["password"]);
-
-    void consumed;
-  }, [pathname, router, t]);
+  }, [t]);
 
   return null;
 }

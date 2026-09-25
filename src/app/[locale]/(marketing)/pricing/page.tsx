@@ -13,6 +13,8 @@ import { DiaTextReveal } from "@/components/sora-ui/texts/dia-text-reveal";
 import { AnimatedHeading, AnimatedSubtitle } from "@/components/ui/animated-heading";
 import { StratusFaq } from "@/components/home/stratus-faq";
 import { FxSettlementPanel } from "@/components/billing/fx-settlement-panel";
+import { PlanChangeDialog } from "@/components/billing/plan-change-dialog";
+import type { BillingInterval } from "@/lib/plan-change";
 import { useCurrency } from "@/components/currency-provider";
 import { CURRENCIES, type SupportedCurrencyCode } from "@/lib/currency";
 
@@ -47,6 +49,22 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
+  // Self-serve plan changes: when the visitor is signed in with a
+  // subscription, the CTAs become Upgrade / Downgrade / switch-period and the
+  // prorated confirmation dialog takes over. Anonymous visitors keep the
+  // existing checkout/register flow.
+  type PlanRow = { id: string; name: string; price: number };
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [sub, setSub] = useState<{
+    planId: string;
+    planName: string;
+    billingInterval: string;
+  } | null>(null);
+  const [changeTarget, setChangeTarget] = useState<{
+    planId: string;
+    planName: string;
+  } | null>(null);
+
   // Live mid-market conversion for the "≈ Rp …" line under each list price.
   const { currency, setCurrency, formatMoney, ratesStale, ratesSourceLabel, ratesSource } =
     useCurrency();
@@ -63,6 +81,83 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
     if (preferred) setCurrency(preferred);
     // Locale changes are a deliberate navigation, so re-default then.
   }, [locale, setCurrency]);
+
+  // One fetch on mount: the plan catalogue (ids for checkout/change) and the
+  // signed-in workspace's subscription (or 401 → anonymous).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/billing/plans")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) setPlans(rows as PlanRow[]);
+      })
+      .catch(() => {});
+    fetch("/api/billing/subscription")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.subscription) return;
+        setSub({
+          planId: data.subscription.planId,
+          planName: data.subscription.plan?.name ?? "",
+          billingInterval: data.subscription.billingInterval ?? "MONTHLY",
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const currentPlanKey = sub ? sub.planName.toLowerCase() : null;
+  const targetInterval: BillingInterval = isAnnual ? "YEARLY" : "MONTHLY";
+
+  /**
+   * What the button on a pricing card should do for THIS visitor:
+   *   · anonymous            → checkout (or register, for Enterprise)
+   *   · already on it        → "Current plan", disabled
+   *   · tier move / period   → open the prorated confirmation dialog
+   */
+  const ctaFor = (metaKey: string) => {
+    const tierIndex = PLAN_META.findIndex((p) => p.key === metaKey);
+    if (!sub || !currentPlanKey) {
+      return {
+        kind: "checkout" as const,
+        label: metaKey === "enterprise" ? t("contactSales") : t("getStarted"),
+        disabled: false,
+      };
+    }
+    if (currentPlanKey === metaKey) {
+      if (sub.billingInterval === targetInterval) {
+        return { kind: "current" as const, label: t("currentPlan"), disabled: true };
+      }
+      return {
+        kind: "change" as const,
+        label: targetInterval === "YEARLY" ? t("switchToYearly") : t("switchToMonthly"),
+        disabled: false,
+      };
+    }
+    const currentIndex = PLAN_META.findIndex((p) => p.key === currentPlanKey);
+    return {
+      kind: "change" as const,
+      label: tierIndex > currentIndex ? t("upgrade") : t("downgrade"),
+      disabled: false,
+    };
+  };
+
+  const handlePlanCta = (metaKey: string) => {
+    const cta = ctaFor(metaKey);
+    if (cta.kind === "current") return;
+    if (cta.kind === "checkout") {
+      void handleSubscribe(metaKey);
+      return;
+    }
+    const target = plans.find((p) => p.name.toLowerCase() === metaKey);
+    if (!target) {
+      toast.error(t("toastPlanNotFound"));
+      return;
+    }
+    setChangeTarget({ planId: target.id, planName: target.name });
+  };
 
   const chooseCurrency = (code: SupportedCurrencyCode) => {
     pickedCurrency.current = true;
@@ -186,6 +281,8 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           <div className="inline-flex items-center gap-2 p-1.5 rounded-full bg-background border border-border shadow-sm">
             <button
               onClick={() => setIsAnnual(false)}
+              data-testid="billing-interval-monthly"
+              aria-pressed={!isAnnual}
               className={cn(
                 "px-5 py-2 text-sm font-medium rounded-full transition-colors",
                 !isAnnual
@@ -197,6 +294,8 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
             </button>
             <button
               onClick={() => setIsAnnual(true)}
+              data-testid="billing-interval-yearly"
+              aria-pressed={isAnnual}
               className={cn(
                 "px-5 py-2 text-sm font-medium rounded-full transition-colors inline-flex items-center gap-1.5",
                 isAnnual
@@ -284,20 +383,29 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
                   </p>
                 )}
 
-                <button
-                  onClick={() => handleSubscribe(plan.key)}
-                  disabled={loadingKey === plan.key}
-                  className={cn(
-                    "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8 flex justify-center items-center gap-2",
-                    plan.popular
-                      ? "bg-background text-foreground hover:bg-muted"
-                      : "bg-foreground text-background hover:opacity-90",
-                    loadingKey === plan.key ? "opacity-70 cursor-not-allowed" : "",
-                  )}
-                >
-                  {loadingKey === plan.key ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {plan.key === "enterprise" ? t("contactSales") : t("getStarted")}
-                </button>
+                {(() => {
+                  const cta = ctaFor(plan.key);
+                  const busy = loadingKey === plan.key;
+                  return (
+                    <button
+                      onClick={() => handlePlanCta(plan.key)}
+                      disabled={cta.disabled || busy}
+                      data-testid={`plan-cta-${plan.key}`}
+                      data-cta-kind={cta.kind}
+                      aria-disabled={cta.disabled || busy}
+                      className={cn(
+                        "w-full py-3 rounded-full text-sm font-semibold text-center transition mb-8 flex justify-center items-center gap-2",
+                        plan.popular
+                          ? "bg-background text-foreground hover:bg-muted"
+                          : "bg-foreground text-background hover:opacity-90",
+                        cta.disabled || busy ? "opacity-70 cursor-not-allowed" : "",
+                      )}
+                    >
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      {cta.label}
+                    </button>
+                  );
+                })()}
 
                 <div className="flex-1">
                   <p
@@ -440,6 +548,36 @@ export default function PricingPage({ params }: { params: Promise<{ locale: stri
           </div>
         </motion.div>
       </section>
+
+      {/* Prorated confirmation for signed-in plan changes. */}
+      <PlanChangeDialog
+        open={changeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setChangeTarget(null);
+        }}
+        planId={changeTarget?.planId ?? null}
+        planName={changeTarget?.planName ?? ""}
+        billingInterval={targetInterval}
+        currentInterval={
+          (sub?.billingInterval === "YEARLY" ? "YEARLY" : "MONTHLY") as BillingInterval
+        }
+        onApplied={() => {
+          // Re-read the subscription so the CTAs reflect the new plan, and let
+          // the dashboard's tier machinery pick the change up on next visit.
+          fetch("/api/billing/subscription")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (!data?.subscription) return;
+              setSub({
+                planId: data.subscription.planId,
+                planName: data.subscription.plan?.name ?? "",
+                billingInterval: data.subscription.billingInterval ?? "MONTHLY",
+              });
+              router.refresh();
+            })
+            .catch(() => {});
+        }}
+      />
     </div>
   );
 }

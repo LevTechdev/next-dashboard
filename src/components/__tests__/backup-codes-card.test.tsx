@@ -64,4 +64,20 @@ describe("BackupCodesCard", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByText("…")).toBeInTheDocument();
   });
+
+  it("explains how the codes are used, in every state", () => {
+    // A count alone doesn't tell anyone what to do with the codes. The ritual —
+    // keep them off the phone, spend one at sign-in, one use each, regenerate
+    // before running out — is the card's real instruction, so it is asserted in
+    // all three postures (healthy, low, exhausted).
+    for (const remaining of [10, BACKUP_CODE_LOW_THRESHOLD, 0]) {
+      const { unmount } = renderCard(remaining);
+      expect(screen.getByText("How to use these codes")).toBeInTheDocument();
+      expect(screen.getByText(/outside your phone/i)).toBeInTheDocument();
+      expect(screen.getByText(/Use a backup code/)).toBeInTheDocument();
+      expect(screen.getByText(/works once/i)).toBeInTheDocument();
+      expect(screen.getByText(/before you run out/i)).toBeInTheDocument();
+      unmount();
+    }
+  });
 });

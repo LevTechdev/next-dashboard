@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { refreshAccessTokenDetailed } from "@/lib/client-refresh";
+import { advanceStayCountdown, formatStayClock } from "@/lib/stay-countdown";
 
 /**
  * Long-stay session sentinel for the dashboard.
@@ -16,11 +17,30 @@ import { refreshAccessTokenDetailed } from "@/lib/client-refresh";
  * The auth JWT lives 15 minutes; the dashboard session window modeled here is
  * 10 minutes. When 3 or fewer minutes remain, a non-blocking toast-style card
  * slides in with a live countdown and a "Stay signed in" CTA that rotates the
- * refresh token via /api/auth/refresh and restarts the window. Letting the
+ * refresh token via /api/auth/refresh, records a durable stay-login grant on
+ * the server (see /api/auth/stay-login), and restarts the window. Letting the
  * window lapse signs the user out.
  *
  * User activity (clicks/keys/scroll) does NOT extend the timer — this is a
  * deliberate long-stay prompt, not an idle detector.
+ *
+ * Two fixes for the "clicked Stay but got signed out anyway" class of bug:
+ *
+ *  1. VISIBILITY-AWARE COUNTDOWN. The window counts only time in which the tab
+ *     was actually able to observe it: each tick measures wall-clock deltas but
+ *     frozen deltas from hidden tabs (rAF stops there, timers throttle) are
+ *     carried over, not consumed. A laptop resuming from sleep, or a tab left
+ *     in the background for an hour, resumes its countdown where it left off
+ *     instead of discovering 0:00 and an instant sign-out. The server remains
+ *     the ultimate authority — its refresh-token lifetime is untouched.
+ *
+ *  2. A SERVER GRANT, NOT A LOCAL ONE. The grant used to live only in
+ *     localStorage, so anything that deleted it (a redirect, another account
+ *     on the same browser, a cleared site-data entry) silently ended the
+ *     extension. The grant now also persists as `stayLoginUntil` on the
+ *     user's refresh-token family; the sentinel reconciles against
+ *     GET /api/auth/stay-login on mount and re-checks it before any sign-out,
+ *     so a family-level grant protects every tab even after the flag is lost.
  */
 const SESSION_WINDOW_MS = 10 * 60 * 1000; // total dashboard session window
 const WARN_THRESHOLD_MS = 3 * 60 * 1000; // show the card at 3:00 remaining
@@ -33,14 +53,30 @@ const STAY_FLAG_KEY = "session_stay_signed_in";
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
-function formatClock(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+/** Server-side shape of GET /api/auth/stay-login. */
+interface StayLoginStatus {
+  granted: boolean;
+  until: string | null;
 }
 
-export function SessionStayAlert() {
+/**
+ * Whether this context is an INSTALLED PWA (display-mode: standalone).
+ * Installed apps have deliberate, launch-like lifetimes — the user pinned
+ * them to a dock/home-screen the way they would a native app — so the
+ * 10-minute re-auth rhythm never applies; the server grant governs instead.
+ */
+function isInstalledPwa(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
+
+export function SessionStayAlert({
+  /** Test/e2e override: start the countdown at this many ms (skips the
+   * ?stayDemo=1 query-param dance so real-timer tests stay sub-second). */
+  startRemainingMs,
+}: {
+  startRemainingMs?: number;
+} = {}) {
   const t = useTranslations("sessionStay");
   const router = useRouter();
   const [remaining, setRemaining] = useState(SESSION_WINDOW_MS);
@@ -51,36 +87,80 @@ export function SessionStayAlert() {
   // explicitly logs out (which clears the flag).
   const [extended, setExtended] = useState(false);
   const signedOutRef = useRef(false);
+  // Wall-clock remainder that has NOT yet been consumed by visible time. The
+  // tick loop drains it only while the tab can actually run its timers.
+  const carriedRef = useRef(SESSION_WINDOW_MS);
 
-  // Dev/e2e escape hatch: ?stayDemo=1 starts the countdown at the warning
-  // threshold so the alert (and its Stay CTA) can be exercised without
-  // waiting out the full 10-minute window. No-ops in production builds.
+  // Dev/e2e escape hatch: ?stayDemo=1 (or the startRemainingMs prop) starts
+  // the countdown at the warning threshold so the alert (and its Stay CTA)
+  // can be exercised without waiting out the full 10-minute window. The prop
+  // wins; the query param no-ops in production builds.
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
+    if (startRemainingMs !== undefined) {
+      carriedRef.current = startRemainingMs;
+      setRemaining(startRemainingMs);
+      return;
+    }
+    if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") return;
     try {
       if (new URLSearchParams(window.location.search).get("stayDemo") === "1") {
-        setRemaining(WARN_THRESHOLD_MS + 30_000);
+        carriedRef.current = WARN_THRESHOLD_MS + 30_000;
+        setRemaining(carriedRef.current);
       }
     } catch {
       /* ignore */
     }
+  }, [startRemainingMs]);
+
+  // Adopt a previously-granted extension from the server (durable across
+  // browsers via the refresh-token family) and/or this browser session's
+  // localStorage flag. Fires once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    const adopt = () => {
+      if (cancelled) return;
+      signedOutRef.current = false;
+      setExtended(true);
+      setRemaining(EXTENDED_WINDOW_MS);
+      setVisible(false);
+    };
+    (async () => {
+      // Installed PWAs are exempt from the alert rhythm entirely: the app
+      // was deliberately installed, so its sessions live and die by the
+      // server grant (stamped automatically for trusted devices at login),
+      // not by a wall-clock countdown.
+      if (isInstalledPwa()) {
+        adopt();
+        return;
+      }
+      try {
+        const res = await fetch("/api/auth/stay-login");
+        if (res.ok) {
+          const status = (await res.json()) as StayLoginStatus;
+          if (status.granted && !cancelled) {
+            adopt();
+            return;
+          }
+        }
+      } catch {
+        /* status unavailable — fall back to the local flag */
+      }
+      try {
+        if (window.localStorage.getItem(STAY_FLAG_KEY) === "1" && !cancelled) adopt();
+      } catch {
+        /* storage unavailable — normal alert rhythm */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Honor a previously-granted extension across reloads within the same
-  // browser session.
+  // Cross-tab coherence: another tab granting "Stay signed in" must
+  // immediately extend THIS tab too. Without this, tab A (mounted before
+  // the grant) keeps its own countdown and auto-signs the whole browser
+  // out at 0:00 — the "clicked Stay but got signed out anyway" bug.
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(STAY_FLAG_KEY) === "1") {
-        setExtended(true);
-        setRemaining(EXTENDED_WINDOW_MS);
-      }
-    } catch {
-      /* storage unavailable — normal alert rhythm */
-    }
-    // Cross-tab coherence: another tab granting "Stay signed in" must
-    // immediately extend THIS tab too. Without this, tab A (mounted before
-    // the grant) keeps its own countdown and auto-signs the whole browser
-    // out at 0:00 — the "clicked Stay but got signed out anyway" bug.
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STAY_FLAG_KEY) return;
       if (e.newValue === "1") {
@@ -96,9 +176,11 @@ export function SessionStayAlert() {
 
   const signOut = useCallback(async () => {
     if (signedOutRef.current) return;
-    // Last-moment guard: re-read the stay flag before tearing the session
-    // down. If another tab granted the extension in the last tick, honor it
-    // instead of signing out (defense in depth alongside the storage event).
+    // Last-moment guard, defense in depth alongside the storage event and the
+    // server grant: before tearing the session down, re-check every place the
+    // extension could have been granted — the local flag first (cheap), then
+    // the server's family-level grant (authoritative). If another tab granted
+    // the extension in the last tick, honor it instead of signing out.
     try {
       if (window.localStorage.getItem(STAY_FLAG_KEY) === "1") {
         signedOutRef.current = false;
@@ -109,6 +191,21 @@ export function SessionStayAlert() {
       }
     } catch {
       /* ignore */
+    }
+    try {
+      const res = await fetch("/api/auth/stay-login");
+      if (res.ok) {
+        const status = (await res.json()) as StayLoginStatus;
+        if (status.granted) {
+          signedOutRef.current = false;
+          setExtended(true);
+          setRemaining(EXTENDED_WINDOW_MS);
+          setVisible(false);
+          return;
+        }
+      }
+    } catch {
+      /* status unavailable — proceed with the sign-out */
     }
     signedOutRef.current = true;
     try {
@@ -127,10 +224,23 @@ export function SessionStayAlert() {
 
   useEffect(() => {
     if (extended) return; // dormant — the long window runs quietly
-    const startedAt = Date.now();
+    // Visibility-aware countdown: wall-clock deltas are consumed only while
+    // the tab can actually run its timers. Hidden tabs (and whole sleeps)
+    // freeze the countdown instead of burning it, so a user returns to the
+    // same clock they left — never to 0:00 and a surprise sign-out.
+    let lastAt = Date.now();
     const tick = setInterval(() => {
-      const left = SESSION_WINDOW_MS - (Date.now() - startedAt);
-      if (left <= 0) {
+      const now = Date.now();
+      const wallDelta = now - lastAt;
+      lastAt = now;
+      const visible = typeof document === "undefined" || document.visibilityState !== "hidden";
+      const { remaining: left, expired } = advanceStayCountdown(
+        carriedRef.current,
+        wallDelta,
+        visible,
+      );
+      carriedRef.current = left;
+      if (expired) {
         setRemaining(0);
         clearInterval(tick);
         void signOut();
@@ -153,6 +263,15 @@ export function SessionStayAlert() {
       // just consumed (reuse detection revokes the family = surprise sign-out).
       const { ok, status } = await refreshAccessTokenDetailed();
       if (ok) {
+        // Record the durable grant FIRST — it is the part that survives a
+        // lost flag, a redirect, or another account on this browser. The
+        // grant is stamped on the refresh-token family the rotation just
+        // renewed, so it can only succeed for a live session.
+        try {
+          await fetch("/api/auth/stay-login", { method: "POST" });
+        } catch {
+          /* non-fatal: the local extension still applies this session */
+        }
         // Grant the long working window: no more alerts, no auto sign-out,
         // until the user signs out manually (flag persists across reloads).
         try {
@@ -177,6 +296,7 @@ export function SessionStayAlert() {
         // a dead button.
         signedOutRef.current = false;
         setRemaining(SESSION_WINDOW_MS);
+        carriedRef.current = SESSION_WINDOW_MS;
         setVisible(false);
         toast.error(t("stayFailed"));
       }
@@ -227,7 +347,7 @@ export function SessionStayAlert() {
                     urgent ? "text-destructive" : "text-foreground",
                   )}
                 >
-                  {formatClock(remaining)}
+                  {formatStayClock(remaining)}
                 </p>
               </div>
             </div>

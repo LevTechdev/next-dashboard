@@ -27,6 +27,21 @@ import { loginAs, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, registerFreshUser } fro
 
 const BURST = 14; // > the 10-attempt window limit
 const BURST_IP = `198.51.100.${(Date.now() % 200) + 20}`; // TEST-NET-2, unique per run
+/**
+ * The production budget these specs prove: 10 attempts / 120s per IP.
+ *
+ * The suite-wide E2E budget is 500 (src/lib/rate-limit.ts) so dozens of auth
+ * specs can sign in from one IP — but a burst of 14 can never fill a 500-slot
+ * window, so these two tests could only ever pass where the default applied.
+ * They PIN their own window through the E2E-only `x-e2e-throttle-limit` header
+ * (ignored when NODE_ENV=production), which makes "expect 429s" and the gauge's
+ * "of 10" deterministic under any suite-wide budget.
+ */
+const PINNED_LIMIT = 10;
+const BURST_HEADERS = {
+  "x-forwarded-for": BURST_IP,
+  "x-e2e-throttle-limit": String(PINNED_LIMIT),
+};
 
 test.describe("Security telemetry", () => {
   test("seeded pressure rows light the badge with throttles", async ({ page }) => {
@@ -53,7 +68,7 @@ test.describe("Security telemetry", () => {
     const codes: number[] = [];
     for (let i = 0; i < BURST; i++) {
       const res = await page.request.post("/api/auth/login", {
-        headers: { "x-forwarded-for": BURST_IP },
+        headers: BURST_HEADERS,
         data: { email: targetEmail, password: "wrong-password-1" },
       });
       codes.push(res.status());
@@ -80,7 +95,7 @@ test.describe("Security telemetry", () => {
     // so every attempt below is a freshly-recorded 429 (blocked: true).
     for (let i = 0; i < 4; i++) {
       await page.request.post("/api/auth/login", {
-        headers: { "x-forwarded-for": BURST_IP },
+        headers: BURST_HEADERS,
         data: { email: targetEmail, password: "wrong-password-2" },
       });
     }
@@ -91,7 +106,7 @@ test.describe("Security telemetry", () => {
 
     // The live gauge replays the server's window: used / limit, the busiest
     // IP, and the blocked state (the limiter rejected the burst).
-    await expect(page.getByTestId("telemetry-throttle-count")).toContainText("of 10");
+    await expect(page.getByTestId("telemetry-throttle-count")).toContainText(`of ${PINNED_LIMIT}`);
     await expect(gauge).toContainText(BURST_IP);
     const state = page.getByTestId("telemetry-throttle-state");
     await expect(state).toContainText(/Blocked/);

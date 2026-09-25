@@ -23,7 +23,7 @@
  * pile of styled divs.
  */
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   animate,
   motion,
@@ -50,9 +50,21 @@ export type CodeSlotsStatus = "idle" | "success" | "error";
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const digitsOf = (raw: string | undefined | null) => String(raw ?? "").replace(/\D/g, "");
+/**
+ * Recovery codes are lowercase hex (xxxx-xxxx). They must survive verbatim:
+ * the digit-only sanitizer would eat every letter and leave the row empty.
+ */
+const alnumOf = (raw: string | undefined | null) =>
+  String(raw ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
-const toSlots = (raw: string | undefined | null, n: number) => {
-  const d = digitsOf(raw).slice(0, n);
+type Alphabet = "digits" | "alphanumeric";
+
+const sanitizerOf = (alphabet: Alphabet) => (alphabet === "alphanumeric" ? alnumOf : digitsOf);
+
+const toSlots = (raw: string | undefined | null, n: number, clean = digitsOf) => {
+  const d = clean(raw).slice(0, n);
   return Array.from({ length: n }, (_, i) => d[i] ?? "");
 };
 
@@ -65,6 +77,16 @@ const isFull = (slots: string[]) => slots.every(Boolean);
 
 export interface CodeSlotsProps {
   length?: number;
+  /**
+   * Accepted characters. `"digits"` (default) is the one-time-code case;
+   * `"alphanumeric"` is for recovery codes like `a1b2-c3d4`.
+   */
+  alphabet?: Alphabet;
+  /**
+   * Draw a separator after every N slots (4 → `xxxx-xxxx`). Purely visual:
+   * the value the control reports never contains the separator.
+   */
+  groupSize?: number;
   /** Controlled value. Omit for uncontrolled use with `defaultValue`. */
   value?: string;
   defaultValue?: string;
@@ -100,6 +122,8 @@ export interface CodeSlotsProps {
 
 export function CodeSlots({
   length = 6,
+  alphabet = "digits",
+  groupSize,
   value,
   defaultValue = "",
   onChange,
@@ -130,7 +154,11 @@ export function CodeSlots({
   const reduce = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
-  const [slots, setSlots] = useState(() => toSlots(value ?? defaultValue, length));
+  // One sanitizer per alphabet, used for every entry point (keys, paste, IME,
+  // controlled `value`) so nothing can smuggle in a character the mode rejects.
+  const clean = sanitizerOf(alphabet);
+  const keyRe = alphabet === "alphanumeric" ? /^[0-9a-z]$/i : /^[0-9]$/;
+  const [slots, setSlots] = useState(() => toSlots(value ?? defaultValue, length, clean));
   const [active, setActive] = useState(() => firstEmptyOf(slots));
   const [focused, setFocused] = useState(false);
   const [veiled, setVeiled] = useState(status === "success");
@@ -142,7 +170,7 @@ export function CodeSlots({
   const draining = useRef(false);
   const drainTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const statusRef = useRef(status);
-  const emitted = useRef(digitsOf(value ?? defaultValue).slice(0, length));
+  const emitted = useRef(clean(value ?? defaultValue).slice(0, length));
   const slotsRef = useRef(slots);
   // These mirrors are deliberate: the imperative animation drivers below fire
   // from timers/key handlers and must read the LATEST value without being
@@ -167,7 +195,11 @@ export function CodeSlots({
   );
   const { mvs, drops } = springs;
 
-  const pitch = slotSize + gap;
+  // Separator geometry: grouped rows spend a little width on each divider, so
+  // the caret's per-slot pitch (and therefore every glide) has to absorb it.
+  const groups = groupSize && groupSize > 0 && groupSize < length ? groupSize : 0;
+  const separatorWidth = groups ? Math.max(8, Math.round(slotSize * 0.22)) : 0;
+  const pitch = slotSize + gap + (groups ? (separatorWidth + gap) / groups : 0);
   const height = Math.round(slotSize * 1.18);
   const washRadius = Math.min(radius, slotSize / 2);
 
@@ -257,7 +289,7 @@ export function CodeSlots({
   );
 
   const insert = (raw: string | undefined | null, from = active) => {
-    const digits = digitsOf(raw);
+    const digits = clean(raw);
     if (!digits) return;
     const next = [...slotsRef.current];
     const crossed: number[] = [];
@@ -312,7 +344,7 @@ export function CodeSlots({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key;
-    if (/^[0-9]$/.test(k)) {
+    if (keyRe.test(k)) {
       e.preventDefault();
       const fresh = startFreshAfterReject();
       insert(k, fresh ? 0 : active);
@@ -349,7 +381,7 @@ export function CodeSlots({
 
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (busy) return;
-    const d = digitsOf(e.target.value);
+    const d = clean(e.target.value);
     if (!d) return;
     startFreshAfterReject();
     insert(d, d.length === 1 ? active : 0);
@@ -385,11 +417,11 @@ export function CodeSlots({
 
   useEffect(() => {
     if (value === undefined) return;
-    const clean = digitsOf(value).slice(0, length);
-    if (clean === emitted.current) return;
-    emitted.current = clean;
+    const cleanValue = clean(value).slice(0, length);
+    if (cleanValue === emitted.current) return;
+    emitted.current = cleanValue;
     const prev = slotsRef.current;
-    const next = toSlots(clean, length);
+    const next = toSlots(cleanValue, length, clean);
     const hidden = statusRef.current === "success";
     const landing: number[] = [];
     const leaving: number[] = [];
@@ -409,9 +441,9 @@ export function CodeSlots({
     slotsRef.current = next;
     setSlots(next);
     moveActive(firstEmptyOf(next), [...landing, ...leaving]);
-    if (!isFull(prev) && isFull(next)) onComplete?.(clean);
+    if (!isFull(prev) && isFull(next)) onComplete?.(cleanValue);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, length]);
+  }, [value, length, alphabet]);
 
   useEffect(() => {
     const was = statusRef.current;
@@ -518,17 +550,27 @@ export function CodeSlots({
         data-status={status}
         data-focused={focused ? "" : undefined}
         data-disabled={disabled ? "" : undefined}
+        data-value={view.join("")}
         onMouseDown={onRowMouseDown}
       >
         <input
           ref={inputRef}
           className="code-slots__input"
           type="text"
-          inputMode="numeric"
+          inputMode={alphabet === "alphanumeric" ? "text" : "numeric"}
           autoComplete="one-time-code"
-          pattern="[0-9]*"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          pattern={alphabet === "alphanumeric" ? "[a-zA-Z0-9]*" : "[0-9]*"}
           value=""
-          maxLength={length}
+          // No maxLength: the sanitizer (not the browser) is the single gate for
+          // what lands in the slots. With maxLength, a value-set that arrives
+          // with separators — e.g. autofill writing "cccc-e589" (9 chars) into an
+          // 8-char input — is truncated by the BROWSER before React ever sees
+          // it, so the dash survives and the last character is silently
+          // dropped (7 of 8 slots). Programmatic .fill() and real autofill both
+          // take this path; paste does not (the component sanitizes it first).
           id={inputId}
           placeholder={placeholder}
           aria-label={ariaLabel}
@@ -543,15 +585,23 @@ export function CodeSlots({
           onBlur={() => setFocused(false)}
         />
         {view.map((ch, i) => (
-          <Slot
-            key={i}
-            mv={mvs[i]}
-            drop={drops[i]}
-            char={mask && ch ? "•" : ch}
-            active={focused && i === active}
-            rise={rise}
-            sink={Math.round(height * 0.5)}
-          />
+          <Fragment key={i}>
+            {groups && i > 0 && i % groups === 0 ? (
+              <span
+                className="code-slots__sep"
+                aria-hidden="true"
+                style={{ width: separatorWidth }}
+              />
+            ) : null}
+            <Slot
+              mv={mvs[i]}
+              drop={drops[i]}
+              char={mask && ch ? "•" : ch}
+              active={focused && i === active}
+              rise={rise}
+              sink={Math.round(height * 0.5)}
+            />
+          </Fragment>
         ))}
         <motion.span className="code-slots__wash" aria-hidden="true" style={{ clipPath: washClip }}>
           <motion.span
@@ -573,7 +623,9 @@ export function CodeSlots({
       <span id={`${uid}-count`} className="code-slots__sr" aria-live="polite">
         {status === "success"
           ? "Code accepted"
-          : `${view.filter(Boolean).length} of ${length} digits entered`}
+          : `${view.filter(Boolean).length} of ${length} ${
+              alphabet === "alphanumeric" ? "characters" : "digits"
+            } entered`}
       </span>
     </div>
   );

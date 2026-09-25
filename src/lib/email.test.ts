@@ -214,11 +214,15 @@ describe("sendEmail — SMTP configured (takes priority over Resend)", () => {
 });
 
 describe("sendEmail — EMAIL_TRANSPORT override", () => {
+  // The one exception to the override: Resend's sandbox sender cannot deliver
+  // to anyone but the account owner, so that combination is rescued to SMTP
+  // (see __tests__/email-transport.test.ts). A real configured sender keeps
+  // the override exactly as asked.
   it("uses Resend when EMAIL_TRANSPORT=resend even with SMTP configured", async () => {
     setKey("re_testkey123");
     process.env.EMAIL_TRANSPORT = "resend";
     process.env.SMTP_HOST = "smtp.example.com";
-    process.env.RESEND_FROM = "Dashboard <onboarding@resend.dev>";
+    process.env.RESEND_FROM = "Dashboard <billing@your-domain.com>";
     const sendMock = vi.fn().mockResolvedValue({ data: { id: "email_1" }, error: null });
     vi.doMock("resend", () => ({
       Resend: class {
@@ -236,7 +240,7 @@ describe("sendEmail — EMAIL_TRANSPORT override", () => {
 
     expect(result).toEqual({ sent: true });
     expect(sendMock).toHaveBeenCalledWith(
-      expect.objectContaining({ from: "Dashboard <onboarding@resend.dev>" }),
+      expect.objectContaining({ from: "Dashboard <billing@your-domain.com>" }),
     );
   });
 

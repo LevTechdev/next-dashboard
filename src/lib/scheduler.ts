@@ -8,6 +8,8 @@
  *  - "auto-payout": monthly affiliate auto-payout evaluation, idempotent
  *    per calendar cycle via data/auto-payout-cycle.json.
  *  - "webhook-retry": frequent sweep of due DLQ retries (5 min backoff base).
+ *  - "email-outbox": frequent delivery sweep for queued mail whose send was
+ *    killed mid-flight or failed transiently (1 min backoff base).
  *  - "recovery-drift": daily capture of every account's recovery-readiness
  *    verdict; alerts the owner the day it drops a rung.
  *
@@ -98,7 +100,8 @@ export type SchedulerJobName =
   | "scheduled-reports"
   | "backup-verify"
   | "recovery-drift"
-  | "fx-snapshot";
+  | "fx-snapshot"
+  | "email-outbox";
 
 /**
  * Record a run triggered outside the in-app loop (e.g. the Vercel cron hit on
@@ -137,6 +140,7 @@ export function schedulerStatus(): {
       "backup-verify": runs["backup-verify"] ?? null,
       "recovery-drift": runs["recovery-drift"] ?? null,
       "fx-snapshot": runs["fx-snapshot"] ?? null,
+      "email-outbox": runs["email-outbox"] ?? null,
     },
   };
 }
@@ -205,6 +209,13 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
       const { captureFxSnapshot } = await import("@/lib/fx-history");
       const result = await captureFxSnapshot();
       return { job: name, ...result };
+    }
+    case "email-outbox": {
+      // Mail that a killed request left behind: the row is durable, so the
+      // sweep is what turns "the user got nothing" into "the user got it a
+      // minute later". See lib/email-outbox.
+      const { drainEmailOutbox } = await import("@/lib/email-outbox");
+      return { job: name, ...(await drainEmailOutbox()) };
     }
     case "supabase-leaf-sync": {
       if (!supabaseSyncConfigured()) {
@@ -356,6 +367,11 @@ export async function startScheduler(): Promise<void> {
 
       // Webhook retry sweep runs every tick.
       await runJob("webhook-retry");
+
+      // Queued mail sweep runs every tick: the fast path attempts delivery
+      // right after the response, and this is the durable half that makes a
+      // killed or failed attempt eventually arrive.
+      await runJob("email-outbox");
     } catch (err) {
       console.error("[scheduler] job error:", err);
     }
@@ -363,7 +379,7 @@ export async function startScheduler(): Promise<void> {
   timer.current.unref?.();
 
   console.log(
-    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00, fx-snapshot=03:00)",
+    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, email-outbox=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00, fx-snapshot=03:00)",
   );
 }
 

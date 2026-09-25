@@ -38,6 +38,29 @@ export function loginThrottleLimit(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : LOGIN_THROTTLE_DEFAULT;
 }
 
+/**
+ * Header the E2E suite uses to pin a SINGLE spec's window to a known budget.
+ *
+ * The suite-wide `E2E_LOGIN_THROTTLE_LIMIT` (500) exists so dozens of auth
+ * specs can sign in from one IP, but it also means a spec that PROVES the
+ * limiter (the Security Center burst tests: fill the window, expect 429s, read
+ * "used of limit" off the telemetry gauge) can never reach the limit in CI —
+ * it was quarantined for exactly that. This header lets such a spec ask for the
+ * production budget for its own requests only, from its own spoofed IP.
+ *
+ * Safety: honoured ONLY when `NODE_ENV !== "production"` — a live deployment
+ * ignores it outright, exactly like the env override above. The value must be a
+ * positive integer, so a malformed header falls back to the real limit instead
+ * of disabling throttling.
+ */
+export function requestThrottleLimitOverride(req: Request): number | null {
+  if (process.env.NODE_ENV === "production") return null;
+  const raw = req.headers.get("x-e2e-throttle-limit");
+  if (!raw) return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   /** Attempts recorded inside the current window (including rejections). */
