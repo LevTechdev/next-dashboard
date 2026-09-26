@@ -246,10 +246,18 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
         );
         const parsed = JSON.parse(raw) as { orphanReport?: unknown };
         if (parsed.orphanReport && typeof parsed.orphanReport === "object") {
-          orphanReport = parsed.orphanReport;
+          // Project the raw report through the acknowledged-orphan ledger so
+          // refs an operator retired (scripts/ack-leaf-orphans.mjs) stop
+          // demanding attention. The file keeps the RAW report — the sync
+          // script owns it — and every consumption point applies the ledger
+          // (see scripts/lib/leaf-orphans.mjs for why).
+          const { applyAckLedger, readAckLedger } =
+            await import("../../scripts/lib/leaf-orphans.mjs");
+          const ackEntries = readAckLedger(process.cwd()).entries;
+          orphanReport = applyAckLedger(parsed.orphanReport as Record<string, unknown>, ackEntries);
         }
       } catch {
-        // No state file / no report — the card just shows nothing.
+        // No state file / no report / no ledger — the card just shows nothing.
       }
       return {
         job: name,

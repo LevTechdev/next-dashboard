@@ -88,6 +88,7 @@ dev-live.log
 /data/auto-reorder-ledger.json
 /data/inventory-snapshots.json
 /data/leaf-sync-watermark.json
+/data/leaf-sync-orphans-ack.json
 /data/qris-ledger.json
 /data/qris-ledger.json.bak
 /data/report-schedule.json
