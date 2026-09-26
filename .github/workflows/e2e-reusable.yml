@@ -91,17 +91,19 @@ jobs:
           node-version: ${{ inputs.node-version }}
           cache: "npm"
       - run: npm ci
-      - name: Verify E2E suite stays at 242 tests
+      - name: Verify E2E suite stays at 243 tests
         # Pins the suite size so adding/removing a spec (or a test inside one)
         # is a conscious change: this step fails until the count below is
         # updated in the same PR. Runs via `playwright test --list`, which
         # only collects tests — no dev server, no browser, no DB — so it
         # fails fast, before the Postgres service is even needed. It fires
         # for BOTH callers (e2e.yml on every branch + ci.yml's release gate).
-        # 242 = 75 spec files, single chromium project (233 from the
+        # 243 = 76 spec files, single chromium project (233 from the
         # security-and-pricing cycle + 3 plan-change journeys + 2 mail-health
         # panel specs + 1 audit-health card assertion + 4 profile-security-
-        # surface specs: the three security cards + the no-mailer OTP trace).
+        # surface specs: the three security cards + the no-mailer OTP trace,
+        # + 1 admin leaf-orphans coherence spec + 2 session-expiry deflake
+        # renames that kept the count stable).
         run: |
           output=$(npx playwright test --list 2>&1)
           count=$(echo "$output" | grep -oE 'Total: [0-9]+ tests' | grep -oE '[0-9]+')
@@ -111,8 +113,8 @@ jobs:
             exit 1
           fi
           echo "E2E suite count: $count"
-          if [ "$count" != "242" ]; then
-            echo "::error::E2E suite count drifted from 242 to $count. If the change is intentional, update the pinned count in this workflow in the same PR."
+          if [ "$count" != "243" ]; then
+            echo "::error::E2E suite count drifted from 243 to $count. If the change is intentional, update the pinned count in this workflow in the same PR."
             exit 1
           fi
       - name: Create database schema

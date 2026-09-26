@@ -385,6 +385,12 @@ const DYNAMIC_KEY_PATTERNS: DynamicPattern[] = [
     ],
   },
   {
+    name: "leaf-orphans health verdicts",
+    templates: ["leafOrphansState_${}"],
+    namespace: "admin",
+    keys: ["leafOrphansState_ok", "leafOrphansState_warn", "leafOrphansState_bad"],
+  },
+  {
     name: "recovery readiness panel next action",
     templates: ["recoveryNext_${}", "recoveryNextAction_${}"],
     namespace: "security",

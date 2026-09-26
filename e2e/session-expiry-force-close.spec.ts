@@ -126,8 +126,12 @@ test.describe("revoked refresh token force-close", () => {
     await page.goto("/en/profile");
     await expect(page).toHaveURL(/\/en\/login\?reason=expired/, { timeout: 45_000 });
 
-    // The persistent notice, not just the transient toast.
-    const notice = page.getByTestId("session-expired-notice");
+    // The persistent notice, not just the transient toast. `.first()`: the
+    // login page swaps views through motion's AnimatePresence, which keeps
+    // the OUTGOING view mounted while it animates out — for that beat two
+    // notices exist in the DOM and Playwright's strict mode counts them
+    // (same reason signInEmailField scopes to form:visible).
+    const notice = page.getByTestId("session-expired-notice").first();
     await expect(notice).toBeVisible();
     await expect(notice).toContainText(/session expired/i);
     await expect(notice).toHaveAttribute("role", "alert");
@@ -196,7 +200,8 @@ test.describe("revoked refresh token force-close", () => {
     await expect(page).toHaveURL(/\/en\/login\?reason=(session-changed|expired)/, {
       timeout: 45_000,
     });
-    const notice = page.getByTestId("session-expired-notice");
+    // `.first()` for the AnimatePresence double-mount (see above).
+    const notice = page.getByTestId("session-expired-notice").first();
     await expect(notice).toBeVisible();
     // The admin identity must be gone from the page.
     await expect(page.getByText(adminIdentity)).toHaveCount(0);

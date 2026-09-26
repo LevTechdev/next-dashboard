@@ -235,30 +235,10 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
       // state file (data/leaf-sync-watermark.json, gitignored): local rows
       // that can never sync because their FK targets (dev-seed users/tenants)
       // don't exist remotely. Surfacing it here is what makes the tally
-      // actionable — samples name the exact refs to reconcile.
-      let orphanReport: unknown;
-      try {
-        const fs = await import("node:fs");
-        const path = await import("node:path");
-        const raw = fs.readFileSync(
-          path.join(process.cwd(), "data", "leaf-sync-watermark.json"),
-          "utf-8",
-        );
-        const parsed = JSON.parse(raw) as { orphanReport?: unknown };
-        if (parsed.orphanReport && typeof parsed.orphanReport === "object") {
-          // Project the raw report through the acknowledged-orphan ledger so
-          // refs an operator retired (scripts/ack-leaf-orphans.mjs) stop
-          // demanding attention. The file keeps the RAW report — the sync
-          // script owns it — and every consumption point applies the ledger
-          // (see scripts/lib/leaf-orphans.mjs for why).
-          const { applyAckLedger, readAckLedger } =
-            await import("../../scripts/lib/leaf-orphans.mjs");
-          const ackEntries = readAckLedger(process.cwd()).entries;
-          orphanReport = applyAckLedger(parsed.orphanReport as Record<string, unknown>, ackEntries);
-        }
-      } catch {
-        // No state file / no report / no ledger — the card just shows nothing.
-      }
+      // actionable — samples name the exact refs to reconcile. readLeafOrphanReport
+      // projects it through the acknowledged-orphan ledger (raw file + ack
+      // subtraction in one place).
+      const orphanReport = await readLeafOrphanReport();
       return {
         job: name,
         output: out.trim().split("\n").slice(-1)[0] ?? "",
@@ -279,6 +259,32 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
       });
       return { job: name, output: out.trim().split("\n").slice(-1)[0] ?? "" };
     }
+  }
+}
+
+/**
+ * Read the raw leaf-sync orphan report from the state file and project it
+ * through the acknowledged-orphan ledger, so refs an operator retired with
+ * scripts/ack-leaf-orphans.mjs stop demanding attention everywhere the report
+ * is surfaced. The file keeps the RAW report (the sync script owns it); every
+ * consumer applies the ledger — see scripts/lib/leaf-orphans.mjs.
+ */
+export async function readLeafOrphanReport(): Promise<unknown> {
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const raw = fs.readFileSync(
+      path.join(process.cwd(), "data", "leaf-sync-watermark.json"),
+      "utf-8",
+    );
+    const parsed = JSON.parse(raw) as { orphanReport?: unknown };
+    if (!parsed.orphanReport || typeof parsed.orphanReport !== "object") return undefined;
+    const { applyAckLedger, readAckLedger } = await import("../../scripts/lib/leaf-orphans.mjs");
+    const ackEntries = readAckLedger(process.cwd()).entries;
+    return applyAckLedger(parsed.orphanReport as Record<string, unknown>, ackEntries);
+  } catch {
+    // No state file / no report / no ledger — callers just show nothing.
+    return undefined;
   }
 }
 
