@@ -34,6 +34,7 @@ import {
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { AuditHealthCard } from "@/components/admin/audit-health-card";
 import { MailHealthCard } from "@/components/admin/mail-health-card";
+import { LeafOrphansCard } from "@/components/admin/leaf-orphans-card";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -260,6 +261,8 @@ export default function AdminDashboardPage() {
       <AuditHealthCard />
       {/* Live mail-delivery health: transport, sender sanity, failures + resend. */}
       <MailHealthCard />
+      {/* Leaf-sync orphan health: the unsyncable mirror rows + reconciliation signal. */}
+      <LeafOrphansCard />
 
       <Card>
         <CardHeader className="pb-4 border-b border-zinc-100 dark:border-zinc-800">
