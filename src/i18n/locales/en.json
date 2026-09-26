@@ -996,6 +996,7 @@
       "jobAutoReorder": "Auto purchase-order drafts (hourly check)",
       "jobSupabaseSync": "Supabase mirror sync",
       "jobSupabaseLeafSync": "Supabase leaf sync (30 min)",
+      "leafOrphans": "{table}: {n} local rows cannot sync (FK target missing remotely)",
       "jobBackupVerify": "Backup restore verify",
       "jobRecoveryDrift": "Recovery readiness sweep",
       "jobFxSnapshot": "Daily FX rate snapshot",

@@ -996,6 +996,7 @@
       "jobAutoReorder": "自动采购订单草稿（每小时检查）",
       "jobSupabaseSync": "Supabase 镜像同步",
       "jobSupabaseLeafSync": "Supabase 叶子表同步（30 分钟）",
+      "leafOrphans": "{table}：{n} 条本地记录无法同步（远程缺少外键目标）",
       "jobBackupVerify": "备份恢复验证",
       "jobRecoveryDrift": "恢复准备度扫描",
       "jobFxSnapshot": "每日汇率快照",

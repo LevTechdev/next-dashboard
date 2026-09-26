@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { createOtpPayload } from "@/lib/email-otp";
 import { describeMailConfiguration, sendOtpEmail } from "@/lib/email";
-import { enqueueEmail } from "@/lib/email-outbox";
+import { enqueueEmail, recordNoMailerDelivery } from "@/lib/email-outbox";
 import { logEmailDelivery } from "@/lib/email-delivery";
 
 /** What an OTP issuance did — `sent` is "already delivered", `queued` is
@@ -48,6 +48,17 @@ export async function issueEmailOtp(opts: {
   // a code was issued and never left the process.
   if (describeMailConfiguration().transport === "none") {
     await sendOtpEmail({ to: opts.email, otp: code, locale: opts.locale }).catch(() => {});
+    // Leave the mail-health panel a visible trace: a terminal FAILED outbox
+    // row (never drained — see recordNoMailerDelivery) instead of only the
+    // audit log, which the panel does not read. The dev-mode code on screen
+    // stays valid: the drain never touches FAILED rows, so nothing re-issues
+    // the stored hash out from under it.
+    await recordNoMailerDelivery({
+      to: opts.email,
+      template: "verify_email",
+      userId: opts.userId,
+      tenantId: updated.tenantId,
+    }).catch(() => {});
     await logEmailDelivery({
       userId: opts.userId,
       status: "failed",

@@ -996,6 +996,7 @@
       "jobAutoReorder": "Draf pesanan pembelian otomatis (cek per jam)",
       "jobSupabaseSync": "Sinkronisasi cermin Supabase",
       "jobSupabaseLeafSync": "Sinkronisasi leaf Supabase (30 mnt)",
+      "leafOrphans": "{table}: {n} baris lokal tidak dapat disinkronkan (target FK hilang di remote)",
       "jobBackupVerify": "Verifikasi pemulihan cadangan",
       "jobRecoveryDrift": "Pemindaian kesiapan pemulihan",
       "jobFxSnapshot": "Cuplikan kurs harian",

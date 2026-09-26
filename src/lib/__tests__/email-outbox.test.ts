@@ -42,7 +42,12 @@ vi.mock("@/lib/email", async (importOriginal) => {
   return { ...actual, ...mail };
 });
 
-import { drainEmailOutbox, emailOutboxHealth, enqueueEmail } from "@/lib/email-outbox";
+import {
+  drainEmailOutbox,
+  emailOutboxHealth,
+  enqueueEmail,
+  recordNoMailerDelivery,
+} from "@/lib/email-outbox";
 import { hashOtp } from "@/lib/email-otp";
 
 const now = new Date("2026-09-25T10:00:00.000Z");
@@ -73,6 +78,40 @@ beforeEach(() => {
   mail.sendTemplatedEmail.mockResolvedValue({ sent: true });
   mail.sendOtpEmail.mockResolvedValue({ sent: true });
   audit.logEmailDelivery.mockResolvedValue(undefined);
+});
+
+describe("recordNoMailerDelivery", () => {
+  it("writes a terminal FAILED row the automatic drain can never pick up", async () => {
+    db.emailOutbox.create.mockResolvedValue({ id: "row-no-mailer" });
+
+    await recordNoMailerDelivery({
+      to: "user@example.com",
+      template: "verify_email",
+      userId: "user-1",
+      tenantId: "tenant-1",
+    });
+
+    const data = db.emailOutbox.create.mock.calls[0][0].data;
+    expect(data.status).toBe("FAILED");
+    expect(data.maxAttempts).toBe(1); // terminal — no retry budget
+    expect(data.transport).toBe("none");
+    expect(data.lastError).toMatch(/[Nn]o mailer configured/);
+  });
+
+  it("never stores a code and stays invisible to the PENDING/SENDING drain", async () => {
+    db.emailOutbox.create.mockResolvedValue({ id: "row-no-mailer" });
+
+    await recordNoMailerDelivery({ to: "user@example.com", template: "welcome" });
+
+    const data = db.emailOutbox.create.mock.calls[0][0].data;
+    // A one-time code is never stored; the trace row carries no params at all.
+    expect(data.params).toBeUndefined();
+    // The drain's claim filter is status PENDING/SENDING — a FAILED row can
+    // never be claimed, so the stored hash (and the dev-displayed code) is
+    // safe from any re-issue.
+    expect(data.status).not.toBe("PENDING");
+    expect(data.status).not.toBe("SENDING");
+  });
 });
 
 describe("enqueueEmail", () => {

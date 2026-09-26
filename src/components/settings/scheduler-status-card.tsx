@@ -35,6 +35,26 @@ interface JobRunInfo {
   error?: string;
 }
 
+/** Per-table unsyncable-row report the leaf-sync job carries in its result. */
+interface LeafOrphanReport {
+  count?: number;
+  samples?: string[];
+}
+
+/** Pull the leaf-sync orphan report out of a job result, if present. */
+function leafOrphanReportOf(result: unknown): Record<string, LeafOrphanReport> | null {
+  if (!result || typeof result !== "object") return null;
+  const report = (result as { orphanReport?: unknown }).orphanReport;
+  if (!report || typeof report !== "object") return null;
+  const entries = Object.entries(report as Record<string, unknown>).filter(
+    (entry): entry is [string, LeafOrphanReport] =>
+      !!entry[1] &&
+      typeof entry[1] === "object" &&
+      typeof (entry[1] as LeafOrphanReport).count === "number",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : null;
+}
+
 interface SchedulerStatus {
   enabled: boolean;
   tickMs: number;
@@ -208,33 +228,61 @@ export function SchedulerStatusCard() {
               <p className="text-xs text-muted-foreground">{t("disabledHint")}</p>
             )}
             <div className="divide-y divide-border rounded-lg border">
-              {Object.entries(status.jobs).map(([job, run]) => (
-                <div
-                  key={job}
-                  data-scheduler-job={job}
-                  className="flex items-center justify-between gap-3 px-3 py-2 min-w-0"
-                >
-                  <span className="text-sm font-medium truncate">
-                    {t(JOB_LABEL_KEYS[job] ?? "jobDigest")}
-                  </span>
-                  <span className="flex items-center gap-2 shrink-0">
-                    {run ? (
-                      <>
-                        <span
-                          className={cn(
-                            "h-2 w-2 rounded-full",
-                            run.ok ? "bg-emerald-500" : "bg-red-500",
-                          )}
-                          title={run.ok ? undefined : run.error}
-                        />
-                        <span className="text-xs text-muted-foreground">{formatWhen(run.at)}</span>
-                      </>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{t("never")}</span>
+              {Object.entries(status.jobs).map(([job, run]) => {
+                // The leaf-sync job carries an orphan report: local rows that
+                // can never sync because their FK targets (dev-seed users /
+                // tenants) don't exist on the remote. Shown so the tally is a
+                // signal — with sample refs an operator can reconcile — not
+                // silent accounted-for drift.
+                const orphanReport =
+                  job === "supabase-leaf-sync" ? leafOrphanReportOf(run?.result) : null;
+                return (
+                  <div key={job} data-scheduler-job={job} className="min-w-0">
+                    <div className="flex items-center justify-between gap-3 px-3 py-2 min-w-0">
+                      <span className="text-sm font-medium truncate">
+                        {t(JOB_LABEL_KEYS[job] ?? "jobDigest")}
+                      </span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        {run ? (
+                          <>
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                run.ok ? "bg-emerald-500" : "bg-red-500",
+                              )}
+                              title={run.ok ? undefined : run.error}
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {formatWhen(run.at)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{t("never")}</span>
+                        )}
+                      </span>
+                    </div>
+                    {orphanReport && (
+                      <div
+                        className="mx-3 mb-2 rounded-md border bg-muted/30 px-2.5 py-1.5"
+                        data-testid="leaf-sync-orphans"
+                      >
+                        {Object.entries(orphanReport).map(([table, rep]) => (
+                          <div key={table} className="text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground tabular-nums">
+                              {t("leafOrphans", { table, n: rep.count ?? 0 })}
+                            </span>
+                            {(rep.samples ?? []).slice(0, 3).map((s, i) => (
+                              <div key={i} className="ml-2 truncate font-mono text-[11px]">
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     )}
-                  </span>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Rollback snapshots — the supabase-sync job's retained pre-sync
