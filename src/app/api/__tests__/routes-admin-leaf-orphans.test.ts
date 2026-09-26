@@ -17,6 +17,7 @@ const mockRequireAuth = vi.fn();
 const mockReadReport = vi.fn();
 const mockFindUser = vi.fn();
 const mockAckRefs = vi.fn();
+const mockAckStragglers = vi.fn();
 const mockSendTestDigest = vi.fn();
 
 vi.mock("@/lib/api-guard", () => ({
@@ -46,6 +47,7 @@ vi.mock("@/lib/leaf-orphans-admin", async (importOriginal) => ({
   // readLeafOrphanReport seam used, so the aggregation stays under test.
   readRawLeafOrphanReport: mockReadReport,
   acknowledgeLeafOrphanRefs: mockAckRefs,
+  acknowledgeLeafOrphanStragglers: mockAckStragglers,
 }));
 // The projection's ledger read must be hermetic: the real file is gitignored
 // local operator state whose entries would silently change the verdict.
@@ -133,6 +135,54 @@ describe("GET /api/admin/leaf-orphans", () => {
     expect(body.state).toBe("bad");
     expect(body.total).toBe(5);
     expect(Object.keys(body.tables)).toEqual(["SecurityEvent"]);
+  });
+});
+
+describe("POST /api/admin/leaf-orphans (ack-stragglers)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const stragglerReq = () =>
+    new Request("http://localhost/api/admin/leaf-orphans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "ack-stragglers" }),
+    });
+
+  it("refuses non-admin users before touching the ledger", async () => {
+    authed("USER");
+    const res = await route.POST(stragglerReq());
+    expect(res.status).toBe(403);
+    expect(mockAckStragglers).not.toHaveBeenCalled();
+  });
+
+  it("retires the stragglers and echoes the fresh projection", async () => {
+    authed("ADMIN");
+    mockAckStragglers.mockResolvedValue({ acknowledged: 4, tables: ["Session"] });
+    mockReadReport.mockResolvedValue({}); // post-retirement projection: clean
+
+    const res = await route.POST(stragglerReq());
+    const body = await res.json();
+    expect(body).toMatchObject({
+      ok: true,
+      acknowledged: 4,
+      tables: ["Session"],
+      summary: { state: "ok", total: 0 },
+    });
+    expect(mockAckStragglers).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a no-op retirement without erroring", async () => {
+    authed("ADMIN");
+    mockAckStragglers.mockResolvedValue({ acknowledged: 0, tables: [] });
+    mockReadReport.mockResolvedValue({ Session: { count: 3 } });
+
+    const res = await route.POST(stragglerReq());
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.acknowledged).toBe(0);
+    expect(body.summary).toMatchObject({ state: "warn" });
   });
 });
 

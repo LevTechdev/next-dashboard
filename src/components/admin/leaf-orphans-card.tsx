@@ -68,6 +68,7 @@ export function LeafOrphansCard() {
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [retiring, setRetiring] = useState(false);
   const [confirmingAck, setConfirmingAck] = useState(false);
   const [acking, setAcking] = useState(false);
 
@@ -154,6 +155,38 @@ export function LeafOrphansCard() {
       setSendingTest(false);
     }
   }, [t]);
+
+  /**
+   * Warn-state retirement: every remaining count names no row, so acking the
+   * report's current fingerprints (idempotent) plus its table-scoped
+   * straggler refs retires the whole remainder. The projection itself stays
+   * the arbiter — this can never retire a row the report still names, and a
+   * future sync re-derives everything from the raw report.
+   */
+  const retireStragglers = useCallback(async () => {
+    setRetiring(true);
+    try {
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ack-stragglers" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        acknowledged?: number;
+        error?: string;
+      };
+      if (!res.ok || data.ok !== true) {
+        throw new Error(data.error || t("leafOrphansStragglerFailed"));
+      }
+      toast.success(t("leafOrphansStragglerDone", { count: data.acknowledged ?? 0 }));
+      await fetchReport();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansStragglerFailed"));
+    } finally {
+      setRetiring(false);
+    }
+  }, [t, fetchReport]);
 
   const runNow = useCallback(async () => {
     setRunning(true);
@@ -311,6 +344,23 @@ export function LeafOrphansCard() {
                 <TableOrphans key={table} table={table} entry={entry} />
               ))}
             </div>
+            {report.state === "warn" && report.unacknowledgedSamples === 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={retireStragglers}
+                  disabled={retiring}
+                  data-testid="leaf-orphans-straggler"
+                >
+                  <CircleCheckIcon size={14} className={cn(retiring && "animate-pulse")} />
+                  {t("leafOrphansStragglerRetire")}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {t("leafOrphansStragglerHint")}
+                </span>
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground">{t("leafOrphansHowTo")}</p>
           </div>
         )}

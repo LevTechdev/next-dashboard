@@ -4822,6 +4822,10 @@
     "leafOrphansTestMisconfigured": "Test digest queued, but the mail configuration cannot deliver to real addresses — check the mail-health panel.",
     "leafOrphansTestClean": "The mirror is complete — there is nothing to preview.",
     "leafOrphansTestFailed": "Could not queue the test digest — see the mail-health panel.",
+    "leafOrphansStragglerRetire": "Retire stragglers",
+    "leafOrphansStragglerHint": "Counts without named rows — retire the reconciled remainder until the next sync re-derives the report.",
+    "leafOrphansStragglerDone": "{count, plural, =0 {Already retired — nothing new to acknowledge.} one {Retired 1 ledger entry — the tally clears on refresh.} other {Retired # ledger entries — the tally clears on refresh.}}",
+    "leafOrphansStragglerFailed": "Could not write the retirement — the ledger is unchanged.",
     "leafOrphansRunNow": "Run sync",
     "leafOrphansRefresh": "Refresh",
     "leafOrphansLoading": "Reading the orphan report…",
@@ -4848,6 +4852,7 @@
     "mailHealthResendFailed": "Resend to {to} failed again — check the error below.",
     "mailHealthResendNone": "No failed email to resend.",
     "mailHealthAttempts": "{attempts}/{max} attempts",
+    "mailHealthAutoRefreshing": "Auto-refreshing every 2 minutes",
     "loadFailed": "Failed to load users",
     "loadFailedStatus": "Failed to load users ({status})"
   }

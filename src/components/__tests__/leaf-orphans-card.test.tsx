@@ -215,4 +215,34 @@ describe("LeafOrphansCard", () => {
     });
     expect(screen.getByTestId("leaf-orphans-test-digest")).toBeInTheDocument();
   });
+
+  it("offers the straggler retirement in the warn state and POSTs ack-stragglers", async () => {
+    stubReport(ALL_ACKED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-straggler")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByTestId("leaf-orphans-straggler"));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(([, init]) => {
+        if (init?.method !== "POST") return false;
+        const body = JSON.parse(String(init?.body ?? "{}")) as { action?: string };
+        return body.action === "ack-stragglers";
+      });
+      expect(post).toBeDefined();
+    });
+    // The refetch followed the retirement.
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("hides the straggler retirement when rows are still named (bad state)", async () => {
+    stubReport(NAMED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-badge")).toHaveTextContent("Needs reconciliation");
+    });
+    expect(screen.queryByTestId("leaf-orphans-straggler")).not.toBeInTheDocument();
+  });
 });

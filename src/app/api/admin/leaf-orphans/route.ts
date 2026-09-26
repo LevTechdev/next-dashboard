@@ -5,6 +5,7 @@ import { normalizeRole } from "@/lib/permissions";
 import { leafSyncScriptPath, runSchedulerJob, recordExternalJobRun } from "@/lib/scheduler";
 import {
   acknowledgeLeafOrphanRefs,
+  acknowledgeLeafOrphanStragglers,
   readRawLeafOrphanReport,
   summarizeLeafOrphans,
 } from "@/lib/leaf-orphans-admin";
@@ -96,6 +97,17 @@ export async function POST(req: Request) {
     action?: string;
     refs?: unknown;
   };
+
+  if (body.action === "ack-stragglers") {
+    const { acknowledged, tables } = await acknowledgeLeafOrphanStragglers();
+    // Echo the projected view so the card flips without a second round-trip.
+    return NextResponse.json({
+      ok: true,
+      acknowledged,
+      tables,
+      summary: await summarizeLeafOrphans(await readRawLeafOrphanReport()),
+    });
+  }
 
   if (body.action === "test-digest") {
     const result = await sendTestLeafOrphansDigest({

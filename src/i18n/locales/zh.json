@@ -4822,6 +4822,10 @@
     "leafOrphansTestMisconfigured": "测试摘要已加入队列，但邮件配置无法投递到真实地址 — 请检查邮件健康面板。",
     "leafOrphansTestClean": "镜像已完整 — 没有可预览的内容。",
     "leafOrphansTestFailed": "无法将测试摘要加入队列 — 请查看邮件健康面板。",
+    "leafOrphansStragglerRetire": "清理残余",
+    "leafOrphansStragglerHint": "没有已列出行的计数 — 在下次同步重新生成报告前，清理已对账的残余。",
+    "leafOrphansStragglerDone": "{count, plural, other {已退避 # 条账本记录 — 刷新后计数清零。}}",
+    "leafOrphansStragglerFailed": "无法写入清理记录 — 账本未更改。",
     "leafOrphansRunNow": "运行同步",
     "leafOrphansRefresh": "刷新",
     "leafOrphansLoading": "正在读取孤儿报告…",
@@ -4848,6 +4852,7 @@
     "mailHealthResendFailed": "重发至 {to} 再次失败 —— 请查看下方错误。",
     "mailHealthResendNone": "没有可重发的失败邮件。",
     "mailHealthAttempts": "{attempts}/{max} 次尝试",
+    "mailHealthAutoRefreshing": "每 2 分钟自动刷新",
     "loadFailed": "加载用户失败",
     "loadFailedStatus": "加载用户失败 ({status})"
   }

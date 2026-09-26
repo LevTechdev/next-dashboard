@@ -4822,6 +4822,10 @@
     "leafOrphansTestMisconfigured": "Digest uji masuk antrean, tetapi konfigurasi mail tidak dapat mengirim ke alamat nyata — periksa panel kesehatan mail.",
     "leafOrphansTestClean": "Mirror sudah lengkap — tidak ada yang bisa dipratinjau.",
     "leafOrphansTestFailed": "Tidak dapat memasukkan digest uji ke antrean — lihat panel kesehatan mail.",
+    "leafOrphansStragglerRetire": "Pensiunkan sisa",
+    "leafOrphansStragglerHint": "Hitungan tanpa baris yang tercantum — pensiunkan sisa yang telah direkonsiliasi sampai sinkronisasi berikutnya memperbarui laporan.",
+    "leafOrphansStragglerDone": "{count, plural, other {# entri ledger dipensiunkan — hitungan bersih setelah dimuat ulang.}}",
+    "leafOrphansStragglerFailed": "Tidak dapat menulis pemensiunan — ledger tidak berubah.",
     "leafOrphansRunNow": "Jalankan sinkron",
     "leafOrphansRefresh": "Segarkan",
     "leafOrphansLoading": "Membaca laporan orphan…",
@@ -4848,6 +4852,7 @@
     "mailHealthResendFailed": "Kirim ulang ke {to} gagal lagi — periksa galat di bawah.",
     "mailHealthResendNone": "Tidak ada surat gagal untuk dikirim ulang.",
     "mailHealthAttempts": "{attempts}/{max} percobaan",
+    "mailHealthAutoRefreshing": "Penyegaran otomatis setiap 2 menit",
     "loadFailed": "Gagal memuat pengguna",
     "loadFailedStatus": "Gagal memuat pengguna ({status})"
   }

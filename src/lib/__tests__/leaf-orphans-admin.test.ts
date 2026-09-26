@@ -79,6 +79,73 @@ describe("acknowledgeLeafOrphanRefs", () => {
   });
 });
 
+describe("acknowledgeLeafOrphanStragglers", () => {
+  it("acks the current fingerprints plus table-scoped straggler refs in one ledger", async () => {
+    seedWatermark({
+      Session: {
+        count: 3,
+        samples: ["cmuS1 [userId=cmuU1]", "cmuS2 [userId=cmuU2]", "cmuS3 [userId=cmuU3]"],
+      },
+      SecurityEvent: { count: 7 },
+    });
+
+    const { acknowledged, tables } = await mod.acknowledgeLeafOrphanStragglers();
+    // 3 fingerprints + 1 table ref (SecurityEvent), all new.
+    expect(acknowledged).toBe(4);
+    expect(tables).toEqual(["SecurityEvent"]);
+
+    const ledger = JSON.parse(fs.readFileSync(ackLedgerPath(root), "utf-8"));
+    expect(ledger.entries.map((e: { ref: string }) => e.ref).sort()).toEqual([
+      "cmuS1",
+      "cmuS2",
+      "cmuS3",
+      "table:SecurityEvent",
+    ]);
+
+    // The projection flips warn → ok.
+    const summary = await mod.summarizeLeafOrphans(await mod.readRawLeafOrphanReport());
+    expect(summary).toMatchObject({ state: "ok", total: 0, unacknowledgedSamples: 0 });
+  });
+
+  it("is idempotent for the named rows, then retires the straggler table once", async () => {
+    seedWatermark({ Session: { count: 2, samples: ["cmuS1 [userId=cmuU1]"] } });
+    await mod.acknowledgeLeafOrphanRefs(["cmuS1 [userId=cmuU1]"]);
+
+    // The sample is acked; the table is now a straggler (count 1, no names).
+    const first = await mod.acknowledgeLeafOrphanStragglers();
+    expect(first).toEqual({ acknowledged: 1, tables: ["Session"] });
+
+    // A new load generation shifts the count — the retirement is
+    // generation-crossing BY DESIGN (the ledger keeps it until
+    // `--unack table:Session`), so the second run is a no-op and the
+    // projection stays clean.
+    seedWatermark({ Session: { count: 9, samples: [] } });
+    const second = await mod.acknowledgeLeafOrphanStragglers();
+    expect(second).toEqual({ acknowledged: 0, tables: [] });
+    const summary = await mod.summarizeLeafOrphans(await mod.readRawLeafOrphanReport());
+    expect(summary.state).toBe("ok");
+
+    // Pinned consequence: even NEW named samples on that table stay retired —
+    // the operator retired the table, and only --unack brings it back.
+    seedWatermark({ Session: { count: 10, samples: ["cmuS9 [userId=cmuU9]"] } });
+    const afterNewLoad = await mod.summarizeLeafOrphans(await mod.readRawLeafOrphanReport());
+    expect(afterNewLoad.state).toBe("ok");
+  });
+
+  it("still acks the named rows when the report is entirely clean", async () => {
+    seedWatermark({ Session: { count: 1, samples: ["cmuS1 [userId=cmuU1]"] } });
+    const { acknowledged, tables } = await mod.acknowledgeLeafOrphanStragglers();
+    expect(acknowledged).toBe(1);
+    expect(tables).toEqual([]);
+  });
+
+  it("writes nothing when there is no report at all", async () => {
+    const result = await mod.acknowledgeLeafOrphanStragglers();
+    expect(result).toEqual({ acknowledged: 0, tables: [] });
+    expect(fs.existsSync(ackLedgerPath(root))).toBe(false);
+  });
+});
+
 describe("summarizeLeafOrphans", () => {
   it("projects bad → warn → ok through the acknowledged ledger", async () => {
     seedWatermark({

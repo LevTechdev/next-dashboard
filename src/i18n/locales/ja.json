@@ -4822,6 +4822,10 @@
     "leafOrphansTestMisconfigured": "テストダイジェストはキューに入りましたが、メール設定が実際のアドレスに配信できません — メール健全性パネルを確認してください。",
     "leafOrphansTestClean": "ミラーは完全です — プレビューするものがありません。",
     "leafOrphansTestFailed": "テストダイジェストをキューに入れられませんでした — メール健全性パネルを確認してください。",
+    "leafOrphansStragglerRetire": "残りを退避",
+    "leafOrphansStragglerHint": "対象行のないカウントです — 次の同期がレポートを再導出するまで、整理済みの残りを退避させます。",
+    "leafOrphansStragglerDone": "{count, plural, other {# 件のレジャーエントリを退避しました — 更新するとカウントがクリアされます。}}",
+    "leafOrphansStragglerFailed": "退避を書き込めませんでした — レジャーは変更されていません。",
     "leafOrphansRunNow": "同期を実行",
     "leafOrphansRefresh": "更新",
     "leafOrphansLoading": "オーファンレポートを読み込み中…",
@@ -4848,6 +4852,7 @@
     "mailHealthResendFailed": "{to} への再送に失敗 — 下のエラーを確認してください。",
     "mailHealthResendNone": "再送する失敗メールはありません。",
     "mailHealthAttempts": "{attempts}/{max} 回試行",
+    "mailHealthAutoRefreshing": "2分ごとに自動更新",
     "loadFailed": "ユーザーの読み込みに失敗しました",
     "loadFailedStatus": "ユーザーの読み込みに失敗しました ({status})"
   }

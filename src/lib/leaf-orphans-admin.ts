@@ -55,9 +55,7 @@ export async function readRawLeafOrphanReport(): Promise<OrphanReport | undefine
   } catch {
     return undefined;
   }
-}
-
-/**
+} /**
  * Acknowledge refs so they retire from every projected view of the report.
  * Refs may be full sample fingerprints (`cmu… [userId=cmu…]`) or bare row ids —
  * the ledger stores the normalized subject either way, which acks every
@@ -81,6 +79,59 @@ export async function acknowledgeLeafOrphanRefs(refs: readonly string[]): Promis
   ]);
   writeAckLedger(process.cwd(), merged);
   return merged.length - known.size;
+}
+
+/**
+ * Retire the warn state's stragglers from the panel.
+ *
+ * A warn report has counts with no named rows left — the samples were drawn
+ * from an earlier load generation and have all been acknowledged, or the sync
+ * script never sampled the table at all. The refs to retire them live ONLY in
+ * the raw report, which the client never sees, so this helper acks, in ONE
+ * ledger write: every sample fingerprint still named (idempotent — the ledger
+ * dedupes, so this is a no-op when the samples were already acked) plus the
+ * `table:<name>` straggler refs the shared projection derives from the
+ * CURRENT projected view (raw − ledger) — a table only becomes a straggler
+ * once nothing it names survives. With nothing to acknowledge it writes
+ * nothing: an empty ledger file must not exist.
+ *
+ * Deliberately NOT a blind `ack-*`: acknowledging a named row is a per-row
+ * review decision. This retires only what the projection ITSELF classifies as
+ * reconciled — it can never name a row the report still names.
+ */
+export async function acknowledgeLeafOrphanStragglers(): Promise<{
+  acknowledged: number;
+  tables: string[];
+}> {
+  const { applyAckLedger, normalizeAckEntries, readAckLedger, stragglerAckRefs, writeAckLedger } =
+    await import("../../scripts/lib/leaf-orphans.mjs");
+
+  const raw = (await readRawLeafOrphanReport()) ?? {};
+  const named = Object.values(raw).flatMap((e) => e.samples ?? []);
+
+  const ledger = readAckLedger(process.cwd());
+  // Stragglers are a property of the PROJECTION (raw − ledger): a table only
+  // stops naming rows once its samples are acknowledged, and this run's
+  // fingerprint acks are part of that judgment.
+  const projected = applyAckLedger(raw, ledger.entries);
+  const stragglers = stragglerAckRefs(projected);
+
+  if (named.length === 0 && stragglers.length === 0) {
+    // Nothing to acknowledge — never create an empty ledger file.
+    return { acknowledged: 0, tables: [] };
+  }
+
+  const known = new Set(ledger.entries.map((e) => e.ref));
+  const at = new Date().toISOString();
+  const merged = normalizeAckEntries([
+    ...ledger.entries,
+    ...named.map((ref) => ({ ref, at, note: "acknowledged from the admin panel" })),
+    ...stragglers.map((ref) => ({ ref, at, note: "straggler retirement from the admin panel" })),
+  ]);
+  writeAckLedger(process.cwd(), merged);
+
+  const tables = stragglers.map((r) => r.slice("table:".length));
+  return { acknowledged: merged.length - known.size, tables };
 }
 
 /**
