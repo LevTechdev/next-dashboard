@@ -17,12 +17,22 @@ const mockRequireAuth = vi.fn();
 const mockReadReport = vi.fn();
 const mockFindUser = vi.fn();
 const mockAckRefs = vi.fn();
+const mockSendTestDigest = vi.fn();
 
 vi.mock("@/lib/api-guard", () => ({
   requireAuth: mockRequireAuth,
 }));
 vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: mockFindUser } },
+}));
+vi.mock("@/lib/email", () => ({
+  // Route test never renders a transport; only misconfiguration surfacing
+  // (mailMisconfigured) flows through this seam.
+  describeMailConfiguration: () => ({ transport: "smtp", from: "ops@test", warnings: [] }),
+}));
+vi.mock("@/lib/leaf-orphans-digest", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  sendTestLeafOrphansDigest: (...args: unknown[]) => mockSendTestDigest(...args),
 }));
 vi.mock("@/lib/scheduler", () => ({
   readLeafOrphanReport: mockReadReport,
@@ -187,5 +197,103 @@ describe("POST /api/admin/leaf-orphans (ack)", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(runSchedulerJob).toHaveBeenCalledWith("supabase-leaf-sync");
+  });
+});
+
+describe("POST /api/admin/leaf-orphans (test-digest)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const testReq = () =>
+    new Request("http://localhost/api/admin/leaf-orphans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "test-digest" }),
+    });
+
+  it("refuses non-admin users", async () => {
+    authed("USER");
+    const res = await route.POST(testReq());
+    expect(res.status).toBe(403);
+    expect(mockSendTestDigest).not.toHaveBeenCalled();
+  });
+
+  it("queues exactly one digest to the requesting admin and reports mailQueued", async () => {
+    authed("ADMIN");
+    mockSendTestDigest.mockResolvedValue({
+      ok: true,
+      mailQueued: 1,
+      mailMisconfigured: false,
+      namedRows: 19,
+    });
+
+    const res = await route.POST(testReq());
+    const body = await res.json();
+    expect(body).toEqual({ ok: true, emailQueued: 1, mailMisconfigured: false });
+    // Recipients are narrowed to the session admin — a smoke test never
+    // mails the whole admin roster.
+    expect(mockSendTestDigest).toHaveBeenCalledWith({
+      recipients: [{ id: "admin-1", email: "a@test.com" }],
+    });
+  });
+
+  it("falls back to the DB row when the session carries no email", async () => {
+    authed("ADMIN");
+    mockRequireAuth.mockResolvedValue({
+      session: { user: { id: "admin-1", role: "ADMIN" } },
+      response: null,
+    });
+    mockFindUser
+      .mockResolvedValueOnce({ role: "ADMIN" }) // the gate check
+      .mockResolvedValueOnce({ email: "db@test.com" }); // the recipient fallback
+    mockSendTestDigest.mockResolvedValue({
+      ok: true,
+      mailQueued: 1,
+      mailMisconfigured: false,
+      namedRows: 19,
+    });
+
+    await route.POST(testReq());
+    expect(mockSendTestDigest).toHaveBeenCalledWith({
+      recipients: [{ id: "admin-1", email: "db@test.com" }],
+    });
+  });
+
+  it("turns a clean-report refusal into a localized 400 with the machine code", async () => {
+    authed("ADMIN");
+    mockSendTestDigest.mockResolvedValue({
+      ok: false,
+      mailQueued: 0,
+      mailMisconfigured: false,
+      namedRows: 0,
+      code: "clean",
+      reason: "the mirror is complete — nothing to preview",
+    });
+
+    const res = await route.POST(testReq());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toEqual({
+      ok: false,
+      code: "clean",
+      reason: "the mirror is complete — nothing to preview",
+      mailMisconfigured: false,
+    });
+  });
+
+  it("surfaces mailMisconfigured so the UI warns instead of promising an inbox message", async () => {
+    authed("ADMIN");
+    mockSendTestDigest.mockResolvedValue({
+      ok: true,
+      mailQueued: 1,
+      mailMisconfigured: true,
+      namedRows: 3,
+    });
+
+    const res = await route.POST(testReq());
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.mailMisconfigured).toBe(true);
   });
 });

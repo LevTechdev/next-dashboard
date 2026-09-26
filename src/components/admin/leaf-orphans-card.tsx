@@ -23,7 +23,13 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitBranchIcon, RefreshCwIcon, CircleCheckIcon, CircleAlertIcon } from "lucide-react";
+import {
+  GitBranchIcon,
+  RefreshCwIcon,
+  CircleCheckIcon,
+  CircleAlertIcon,
+  MailIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -61,6 +67,7 @@ export function LeafOrphansCard() {
   const [report, setReport] = useState<LeafOrphans | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [confirmingAck, setConfirmingAck] = useState(false);
   const [acking, setAcking] = useState(false);
 
@@ -106,6 +113,47 @@ export function LeafOrphansCard() {
       setAcking(false);
     }
   }, [report, t, fetchReport]);
+
+  /**
+   * Pipeline smoke test: queues ONE digest email to this admin through the
+   * durable outbox without touching the daily dedupe marker. Fires for the
+   * quieter warn verdict too — the report's counts are real content to
+   * eyeball, and a pipeline that only proves itself during an incident is a
+   * pipeline nobody trusts.
+   */
+  const sendTest = useCallback(async () => {
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-digest" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        emailQueued?: number;
+        code?: string;
+        reason?: string;
+        mailMisconfigured?: boolean;
+      };
+      if (data.mailMisconfigured) {
+        toast.warning(t("leafOrphansTestMisconfigured"));
+        return;
+      }
+      if (!res.ok || data.ok !== true) {
+        throw new Error(
+          data.code === "clean"
+            ? t("leafOrphansTestClean")
+            : (data.reason ?? t("leafOrphansTestFailed")),
+        );
+      }
+      toast.success(t("leafOrphansTestQueued", { count: data.emailQueued ?? 1 }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansTestFailed"));
+    } finally {
+      setSendingTest(false);
+    }
+  }, [t]);
 
   const runNow = useCallback(async () => {
     setRunning(true);
@@ -198,6 +246,18 @@ export function LeafOrphansCard() {
                   {t("leafOrphansAckAll")}
                 </Button>
               ))}
+            {report && report.state !== "ok" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={sendTest}
+                disabled={sendingTest}
+                data-testid="leaf-orphans-test-digest"
+              >
+                <MailIcon size={14} className={cn(sendingTest && "animate-pulse")} />
+                {t("leafOrphansTestDigest")}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

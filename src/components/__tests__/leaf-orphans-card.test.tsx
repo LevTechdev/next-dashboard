@@ -22,8 +22,15 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => 
       failNextPost = false;
       return Response.json({ ok: false, error: "ledger read-only" }, { status: 200 });
     }
+    // test-digest returns the queued count; the ack/sync actions just ok.
+    const body = JSON.parse(String(init?.body ?? "{}")) as { action?: string };
+    if (body.action === "test-digest") {
+      return Response.json({ ok: true, emailQueued: 1, mailMisconfigured: false });
+    }
     return Response.json({ ok: true }, { status: 200 });
   }
+  // After a POST the refetch must see the CURRENT report — serve the most
+  // recently stubbed payload instead of freezing the first one.
   return Response.json((mockPayload as object) ?? { error: "no payload stubbed" }, { status: 200 });
 });
 
@@ -170,5 +177,42 @@ describe("LeafOrphansCard", () => {
       expect(screen.getByTestId("leaf-orphans-ack-cancel")).toBeInTheDocument();
     });
     expect(screen.getByTestId("leaf-orphans-ack-confirm")).toBeInTheDocument();
+  });
+
+  it("send test digest POSTs the test-digest action through the outbox route", async () => {
+    stubReport(NAMED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-test-digest")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByTestId("leaf-orphans-test-digest"));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(([, init]) => {
+        if (init?.method !== "POST") return false;
+        const body = JSON.parse(String(init?.body ?? "{}")) as { action?: string };
+        return body.action === "test-digest";
+      });
+      expect(post).toBeDefined();
+    });
+  });
+
+  it("hides the test-digest button when the report is clean", async () => {
+    stubReport(CLEAN);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-badge")).toHaveTextContent("Clean");
+    });
+    expect(screen.queryByTestId("leaf-orphans-test-digest")).not.toBeInTheDocument();
+  });
+
+  it("keeps the test-digest button available in the warn state (a preview, not an alarm)", async () => {
+    stubReport(ALL_ACKED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-badge")).toHaveTextContent("Acknowledged");
+    });
+    expect(screen.getByTestId("leaf-orphans-test-digest")).toBeInTheDocument();
   });
 });

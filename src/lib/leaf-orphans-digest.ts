@@ -7,6 +7,7 @@ import {
   summarizeLeafOrphans,
   type OrphanEntry,
 } from "@/lib/leaf-orphans-admin";
+import { describeMailConfiguration } from "@/lib/email";
 
 /**
  * Scheduled ops digest for the leaf-sync orphan report.
@@ -32,6 +33,19 @@ export interface LeafOrphansDigestResult {
   namedRows: number;
   /** True when the verdict was not "Needs reconciliation" and nothing was sent. */
   skipped?: boolean;
+  reason?: string;
+}
+
+/** Outcome of an operator-requested test digest (see sendTestLeafOrphansDigest). */
+export interface TestLeafOrphansDigestResult {
+  ok: boolean;
+  /** Emails durably queued (0 only when the report is clean). */
+  mailQueued: number;
+  /** Non-empty when the mail configuration cannot deliver to real addresses. */
+  mailMisconfigured: boolean;
+  namedRows: number;
+  /** Machine-readable why-not, so callers can localize the refusal. */
+  code?: "clean" | "no-recipient";
   reason?: string;
 }
 
@@ -149,4 +163,81 @@ export async function runLeafOrphansDigest(
   }
 
   return { queued: recipients.length, namedRows: summary.unacknowledgedSamples };
+}
+
+/**
+ * Operator-requested test digest — the "does this pipeline reach my inbox?"
+ * button, not an alarm.
+ *
+ * Renders the SAME report, template, and recipients logic as the scheduled
+ * job and queues through the same durable outbox, but two deliberate
+ * differences: it ignores the per-day marker (a test is not a send), and it
+ * fires for the quieter `warn` verdict too — the report's counts are still
+ * real content to eyeball, and a pipeline that only proves itself during an
+ * incident is a pipeline nobody trusts. The `ok` verdict has nothing to show,
+ * so it stays silent. Default recipients are the active admins; the test
+ * route narrows them to the requesting admin so a smoke test never mails the
+ * whole team.
+ */
+export async function sendTestLeafOrphansDigest(
+  opts: {
+    now?: Date;
+    recipients?: Array<{ id?: string | null; email: string; tenantId?: string | null }>;
+  } = {},
+): Promise<TestLeafOrphansDigestResult> {
+  const summary = await summarizeLeafOrphans(await readRawLeafOrphanReport());
+  const mailMisconfigured = describeMailConfiguration().warnings.length > 0;
+
+  if (summary.state === "ok") {
+    return {
+      ok: false,
+      mailQueued: 0,
+      mailMisconfigured,
+      namedRows: 0,
+      code: "clean",
+      reason: "the mirror is complete — nothing to preview",
+    };
+  }
+
+  let recipients = opts.recipients;
+  if (!recipients) {
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN", isActive: true },
+      select: { id: true, email: true, tenantId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    recipients = admins.filter((a): a is typeof a & { email: string } => !!a.email);
+  }
+  if (recipients.length === 0) {
+    return {
+      ok: false,
+      mailQueued: 0,
+      mailMisconfigured,
+      namedRows: summary.unacknowledgedSamples,
+      code: "no-recipient",
+      reason: "no recipient with an email address",
+    };
+  }
+
+  const tables = digestTableLines(summary.tables);
+  const samples = digestSamples(summary.tables);
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+  const dashboardUrl = appUrl ? `${appUrl}/admin` : undefined;
+
+  for (const admin of recipients) {
+    await enqueueEmail({
+      to: admin.email,
+      template: "leaf_orphans_digest",
+      params: { total: summary.total, tables, samples, ...(dashboardUrl ? { dashboardUrl } : {}) },
+      userId: admin.id ?? undefined,
+      tenantId: admin.tenantId ?? undefined,
+    });
+  }
+
+  return {
+    ok: true,
+    mailQueued: recipients.length,
+    mailMisconfigured,
+    namedRows: summary.unacknowledgedSamples,
+  };
 }
