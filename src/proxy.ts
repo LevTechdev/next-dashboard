@@ -25,7 +25,7 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 // Public marketing routes — derived from MARKETING_PATHS (site-config.ts), the
-// same list that feeds the sitemap, so middleware and sitemap can never drift
+// same list that feeds the sitemap, so the proxy and sitemap can never drift
 // apart when a page is added or removed.
 const publicRoutes = [
   "/",
@@ -77,7 +77,7 @@ function isPublicRoute(pathname: string): boolean {
 /**
  * Role-prefixed navigation scopes — /en/admin/dashboard, /id/staff/orders.
  *
- * The prefix is presentation, not authorization: middleware rewrites it away
+ * The prefix is presentation, not authorization: the proxy rewrites it away
  * so the request is served by the canonical (dashboard) route tree, while the
  * browser URL keeps the role prefix. A `?scope=` token (HMAC-signed, 10-min
  * TTL) may pin the scope for shareable/bookmarked links — it rides through
@@ -145,7 +145,7 @@ async function handleRolePrefixedPath(req: NextRequest, pathname: string) {
   }
 }
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // API requests: enforce CSRF on unsafe methods with two layers —
