@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockRequireAuth = vi.fn();
 const mockReadReport = vi.fn();
 const mockFindUser = vi.fn();
+const mockAckRefs = vi.fn();
 
 vi.mock("@/lib/api-guard", () => ({
   requireAuth: mockRequireAuth,
@@ -28,6 +29,19 @@ vi.mock("@/lib/scheduler", () => ({
   leafSyncScriptPath: () => "scripts/sync-supabase-leaves.mjs",
   runSchedulerJob: vi.fn(),
   recordExternalJobRun: vi.fn(),
+}));
+vi.mock("@/lib/leaf-orphans-admin", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  // GET now projects through the shared lib; feed it the same stub the old
+  // readLeafOrphanReport seam used, so the aggregation stays under test.
+  readRawLeafOrphanReport: mockReadReport,
+  acknowledgeLeafOrphanRefs: mockAckRefs,
+}));
+// The projection's ledger read must be hermetic: the real file is gitignored
+// local operator state whose entries would silently change the verdict.
+vi.mock("../../../../scripts/lib/leaf-orphans.mjs", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  readAckLedger: () => ({ entries: [] }),
 }));
 vi.mock("@/lib/run-cli", () => ({
   runCli: vi.fn(),
@@ -109,5 +123,69 @@ describe("GET /api/admin/leaf-orphans", () => {
     expect(body.state).toBe("bad");
     expect(body.total).toBe(5);
     expect(Object.keys(body.tables)).toEqual(["SecurityEvent"]);
+  });
+});
+
+describe("POST /api/admin/leaf-orphans (ack)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const ackReq = (body: unknown) =>
+    new Request("http://localhost/api/admin/leaf-orphans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  it("refuses non-admin users before touching the ledger", async () => {
+    authed("USER");
+    const res = await route.POST(ackReq({ action: "ack", refs: ["cmuS1"] }));
+    expect(res.status).toBe(403);
+    expect(mockAckRefs).not.toHaveBeenCalled();
+  });
+
+  it("rejects an ack with no refs", async () => {
+    authed("ADMIN");
+    for (const body of [
+      { action: "ack" },
+      { action: "ack", refs: [] },
+      { action: "ack", refs: ["   "] },
+    ]) {
+      const res = await route.POST(ackReq(body));
+      expect(res.status).toBe(400);
+    }
+    expect(mockAckRefs).not.toHaveBeenCalled();
+  });
+
+  it("writes the refs to the shared ledger and echoes the fresh projection", async () => {
+    authed("ADMIN");
+    mockAckRefs.mockResolvedValue(2);
+    // After the ack, the projection shows the remaining unnamed count only.
+    mockReadReport.mockResolvedValue({
+      Session: { count: 3, samples: ["cmuS1 [userId=cmuU1]"] },
+    });
+
+    const res = await route.POST(
+      ackReq({ action: "ack", refs: ["cmuS1 [userId=cmuU1]", "cmuE1 [tenantId=cmuT1]"] }),
+    );
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true, acknowledged: 2, summary: { state: "bad", total: 3 } });
+    expect(mockAckRefs).toHaveBeenCalledWith(["cmuS1 [userId=cmuU1]", "cmuE1 [tenantId=cmuT1]"]);
+  });
+
+  it("keeps the run-now action working when no body is sent", async () => {
+    authed("ADMIN");
+    const { runCli } = await import("@/lib/run-cli");
+    vi.mocked(runCli).mockResolvedValue({ stdout: "sync ok", stderr: "" });
+    const { runSchedulerJob } = await import("@/lib/scheduler");
+    vi.mocked(runSchedulerJob).mockResolvedValue({ orphanReport: {} });
+
+    const res = await route.POST(
+      new Request("http://localhost/api/admin/leaf-orphans", { method: "POST" }),
+    );
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(runSchedulerJob).toHaveBeenCalledWith("supabase-leaf-sync");
   });
 });

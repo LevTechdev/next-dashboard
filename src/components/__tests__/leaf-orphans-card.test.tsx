@@ -14,14 +14,18 @@ import { LeafOrphansCard } from "@/components/admin/leaf-orphans-card";
  *   3. "Run sync" POSTs the guarded trigger and refetches.
  */
 let mockPayload: unknown;
-const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
-  Response.json(
-    init?.method === "POST"
-      ? { ok: true }
-      : ((mockPayload as object) ?? { error: "no payload stubbed" }),
-    { status: 200 },
-  ),
-);
+/** One-shot failure injection for the next POST (ack error path). */
+let failNextPost = false;
+const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  if (init?.method === "POST") {
+    if (failNextPost) {
+      failNextPost = false;
+      return Response.json({ ok: false, error: "ledger read-only" }, { status: 200 });
+    }
+    return Response.json({ ok: true }, { status: 200 });
+  }
+  return Response.json((mockPayload as object) ?? { error: "no payload stubbed" }, { status: 200 });
+});
 
 function stubReport(payload: unknown) {
   mockPayload = payload;
@@ -113,5 +117,58 @@ describe("LeafOrphansCard", () => {
     });
     // A refetch followed the successful trigger.
     expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("hides the acknowledge control when nothing is named anymore", async () => {
+    stubReport(ALL_ACKED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-badge")).toHaveTextContent("Acknowledged");
+    });
+    expect(screen.queryByTestId("leaf-orphans-ack")).not.toBeInTheDocument();
+  });
+
+  it("acknowledges all named refs through the ack action and refetches", async () => {
+    stubReport(NAMED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-badge")).toHaveTextContent("Needs reconciliation");
+    });
+
+    // Two-step confirm: the first click only arms the action.
+    await userEvent.click(screen.getByTestId("leaf-orphans-ack"));
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+
+    await userEvent.click(screen.getByTestId("leaf-orphans-ack-confirm"));
+
+    await waitFor(() => {
+      const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST");
+      expect(posts).toHaveLength(1);
+      const body = JSON.parse(String(posts[0][1]?.body));
+      expect(body.action).toBe("ack");
+      // Exactly what the report named — the sampled fingerprints, nothing else.
+      expect(body.refs).toEqual(["cmuS1 [userId=cmuU1]", "cmuE1 [tenantId=cmuT1]"]);
+    });
+    // A refetch followed the acknowledgement.
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("surfaces an ack failure as an error instead of a success toast", async () => {
+    stubReport(NAMED);
+    render(<LeafOrphansCard />);
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-ack")).toBeInTheDocument();
+    });
+
+    failNextPost = true;
+    await userEvent.click(screen.getByTestId("leaf-orphans-ack"));
+    await userEvent.click(screen.getByTestId("leaf-orphans-ack-confirm"));
+
+    // The confirm step stays armed: a failed acknowledgement never pretends
+    // to have succeeded (no success toast, no dismiss, no silent reset).
+    await waitFor(() => {
+      expect(screen.getByTestId("leaf-orphans-ack-cancel")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("leaf-orphans-ack-confirm")).toBeInTheDocument();
   });
 });

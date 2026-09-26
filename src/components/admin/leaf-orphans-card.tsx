@@ -11,8 +11,10 @@
  *
  * Acknowledge-only by design: the refs name SecurityEvent/Session rows whose
  * FKs are part of the audit-hash canonical payload — they are never rewritten,
- * only retired from the report. The card is read-only on the ledger; the CLI
- * owns reconciliation.
+ * only retired from the report. "Acknowledge all" retires exactly the sampled
+ * refs listed below (the only rows the report names) through the same shared
+ * ledger the CLI writes; counts without samples have no name to retire and
+ * stay visible until a sync re-derives them.
  */
 "use client";
 
@@ -59,6 +61,8 @@ export function LeafOrphansCard() {
   const [report, setReport] = useState<LeafOrphans | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [confirmingAck, setConfirmingAck] = useState(false);
+  const [acking, setAcking] = useState(false);
 
   const fetchReport = useCallback(async () => {
     try {
@@ -73,6 +77,35 @@ export function LeafOrphansCard() {
       setError(e instanceof Error ? e.message : t("leafOrphansLoadFailed"));
     }
   }, [t]);
+
+  const ackAll = useCallback(async () => {
+    setAcking(true);
+    try {
+      // Ack exactly what the report NAMES — the sampled fingerprints. Counts
+      // without samples are not rows anyone can identify, so they stay.
+      const refs = Object.values(report?.tables ?? {}).flatMap((e) => e.samples ?? []);
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ack", refs }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        acknowledged?: number;
+        error?: string;
+      };
+      if (!res.ok || data.ok !== true) {
+        throw new Error(data.error || t("leafOrphansAckFailed"));
+      }
+      toast.success(t("leafOrphansAckDone", { count: data.acknowledged ?? 0 }));
+      setConfirmingAck(false);
+      await fetchReport();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansAckFailed"));
+    } finally {
+      setAcking(false);
+    }
+  }, [report, t, fetchReport]);
 
   const runNow = useCallback(async () => {
     setRunning(true);
@@ -131,6 +164,40 @@ export function LeafOrphansCard() {
             <CardDescription>{t("leafOrphansDesc")}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {report &&
+              report.unacknowledgedSamples > 0 &&
+              (confirmingAck ? (
+                <>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={ackAll}
+                    disabled={acking}
+                    data-testid="leaf-orphans-ack-confirm"
+                  >
+                    {t("leafOrphansAckConfirm")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmingAck(false)}
+                    disabled={acking}
+                    data-testid="leaf-orphans-ack-cancel"
+                  >
+                    {t("leafOrphansAckCancel")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingAck(true)}
+                  data-testid="leaf-orphans-ack"
+                >
+                  <CircleCheckIcon size={14} />
+                  {t("leafOrphansAckAll")}
+                </Button>
+              ))}
             <Button
               variant="outline"
               size="sm"
