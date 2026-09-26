@@ -12,6 +12,10 @@
  *    killed mid-flight or failed transiently (1 min backoff base).
  *  - "recovery-drift": daily capture of every account's recovery-readiness
  *    verdict; alerts the owner the day it drops a rung.
+ *  - "leaf-orphans-digest": daily ops digest (02:00) — mails every active
+ *    admin through the durable outbox while the leaf-sync orphan report
+ *    still NAMES rows nobody has acknowledged ("Needs reconciliation");
+ *    deduped per UTC day via data/leaf-orphans-digest-sent.json.
  *
  * Jobs are skipped in development unless SCHEDULER_ENABLED=1 so `npm run dev`
  * doesn't email anyone or move money; set the env to exercise them locally.
@@ -50,6 +54,7 @@ const lastSweepRun: { day: string | null } = { day: null };
 const lastReportsRun: { day: string | null } = { day: null };
 const lastDriftRun: { day: string | null } = { day: null };
 const lastFxRun: { day: string | null } = { day: null };
+const lastOrphanDigestRun: { day: string | null } = { day: null };
 
 /** Last execution per job — surfaced by GET /api/scheduler/status. */
 export interface JobRunInfo {
@@ -101,6 +106,7 @@ export type SchedulerJobName =
   | "backup-verify"
   | "recovery-drift"
   | "fx-snapshot"
+  | "leaf-orphans-digest"
   | "email-outbox";
 
 /**
@@ -140,6 +146,7 @@ export function schedulerStatus(): {
       "backup-verify": runs["backup-verify"] ?? null,
       "recovery-drift": runs["recovery-drift"] ?? null,
       "fx-snapshot": runs["fx-snapshot"] ?? null,
+      "leaf-orphans-digest": runs["leaf-orphans-digest"] ?? null,
       "email-outbox": runs["email-outbox"] ?? null,
     },
   };
@@ -209,6 +216,10 @@ async function runJobInner(name: SchedulerJobName): Promise<unknown> {
       const { captureFxSnapshot } = await import("@/lib/fx-history");
       const result = await captureFxSnapshot();
       return { job: name, ...result };
+    }
+    case "leaf-orphans-digest": {
+      const { runLeafOrphansDigest } = await import("@/lib/leaf-orphans-digest");
+      return { job: name, ...(await runLeafOrphansDigest()) };
     }
     case "email-outbox": {
       // Mail that a killed request left behind: the row is durable, so the
@@ -368,6 +379,15 @@ export async function startScheduler(): Promise<void> {
         console.log("[scheduler] fx-snapshot", await runJob("fx-snapshot"));
       }
 
+      // Daily leaf-orphans ops digest at the same staffed hour as the quota
+      // digest: mails admins only while the report names rows nobody has
+      // acknowledged (the job itself dedupes per UTC day, so a restart within
+      // the day cannot double-mail).
+      if (now.getHours() === DIGEST_HOUR && lastOrphanDigestRun.day !== today) {
+        lastOrphanDigestRun.day = today;
+        console.log("[scheduler] leaf-orphans-digest", await runJob("leaf-orphans-digest"));
+      }
+
       // Hourly auto-payout evaluation (monthly-idempotent inside the job).
       if (now.getTime() % PAYOUT_CHECK_MS < TICK_MS) {
         console.log("[scheduler] auto-payout", await runJob("auto-payout"));
@@ -417,7 +437,7 @@ export async function startScheduler(): Promise<void> {
   timer.current.unref?.();
 
   console.log(
-    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, email-outbox=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00, fx-snapshot=03:00)",
+    "[scheduler] started (tick=5m, digest=02:00, payouts=hourly, webhook-retry=every tick, email-outbox=every tick, supabase-sync=03:30, leaf-sync=30m, recovery-drift=03:00, fx-snapshot=03:00, leaf-orphans-digest=02:00)",
   );
 }
 
