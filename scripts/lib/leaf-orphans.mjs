@@ -61,6 +61,32 @@ export function sampleRef(sample) {
   return bracket === -1 ? s : s.slice(0, bracket);
 }
 
+/**
+ * The table-scoped refs that retire a straggler: a table whose count is still
+ * positive but which names NO unacknowledged sample (every sample was
+ * acknowledged, or the sync script never sampled this table). Widening the
+ * acked fingerprints to their whole-table subject retires the generation the
+ * samples were drawn from.
+ *
+ * The `table:<name>` shape can never collide with a row subject (cuid), so
+ * these entries sit in the SAME ledger as fingerprint acks without ever
+ * being swallowed by a row-scoped consumer — and `--unack table:<name>` on
+ * the CLI restores the remainder, the same trivially-correct way.
+ *
+ * @param {OrphanReport | Record<string, unknown> | null | undefined} orphanReport
+ * @returns {string[]}
+ */
+export function stragglerAckRefs(orphanReport) {
+  const out = [];
+  for (const [table, entry] of Object.entries(orphanReport ?? {})) {
+    const e = entry && typeof entry === "object" ? entry : {};
+    const samples = Array.isArray(e.samples) ? e.samples : [];
+    const count = typeof e.count === "number" ? e.count : 0;
+    if (count > 0 && samples.length === 0) out.push(`table:${table}`);
+  }
+  return out;
+}
+
 /** Whether a sample fingerprint is covered by the acknowledged refs.
  *
  * @param {string} sample
@@ -89,9 +115,12 @@ export function applyAckLedger(orphanReport, ackRefs) {
   const acks = (ackRefs ?? [])
     .map((r) => sampleRef(typeof r === "string" ? r : r?.ref))
     .filter(Boolean);
+  const retiredTables = new Set(acks.filter((a) => a.startsWith("table:")));
   const result = {};
   for (const [table, entry] of Object.entries(orphanReport ?? {})) {
     if (!entry || typeof entry !== "object") continue;
+    // A table-scoped ack retires the table's whole remaining entry.
+    if (retiredTables.has(`table:${table}`)) continue;
     const samples = Array.isArray(entry.samples) ? entry.samples : [];
     const kept = samples.filter((s) => !isRefAcknowledged(s, acks));
     const acknowledged = samples.length - kept.length;

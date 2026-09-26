@@ -24,6 +24,7 @@ also be triggered manually through admin API routes or a small script.
 | `webhook-retry` | Every 5-minute tick (due sweep)      | `src/lib/webhook-retry.ts`          | Re-dispatches RETRYING DLQ entries; promotes to terminal FAILED after 5 attempts                                           |
 | `email-outbox`  | Every 5-minute tick (due sweep)      | `src/lib/email-outbox.ts`           | Delivers queued mail whose send failed or was killed mid-flight (a slow SMTP handshake must never lose a signup code); retries transient failures with backoff, records permanent ones once |
 | `auto-reorder`  | Hourly (with auto-payout)            | `src/lib/inventory-auto-reorder.ts` | Drafts DRAFT purchase orders for active products at/below their velocity-based reorder point (cooldown 7 days per product) |
+| `leaf-orphans-digest` | Daily at 02:00 UTC             | `src/lib/leaf-orphans-digest.ts`    | Queues one digest per active admin through the durable outbox while the leaf-sync orphan report still NAMES unacknowledged rows ("Needs reconciliation"); deduped per UTC day via `data/leaf-orphans-digest-sent.json` |
 
 ## Configuration
 
@@ -97,6 +98,20 @@ await runSchedulerJob("webhook-retry"); // { processed, retried, promoted }
   rendered by Settings → Scheduler health (`GET /api/scheduler/status`).
 - Backoff: 5 min base, doubles per attempt, capped at 30 min; `MAX_ATTEMPTS`
   is 5, after which the entry is terminal until a human replays or discards.
+
+### The orphan digest pipeline (one-shot, local only)
+
+```bash
+npm run fire:orphan-digest
+```
+
+Force-runs the scheduled `leaf-orphans-digest` job (its real gate reports
+`skipped` unless the verdict is "Needs reconciliation"), drains the durable
+outbox so queued rows attempt a real transport send, sends the operator TEST
+digest to the seed admin (same template, ignores the per-day marker, fires
+for the quieter warn verdict too), and resets the per-day marker so the
+scheduled 02:00 run stays armed. Needs real SMTP credentials and sends real
+mail — never a CI step, never in production.
 
 ## Verifying
 

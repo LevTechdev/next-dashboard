@@ -11,8 +11,10 @@
  *
  * Acknowledge-only by design: the refs name SecurityEvent/Session rows whose
  * FKs are part of the audit-hash canonical payload — they are never rewritten,
- * only retired from the report. The card is read-only on the ledger; the CLI
- * owns reconciliation.
+ * only retired from the report. "Acknowledge all" retires exactly the sampled
+ * refs listed below (the only rows the report names) through the same shared
+ * ledger the CLI writes; counts without samples have no name to retire and
+ * stay visible until a sync re-derives them.
  */
 "use client";
 
@@ -21,7 +23,13 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitBranchIcon, RefreshCwIcon, CircleCheckIcon, CircleAlertIcon } from "lucide-react";
+import {
+  GitBranchIcon,
+  RefreshCwIcon,
+  CircleCheckIcon,
+  CircleAlertIcon,
+  MailIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -59,6 +67,10 @@ export function LeafOrphansCard() {
   const [report, setReport] = useState<LeafOrphans | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [retiring, setRetiring] = useState(false);
+  const [confirmingAck, setConfirmingAck] = useState(false);
+  const [acking, setAcking] = useState(false);
 
   const fetchReport = useCallback(async () => {
     try {
@@ -73,6 +85,108 @@ export function LeafOrphansCard() {
       setError(e instanceof Error ? e.message : t("leafOrphansLoadFailed"));
     }
   }, [t]);
+
+  const ackAll = useCallback(async () => {
+    setAcking(true);
+    try {
+      // Ack exactly what the report NAMES — the sampled fingerprints. Counts
+      // without samples are not rows anyone can identify, so they stay.
+      const refs = Object.values(report?.tables ?? {}).flatMap((e) => e.samples ?? []);
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ack", refs }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        acknowledged?: number;
+        error?: string;
+      };
+      if (!res.ok || data.ok !== true) {
+        throw new Error(data.error || t("leafOrphansAckFailed"));
+      }
+      toast.success(t("leafOrphansAckDone", { count: data.acknowledged ?? 0 }));
+      setConfirmingAck(false);
+      await fetchReport();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansAckFailed"));
+    } finally {
+      setAcking(false);
+    }
+  }, [report, t, fetchReport]);
+
+  /**
+   * Pipeline smoke test: queues ONE digest email to this admin through the
+   * durable outbox without touching the daily dedupe marker. Fires for the
+   * quieter warn verdict too — the report's counts are real content to
+   * eyeball, and a pipeline that only proves itself during an incident is a
+   * pipeline nobody trusts.
+   */
+  const sendTest = useCallback(async () => {
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-digest" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        emailQueued?: number;
+        code?: string;
+        reason?: string;
+        mailMisconfigured?: boolean;
+      };
+      if (data.mailMisconfigured) {
+        toast.warning(t("leafOrphansTestMisconfigured"));
+        return;
+      }
+      if (!res.ok || data.ok !== true) {
+        throw new Error(
+          data.code === "clean"
+            ? t("leafOrphansTestClean")
+            : (data.reason ?? t("leafOrphansTestFailed")),
+        );
+      }
+      toast.success(t("leafOrphansTestQueued", { count: data.emailQueued ?? 1 }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansTestFailed"));
+    } finally {
+      setSendingTest(false);
+    }
+  }, [t]);
+
+  /**
+   * Warn-state retirement: every remaining count names no row, so acking the
+   * report's current fingerprints (idempotent) plus its table-scoped
+   * straggler refs retires the whole remainder. The projection itself stays
+   * the arbiter — this can never retire a row the report still names, and a
+   * future sync re-derives everything from the raw report.
+   */
+  const retireStragglers = useCallback(async () => {
+    setRetiring(true);
+    try {
+      const res = await fetch("/api/admin/leaf-orphans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ack-stragglers" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        acknowledged?: number;
+        error?: string;
+      };
+      if (!res.ok || data.ok !== true) {
+        throw new Error(data.error || t("leafOrphansStragglerFailed"));
+      }
+      toast.success(t("leafOrphansStragglerDone", { count: data.acknowledged ?? 0 }));
+      await fetchReport();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("leafOrphansStragglerFailed"));
+    } finally {
+      setRetiring(false);
+    }
+  }, [t, fetchReport]);
 
   const runNow = useCallback(async () => {
     setRunning(true);
@@ -131,6 +245,52 @@ export function LeafOrphansCard() {
             <CardDescription>{t("leafOrphansDesc")}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {report &&
+              report.unacknowledgedSamples > 0 &&
+              (confirmingAck ? (
+                <>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={ackAll}
+                    disabled={acking}
+                    data-testid="leaf-orphans-ack-confirm"
+                  >
+                    {t("leafOrphansAckConfirm")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmingAck(false)}
+                    disabled={acking}
+                    data-testid="leaf-orphans-ack-cancel"
+                  >
+                    {t("leafOrphansAckCancel")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingAck(true)}
+                  data-testid="leaf-orphans-ack"
+                >
+                  <CircleCheckIcon size={14} />
+                  {t("leafOrphansAckAll")}
+                </Button>
+              ))}
+            {report && report.state !== "ok" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={sendTest}
+                disabled={sendingTest}
+                data-testid="leaf-orphans-test-digest"
+              >
+                <MailIcon size={14} className={cn(sendingTest && "animate-pulse")} />
+                {t("leafOrphansTestDigest")}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -184,6 +344,23 @@ export function LeafOrphansCard() {
                 <TableOrphans key={table} table={table} entry={entry} />
               ))}
             </div>
+            {report.state === "warn" && report.unacknowledgedSamples === 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={retireStragglers}
+                  disabled={retiring}
+                  data-testid="leaf-orphans-straggler"
+                >
+                  <CircleCheckIcon size={14} className={cn(retiring && "animate-pulse")} />
+                  {t("leafOrphansStragglerRetire")}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {t("leafOrphansStragglerHint")}
+                </span>
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground">{t("leafOrphansHowTo")}</p>
           </div>
         )}

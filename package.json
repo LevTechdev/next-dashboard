@@ -61,7 +61,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "check:null-coercion": "node scripts/audit-null-coercion.mjs",
-    "verify:mail": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/verify-mail.ts"
+    "verify:mail": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/verify-mail.ts",
+    "fire:orphan-digest": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/fire-leaf-orphans-digest.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.16",
