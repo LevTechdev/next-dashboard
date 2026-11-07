@@ -4,15 +4,15 @@
   "regions": ["sin1"],
   "crons": [
     {
-      "path": "/api/usage/digest?secret=${CRON_SECRET}",
+      "path": "/api/usage/digest",
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/billing/trial/sweep?secret=${CRON_SECRET}",
+      "path": "/api/billing/trial/sweep",
       "schedule": "15 2 * * *"
     },
     {
-      "path": "/api/billing/fx-rates?capture=1&secret=${CRON_SECRET}",
+      "path": "/api/billing/fx-rates?capture=1",
       "schedule": "30 2 * * *"
     }
   ]

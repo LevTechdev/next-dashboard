@@ -11,6 +11,9 @@ export async function GET(req: Request) {
   if (response) return response;
   const tenantId = getTenantId(session!);
   const scope = tenantWhere(tenantId);
+  // Snapshot rows require a concrete key; legacy sessions fall back to the
+  // default workspace bucket until the tenant backfill runs.
+  const valuationTenantId = tenantId ?? "default";
 
   const { searchParams } = new URL(req.url);
   const includeCategories = searchParams.get("includeCategories");
@@ -57,8 +60,8 @@ export async function GET(req: Request) {
       body.inStockCount = products.filter((p) => p.stock >= 10).length;
 
       // Daily stock×cost snapshot — the Valuation card's own real trend.
-      await captureValuationSnapshot(totalValue);
-      body.trends = { ...trends, valuation: await getValuationTrend() };
+      await captureValuationSnapshot(valuationTenantId, totalValue);
+      body.trends = { ...trends, valuation: await getValuationTrend(valuationTenantId) };
     }
     return NextResponse.json(body);
   }

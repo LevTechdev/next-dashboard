@@ -27,6 +27,13 @@ export async function GET(req: Request) {
   try {
     const saml = buildSaml(conn, req);
     const redirectUrl = await saml.getAuthorizeUrlAsync(conn.id, "", {});
+
+    // The login page calls this with Accept: application/json so it can show an
+    // inline error/loading state and then navigate itself; browsers that hit
+    // the URL directly still get the normal redirect.
+    if (req.headers.get("accept")?.includes("application/json")) {
+      return NextResponse.json({ redirectUrl });
+    }
     return NextResponse.redirect(redirectUrl);
   } catch (err) {
     console.error("SAML login init error:", err);

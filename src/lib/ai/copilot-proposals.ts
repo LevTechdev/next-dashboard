@@ -146,7 +146,8 @@ export async function executeCopilotAction(
   }
 
   if (type === "CREATE_PURCHASE_ORDER") {
-    const po = createPurchaseOrder({
+    const po = await createPurchaseOrder({
+      tenantId: tenantId ?? "default",
       supplierId: payload.supplierId || "sup-001",
       warehouseId: payload.warehouseId || "wh-jkt",
       items: payload.items || [],

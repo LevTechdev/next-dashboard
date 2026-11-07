@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { runTrialSweep } from "@/lib/trial-sweep";
 import { recordExternalJobRun } from "@/lib/scheduler";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,11 +20,7 @@ export const runtime = "nodejs";
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const secret = process.env.CRON_SECRET;
-  const provided =
-    searchParams.get("secret") || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-
-  if (!secret || provided !== secret) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

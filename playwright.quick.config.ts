@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = process.env.E2E_PORT ?? "3010";
+const baseURL = `http://localhost:${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -9,7 +12,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 20_000 },
   use: {
-    baseURL: "http://localhost:3010",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -19,5 +22,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  // Skip global-setup (DB seed) since servers are already running
+  // The isolation job is self-contained: CI has no pre-running server, while a
+  // developer running this config locally gets their existing server reused.
+  webServer: {
+    command: `node node_modules/next/dist/bin/next dev -p ${port}`,
+    url: `${baseURL}/en/login`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
 });

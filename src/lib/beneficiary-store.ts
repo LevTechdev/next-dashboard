@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db";
 import { identifyAccountInput, AccountDetectionResult } from "./account-validator";
 import { getBankByCode, getBankByName } from "./indonesian-banks";
 
@@ -19,62 +18,85 @@ export interface Beneficiary {
   totalDisbursed: number;
 }
 
-const DATA_FILE = path.join(process.cwd(), "data", "beneficiaries.json");
+type BeneficiaryRow = {
+  id: string;
+  accountNumber: string;
+  maskedAccount: string;
+  accountName: string;
+  channel: string;
+  bankCode: string | null;
+  bankName: string | null;
+  cardType: string | null;
+  cardTier: string | null;
+  verified: boolean;
+  favorite: boolean;
+  lastUsedAt: Date;
+  totalDisbursed: number;
+};
 
-let memoryCache: Beneficiary[] | null = null;
-
-function loadStore(): Beneficiary[] {
-  if (memoryCache) return memoryCache;
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, "utf-8");
-      memoryCache = JSON.parse(content);
-      return memoryCache || [];
-    }
-  } catch (e) {
-    console.error("Failed to read beneficiaries.json:", e);
-  }
-  memoryCache = [];
-  return memoryCache;
+function toBeneficiary(row: BeneficiaryRow): Beneficiary {
+  return {
+    id: row.id,
+    accountNumber: row.accountNumber,
+    maskedAccount: row.maskedAccount,
+    accountName: row.accountName,
+    channel: row.channel as Beneficiary["channel"],
+    bankCode: row.bankCode ?? undefined,
+    bankName: row.bankName ?? undefined,
+    cardType: (row.cardType as Beneficiary["cardType"]) ?? undefined,
+    cardTier: row.cardTier ?? undefined,
+    verified: row.verified,
+    favorite: row.favorite,
+    lastUsedAt: row.lastUsedAt.toISOString(),
+    totalDisbursed: row.totalDisbursed,
+  };
 }
 
-function persistStore(list: Beneficiary[]) {
-  memoryCache = list;
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to persist beneficiaries.json:", e);
-  }
+/** List the workspace's saved beneficiaries, newest/favourite first. */
+export async function listBeneficiaries(tenantId: string, search?: string): Promise<Beneficiary[]> {
+  const q = search?.toLowerCase().trim();
+  const rows = await prisma.beneficiary.findMany({
+    where: {
+      tenantId,
+      ...(q
+        ? {
+            OR: [
+              { accountName: { contains: q, mode: "insensitive" as const } },
+              { accountNumber: { contains: q.replace(/[\s-]/g, "") } },
+              { bankName: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ favorite: "desc" }, { lastUsedAt: "desc" }],
+  });
+  return rows.map(toBeneficiary);
 }
 
-export function listBeneficiaries(search?: string): Beneficiary[] {
-  const all = loadStore();
-  if (!search) return all;
-  const q = search.toLowerCase().trim();
-  return all.filter(
-    (b) =>
-      b.accountName.toLowerCase().includes(q) ||
-      b.accountNumber.includes(q) ||
-      (b.bankName && b.bankName.toLowerCase().includes(q)),
-  );
-}
-
-export function findBeneficiaryByNumber(accountNumber: string): Beneficiary | undefined {
+export async function findBeneficiaryByNumber(
+  tenantId: string,
+  accountNumber: string,
+): Promise<Beneficiary | null> {
   const clean = accountNumber.replace(/[\s-]/g, "");
-  return loadStore().find((b) => b.accountNumber.replace(/[\s-]/g, "") === clean);
+  const rows = await prisma.beneficiary.findMany({ where: { tenantId } });
+  const match = rows.find((row) => row.accountNumber.replace(/[\s-]/g, "") === clean);
+  return match ? toBeneficiary(match) : null;
 }
 
-export function recordBeneficiaryDisbursement(accountNumber: string, amount: number) {
-  const clean = accountNumber.replace(/[\s-]/g, "");
-  const all = loadStore();
-  const index = all.findIndex((b) => b.accountNumber.replace(/[\s-]/g, "") === clean);
-  if (index >= 0) {
-    all[index].lastUsedAt = new Date().toISOString();
-    all[index].totalDisbursed = (all[index].totalDisbursed || 0) + amount;
-    persistStore([...all]);
-  }
+export async function recordBeneficiaryDisbursement(
+  tenantId: string,
+  accountNumber: string,
+  amount: number,
+): Promise<void> {
+  const existing = await findBeneficiaryByNumber(tenantId, accountNumber);
+  if (!existing) return;
+  await prisma.beneficiary.update({
+    where: { id: existing.id },
+    data: {
+      lastUsedAt: new Date(),
+      totalDisbursed: { increment: amount },
+    },
+  });
 }
 
 export interface InquiryResult {
@@ -92,12 +114,13 @@ export interface InquiryResult {
  * Real-time simulated account name inquiry resolver matching Bank Indonesia SNAP / BI-FAST standard.
  */
 export async function inquireAccountName(
+  tenantId: string,
   accountNumber: string,
   channel?: string,
   bankCode?: string,
 ): Promise<InquiryResult> {
   const detection = identifyAccountInput(accountNumber, channel || bankCode);
-  const existing = findBeneficiaryByNumber(accountNumber);
+  const existing = await findBeneficiaryByNumber(tenantId, accountNumber);
 
   if (existing) {
     return {
@@ -126,7 +149,9 @@ export async function inquireAccountName(
     resolvedName = "HENDRA WIJAYA (CARDHOLDER)";
   } else if (detection.type === "bank_account") {
     const bank = (bankCode && getBankByCode(bankCode)) || detection.bank || getBankByCode("014");
-    resolvedName = bank ? `${bank.shortName} - Budi Santoso` : "Budi Santoso";
+    resolvedName = bank
+      ? `${bank.shortName} - ${digits ? "Budi Santoso" : "Budi Santoso"}`
+      : "Budi Santoso";
   } else if (detection.type === "alipay") {
     resolvedName = "Zhang Wei (Alipay Cross-Border)";
   }
@@ -142,3 +167,6 @@ export async function inquireAccountName(
     detection,
   };
 }
+
+/** Keep the bank-name helper imported for callers relying on the directory. */
+export { getBankByName };

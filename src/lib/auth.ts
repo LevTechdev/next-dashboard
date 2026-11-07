@@ -2,8 +2,7 @@ import jwt from "jsonwebtoken";
 import { compare } from "bcryptjs";
 import { hash as argonHash, verify as argonVerify } from "@node-rs/argon2";
 import { createHash, randomBytes } from "crypto";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-jwt-secret-change-in-production";
+import { getJwtSecret } from "@/lib/jwt-secret";
 // Short-lived access token (Phase 2). Long-lived auth is carried by the
 // rotating refresh token instead.
 const JWT_EXPIRES_IN = "15m";
@@ -53,7 +52,7 @@ export function signToken(user: AuthUser): string {
   // A unique jti guarantees every access token (and thus its SHA-256 hash) is
   // distinct, even for rapid successive logins in the same second — otherwise
   // the Session.tokenHash unique constraint can collide.
-  return jwt.sign(user, JWT_SECRET, {
+  return jwt.sign(user, getJwtSecret(), {
     expiresIn: JWT_EXPIRES_IN,
     jwtid: randomBytes(16).toString("hex"),
   });
@@ -61,7 +60,7 @@ export function signToken(user: AuthUser): string {
 
 export function verifyToken(token: string): AuthUser | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthUser;
+    return jwt.verify(token, getJwtSecret()) as AuthUser;
   } catch {
     return null;
   }

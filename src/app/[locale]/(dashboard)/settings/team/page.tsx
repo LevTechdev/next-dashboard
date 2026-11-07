@@ -46,44 +46,16 @@ import { useShowUpgrade } from "@/components/billing/tier-gate";
 import { Sparkles } from "lucide-react";
 import { DataExportButton } from "@/components/data-export-button";
 
-// Mock activity data
-const MOCK_ACTIVITY = [
-  {
-    id: "a-1",
-    user: "Admin",
-    action: "Updated team member role",
-    target: "sarah@dashboard.com",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "a-2",
-    user: "Admin",
-    action: "Created new API key",
-    target: "Production Key",
-    timestamp: "5 hours ago",
-  },
-  {
-    id: "a-3",
-    user: "Sarah",
-    action: "Logged in",
-    target: "Chrome / macOS",
-    timestamp: "1 day ago",
-  },
-  {
-    id: "a-4",
-    user: "Admin",
-    action: "Invited new member",
-    target: "alex@example.com",
-    timestamp: "2 days ago",
-  },
-  {
-    id: "a-5",
-    user: "Admin",
-    action: "Changed password",
-    target: "Account settings",
-    timestamp: "3 days ago",
-  },
-];
+interface TeamActivityItem {
+  id: string;
+  action: string;
+  entity?: string | null;
+  entityId?: string | null;
+  details?: string | null;
+  user: { name: string; role: string };
+  createdAt: string;
+  formattedDate: string;
+}
 
 // Permission matrix data — SUPER_ADMIN merged into ADMIN (single all-access role)
 const PERMISSIONS_MATRIX = [
@@ -151,6 +123,7 @@ export default function TeamPage() {
     expiresInDays: 7,
   });
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [activity, setActivity] = useState<TeamActivityItem[]>([]);
   const [inviteSaving, setInviteSaving] = useState(false);
   const [editInviteDialogOpen, setEditInviteDialogOpen] = useState(false);
   const [editInviteSaving, setEditInviteSaving] = useState(false);
@@ -180,6 +153,10 @@ export default function TeamPage() {
   useEffect(() => {
     loadData();
     loadInvitations();
+    fetch("/api/audit-log?limit=10", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { logs: [] }))
+      .then((data) => setActivity(Array.isArray(data.logs) ? data.logs : []))
+      .catch(() => setActivity([]));
   }, []);
 
   const filtered = useMemo(() => {
@@ -977,24 +954,30 @@ export default function TeamPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {MOCK_ACTIVITY.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                  >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
-                      {getInitials(item.user)}
+                {activity.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{tteam("noActivity")}</p>
+                ) : (
+                  activity.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+                        {getInitials(item.user.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">
+                          <span className="font-medium">{item.user.name}</span>{" "}
+                          <span className="text-gray-500">{item.action}</span>{" "}
+                          {(item.details || item.entityId) && (
+                            <span className="font-medium">{item.details || item.entityId}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{item.formattedDate}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">
-                        <span className="font-medium">{item.user}</span>{" "}
-                        <span className="text-gray-500">{item.action}</span>{" "}
-                        <span className="font-medium">{item.target}</span>
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">{item.timestamp}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

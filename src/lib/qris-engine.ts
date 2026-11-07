@@ -18,7 +18,7 @@ if (process.env.NODE_ENV !== "production") globalForEmitter.qrisEmitterSingleton
 // Server-side persistence hook, registered from instrumentation via
 // qris-ledger-store. The engine itself stays fs-free because client components
 // import its pure QR helpers; the hook is a no-op when unset (unit tests).
-type PersistHook = (state: QrisLedgerState) => void;
+type PersistHook = (state: QrisLedgerState, tenantId: string | null) => void;
 let persistHook: PersistHook | null = null;
 
 export function setQrisLedgerPersistHook(hook: PersistHook | null): void {
@@ -264,7 +264,14 @@ const INITIAL_DISBURSEMENTS: WithdrawalDisbursement[] = [
   },
 ];
 
-class QrisLedger {
+export class QrisLedger {
+  /** Workspace this instance belongs to; null for the legacy demo singleton. */
+  public readonly tenantId: string | null;
+
+  constructor(tenantId: string | null = null) {
+    this.tenantId = tenantId;
+  }
+
   private availableBalance: number = 18750000;
   private pendingBalance: number = 0;
   private totalWithdrawn: number = 12500000;
@@ -295,7 +302,7 @@ class QrisLedger {
 
   /** Fire the persistence hook (server-only; no-op when unset). */
   private persist(): void {
-    persistHook?.(this.getState());
+    persistHook?.(this.getState(), this.tenantId);
   }
 
   public createTransaction(
@@ -322,7 +329,7 @@ class QrisLedger {
 
     this.pendingBalance += amount;
     this.transactions.unshift(tx);
-    qrisEmitter.emit("transaction_created", tx);
+    qrisEmitter.emit("transaction_created", { ...tx, tenantId: this.tenantId });
     this.persist();
     return tx;
   }
@@ -343,6 +350,7 @@ class QrisLedger {
 
     qrisEmitter.emit("payment_confirmed", {
       type: "PAYMENT_CONFIRMED",
+      tenantId: this.tenantId,
       transaction: tx,
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
@@ -369,6 +377,7 @@ class QrisLedger {
     tx.status = "DISPUTED";
     qrisEmitter.emit("transaction_disputed", {
       type: "TRANSACTION_DISPUTED",
+      tenantId: this.tenantId,
       transaction: tx,
       reason,
       availableBalance: this.availableBalance,
@@ -391,6 +400,7 @@ class QrisLedger {
     tx.status = "EXPIRED";
     qrisEmitter.emit("transaction_expired", {
       type: "TRANSACTION_EXPIRED",
+      tenantId: this.tenantId,
       transaction: tx,
       availableBalance: this.availableBalance,
       pendingBalance: this.pendingBalance,
@@ -485,6 +495,7 @@ class QrisLedger {
 
     qrisEmitter.emit("withdrawal_completed", {
       type: "WITHDRAWAL_COMPLETED",
+      tenantId: this.tenantId,
       disbursement,
       availableBalance: this.availableBalance,
     });

@@ -157,11 +157,13 @@ describe("RecoveryReadinessCard", () => {
   });
 
   it("plots the measured days and labels a decline", async () => {
+    const day = (daysAgo: number) =>
+      new Date(Date.now() - daysAgo * 86_400_000).toISOString().slice(0, 10);
     history({
       snapshots: [
-        { day: "2026-09-10", level: "ready", availableCount: 3, codesLow: false },
-        { day: "2026-09-11", level: "ready", availableCount: 3, codesLow: false },
-        { day: "2026-09-12", level: "thin", availableCount: 1, codesLow: false },
+        { day: day(2), level: "ready", availableCount: 3, codesLow: false },
+        { day: day(1), level: "ready", availableCount: 3, codesLow: false },
+        { day: day(0), level: "thin", availableCount: 1, codesLow: false },
       ],
       trend: "down",
     });

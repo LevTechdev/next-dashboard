@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchMidMarketRates, RATE_TTL_MS } from "@/lib/market-rates";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { captureFxSnapshot, fxRateHistory, trackedQuotes } from "@/lib/fx-history";
 import type { SupportedCurrencyCode } from "@/lib/currency";
 
@@ -27,10 +28,7 @@ export async function GET(req: Request) {
   // Mutating, so it is shared-secret only (same contract as the trial sweep
   // and usage digest cron routes); plain reads below stay public.
   if (searchParams.get("capture") === "1") {
-    const secret = process.env.CRON_SECRET;
-    const provided =
-      searchParams.get("secret") || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!secret || provided !== secret) {
+    if (!isCronAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const report = await captureFxSnapshot();

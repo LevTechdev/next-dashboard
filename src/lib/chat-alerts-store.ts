@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db";
 import { ChatPlatform, ChatAlertType } from "./chat-alerts";
 
 export interface ChatChannelConfig {
@@ -44,10 +43,19 @@ export interface ChatAlertsData {
   deliveries: ChatDeliveryLog[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const CONFIG_FILE = path.join(DATA_DIR, "chat-alerts.json");
+const DEFAULT_RULES: ChatAlertTriggerRules = {
+  stockoutDoiThreshold: 7,
+  vipOrderMinAmount: 500,
+  paymentAlertsEnabled: true,
+  dailyDigestTime: "09:00",
+  dailyDigestEnabled: true,
+};
 
-const DEFAULT_CHANNELS: ChatChannelConfig[] = [
+const DEFAULT_CHANNELS: Array<
+  Omit<ChatChannelConfig, "id" | "createdAt" | "updatedAt" | "lastPingAt" | "lastStatus"> & {
+    id: string;
+  }
+> = [
   {
     id: "chan-slack-1",
     name: "Slack Operations & Logistics",
@@ -56,10 +64,6 @@ const DEFAULT_CHANNELS: ChatChannelConfig[] = [
     channelName: "#logistics-alerts",
     enabledEvents: ["stockout", "vip_order", "daily_digest"],
     status: "ACTIVE",
-    lastPingAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    lastStatus: "SUCCESS",
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
   },
   {
     id: "chan-discord-1",
@@ -70,22 +74,10 @@ const DEFAULT_CHANNELS: ChatChannelConfig[] = [
     avatarUrl: "https://next-dashboard-demo.vercel.app/logo.png",
     enabledEvents: ["vip_order", "payment_failed"],
     status: "ACTIVE",
-    lastPingAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-    lastStatus: "SUCCESS",
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
   },
 ];
 
-const DEFAULT_RULES: ChatAlertTriggerRules = {
-  stockoutDoiThreshold: 7,
-  vipOrderMinAmount: 500,
-  paymentAlertsEnabled: true,
-  dailyDigestTime: "09:00",
-  dailyDigestEnabled: true,
-};
-
-const DEFAULT_DELIVERIES: ChatDeliveryLog[] = [
+const DEFAULT_DELIVERIES: Array<Omit<ChatDeliveryLog, "createdAt">> = [
   {
     id: "deliv-seed-1",
     channelId: "chan-slack-1",
@@ -96,7 +88,6 @@ const DEFAULT_DELIVERIES: ChatDeliveryLog[] = [
     durationMs: 94,
     payloadPreview: "🚨 Critical Inventory Stockout: SHIRT-OXF-001 (DOI: 4 days)",
     responseText: "ok",
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
   },
   {
     id: "deliv-seed-2",
@@ -108,128 +99,258 @@ const DEFAULT_DELIVERIES: ChatDeliveryLog[] = [
     durationMs: 112,
     payloadPreview: "💎 VIP Purchase: Order #ORD-2026-9842 ($1,450.00)",
     responseText: "ok",
-    createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
   },
 ];
 
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function mapChannel(row: {
+  id: string;
+  name: string;
+  platform: string;
+  webhookUrl: string;
+  channelName: string;
+  avatarUrl: string | null;
+  enabledEvents: string[];
+  status: string;
+  lastPingAt: Date | null;
+  lastStatus: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): ChatChannelConfig {
+  return {
+    id: row.id,
+    name: row.name,
+    platform: row.platform as ChatPlatform,
+    webhookUrl: row.webhookUrl,
+    channelName: row.channelName,
+    avatarUrl: row.avatarUrl ?? undefined,
+    enabledEvents: row.enabledEvents as ChatAlertType[],
+    status: row.status === "PAUSED" ? "PAUSED" : "ACTIVE",
+    lastPingAt: row.lastPingAt?.toISOString() ?? null,
+    lastStatus: row.lastStatus === "FAILED" ? "FAILED" : row.lastStatus ? "SUCCESS" : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function mapDelivery(row: {
+  id: string;
+  channelId: string;
+  platform: string;
+  event: string;
+  status: string;
+  statusCode: number;
+  durationMs: number;
+  payloadPreview: string;
+  responseText: string | null;
+  createdAt: Date;
+}): ChatDeliveryLog {
+  return {
+    id: row.id,
+    channelId: row.channelId,
+    platform: row.platform as ChatPlatform,
+    event: row.event as ChatAlertType,
+    status: row.status as ChatDeliveryLog["status"],
+    statusCode: row.statusCode,
+    durationMs: row.durationMs,
+    payloadPreview: row.payloadPreview,
+    responseText: row.responseText ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/** Seed the demo channels/deliveries once per workspace so the hub is not blank. */
+async function ensureConfig(tenantId: string) {
+  const [channelCount, rules, deliveryCount] = await Promise.all([
+    prisma.chatChannel.count({ where: { tenantId } }),
+    prisma.chatAlertRule.findUnique({ where: { tenantId } }),
+    prisma.chatDeliveryLog.count({ where: { tenantId } }),
+  ]);
+
+  const now = new Date();
+  if (channelCount === 0) {
+    await prisma.chatChannel.createMany({
+      data: DEFAULT_CHANNELS.map((channel, index) => ({
+        ...channel,
+        tenantId,
+        lastPingAt: new Date(now.getTime() - 3_600_000 * (index === 0 ? 4 : 8)),
+        lastStatus: "SUCCESS",
+        createdAt: new Date(now.getTime() - 86_400_000 * (index === 0 ? 14 : 10)),
+        updatedAt: new Date(now.getTime() - 3_600_000 * (index === 0 ? 4 : 8)),
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  if (!rules) {
+    await prisma.chatAlertRule.create({
+      data: { tenantId, ...DEFAULT_RULES },
+    });
+  }
+
+  if (deliveryCount === 0) {
+    await prisma.chatDeliveryLog.createMany({
+      data: DEFAULT_DELIVERIES.map((delivery, index) => ({
+        ...delivery,
+        tenantId,
+        createdAt: new Date(now.getTime() - 3_600_000 * (index === 0 ? 4 : 8)),
+      })),
+      skipDuplicates: true,
+    });
   }
 }
 
-export function getChatConfig(): ChatAlertsData {
-  ensureDataDir();
-  if (!fs.existsSync(CONFIG_FILE)) {
-    const initialData: ChatAlertsData = {
-      channels: DEFAULT_CHANNELS,
-      rules: DEFAULT_RULES,
-      deliveries: DEFAULT_DELIVERIES,
-    };
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(initialData, null, 2), "utf-8");
-    return initialData;
-  }
+export async function getChatConfig(tenantId: string): Promise<ChatAlertsData> {
+  await ensureConfig(tenantId);
 
-  try {
-    const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    return {
-      channels: Array.isArray(parsed.channels) ? parsed.channels : DEFAULT_CHANNELS,
-      rules: { ...DEFAULT_RULES, ...(parsed.rules || {}) },
-      deliveries: Array.isArray(parsed.deliveries) ? parsed.deliveries : DEFAULT_DELIVERIES,
-    };
-  } catch {
-    return {
-      channels: DEFAULT_CHANNELS,
-      rules: DEFAULT_RULES,
-      deliveries: DEFAULT_DELIVERIES,
-    };
-  }
+  const [channels, rules, deliveries] = await Promise.all([
+    prisma.chatChannel.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.chatAlertRule.findUnique({ where: { tenantId } }),
+    prisma.chatDeliveryLog.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+  ]);
+
+  return {
+    channels: channels.map(mapChannel),
+    rules: rules
+      ? {
+          stockoutDoiThreshold: rules.stockoutDoiThreshold,
+          vipOrderMinAmount: rules.vipOrderMinAmount,
+          paymentAlertsEnabled: rules.paymentAlertsEnabled,
+          dailyDigestTime: rules.dailyDigestTime,
+          dailyDigestEnabled: rules.dailyDigestEnabled,
+        }
+      : DEFAULT_RULES,
+    deliveries: deliveries.map(mapDelivery),
+  };
 }
 
-export function saveChatConfig(data: ChatAlertsData): void {
-  ensureDataDir();
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2), "utf-8");
-}
-
-export function upsertChatChannel(
+export async function upsertChatChannel(
+  tenantId: string,
   channel: Omit<ChatChannelConfig, "id" | "createdAt" | "updatedAt"> & { id?: string },
-): ChatChannelConfig {
-  const current = getChatConfig();
-  const now = new Date().toISOString();
+): Promise<ChatChannelConfig> {
+  const now = new Date();
 
   if (channel.id) {
-    const idx = current.channels.findIndex((c) => c.id === channel.id);
-    if (idx >= 0) {
-      const updated: ChatChannelConfig = {
-        ...current.channels[idx],
-        ...channel,
-        id: channel.id,
-        updatedAt: now,
-      };
-      current.channels[idx] = updated;
-      saveChatConfig(current);
-      return updated;
+    const existing = await prisma.chatChannel.findFirst({
+      where: { id: channel.id, tenantId },
+    });
+    if (existing) {
+      const updated = await prisma.chatChannel.update({
+        where: { id: existing.id },
+        data: {
+          name: channel.name,
+          platform: channel.platform,
+          webhookUrl: channel.webhookUrl,
+          channelName: channel.channelName,
+          avatarUrl: channel.avatarUrl,
+          enabledEvents: channel.enabledEvents,
+          status: channel.status || "ACTIVE",
+          updatedAt: now,
+        },
+      });
+      return mapChannel(updated);
     }
   }
 
-  const newChannel: ChatChannelConfig = {
-    id: `chan-${channel.platform}-${Date.now()}`,
-    name: channel.name,
-    platform: channel.platform,
-    webhookUrl: channel.webhookUrl,
-    channelName: channel.channelName,
-    avatarUrl: channel.avatarUrl,
-    enabledEvents: channel.enabledEvents,
-    status: channel.status || "ACTIVE",
-    lastPingAt: null,
-    lastStatus: null,
-    createdAt: now,
-    updatedAt: now,
+  const created = await prisma.chatChannel.create({
+    data: {
+      id: `chan-${channel.platform}-${Date.now()}`,
+      tenantId,
+      name: channel.name,
+      platform: channel.platform,
+      webhookUrl: channel.webhookUrl,
+      channelName: channel.channelName,
+      avatarUrl: channel.avatarUrl,
+      enabledEvents: channel.enabledEvents,
+      status: channel.status || "ACTIVE",
+      createdAt: now,
+      updatedAt: now,
+    },
+  });
+  return mapChannel(created);
+}
+
+export async function deleteChatChannel(tenantId: string, id: string): Promise<boolean> {
+  const result = await prisma.chatChannel.deleteMany({ where: { id, tenantId } });
+  return result.count > 0;
+}
+
+export async function updateChatRules(
+  tenantId: string,
+  rules: Partial<ChatAlertTriggerRules>,
+): Promise<ChatAlertTriggerRules> {
+  const current = await prisma.chatAlertRule.findUnique({ where: { tenantId } });
+  const merged: ChatAlertTriggerRules = {
+    ...DEFAULT_RULES,
+    ...(current
+      ? {
+          stockoutDoiThreshold: current.stockoutDoiThreshold,
+          vipOrderMinAmount: current.vipOrderMinAmount,
+          paymentAlertsEnabled: current.paymentAlertsEnabled,
+          dailyDigestTime: current.dailyDigestTime,
+          dailyDigestEnabled: current.dailyDigestEnabled,
+        }
+      : {}),
+    ...rules,
   };
 
-  current.channels.push(newChannel);
-  saveChatConfig(current);
-  return newChannel;
+  await prisma.chatAlertRule.upsert({
+    where: { tenantId },
+    create: { tenantId, ...merged },
+    update: merged,
+  });
+
+  return merged;
 }
 
-export function deleteChatChannel(id: string): boolean {
-  const current = getChatConfig();
-  const initialLen = current.channels.length;
-  current.channels = current.channels.filter((c) => c.id !== id);
-  if (current.channels.length !== initialLen) {
-    saveChatConfig(current);
-    return true;
+export async function logDelivery(
+  tenantId: string,
+  log: Omit<ChatDeliveryLog, "id" | "createdAt">,
+): Promise<ChatDeliveryLog> {
+  const now = new Date();
+  const created = await prisma.chatDeliveryLog.create({
+    data: {
+      id: `deliv-${Date.now()}`,
+      tenantId,
+      channelId: log.channelId,
+      platform: log.platform,
+      event: log.event,
+      status: log.status,
+      statusCode: log.statusCode,
+      durationMs: log.durationMs,
+      payloadPreview: log.payloadPreview,
+      responseText: log.responseText,
+      createdAt: now,
+    },
+  });
+
+  await prisma.chatChannel.updateMany({
+    where: { id: log.channelId, tenantId },
+    data: {
+      lastPingAt: now,
+      lastStatus: log.status === "FAILED" ? "FAILED" : "SUCCESS",
+      updatedAt: now,
+    },
+  });
+
+  // Keep the delivery trail bounded per workspace.
+  const overflow = await prisma.chatDeliveryLog.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: "desc" },
+    skip: 25,
+    select: { id: true },
+  });
+  if (overflow.length > 0) {
+    await prisma.chatDeliveryLog.deleteMany({
+      where: { id: { in: overflow.map((row) => row.id) } },
+    });
   }
-  return false;
-}
 
-export function updateChatRules(rules: Partial<ChatAlertTriggerRules>): ChatAlertTriggerRules {
-  const current = getChatConfig();
-  current.rules = { ...current.rules, ...rules };
-  saveChatConfig(current);
-  return current.rules;
-}
-
-export function logDelivery(log: Omit<ChatDeliveryLog, "id" | "createdAt">): ChatDeliveryLog {
-  const current = getChatConfig();
-  const newLog: ChatDeliveryLog = {
-    id: `deliv-${Date.now()}`,
-    ...log,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Keep latest 25 deliveries
-  current.deliveries = [newLog, ...current.deliveries].slice(0, 25);
-
-  // Update channel status
-  const chan = current.channels.find((c) => c.id === log.channelId);
-  if (chan) {
-    chan.lastPingAt = newLog.createdAt;
-    chan.lastStatus = log.status === "FAILED" ? "FAILED" : "SUCCESS";
-    chan.updatedAt = newLog.createdAt;
-  }
-
-  saveChatConfig(current);
-  return newLog;
+  return mapDelivery(created);
 }

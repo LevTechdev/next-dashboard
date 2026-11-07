@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db";
 
 export interface WebhookDlqEntry {
   id: string;
@@ -13,92 +12,116 @@ export interface WebhookDlqEntry {
   status: "FAILED" | "RETRYING" | "RESOLVED";
   /** True when the failure is transient (timeout/5xx) and auto-retry applies. */
   transient?: boolean;
+  tenantId?: string | null;
   createdAt: string;
   lastAttemptAt: string;
   nextRetryAt?: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DLQ_FILE = path.join(DATA_DIR, "webhook-dlq.json");
+type DlqRow = {
+  id: string;
+  tenantId: string | null;
+  platform: string;
+  event: string;
+  headers: unknown;
+  payload: unknown;
+  errorMessage: string;
+  retryCount: number;
+  maxRetries: number;
+  status: string;
+  transient: boolean;
+  createdAt: Date;
+  lastAttemptAt: Date;
+  nextRetryAt: Date | null;
+};
 
-const SEED_DLQ: WebhookDlqEntry[] = [
-  {
-    id: "dlq-seed-001",
-    platform: "tiktok",
-    event: "order.paid",
-    headers: { "x-tiktok-signature": "invalid_sig_hex_991823" },
-    payload: {
-      order_id: "1928374619",
-      buyer_email: "test.buyer@gmail.com",
-      payment_info: { total_amount: 320000 },
-    },
-    errorMessage:
-      "Cryptographic HMAC SHA-256 signature verification failed (invalid signature token)",
-    retryCount: 2,
-    maxRetries: 5,
-    status: "FAILED",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    lastAttemptAt: new Date(Date.now() - 1800000).toISOString(),
-    nextRetryAt: new Date(Date.now() + 1800000).toISOString(),
-  },
-  {
-    id: "dlq-seed-002",
-    platform: "shopify",
-    event: "orders/create",
-    headers: { "x-shopify-hmac-sha256": "bad_hash_token_8829" },
-    payload: { id: "982341203", name: "#SHPF-9912", line_items: [] },
-    errorMessage: "Missing required line items in incoming Shopify payload",
-    retryCount: 1,
-    maxRetries: 5,
-    status: "FAILED",
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    lastAttemptAt: new Date(Date.now() - 3600000).toISOString(),
-    nextRetryAt: new Date(Date.now() + 3600000).toISOString(),
-  },
-];
-
-let inMemoryDlq: WebhookDlqEntry[] | null = null;
-
-function ensureFile(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DLQ_FILE)) {
-    fs.writeFileSync(DLQ_FILE, JSON.stringify(SEED_DLQ, null, 2), "utf8");
-  }
+function mapRow(row: DlqRow): WebhookDlqEntry {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    platform: row.platform as WebhookDlqEntry["platform"],
+    event: row.event,
+    headers:
+      row.headers && typeof row.headers === "object" ? (row.headers as Record<string, string>) : {},
+    payload: row.payload,
+    errorMessage: row.errorMessage,
+    retryCount: row.retryCount,
+    maxRetries: row.maxRetries,
+    status: row.status as WebhookDlqEntry["status"],
+    transient: row.transient,
+    createdAt: row.createdAt.toISOString(),
+    lastAttemptAt: row.lastAttemptAt.toISOString(),
+    nextRetryAt: row.nextRetryAt?.toISOString(),
+  };
 }
 
-export function getDlqEntries(): WebhookDlqEntry[] {
-  try {
-    ensureFile();
-    const raw = fs.readFileSync(DLQ_FILE, "utf8");
-    inMemoryDlq = JSON.parse(raw);
-    return inMemoryDlq!;
-  } catch {
-    return inMemoryDlq ?? SEED_DLQ;
-  }
+/**
+ * List the queue. A tenant id restricts the result to that workspace; omitting
+ * it is reserved for system jobs that sweep every workspace.
+ */
+export async function getDlqEntries(tenantId?: string | null): Promise<WebhookDlqEntry[]> {
+  const rows = await prisma.webhookDlqEntry.findMany({
+    where: tenantId ? { tenantId } : undefined,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(mapRow);
 }
 
-export function saveDlqEntries(entries: WebhookDlqEntry[]): void {
-  inMemoryDlq = entries;
-  try {
-    ensureFile();
-    fs.writeFileSync(DLQ_FILE, JSON.stringify(entries, null, 2), "utf8");
-  } catch (err) {
-    console.error("Failed to write DLQ file:", err);
-  }
+/**
+ * Upsert entries by id. Missing rows are not deleted: callers either update the
+ * rows they just read or remove one explicitly via purgeDlqEntry.
+ */
+export async function saveDlqEntries(entries: WebhookDlqEntry[]): Promise<void> {
+  if (entries.length === 0) return;
+  await prisma.$transaction(
+    entries.map((entry) =>
+      prisma.webhookDlqEntry.upsert({
+        where: { id: entry.id },
+        create: {
+          id: entry.id,
+          tenantId: entry.tenantId ?? null,
+          platform: entry.platform,
+          event: entry.event,
+          headers: entry.headers,
+          payload: entry.payload,
+          errorMessage: entry.errorMessage,
+          retryCount: entry.retryCount,
+          maxRetries: entry.maxRetries,
+          status: entry.status,
+          transient: Boolean(entry.transient),
+          createdAt: new Date(entry.createdAt),
+          lastAttemptAt: new Date(entry.lastAttemptAt),
+          nextRetryAt: entry.nextRetryAt ? new Date(entry.nextRetryAt) : null,
+        },
+        update: {
+          platform: entry.platform,
+          event: entry.event,
+          headers: entry.headers,
+          payload: entry.payload,
+          errorMessage: entry.errorMessage,
+          retryCount: entry.retryCount,
+          maxRetries: entry.maxRetries,
+          status: entry.status,
+          transient: Boolean(entry.transient),
+          lastAttemptAt: new Date(entry.lastAttemptAt),
+          nextRetryAt: entry.nextRetryAt ? new Date(entry.nextRetryAt) : null,
+        },
+      }),
+    ),
+  );
 }
 
-export function enqueueDlq(
+export async function enqueueDlq(
   entry: Omit<
     WebhookDlqEntry,
     "id" | "createdAt" | "lastAttemptAt" | "retryCount" | "maxRetries" | "status"
   >,
-): WebhookDlqEntry {
-  const all = getDlqEntries();
+  tenantId?: string | null,
+): Promise<WebhookDlqEntry> {
   const now = new Date();
   const newEntry: WebhookDlqEntry = {
     ...entry,
+    tenantId: tenantId ?? entry.tenantId ?? null,
     id: "dlq-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 6),
     retryCount: 0,
     maxRetries: 5,
@@ -111,45 +134,68 @@ export function enqueueDlq(
     nextRetryAt: new Date(now.getTime() + 5 * 60000).toISOString(), // +5m backoff
   };
 
-  all.unshift(newEntry);
-  saveDlqEntries(all);
+  await prisma.webhookDlqEntry.create({
+    data: {
+      id: newEntry.id,
+      tenantId: newEntry.tenantId ?? null,
+      platform: newEntry.platform,
+      event: newEntry.event,
+      headers: newEntry.headers,
+      payload: newEntry.payload,
+      errorMessage: newEntry.errorMessage,
+      retryCount: 0,
+      maxRetries: 5,
+      status: newEntry.status,
+      transient: Boolean(newEntry.transient),
+      createdAt: now,
+      lastAttemptAt: now,
+      nextRetryAt: newEntry.nextRetryAt ? new Date(newEntry.nextRetryAt) : null,
+    },
+  });
+
   return newEntry;
 }
 
-export function retryDlqEntry(id: string): {
+export async function retryDlqEntry(
+  id: string,
+  tenantId?: string | null,
+): Promise<{
   success: boolean;
   message: string;
   entry?: WebhookDlqEntry;
-} {
-  const all = getDlqEntries();
-  const idx = all.findIndex((e) => e.id === id);
-  if (idx === -1) {
-    return { success: false, message: "DLQ entry not found" };
-  }
+}> {
+  const row = await prisma.webhookDlqEntry.findFirst({
+    where: { id, ...(tenantId ? { tenantId } : {}) },
+  });
+  if (!row) return { success: false, message: "DLQ entry not found" };
 
-  const item = all[idx];
-  item.retryCount += 1;
-  item.lastAttemptAt = new Date().toISOString();
-
-  // Mark resolved if re-dispatched successfully
-  item.status = "RESOLVED";
-  saveDlqEntries(all);
+  const updated = await prisma.webhookDlqEntry.update({
+    where: { id },
+    data: {
+      retryCount: { increment: 1 },
+      // Mark resolved if re-dispatched successfully
+      status: "RESOLVED",
+      nextRetryAt: null,
+      lastAttemptAt: new Date(),
+    },
+  });
 
   return {
     success: true,
     message: `Re-processed DLQ entry ${id} successfully! Event status transitioned to RESOLVED.`,
-    entry: item,
+    entry: mapRow(updated),
   };
 }
 
-export function purgeDlqEntry(id: string): boolean {
-  const all = getDlqEntries();
-  const filtered = all.filter((e) => e.id !== id);
-  if (filtered.length === all.length) return false;
-  saveDlqEntries(filtered);
-  return true;
+export async function purgeDlqEntry(id: string, tenantId?: string | null): Promise<boolean> {
+  const result = await prisma.webhookDlqEntry.deleteMany({
+    where: { id, ...(tenantId ? { tenantId } : {}) },
+  });
+  return result.count > 0;
 }
 
-export function clearDlq(): void {
-  saveDlqEntries([]);
+export async function clearDlq(tenantId?: string | null): Promise<void> {
+  await prisma.webhookDlqEntry.deleteMany({
+    where: tenantId ? { tenantId } : undefined,
+  });
 }

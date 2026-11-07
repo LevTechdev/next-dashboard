@@ -8,11 +8,21 @@ import {
   dispatchWebhook,
 } from "@/lib/chat-alerts";
 import { logDelivery } from "@/lib/chat-alerts-store";
+import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
+import { validateOutboundUrl } from "@/lib/outbound-url";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const body = await req.json();
     const {
       channelId = "test-channel",
@@ -31,6 +41,11 @@ export async function POST(req: Request) {
         { error: "Webhook URL is required for test dispatch" },
         { status: 400 },
       );
+    }
+
+    const validated = validateOutboundUrl(webhookUrl, { allowSimulated: true });
+    if (!validated.ok) {
+      return NextResponse.json({ error: validated.error }, { status: 400 });
     }
 
     // 1. Prepare sample realistic event payload data
@@ -119,7 +134,7 @@ export async function POST(req: Request) {
       webhookUrl.includes("example.com") ||
       webhookUrl.startsWith("simulation://");
 
-    const deliveryRecord = logDelivery({
+    const deliveryRecord = await logDelivery(tenantId, {
       channelId,
       platform,
       event,

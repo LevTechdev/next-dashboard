@@ -101,7 +101,6 @@ async function verifyLoginEmailOtp(
 
 export async function POST(req: Request) {
   try {
-    console.log("parsing body");
     const body = await req.json();
     const {
       email,
@@ -155,7 +154,6 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("finding user");
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
@@ -175,7 +173,6 @@ export async function POST(req: Request) {
     }
 
     // Verify password (Argon2id or legacy bcrypt).
-    console.log("verifying password");
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
       const failed = user.failedLoginCount + 1;

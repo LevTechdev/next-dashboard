@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { getJwtSecret } from "@/lib/jwt-secret";
 
 /**
  * Role-prefixed dashboard routes — /en/admin/dashboard, /id/staff/orders…
@@ -71,7 +72,7 @@ export function prefixAllowsRole(prefix: string, role: string): boolean {
 }
 
 function secret(): Uint8Array {
-  return new TextEncoder().encode(process.env.JWT_SECRET || "dev-jwt-secret-change-in-production");
+  return new TextEncoder().encode(getJwtSecret());
 }
 
 /**

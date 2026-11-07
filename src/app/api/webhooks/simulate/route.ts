@@ -1,11 +1,31 @@
 import { NextResponse } from "next/server";
-import { qrisLedger } from "@/lib/qris-engine";
+import { requirePermission } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
+import { loadQrisLedger } from "@/lib/qris-ledger-store";
+import { isSameOrigin } from "@/lib/outbound-url";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await requirePermission("update", "billing", req);
+    if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
+    // Signing key is server-side only; a caller can never choose it again.
+    const webhookSecret = process.env.WEBHOOK_SIMULATE_SECRET?.trim();
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "Webhook simulator is not configured (WEBHOOK_SIMULATE_SECRET)" },
+        { status: 503 },
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const {
       eventType = "qris.payment_success",
@@ -14,33 +34,42 @@ export async function POST(req: Request) {
       bank = "BCA Mobile",
       customerName = "Walk-in Customer",
       targetUrl,
-      webhookSecret = "whsec_simulated_key_9920194821",
     } = body;
 
+    // Optional external dispatch is same-origin only: this endpoint must never
+    // become a proxy for requests to arbitrary internal or external hosts.
+    if (targetUrl && !isSameOrigin(String(targetUrl), req.url)) {
+      return NextResponse.json(
+        { error: "targetUrl must be same-origin with the dashboard" },
+        { status: 400 },
+      );
+    }
+
+    const ledger = await loadQrisLedger(tenantId);
     let tx: any = null;
-    const ledger = qrisLedger.getState();
+    const state = ledger.getState();
 
     // 1. Resolve or Create Target Transaction
     if (transactionId) {
-      tx = ledger.transactions.find((t) => t.id === transactionId);
+      tx = state.transactions.find((t) => t.id === transactionId);
     }
 
     if (!tx) {
       // Auto-create transaction for the simulation
-      tx = qrisLedger.createTransaction(Number(amount) || 150000, customerName);
+      tx = ledger.createTransaction(Number(amount) || 150000, customerName);
     }
 
     // 2. Apply Event State Transitions to Ledger
     if (eventType === "qris.payment_success") {
-      tx = qrisLedger.confirmPayment(tx.id, bank);
+      tx = ledger.confirmPayment(tx.id, bank);
     } else if (eventType === "payment.dispute_created") {
-      tx = qrisLedger.disputeTransaction(tx.id, "Customer claim: Unauthorized payment chargeback");
+      tx = ledger.disputeTransaction(tx.id, "Customer claim: Unauthorized payment chargeback");
     } else if (eventType === "payment.failed") {
-      tx = qrisLedger.expireTransaction(tx.id);
+      tx = ledger.expireTransaction(tx.id);
     } else if (eventType === "qris.settlement_completed") {
       // If pending, first confirm payment then report settlement
       if (tx.status === "PENDING") {
-        tx = qrisLedger.confirmPayment(tx.id, bank);
+        tx = ledger.confirmPayment(tx.id, bank);
       }
     }
 
@@ -86,16 +115,16 @@ export async function POST(req: Request) {
       "User-Agent": "NextDashboard-PaymentGateway/2.0",
     };
 
-    // 5. Optional External Dispatch
+    // 5. Optional Same-Origin Dispatch
     let deliveryStatus = "LOCAL_DISPATCH";
     let statusCode = 200;
     let latencyMs = 12;
     let responseBody = "Acknowledged by internal ledger and event bus";
 
-    if (targetUrl && targetUrl.startsWith("http")) {
+    if (targetUrl) {
       const startTime = Date.now();
       try {
-        const res = await fetch(targetUrl, {
+        const res = await fetch(new URL(String(targetUrl), req.url), {
           method: "POST",
           headers: signedHeaders,
           body: payloadString,
@@ -126,7 +155,7 @@ export async function POST(req: Request) {
         latencyMs,
         responseBody: responseBody.slice(0, 500),
       },
-      ledger: qrisLedger.getState(),
+      ledger: ledger.getState(),
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
-import { qrisLedger } from "@/lib/qris-engine";
+import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
+import { loadQrisLedger } from "@/lib/qris-ledger-store";
 
-export async function GET() {
+async function resolveLedger(req: Request) {
+  const { session, response } = await requireAuth(req);
+  if (response) return { response };
+  const tenantId = await effectiveTenantId(session);
+  if (!tenantId) {
+    return {
+      response: NextResponse.json({ error: "No workspace for this account" }, { status: 400 }),
+    };
+  }
+  const ledger = await loadQrisLedger(tenantId);
+  return { session, tenantId, ledger };
+}
+
+export async function GET(req: Request) {
   try {
-    const state = qrisLedger.getState();
+    const resolved = await resolveLedger(req);
+    if ("response" in resolved) return resolved.response;
+    const state = resolved.ledger.getState();
     return NextResponse.json({ success: true, ...state });
   } catch (error) {
     return NextResponse.json(
@@ -18,6 +35,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const resolved = await resolveLedger(req);
+    if ("response" in resolved) return resolved.response;
+
     const body = await req.json();
     const { amount, customerName } = body;
 
@@ -29,7 +49,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const tx = qrisLedger.createTransaction(parsedAmount, customerName || "Customer");
+    const tx = resolved.ledger.createTransaction(parsedAmount, customerName || "Customer");
     return NextResponse.json({ success: true, transaction: tx });
   } catch (error) {
     return NextResponse.json(
@@ -44,6 +64,9 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const resolved = await resolveLedger(req);
+    if ("response" in resolved) return resolved.response;
+
     const body = await req.json();
     const { transactionId, sourceBank } = body;
 
@@ -54,8 +77,8 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const tx = qrisLedger.confirmPayment(transactionId, sourceBank || "BCA Mobile");
-    const updatedState = qrisLedger.getState();
+    const tx = resolved.ledger.confirmPayment(transactionId, sourceBank || "BCA Mobile");
+    const updatedState = resolved.ledger.getState();
 
     return NextResponse.json({
       success: true,

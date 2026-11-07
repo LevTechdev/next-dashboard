@@ -1,7 +1,6 @@
 import "server-only";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-jwt-secret-change-in-production";
+import { getJwtSecret } from "@/lib/jwt-secret";
 const STEP_UP_TTL = "5m";
 export const STEP_UP_COOKIE = "step_up";
 
@@ -16,7 +15,7 @@ interface StepUpClaims {
 
 /** Issue a short-lived (5 min) step-up token after a re-auth challenge passes. */
 export function signStepUpToken(userId: string, purpose: StepUpPurpose): string {
-  return jwt.sign({ sub: userId, purpose, kind: "step_up" } as StepUpClaims, JWT_SECRET, {
+  return jwt.sign({ sub: userId, purpose, kind: "step_up" } as StepUpClaims, getJwtSecret(), {
     expiresIn: STEP_UP_TTL,
   });
 }
@@ -32,7 +31,7 @@ export function verifyStepUpToken(
 ): boolean {
   if (!token) return false;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as StepUpClaims;
+    const decoded = jwt.verify(token, getJwtSecret()) as StepUpClaims;
     return decoded.kind === "step_up" && decoded.sub === userId && decoded.purpose === purpose;
   } catch {
     return false;

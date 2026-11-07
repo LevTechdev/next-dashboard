@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import {
   Truck,
@@ -39,7 +39,6 @@ import { cn } from "@/lib/utils";
 import {
   FleetShipment,
   FleetTelemetrySummary,
-  MOCK_FLEET_SHIPMENTS,
   getFleetTelemetrySummary,
   TransportModality,
   DeliveryStatus,
@@ -49,27 +48,29 @@ export function LogisticsFleetTracker() {
   const t = useTranslations("logisticsFleet");
   const tc = useTranslations("common");
 
-  const [shipments, setShipments] = useState<FleetShipment[]>(MOCK_FLEET_SHIPMENTS);
-  const [summary, setSummary] = useState<FleetTelemetrySummary>(() =>
-    getFleetTelemetrySummary(MOCK_FLEET_SHIPMENTS),
-  );
+  const [shipments, setShipments] = useState<FleetShipment[]>([]);
+  const [summary, setSummary] = useState<FleetTelemetrySummary>(() => getFleetTelemetrySummary([]));
   const [activeTab, setActiveTab] = useState<"all" | "exceptions">("all");
   const [search, setSearch] = useState("");
   const [selectedShipment, setSelectedShipment] = useState<FleetShipment | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/inventory/logistics/shipments")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          setShipments(data.shipments || MOCK_FLEET_SHIPMENTS);
-          setSummary(data.summary || getFleetTelemetrySummary(MOCK_FLEET_SHIPMENTS));
-        }
-      })
-      .catch(() => {});
+  const loadFleet = useCallback(async () => {
+    try {
+      const res = await fetch("/api/inventory/logistics/shipments", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setShipments(Array.isArray(data.shipments) ? data.shipments : []);
+      setSummary(data.summary ?? getFleetTelemetrySummary([]));
+    } catch {
+      // Keep the last known rows; the empty state is safer than stale mocks.
+    }
   }, []);
+
+  useEffect(() => {
+    void loadFleet();
+  }, [loadFleet]);
 
   const handleCopyTracking = (tracking: string) => {
     navigator.clipboard.writeText(tracking);
@@ -87,20 +88,16 @@ export function LogisticsFleetTracker() {
         body: JSON.stringify({ shipmentId, action }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
         toast.success(t("actionDispatched"), {
           description: `Action ${action} successfully registered with carrier hub.`,
         });
-        // Optimistically update status
-        setShipments((prev) =>
-          prev.map((s) =>
-            s.id === shipmentId ? { ...s, status: "IN_TRANSIT" as DeliveryStatus } : s,
-          ),
-        );
+        await loadFleet();
         if (selectedShipment?.id === shipmentId) {
-          setSelectedShipment((prev) =>
-            prev ? { ...prev, status: "IN_TRANSIT" as DeliveryStatus } : null,
-          );
+          setSelectedShipment(data?.shipment ?? null);
         }
+      } else {
+        toast.error("Failed to dispatch exception resolution");
       }
     } catch {
       toast.error("Failed to dispatch exception resolution");

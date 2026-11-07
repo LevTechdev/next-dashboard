@@ -26,8 +26,8 @@ vi.mock("@/lib/db", () => ({
 }));
 
 // Channel DELETE now requires a session (and writes a deletion audit entry).
-vi.mock("@/lib/api-guard", () => ({
-  requireAuth: vi.fn().mockResolvedValue({
+const { chatState, sessionResponse } = vi.hoisted(() => ({
+  sessionResponse: {
     session: {
       user: {
         id: "user-1",
@@ -38,6 +38,67 @@ vi.mock("@/lib/api-guard", () => ({
       },
     },
     response: null,
+  },
+  chatState: {
+    channels: [
+      {
+        id: "chan-seed",
+        name: "Seed Slack",
+        platform: "slack",
+        webhookUrl: "simulation://slack.test",
+        channelName: "#seed",
+        enabledEvents: ["stockout"],
+        status: "ACTIVE",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ],
+    rules: {
+      stockoutDoiThreshold: 7,
+      vipOrderMinAmount: 500,
+      paymentAlertsEnabled: true,
+      dailyDigestTime: "09:00",
+      dailyDigestEnabled: true,
+    },
+    deliveries: [] as any[],
+  },
+}));
+
+vi.mock("@/lib/api-guard", () => ({
+  requireAuth: vi.fn().mockResolvedValue(sessionResponse),
+  requirePermission: vi.fn().mockResolvedValue(sessionResponse),
+}));
+
+// The store is Prisma-backed; keep this API-contract test on an in-memory
+// fixture rather than standing up the database.
+vi.mock("@/lib/chat-alerts-store", () => ({
+  getChatConfig: vi.fn(async () => chatState),
+  upsertChatChannel: vi.fn(async (_tenantId: string, channel: any) => {
+    const existing = channel.id ? chatState.channels.find((c) => c.id === channel.id) : null;
+    if (existing) {
+      Object.assign(existing, channel);
+      return existing;
+    }
+    const created = {
+      ...channel,
+      id: channel.id ?? "chan-test",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    chatState.channels.push(created);
+    return created;
+  }),
+  deleteChatChannel: vi.fn(async (_tenantId: string, id: string) => {
+    const index = chatState.channels.findIndex((c) => c.id === id);
+    if (index === -1) return false;
+    chatState.channels.splice(index, 1);
+    return true;
+  }),
+  updateChatRules: vi.fn(async () => chatState.rules),
+  logDelivery: vi.fn(async (_tenantId: string, log: any) => {
+    const record = { ...log, id: "deliv-test", createdAt: new Date().toISOString() };
+    chatState.deliveries.push(record);
+    return record;
   }),
 }));
 
@@ -145,7 +206,9 @@ describe("Cohorts Analytics API (/api/analytics/cohorts)", () => {
 
 describe("Chat Alerts API (/api/integrations/chat-alerts)", () => {
   it("GET returns channels, trigger rules, and delivery logs", async () => {
-    const res = await chatAlertsRoute.GET();
+    const res = await chatAlertsRoute.GET(
+      new Request("http://localhost:3010/api/integrations/chat-alerts"),
+    );
     expect(res.status).toBe(200);
     const json = await res.json();
 

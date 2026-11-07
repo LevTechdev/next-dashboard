@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
 import { getPurchaseOrderById } from "@/lib/purchase-orders-store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const { id } = await params;
-    const po = getPurchaseOrderById(id);
+    const po = await getPurchaseOrderById(tenantId, id);
 
     if (!po) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });

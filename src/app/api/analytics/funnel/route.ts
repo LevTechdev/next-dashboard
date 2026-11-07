@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
 import { computeFunnelAnalytics } from "@/lib/funnel-analytics";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(req.url);
     const device = searchParams.get("device") || "all";
     const period = searchParams.get("period") || "30d";
 
-    // Attempt to gather real order metrics from DB
+    // Attempt to gather real order metrics from DB, scoped to the workspace.
     let orderCount = 2480;
     let avgOrderValue = 78.5;
 
@@ -18,7 +27,7 @@ export async function GET(req: NextRequest) {
       const aggregate = await prisma.order.aggregate({
         _count: { id: true },
         _avg: { totalAmount: true },
-        where: { status: { not: "CANCELLED" } },
+        where: { tenantId, status: { not: "CANCELLED" } },
       });
       if (aggregate._count.id > 0) {
         orderCount = aggregate._count.id;

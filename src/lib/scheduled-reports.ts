@@ -13,11 +13,11 @@ import {
  * Scheduled executive reports — the delivery engine behind the Reports
  * page's schedule config.
  *
- * runScheduledReports() is called by the scheduler's daily window; it
- * compares each active schedule's frequency against lastSentAt and emails
- * the executive digest (GMV, orders, AOV, top products, 30-day forecast)
- * when a period boundary has crossed. The send-digest route remains for
- * on-demand sends; this module is the automated half that was missing.
+ * runScheduledReports() is called by the scheduler's daily window; it reads
+ * every active workspace schedule, compares each frequency against lastSentAt
+ * and emails the executive digest (GMV, orders, AOV, top products, 30-day
+ * forecast) when a period boundary has crossed. All metrics and pushes are
+ * scoped to the schedule's tenant.
  */
 
 export interface ScheduledReportsResult {
@@ -47,16 +47,16 @@ function periodDays(frequency: ReportScheduleConfig["frequency"]): number {
   }
 }
 
-async function computeExecutiveMetrics() {
+async function computeExecutiveMetrics(tenantId: string) {
   const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [orders, recentOrders] = await Promise.all([
     prisma.order.findMany({
-      where: { paymentStatus: "PAID" },
+      where: { tenantId, paymentStatus: "PAID" },
       select: { grandTotal: true, createdAt: true },
     }),
     prisma.order.findMany({
-      where: { paymentStatus: "PAID", createdAt: { gte: since30 } },
+      where: { tenantId, paymentStatus: "PAID", createdAt: { gte: since30 } },
       include: { items: { include: { product: { select: { name: true, sku: true } } } } },
     }),
   ]);
@@ -128,68 +128,90 @@ function digestHtml(m: Awaited<ReturnType<typeof computeExecutiveMetrics>>): str
 }
 
 /**
- * Run due scheduled reports. Returns a summary for the scheduler ledger.
+ * Run due scheduled reports across every workspace. Returns a summary for the
+ * scheduler ledger.
  */
 export async function runScheduledReports(
   opts: { force?: boolean } = {},
 ): Promise<ScheduledReportsResult> {
-  const config = readReportSchedule();
-  if (!config.isActive || config.recipients.length === 0) {
+  const schedules = await prisma.reportSchedule.findMany({
+    where: { isActive: true },
+    select: { tenantId: true },
+  });
+
+  if (schedules.length === 0) {
     return { checked: 0, sent: 0, skipped: true, reason: "no active schedule or recipients" };
   }
 
-  // Frequency gate: only send when the last send is older than one period
-  // (or force is set — used by the manual trigger and tests).
-  if (!opts.force && config.lastSentAt) {
-    const elapsedDays =
-      (Date.now() - new Date(config.lastSentAt).getTime()) / (24 * 60 * 60 * 1000);
-    if (elapsedDays < periodDays(config.frequency)) {
-      return {
-        checked: 1,
-        sent: 0,
-        skipped: true,
-        reason: `next send in ${(periodDays(config.frequency) - elapsedDays).toFixed(1)}d`,
-      };
-    }
-  }
-
-  const metrics = await computeExecutiveMetrics();
-  const frequencyLabel = config.frequency.charAt(0) + config.frequency.slice(1).toLowerCase();
-  const periodLabel =
-    config.frequency === "WEEKLY" ? "Weekly" : config.frequency === "MONTHLY" ? "Monthly" : "Daily";
-
+  let checked = 0;
   let sent = 0;
-  for (const to of config.recipients) {
-    try {
-      await sendEmail({
-        to,
-        subject: `${periodLabel} Executive Report: ${fmt(metrics.gmv)} GMV`,
-        html: digestHtml(metrics),
-        text: `${periodLabel} Executive Report\nGMV: ${fmt(metrics.gmv)}\nOrders: ${metrics.totalOrders}\nAOV: ${fmt(metrics.aov)}\n30-day forecast: ${fmt(metrics.forecast)}\n`,
-      });
-      sent += 1;
-    } catch (err) {
-      console.error(`[scheduled-reports] send to ${to} failed:`, err);
+  let lastReason: string | undefined;
+
+  for (const row of schedules) {
+    const tenantId = row.tenantId;
+    const config = await readReportSchedule(tenantId);
+    if (!config.isActive || config.recipients.length === 0) continue;
+
+    checked += 1;
+
+    // Frequency gate: only send when the last send is older than one period
+    // (or force is set — used by the manual trigger and tests).
+    if (!opts.force && config.lastSentAt) {
+      const elapsedDays =
+        (Date.now() - new Date(config.lastSentAt).getTime()) / (24 * 60 * 60 * 1000);
+      if (elapsedDays < periodDays(config.frequency)) {
+        lastReason = `next send in ${(periodDays(config.frequency) - elapsedDays).toFixed(1)}d`;
+        continue;
+      }
     }
+
+    const metrics = await computeExecutiveMetrics(tenantId);
+    const frequencyLabel = config.frequency.charAt(0) + config.frequency.slice(1).toLowerCase();
+    const periodLabel =
+      config.frequency === "WEEKLY"
+        ? "Weekly"
+        : config.frequency === "MONTHLY"
+          ? "Monthly"
+          : "Daily";
+
+    for (const to of config.recipients) {
+      try {
+        await sendEmail({
+          to,
+          subject: `${periodLabel} Executive Report: ${fmt(metrics.gmv)} GMV`,
+          html: digestHtml(metrics),
+          text: `${periodLabel} Executive Report\nGMV: ${fmt(metrics.gmv)}\nOrders: ${metrics.totalOrders}\nAOV: ${fmt(metrics.aov)}\n30-day forecast: ${fmt(metrics.forecast)}\n`,
+        });
+        sent += 1;
+      } catch (err) {
+        console.error(`[scheduled-reports] send to ${to} failed:`, err);
+      }
+    }
+
+    // One push per workspace member with push enabled — quiet nudge that the
+    // fresh report is in their inbox.
+    try {
+      await sendPushToTenant(tenantId, {
+        title: `${frequencyLabel} report delivered`,
+        body: `GMV ${fmt(metrics.gmv)} · ${metrics.totalOrders.toLocaleString()} orders — full report in your inbox.`,
+        url: "/reports",
+        tag: "scheduled-report",
+      });
+    } catch {
+      // Push is best-effort.
+    }
+
+    config.lastSentAt = new Date().toISOString();
+    await writeReportSchedule(tenantId, config);
   }
 
-  // One push per workspace member with push enabled — quiet nudge that the
-  // fresh report is in their inbox.
-  try {
-    await sendPushToTenant(null, {
-      title: `${frequencyLabel} report delivered`,
-      body: `GMV ${fmt(metrics.gmv)} · ${metrics.totalOrders.toLocaleString()} orders — full report in your inbox.`,
-      url: "/reports",
-      tag: "scheduled-report",
-    });
-  } catch {
-    // Push is best-effort.
+  if (checked === 0) {
+    return { checked: 0, sent: 0, skipped: true, reason: "no active schedule or recipients" };
   }
 
-  config.lastSentAt = new Date().toISOString();
-  writeReportSchedule(config);
-
-  return { checked: 1, sent, skipped: false };
+  return sent === 0 && lastReason
+    ? { checked, sent, skipped: true, reason: lastReason }
+    : { checked, sent, skipped: false };
 }
 
 /** Manual trigger used by the cron route and tests. */

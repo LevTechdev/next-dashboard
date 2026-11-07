@@ -3,6 +3,7 @@ import createMiddleware from "next-intl/middleware";
 import { jwtVerify } from "jose";
 import { routing } from "./i18n/routing";
 import { canAccessPage, type Role } from "@/lib/permissions";
+import { getJwtSecret } from "@/lib/jwt-secret";
 import {
   prefixAllowsRole,
   rolePrefixForRole,
@@ -20,9 +21,10 @@ import {
 
 const intlMiddleware = createMiddleware(routing);
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "dev-jwt-secret-change-in-production",
-);
+/** Resolved per request so a missing production secret fails closed. */
+function jwtSecretKey(): Uint8Array {
+  return new TextEncoder().encode(getJwtSecret());
+}
 
 // Public marketing routes — derived from MARKETING_PATHS (site-config.ts), the
 // same list that feeds the sitemap, so the proxy and sitemap can never drift
@@ -114,7 +116,7 @@ async function handleRolePrefixedPath(req: NextRequest, pathname: string) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, jwtSecretKey());
     const sessionRole = String((payload as { role?: string }).role ?? "");
 
     // A signed ?scope= can pin the prefix for this request — but only when the
@@ -210,7 +212,7 @@ export default async function proxy(req: NextRequest) {
   const hasRefresh = req.cookies.has("refresh_token");
   try {
     if (!token) throw new Error("no token");
-    await jwtVerify(token, JWT_SECRET);
+    await jwtVerify(token, jwtSecretKey());
     return withSecurityHeaders(intlMiddleware(req));
   } catch {
     // Access token missing or expired (it's short-lived). If a refresh cookie

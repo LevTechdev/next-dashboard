@@ -8,6 +8,7 @@ import {
 import { hash } from "bcryptjs";
 import { createHash } from "node:crypto";
 import { computeHash, GENESIS_HASH } from "@/lib/audit-hash";
+import { seedFleetTax } from "./seed-fleet-tax";
 
 const prisma = new PrismaClient();
 
@@ -70,6 +71,7 @@ async function main() {
     update: {},
     create: { name: "Default Workspace", slug: "default" },
   });
+  await seedFleetTax(defaultTenant.id);
 
   const adminPassword = await hash("admin123", 10);
   const staffPassword = await hash("staff123", 10);

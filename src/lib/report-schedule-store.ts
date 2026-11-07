@@ -1,17 +1,11 @@
 import "server-only";
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { prisma } from "@/lib/db";
 
 /**
- * Persisted schedule store for scheduled executive reports.
- *
- * The Reports page's schedule config used to live in a module-level variable
- * inside the API route — every server restart silently reset it, and the
- * scheduler (a different module instance) could never read it. This JSON
- * store is the single source of truth both surfaces read/write, following
- * the data/*.json store pattern used by the QRIS ledger, webhook DLQ, and
- * auto-payout cycle.
+ * Persisted schedule store for scheduled executive reports, one row per
+ * workspace. Previously a data/report-schedule.json file, which was both
+ * global and read-only on serverless hosts.
  */
 
 export interface ReportScheduleConfig {
@@ -28,8 +22,6 @@ export interface ReportScheduleConfig {
   timeOfDay: string; // "08:00" server time
 }
 
-const STORE_PATH = join(process.cwd(), "data", "report-schedule.json");
-
 export const DEFAULT_REPORT_SCHEDULE: ReportScheduleConfig = {
   frequency: "WEEKLY",
   recipients: [],
@@ -44,25 +36,60 @@ export const DEFAULT_REPORT_SCHEDULE: ReportScheduleConfig = {
   timeOfDay: "08:00",
 };
 
-export function readReportSchedule(): ReportScheduleConfig {
-  try {
-    if (!existsSync(STORE_PATH)) return { ...DEFAULT_REPORT_SCHEDULE };
-    const parsed = JSON.parse(readFileSync(STORE_PATH, "utf-8")) as Partial<ReportScheduleConfig>;
-    return {
-      ...DEFAULT_REPORT_SCHEDULE,
-      ...parsed,
-      metrics: { ...DEFAULT_REPORT_SCHEDULE.metrics, ...(parsed.metrics ?? {}) },
-    };
-  } catch {
-    return { ...DEFAULT_REPORT_SCHEDULE };
-  }
+function mapRow(row: {
+  frequency: string;
+  recipients: string[];
+  metrics: unknown;
+  isActive: boolean;
+  lastSentAt: Date | null;
+  timeOfDay: string;
+}): ReportScheduleConfig {
+  const metrics =
+    row.metrics && typeof row.metrics === "object"
+      ? (row.metrics as Partial<ReportScheduleConfig["metrics"]>)
+      : {};
+  return {
+    ...DEFAULT_REPORT_SCHEDULE,
+    frequency: (["DAILY", "WEEKLY", "MONTHLY"] as const).includes(
+      row.frequency as ReportScheduleConfig["frequency"],
+    )
+      ? (row.frequency as ReportScheduleConfig["frequency"])
+      : DEFAULT_REPORT_SCHEDULE.frequency,
+    recipients: Array.isArray(row.recipients) ? row.recipients : [],
+    metrics: { ...DEFAULT_REPORT_SCHEDULE.metrics, ...metrics },
+    isActive: row.isActive,
+    lastSentAt: row.lastSentAt?.toISOString() ?? null,
+    timeOfDay: row.timeOfDay || DEFAULT_REPORT_SCHEDULE.timeOfDay,
+  };
 }
 
-export function writeReportSchedule(config: ReportScheduleConfig): void {
-  try {
-    mkdirSync(dirname(STORE_PATH), { recursive: true });
-    writeFileSync(STORE_PATH, JSON.stringify(config, null, 2));
-  } catch {
-    // Best-effort persistence; the API still functions in-memory for GET.
-  }
+export async function readReportSchedule(tenantId: string): Promise<ReportScheduleConfig> {
+  const row = await prisma.reportSchedule.findUnique({ where: { tenantId } });
+  return row ? mapRow(row) : { ...DEFAULT_REPORT_SCHEDULE };
+}
+
+export async function writeReportSchedule(
+  tenantId: string,
+  config: ReportScheduleConfig,
+): Promise<void> {
+  await prisma.reportSchedule.upsert({
+    where: { tenantId },
+    create: {
+      tenantId,
+      frequency: config.frequency,
+      recipients: config.recipients,
+      metrics: config.metrics,
+      isActive: config.isActive,
+      lastSentAt: config.lastSentAt ? new Date(config.lastSentAt) : null,
+      timeOfDay: config.timeOfDay,
+    },
+    update: {
+      frequency: config.frequency,
+      recipients: config.recipients,
+      metrics: config.metrics,
+      isActive: config.isActive,
+      lastSentAt: config.lastSentAt ? new Date(config.lastSentAt) : null,
+      timeOfDay: config.timeOfDay,
+    },
+  });
 }

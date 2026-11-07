@@ -142,6 +142,7 @@ beforeEach(() => {
         name: "Admin",
         email: "admin@test.com",
         role: "ADMIN",
+        tenantId: "tenant-1",
       },
     },
     response: null,
@@ -210,7 +211,7 @@ describe("HTTP integration: response contract", () => {
     });
 
     it("categories GET returns JSON content-type", async () => {
-      const res = await categoriesRoutes.GET();
+      const res = await categoriesRoutes.GET(get("http://localhost/api/categories"));
       expect(res.headers.get("content-type")).toBe("application/json");
     });
 
@@ -407,7 +408,7 @@ describe("HTTP integration: request edge cases", () => {
 describe("HTTP integration: real Request across routes", () => {
   it("categories: full fetch-style round trip", async () => {
     // Simulates what fetch("http://localhost/api/categories") would do
-    const res = await categoriesRoutes.GET();
+    const res = await categoriesRoutes.GET(get("http://localhost/api/categories"));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/json");
 

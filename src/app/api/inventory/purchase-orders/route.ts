@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireAuth, requirePermission } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
 import { getPurchaseOrders, createPurchaseOrder } from "@/lib/purchase-orders-store";
 import { buildMonthlyTrend } from "@/lib/trend-series";
 
@@ -6,9 +8,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
-    let orders = getPurchaseOrders();
+    let orders = await getPurchaseOrders(tenantId);
 
     if (status && status !== "ALL") {
       orders = orders.filter((o) => o.status === status);
@@ -30,7 +40,6 @@ export async function GET(req: Request) {
         totalIssued,
         totalReceived,
       },
-      // Monthly issued capital trend for the Open PO Capital card sparkline.
       trends: {
         issued: buildMonthlyTrend(
           orders.filter((o) => o.status === "ISSUED"),
@@ -39,12 +48,21 @@ export async function GET(req: Request) {
       },
     });
   } catch (err) {
+    console.error("[PURCHASE_ORDERS_GET_ERROR]", err);
     return NextResponse.json({ error: "Failed to fetch purchase orders" }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await requirePermission("create", "inventory", req);
+    if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const body = await req.json();
     const { supplierId, items, warehouseId, notes } = body;
 
@@ -55,7 +73,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const po = createPurchaseOrder({
+    const po = await createPurchaseOrder({
+      tenantId,
       supplierId,
       items,
       warehouseId,

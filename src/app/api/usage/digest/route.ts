@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { runQuotaDigest } from "@/lib/usage-digest";
 import { recordExternalJobRun } from "@/lib/scheduler";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,11 +22,11 @@ export const runtime = "nodejs";
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const secret = process.env.CRON_SECRET;
-  const provided =
-    searchParams.get("secret") || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-  if (!secret || provided !== secret) {
+  // Vercel sends the Authorization header; the query fallback is for
+  // self-hosted schedulers. The header must win so a literal
+  // ${CRON_SECRET} in vercel.json can never shadow a valid header.
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
