@@ -39,7 +39,7 @@ const ROOT = process.cwd();
 const DISTRO = process.env.E2E_WSL_DISTRO || "Ubuntu";
 const APP_PORT_START = Number(process.env.E2E_WSL_APP_PORT || 3020);
 const DB_PORT_START = Number(process.env.E2E_WSL_DB_PORT || 55440);
-const PG_BIN = process.env.E2E_WSL_PG_BIN || "/usr/lib/postgresql/16/bin";
+const PG_BIN = (process.env.E2E_WSL_PG_BIN || "").trim() || "/usr/lib/postgresql/16/bin";
 const READY_TIMEOUT_MS = Number(process.env.E2E_WSL_READY_TIMEOUT_MS || 300_000);
 const PLAYWRIGHT_ARGS = process.argv.slice(2);
 const KEEP_ON_FAILURE = process.env.E2E_WSL_KEEP === "1";
@@ -64,6 +64,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
+
+const pgBinPath = (name) => shellQuote(`${PG_BIN}/${name}`);
 
 /** Run a bash script inside the configured WSL distribution. */
 function runWsl(script, { capture = true, stdio = "pipe" } = {}) {
@@ -173,7 +175,7 @@ function killTree(pid) {
 
 function printPostgresLogs(dataDir) {
   const log = runWsl(`
-cat ${shellQuote(`${dataDir}/initdb.log`)} ${shellQuote(`${dataDir}/pgctl.log`)} ${shellQuote(`${dataDir}/postgres.log`)} 2>/dev/null | tail -80 || true
+cat ${shellQuote(`${dataDir}.initdb.log`)} ${shellQuote(`${dataDir}/pgctl.log`)} ${shellQuote(`${dataDir}/postgres.log`)} 2>/dev/null | tail -80 || true
 `);
   if (log.stdout?.trim()) console.error(log.stdout.trim());
 }
@@ -187,13 +189,12 @@ async function startPostgres(port) {
   // forever even though the server is already accepting connections.
   const init = runWsl(`
 set -euo pipefail
-PG_BIN=${shellQuote(PG_BIN)}
-if [ ! -x "$PG_BIN/initdb" ]; then
-  echo "PostgreSQL server binaries were not found at $PG_BIN." >&2
+if [ ! -x ${pgBinPath("initdb")} ]; then
+  echo "PostgreSQL server binaries were not found at ${PG_BIN}." >&2
   echo "Install PostgreSQL 16 in WSL or set E2E_WSL_PG_BIN to its bin directory." >&2
   exit 127
 fi
-"$PG_BIN/initdb" -D ${shellQuote(dataDir)} -U postgres --auth=trust --encoding=UTF8 --no-locale </dev/null >${shellQuote(`${dataDir}/initdb.log`)} 2>&1
+${pgBinPath("initdb")} -D ${shellQuote(dataDir)} -U postgres --auth=trust --encoding=UTF8 --no-locale </dev/null >${shellQuote(`${dataDir}.initdb.log`)} 2>&1
 `);
   if (init.status !== 0) {
     logWslFailure("Postgres initdb failed", init);
@@ -203,8 +204,7 @@ fi
 
   const start = runWsl(`
 set -euo pipefail
-PG_BIN=${shellQuote(PG_BIN)}
-"$PG_BIN/pg_ctl" -D ${shellQuote(dataDir)} -o "-p ${port} -h 127.0.0.1 -k /tmp" -l ${shellQuote(`${dataDir}/postgres.log`)} -w -t 60 start </dev/null >>${shellQuote(`${dataDir}/pgctl.log`)} 2>&1
+${pgBinPath("pg_ctl")} -D ${shellQuote(dataDir)} -o "-p ${port} -h 127.0.0.1 -k /tmp" -l ${shellQuote(`${dataDir}/postgres.log`)} -w -t 60 start </dev/null >>${shellQuote(`${dataDir}/pgctl.log`)} 2>&1
 `);
   if (start.status !== 0) {
     logWslFailure("Postgres start failed", start);
@@ -215,8 +215,7 @@ PG_BIN=${shellQuote(PG_BIN)}
 
   const create = runWsl(`
 set -euo pipefail
-PG_BIN=${shellQuote(PG_BIN)}
-"$PG_BIN/psql" -h 127.0.0.1 -p ${port} -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE nextdashboard;'
+${pgBinPath("psql")} -h 127.0.0.1 -p ${port} -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE nextdashboard;"
 `);
   if (create.status !== 0) {
     logWslFailure("Postgres database creation failed", create);
@@ -238,8 +237,7 @@ function stopPostgres() {
   if (pgStarted) {
     const result = runWsl(`
 set +e
-PG_BIN=${shellQuote(PG_BIN)}
-[ -x "$PG_BIN/pg_ctl" ] && "$PG_BIN/pg_ctl" -D ${shellQuote(pgDataDir)} -m fast -w -t 30 stop
+[ -x ${pgBinPath("pg_ctl")} ] && ${pgBinPath("pg_ctl")} -D ${shellQuote(pgDataDir)} -m fast -w -t 30 stop
 `);
     if (result.status !== 0) {
       logWslFailure("Postgres stop warning", result);
@@ -299,6 +297,7 @@ async function cleanup() {
 }
 
 async function main() {
+  console.log(`[e2e-wsl] runner diagnostic: pgBin=${JSON.stringify(PG_BIN)}`);
   const probe = runWsl("command -v bash >/dev/null && echo ready");
   if (probe.status !== 0) {
     logWslFailure(`WSL distribution "${DISTRO}" is not available`, probe);
