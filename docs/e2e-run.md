@@ -34,6 +34,31 @@ npm run test:e2e
 See the [Local-DB fallback](#local-db-fallback-supabase-pooler-unreachable)
 section for why the local runner is the default and everything it sets.
 
+## Windows + WSL: one-command live run
+
+On a Windows host with WSL 2, `npm run test:e2e:wsl` is the self-contained
+variant. It does **not** need Docker or a pre-existing database:
+
+- starts a throwaway PostgreSQL 16 cluster inside WSL using a user-owned data
+  directory (no system service or root access),
+- picks free app and database ports, uses `.next-e2e` as its private build
+  directory, and starts Next dev on the selected app port,
+- runs `prisma db push`, then Playwright; `globalSetup` seeds the fresh
+  database and warms the suite's routes,
+- stops the app and Postgres and removes the cluster directory when done.
+
+```bash
+npm run test:e2e:wsl
+
+# Pass a focused spec or normal Playwright flags after --:
+npm run test:e2e:wsl -- e2e/login.spec.ts --workers=1
+```
+
+WSL must have PostgreSQL 16 server binaries installed (Ubuntu:
+`apt-get install postgresql-16`). Override the distribution or starting ports
+with `E2E_WSL_DISTRO`, `E2E_WSL_APP_PORT`, `E2E_WSL_DB_PORT`, and
+`E2E_WSL_PG_BIN` (default `/usr/lib/postgresql/16/bin`).
+
 ## AI_MOCK=1 (bare `npm run test:e2e` only)
 
 `npm run test:e2e:local` sets `AI_MOCK=1` automatically — this section only

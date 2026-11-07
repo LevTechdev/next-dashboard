@@ -17,7 +17,7 @@ if [ -n "$SKIP_ESLINT" ]; then
   # parentheses survive.
   printf '%s\n' "$STAGED_FILES" | while IFS= read -r f; do
     if [ -n "$f" ]; then
-      npx prettier --write --ignore-unknown "$f" || exit 1
+      node ./node_modules/prettier/bin/prettier.cjs --write --ignore-unknown "$f" || exit 1
     fi
   done || exit 1
   # Re-stage what prettier rewrote. Without this the commit captures the
@@ -31,14 +31,17 @@ if [ -n "$SKIP_ESLINT" ]; then
   done || exit 1
   if [ "$STAGED_TS" -gt 0 ]; then
     echo "🔶 Running typecheck..."
-    npx tsc --noEmit || exit $?
+    node ./node_modules/typescript/bin/tsc --noEmit || exit $?
   fi
   exit 0
 fi
 
 # ── Full pipeline: lint-staged (eslint + prettier) + typecheck ────────────────
-npx lint-staged
+# Call the locally installed CLIs directly: npx can stall while resolving a
+# package on Windows. --no-stash avoids lint-staged's backup-stash restore
+# racing unrelated worktree edits; lint-staged still stages its own fixes.
+node ./node_modules/lint-staged/bin/lint-staged.js --no-stash
 
 if [ "$STAGED_TS" -gt 0 ]; then
-  npx tsc --noEmit
+  node ./node_modules/typescript/bin/tsc --noEmit
 fi
