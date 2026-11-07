@@ -153,6 +153,9 @@ jobs:
           NEXTAUTH_URL: ${{ inputs.nextauth-url }}
           GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
           GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
+          # Local-only signing key for the payment webhook simulator spec.
+          # This is a CI placeholder, never a production credential.
+          WEBHOOK_SIMULATE_SECRET: ci-e2e-webhook-simulator-secret
           # No OpenAI key is provisioned for CI, so force the AI copilot's
           # dev-mode mock reply (AI_MOCK=1). The Playwright-spawned dev
           # server inherits this env from the test process, keeping the
