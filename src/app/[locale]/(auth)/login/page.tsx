@@ -32,6 +32,7 @@ import {
 } from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
 import { backupCodeStatus } from "@/lib/backup-code-status";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { toast } from "sonner";
 
 import { useTranslations } from "next-intl";
@@ -159,7 +160,7 @@ function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || `/${locale}/dashboard`;
+  const redirect = safeRedirectPath(searchParams.get("redirect"), `/${locale}/dashboard`);
   const sessionNotice = searchParams.get("reason");
 
   // A dead session force-closes the dashboard onto this form with
