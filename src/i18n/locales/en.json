@@ -20,6 +20,7 @@
     "jobScheduledReports": "Scheduled reports",
     "jobBackupVerify": "Backup verification",
     "jobRecoveryDrift": "Recovery readiness sweep",
+    "jobFxSnapshot": "Daily FX rate snapshot",
     "dlqTitle": "Webhook dead-letter queue",
     "dlqDesc": "Inbound deliveries that failed signature or processing and are waiting on a replay.",
     "dlqEmpty": "No failed deliveries — the queue is empty.",

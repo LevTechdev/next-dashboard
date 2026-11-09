@@ -18,6 +18,7 @@
     "jobSupabaseSync": "Supabaseミラー同期",
     "jobBackupVerify": "バックアップ復元検証",
     "jobRecoveryDrift": "復旧準備度スキャン",
+    "jobFxSnapshot": "日次為替レートの記録",
     "jobTrialSweep": "トライアル期限スイープ",
     "jobScheduledReports": "定期レポート",
     "dlqTitle": "Webhookデッドレターキュー",

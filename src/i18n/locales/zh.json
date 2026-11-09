@@ -20,6 +20,7 @@
     "jobScheduledReports": "定时报告",
     "jobBackupVerify": "备份校验",
     "jobRecoveryDrift": "恢复准备度扫描",
+    "jobFxSnapshot": "每日汇率快照",
     "dlqTitle": "Webhook 死信队列",
     "dlqDesc": "签名或处理失败、等待重放的入站投递。",
     "dlqEmpty": "没有失败的投递——队列为空。",

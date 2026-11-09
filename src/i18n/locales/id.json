@@ -18,6 +18,7 @@
     "jobSupabaseSync": "Sinkronisasi mirror Supabase",
     "jobBackupVerify": "Verifikasi pemulihan cadangan",
     "jobRecoveryDrift": "Pemindaian kesiapan pemulihan",
+    "jobFxSnapshot": "Cuplikan kurs harian",
     "jobTrialSweep": "Sapuan masa uji",
     "jobScheduledReports": "Laporan terjadwal",
     "dlqTitle": "Antrean surat mati webhook",

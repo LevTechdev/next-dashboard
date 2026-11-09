@@ -33,6 +33,10 @@ jobs:
       NEXTAUTH_URL: http://localhost:3010
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
+      # Local-only signing key for the payment webhook simulator spec. This
+      # mirrors e2e-reusable.yml so the local-runner suite exercises the same
+      # signed-dispatch path instead of failing with a 503.
+      WEBHOOK_SIMULATE_SECRET: ci-e2e-webhook-simulator-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
