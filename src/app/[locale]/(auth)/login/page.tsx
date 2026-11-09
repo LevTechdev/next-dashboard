@@ -1337,6 +1337,7 @@ function LoginForm() {
                       placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      disabled={!mounted}
                       className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl"
                       required
                     />
@@ -1359,6 +1360,7 @@ function LoginForm() {
                         placeholder={t("passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        disabled={!mounted}
                         className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl pr-10"
                         required
                       />
@@ -1387,7 +1389,7 @@ function LoginForm() {
                   <Button
                     type="submit"
                     className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20 mt-2"
-                    disabled={!email || !password || isLoading}
+                    disabled={!mounted || !email || !password || isLoading}
                   >
                     {isLoading ? (
                       <>

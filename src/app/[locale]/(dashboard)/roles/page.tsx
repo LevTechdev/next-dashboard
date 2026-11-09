@@ -342,11 +342,11 @@ export default function RolesPage() {
       {/* Tabs: Permission Matrix / User Role Summary */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="matrix" className="gap-2">
+          <TabsTrigger value="matrix" className="gap-2 px-2 sm:px-3">
             <SlidersHorizontalIcon size={16} className="h-4 w-4" />
             {troles("tabMatrix")}
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
+          <TabsTrigger value="users" className="gap-2 px-2 sm:px-3">
             <Users2 className="h-4 w-4" />
             {troles("tabUsers")}
           </TabsTrigger>

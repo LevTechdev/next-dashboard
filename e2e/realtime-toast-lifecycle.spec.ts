@@ -51,8 +51,11 @@ test("order event renders the floating toast, then auto-dismisses", async ({ pag
       const rect = el.getBoundingClientRect();
       return {
         aria: el.getAttribute("aria-label"),
-        rightGap: Math.round(window.innerWidth - rect.right),
-        bottomGap: Math.round(window.innerHeight - rect.bottom),
+        // Fixed positioning is relative to the layout viewport, which excludes
+        // a classic desktop scrollbar. innerWidth includes that scrollbar, so
+        // it reports 24px + scrollbar width even when the CSS inset is 24px.
+        rightGap: Math.round(document.documentElement.clientWidth - rect.right),
+        bottomGap: Math.round(document.documentElement.clientHeight - rect.bottom),
         pointerEvents: getComputedStyle(el).pointerEvents,
       };
     });
