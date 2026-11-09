@@ -1,119 +1,208 @@
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db";
 import {
-  PurchaseOrder,
+  type PurchaseOrder,
+  type PurchaseOrderItem,
   generatePoNumber,
   VERIFIED_SUPPLIERS,
   DEFAULT_WAREHOUSES,
 } from "./inventory-replenishment";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const PO_FILE = path.join(DATA_DIR, "purchase-orders.json");
+type PoRow = {
+  id: string;
+  poNumber: string;
+  supplierId: string;
+  supplierName: string;
+  supplierEmail: string;
+  status: string;
+  totalAmount: number;
+  warehouseId: string;
+  warehouseName: string;
+  leadTimeDays: number;
+  issueDate: Date;
+  expectedDeliveryDate: Date;
+  receivedDate: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  items: Array<{
+    productId: string;
+    productName: string;
+    sku: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+  }>;
+};
 
-const SEED_POS: PurchaseOrder[] = [
-  {
-    id: "po-seed-001",
-    poNumber: "PO-2026-0001",
-    supplierId: "sup-001",
-    supplierName: "Apex Manufacturing Ltd.",
-    supplierEmail: "supply@apexmanufacture.com",
-    status: "ISSUED",
-    items: [
-      {
-        productId: "prod-001",
-        productName: "Classic Oxford Cotton Shirt",
-        sku: "SHIRT-OXF-001",
-        quantity: 150,
-        unitCost: 125000,
-        totalCost: 18750000,
-      },
-      {
-        productId: "prod-002",
-        productName: "Slim Chino Trousers",
-        sku: "PANT-CHN-002",
-        quantity: 80,
-        unitCost: 175000,
-        totalCost: 14000000,
-      },
-    ],
-    totalAmount: 32750000,
-    warehouseId: "wh-jkt",
-    warehouseName: "Jakarta Central Fulfillment Center",
+function mapOrder(row: PoRow): PurchaseOrder {
+  return {
+    id: row.id,
+    poNumber: row.poNumber,
+    supplierId: row.supplierId,
+    supplierName: row.supplierName,
+    supplierEmail: row.supplierEmail,
+    status: row.status as PurchaseOrder["status"],
+    items: row.items.map((item): PurchaseOrderItem => ({
+      productId: item.productId,
+      productName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitCost: item.unitCost,
+      totalCost: item.totalCost,
+    })),
+    totalAmount: row.totalAmount,
+    warehouseId: row.warehouseId,
+    warehouseName: row.warehouseName,
+    leadTimeDays: row.leadTimeDays,
+    issueDate: row.issueDate.toISOString(),
+    expectedDeliveryDate: row.expectedDeliveryDate.toISOString(),
+    receivedDate: row.receivedDate?.toISOString() ?? null,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000);
+}
+
+function daysAhead(days: number): Date {
+  return new Date(Date.now() + days * 86_400_000);
+}
+
+/** Seed the two demo POs once per workspace, mirroring the old JSON seed. */
+async function seedOrders(tenantId: string) {
+  const count = await prisma.purchaseOrder.count({ where: { tenantId } });
+  if (count > 0) return;
+
+  const supplier1 = VERIFIED_SUPPLIERS[0] ?? {
+    id: "sup-001",
+    name: "Apex Manufacturing Ltd.",
+    email: "supply@apexmanufacture.com",
     leadTimeDays: 7,
-    issueDate: new Date(Date.now() - 3 * 86400000).toISOString(),
-    expectedDeliveryDate: new Date(Date.now() + 4 * 86400000).toISOString(),
-    notes: "Expedited shipping requested for festive season restock.",
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "po-seed-002",
-    poNumber: "PO-2026-0002",
-    supplierId: "sup-002",
-    supplierName: "Pacific Textiles & Apparel",
-    supplierEmail: "orders@pacifictextiles.id",
-    status: "RECEIVED",
-    items: [
-      {
-        productId: "prod-003",
-        productName: "Merino Wool Crewneck",
-        sku: "KNIT-MRN-003",
-        quantity: 100,
-        unitCost: 250000,
-        totalCost: 25000000,
+  };
+  const supplier2 = VERIFIED_SUPPLIERS[1] ?? supplier1;
+  const warehouse1 = DEFAULT_WAREHOUSES[0];
+  const warehouse2 = DEFAULT_WAREHOUSES[1] ?? warehouse1;
+
+  const seeds = [
+    {
+      id: `po-seed-1-${tenantId}`,
+      poNumber: "PO-2026-0001",
+      supplierId: supplier1.id,
+      supplierName: supplier1.name,
+      supplierEmail: supplier1.email,
+      status: "ISSUED",
+      totalAmount: 32_750_000,
+      warehouseId: warehouse1.id,
+      warehouseName: warehouse1.name,
+      leadTimeDays: supplier1.leadTimeDays,
+      issueDate: daysAgo(3),
+      expectedDeliveryDate: daysAhead(4),
+      receivedDate: null as Date | null,
+      notes: "Expedited shipping requested for festive season restock.",
+      createdAt: daysAgo(3),
+      updatedAt: daysAgo(3),
+      items: [
+        {
+          productId: "prod-001",
+          productName: "Classic Oxford Cotton Shirt",
+          sku: "SHIRT-OXF-001",
+          quantity: 150,
+          unitCost: 125_000,
+          totalCost: 18_750_000,
+        },
+        {
+          productId: "prod-002",
+          productName: "Slim Chino Trousers",
+          sku: "PANT-CHN-002",
+          quantity: 80,
+          unitCost: 175_000,
+          totalCost: 14_000_000,
+        },
+      ],
+    },
+    {
+      id: `po-seed-2-${tenantId}`,
+      poNumber: "PO-2026-0002",
+      supplierId: supplier2.id,
+      supplierName: supplier2.name,
+      supplierEmail: supplier2.email,
+      status: "RECEIVED",
+      totalAmount: 25_000_000,
+      warehouseId: warehouse2.id,
+      warehouseName: warehouse2.name,
+      leadTimeDays: supplier2.leadTimeDays,
+      issueDate: daysAgo(16),
+      expectedDeliveryDate: daysAgo(2),
+      receivedDate: daysAgo(2) as Date | null,
+      notes: "Received in full at Surabaya gate 4.",
+      createdAt: daysAgo(16),
+      updatedAt: daysAgo(2),
+      items: [
+        {
+          productId: "prod-003",
+          productName: "Merino Wool Crewneck",
+          sku: "KNIT-MRN-003",
+          quantity: 100,
+          unitCost: 250_000,
+          totalCost: 25_000_000,
+        },
+      ],
+    },
+  ];
+
+  for (const seed of seeds) {
+    await prisma.purchaseOrder.create({
+      data: {
+        id: seed.id,
+        tenantId,
+        poNumber: seed.poNumber,
+        supplierId: seed.supplierId,
+        supplierName: seed.supplierName,
+        supplierEmail: seed.supplierEmail,
+        status: seed.status,
+        totalAmount: seed.totalAmount,
+        warehouseId: seed.warehouseId,
+        warehouseName: seed.warehouseName,
+        leadTimeDays: seed.leadTimeDays,
+        issueDate: seed.issueDate,
+        expectedDeliveryDate: seed.expectedDeliveryDate,
+        receivedDate: seed.receivedDate,
+        notes: seed.notes,
+        createdAt: seed.createdAt,
+        updatedAt: seed.updatedAt,
+        items: { create: seed.items },
       },
-    ],
-    totalAmount: 25000000,
-    warehouseId: "wh-sub",
-    warehouseName: "Surabaya Regional Logistics Depot",
-    leadTimeDays: 14,
-    issueDate: new Date(Date.now() - 16 * 86400000).toISOString(),
-    expectedDeliveryDate: new Date(Date.now() - 2 * 86400000).toISOString(),
-    receivedDate: new Date(Date.now() - 2 * 86400000).toISOString(),
-    notes: "Received in full at Surabaya gate 4.",
-    createdAt: new Date(Date.now() - 16 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-];
-
-let inMemoryPOs: PurchaseOrder[] | null = null;
-
-function ensureFile(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(PO_FILE)) {
-    fs.writeFileSync(PO_FILE, JSON.stringify(SEED_POS, null, 2), "utf8");
+    });
   }
 }
 
-export function getPurchaseOrders(): PurchaseOrder[] {
-  try {
-    ensureFile();
-    const raw = fs.readFileSync(PO_FILE, "utf8");
-    inMemoryPOs = JSON.parse(raw);
-    return inMemoryPOs!;
-  } catch {
-    return inMemoryPOs ?? SEED_POS;
-  }
+export async function getPurchaseOrders(tenantId: string): Promise<PurchaseOrder[]> {
+  await seedOrders(tenantId);
+  const rows = await prisma.purchaseOrder.findMany({
+    where: { tenantId },
+    include: { items: true },
+    orderBy: { issueDate: "desc" },
+  });
+  return rows.map(mapOrder);
 }
 
-export function savePurchaseOrders(orders: PurchaseOrder[]): void {
-  inMemoryPOs = orders;
-  try {
-    ensureFile();
-    fs.writeFileSync(PO_FILE, JSON.stringify(orders, null, 2), "utf8");
-  } catch (err) {
-    console.error("Failed to write purchase orders file:", err);
-  }
+export async function getPurchaseOrderById(
+  tenantId: string,
+  id: string,
+): Promise<PurchaseOrder | null> {
+  await seedOrders(tenantId);
+  const row = await prisma.purchaseOrder.findFirst({
+    where: { tenantId, OR: [{ id }, { poNumber: id }] },
+    include: { items: true },
+  });
+  return row ? mapOrder(row) : null;
 }
 
-export function getPurchaseOrderById(id: string): PurchaseOrder | null {
-  const all = getPurchaseOrders();
-  return all.find((p) => p.id === id || p.poNumber === id) ?? null;
-}
-
-export function createPurchaseOrder(params: {
+export async function createPurchaseOrder(params: {
+  tenantId: string;
   supplierId: string;
   items: Array<{
     productId: string;
@@ -126,60 +215,82 @@ export function createPurchaseOrder(params: {
   notes?: string;
   /** DRAFT for auto-generated POs awaiting human review (default ISSUED). */
   status?: "DRAFT" | "ISSUED";
-}): PurchaseOrder {
-  const all = getPurchaseOrders();
+}): Promise<PurchaseOrder> {
   const supplier =
-    VERIFIED_SUPPLIERS.find((s) => s.id === params.supplierId) || VERIFIED_SUPPLIERS[0];
+    VERIFIED_SUPPLIERS.find((s) => s.id === params.supplierId) ?? VERIFIED_SUPPLIERS[0];
   const warehouse =
-    DEFAULT_WAREHOUSES.find((w) => w.id === params.warehouseId) || DEFAULT_WAREHOUSES[0];
+    DEFAULT_WAREHOUSES.find((w) => w.id === params.warehouseId) ?? DEFAULT_WAREHOUSES[0];
   const poItems = params.items.map((item) => ({
-    ...item,
+    productId: item.productId,
+    productName: item.productName,
+    sku: item.sku,
+    quantity: item.quantity,
+    unitCost: item.unitCost,
     totalCost: item.quantity * item.unitCost,
   }));
   const totalAmount = poItems.reduce((sum, item) => sum + item.totalCost, 0);
   const now = new Date();
-  const expectedDate = new Date(now.getTime() + supplier.leadTimeDays * 86400000);
 
-  const newOrder: PurchaseOrder = {
-    id: "po-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 6),
-    poNumber: generatePoNumber(all.length + 1),
-    supplierId: supplier.id,
-    supplierName: supplier.name,
-    supplierEmail: supplier.email,
-    status: params.status ?? "ISSUED",
-    items: poItems,
-    totalAmount,
-    warehouseId: warehouse.id,
-    warehouseName: warehouse.name,
-    leadTimeDays: supplier.leadTimeDays,
-    issueDate: now.toISOString(),
-    expectedDeliveryDate: expectedDate.toISOString(),
-    notes: params.notes || "",
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
+  const count = await prisma.purchaseOrder.count({ where: { tenantId: params.tenantId } });
+  let sequence = count + 1;
+  let poNumber = generatePoNumber(sequence);
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const clash = await prisma.purchaseOrder.findUnique({
+      where: {
+        tenantId_poNumber: { tenantId: params.tenantId, poNumber },
+      },
+      select: { id: true },
+    });
+    if (!clash) break;
+    sequence += 1;
+    poNumber = generatePoNumber(sequence);
+  }
 
-  all.unshift(newOrder);
-  savePurchaseOrders(all);
-  return newOrder;
+  const created = await prisma.purchaseOrder.create({
+    data: {
+      id: "po-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 6),
+      tenantId: params.tenantId,
+      poNumber,
+      supplierId: supplier.id,
+      supplierName: supplier.name,
+      supplierEmail: supplier.email,
+      status: params.status ?? "ISSUED",
+      totalAmount,
+      warehouseId: warehouse.id,
+      warehouseName: warehouse.name,
+      leadTimeDays: supplier.leadTimeDays,
+      issueDate: now,
+      expectedDeliveryDate: new Date(now.getTime() + supplier.leadTimeDays * 86_400_000),
+      notes: params.notes || "",
+      createdAt: now,
+      updatedAt: now,
+      items: { create: poItems },
+    },
+    include: { items: true },
+  });
+
+  return mapOrder(created);
 }
 
-export function updatePurchaseOrderStatus(
+export async function updatePurchaseOrderStatus(
+  tenantId: string,
   id: string,
   status: "DRAFT" | "ISSUED" | "RECEIVED" | "CANCELLED",
-): PurchaseOrder | null {
-  const all = getPurchaseOrders();
-  const idx = all.findIndex((p) => p.id === id || p.poNumber === id);
-  if (idx === -1) return null;
+): Promise<PurchaseOrder | null> {
+  const existing = await prisma.purchaseOrder.findFirst({
+    where: { tenantId, OR: [{ id }, { poNumber: id }] },
+  });
+  if (!existing) return null;
 
-  const updated: PurchaseOrder = {
-    ...all[idx],
-    status,
-    updatedAt: new Date().toISOString(),
-    ...(status === "RECEIVED" ? { receivedDate: new Date().toISOString() } : {}),
-  };
+  const updated = await prisma.purchaseOrder.update({
+    where: { id: existing.id },
+    data: {
+      status,
+      updatedAt: new Date(),
+      ...(status === "RECEIVED" ? { receivedDate: new Date() } : {}),
+    },
+    include: { items: true },
+  });
 
-  all[idx] = updated;
-  savePurchaseOrders(all);
-  return updated;
+  return mapOrder(updated);
 }

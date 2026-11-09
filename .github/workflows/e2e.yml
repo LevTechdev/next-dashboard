@@ -30,3 +30,45 @@ jobs:
       nextauth-url: "http://localhost:3010"
       google-client-id: "ci-placeholder"
       google-client-secret: "ci-placeholder"
+
+  # Focused proof that two workspaces cannot read or mutate each other's
+  # operational stores. This job owns its disposable Postgres and starts the
+  # Next dev server through playwright.quick.config.ts, so it is independent
+  # of the full E2E gate and fails fast on a tenant-scoping regression.
+  tenant-isolation:
+    name: Tenant Store Isolation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tenant_isolation
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tenant_isolation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Create database schema
+        run: npx prisma db push --skip-generate
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run tenant isolation suite
+        run: npx playwright test e2e/tenant-store-isolation.spec.ts --config=playwright.quick.config.ts --workers=1
+        env:
+          JWT_SECRET: ci-e2e-secret
+          NEXTAUTH_SECRET: ci-e2e-secret
+          NEXTAUTH_URL: http://localhost:3010
+          E2E_LOGIN_THROTTLE_LIMIT: "500"

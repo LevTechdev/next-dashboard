@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/api-guard";
+import { requireAuth, requirePermission } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
+import { validateOutboundUrl } from "@/lib/outbound-url";
 import { writeDeletionAudit } from "@/lib/activity-audit";
 import {
   getChatConfig,
@@ -10,9 +12,17 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const config = getChatConfig();
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
+    const config = await getChatConfig(tenantId);
     return NextResponse.json(config);
   } catch (error) {
     console.error("[CHAT_ALERTS_GET_ERROR]", error);
@@ -25,11 +35,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const body = await req.json();
 
     // Check if updating rules
     if (body.action === "update_rules") {
-      const updatedRules = updateChatRules(body.rules);
+      const updatedRules = await updateChatRules(tenantId, body.rules);
       return NextResponse.json({ success: true, rules: updatedRules });
     }
 
@@ -43,7 +61,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const channel = upsertChatChannel({
+    const validated = validateOutboundUrl(webhookUrl, { allowSimulated: true });
+    if (!validated.ok) {
+      return NextResponse.json({ error: validated.error }, { status: 400 });
+    }
+
+    const channel = await upsertChatChannel(tenantId, {
       id,
       name,
       platform,
@@ -63,8 +86,13 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { session, response } = await requireAuth(req);
+    const { session, response } = await requirePermission("delete", "integrations", req);
     if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -73,8 +101,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing channel id" }, { status: 400 });
     }
 
-    const channel = getChatConfig().channels.find((c) => c.id === id);
-    const deleted = deleteChatChannel(id);
+    const config = await getChatConfig(tenantId);
+    const channel = config.channels.find((c) => c.id === id);
+    const deleted = await deleteChatChannel(tenantId, id);
     if (!deleted) {
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }

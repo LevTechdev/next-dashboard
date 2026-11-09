@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import TeamPage from "../page";
 
 // Ensure real implementations are used for icon/ui modules
@@ -26,6 +26,88 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { useAuth } from "@/hooks/use-auth";
+import { ALL_ROLES, type Role } from "@/lib/permissions";
+
+const ROLE_LABELS = ["Admin", "Manager", "Staff", "Auditor", "Client", "Client (Enterprise)"];
+
+// Written independently of PAGE_ACCESS: if the route policy and this table
+// disagree, the test should fail rather than repeat the implementation.
+const EXPECTED_PAGE_ACCESS = {
+  dashboard: {
+    ADMIN: true,
+    MANAGER: true,
+    STAFF: true,
+    AUDITOR: true,
+    CLIENT: true,
+    CLIENT_ENTERPRISE: true,
+  },
+  orders: {
+    ADMIN: true,
+    MANAGER: true,
+    STAFF: true,
+    AUDITOR: true,
+    CLIENT: true,
+    CLIENT_ENTERPRISE: true,
+  },
+  products: {
+    ADMIN: true,
+    MANAGER: true,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: false,
+    CLIENT_ENTERPRISE: false,
+  },
+  customers: {
+    ADMIN: true,
+    MANAGER: true,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: false,
+    CLIENT_ENTERPRISE: false,
+  },
+  team: {
+    ADMIN: true,
+    MANAGER: false,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: false,
+    CLIENT_ENTERPRISE: false,
+  },
+  settings: {
+    ADMIN: true,
+    MANAGER: false,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: false,
+    CLIENT_ENTERPRISE: false,
+  },
+  billing: {
+    ADMIN: true,
+    MANAGER: true,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: true,
+    CLIENT_ENTERPRISE: true,
+  },
+  "audit-log": {
+    ADMIN: true,
+    MANAGER: false,
+    STAFF: false,
+    AUDITOR: true,
+    CLIENT: false,
+    CLIENT_ENTERPRISE: false,
+  },
+} satisfies Record<string, Record<Role, boolean>>;
+
+async function expectCanonicalRoleOptions(dialog: HTMLElement) {
+  // Some dialogs also have an expiry select; the role picker is first.
+  const trigger = within(dialog).getAllByRole("combobox")[0];
+  fireEvent.pointerDown(trigger);
+  fireEvent.click(trigger);
+
+  const options = await screen.findAllByRole("option");
+  expect(options.map((option) => option.textContent?.trim())).toEqual(ROLE_LABELS);
+}
 
 const mockUser = {
   user: { name: "Admin User", email: "admin@test.com", role: "ADMIN" },
@@ -36,6 +118,10 @@ const mockUser = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Radix Select relies on pointer capture and scrollIntoView in the browser;
+  // jsdom does not implement either.
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+  Element.prototype.scrollIntoView = vi.fn();
   (useAuth as any).mockReturnValue(mockUser);
   // Mock fetch for team data and invitations
   global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -126,6 +212,57 @@ describe("Team Page", () => {
     expect(screen.getByText("Position")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
     expect(screen.getByText("Joined")).toBeInTheDocument();
+  });
+
+  it("renders the complete canonical permission matrix", async () => {
+    render(<TeamPage />);
+    await waitFor(() => {});
+
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /permissions/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId("permission-dashboard-ADMIN")).toBeInTheDocument();
+    });
+
+    for (const [page, expected] of Object.entries(EXPECTED_PAGE_ACCESS)) {
+      for (const role of ALL_ROLES) {
+        expect(
+          screen.getByTestId(`permission-${page}-${role}`),
+          `${page} × ${role}`,
+        ).toHaveAttribute("data-allowed", String(expected[role]));
+      }
+    }
+  });
+
+  it("offers every canonical role in the add-member picker", async () => {
+    render(<TeamPage />);
+    await waitFor(() => {});
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Member" }));
+    const dialog = await screen.findByRole("dialog");
+    await expectCanonicalRoleOptions(dialog);
+  });
+
+  it("offers every canonical role in the invitation picker", async () => {
+    render(<TeamPage />);
+    await waitFor(() => {});
+
+    fireEvent.click(screen.getByRole("button", { name: "Invite Member" }));
+    const dialog = await screen.findByRole("dialog");
+    await expectCanonicalRoleOptions(dialog);
+  });
+
+  it("offers every canonical role in the edit-invitation picker", async () => {
+    render(<TeamPage />);
+    await waitFor(() => {});
+
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /invitations/i }));
+    await waitFor(() => {
+      expect(screen.getByText("alex.dev@partner.com")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    const dialog = await screen.findByRole("dialog");
+    await expectCanonicalRoleOptions(dialog);
   });
 
   it("renders invitations tab and displays edit & remove actions for pending invites", async () => {

@@ -35,6 +35,15 @@ vi.mock("@/lib/db", () => ({
     activityLog: {
       create: vi.fn().mockResolvedValue({ id: "act-01" }),
     },
+    webhookDlqEntry: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...data })),
+      update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...data })),
+      upsert: vi.fn().mockImplementation(({ create }) => Promise.resolve({ ...create })),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     discount: {
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockImplementation(({ data }) =>

@@ -37,9 +37,73 @@ vi.mock("@/lib/api-guard", () => ({
 }));
 
 // Mock db
+// The purchase-order store is Prisma-backed; these route tests use a fixture so
+// they exercise the HTTP contract without a database.
+const { poFixture } = vi.hoisted(() => {
+  const now = new Date().toISOString();
+  return {
+    poFixture: {
+      id: "po-seed-001",
+      poNumber: "PO-2026-0001",
+      supplierId: "sup-001",
+      supplierName: "Apex Manufacturing Ltd.",
+      supplierEmail: "supply@apexmanufacture.com",
+      status: "ISSUED",
+      items: [
+        {
+          productId: "prod-test-1",
+          productName: "Test Oxford Shirt",
+          sku: "SHIRT-TEST-001",
+          quantity: 50,
+          unitCost: 90000,
+          totalCost: 4500000,
+        },
+      ],
+      totalAmount: 4500000,
+      warehouseId: "wh-jkt",
+      warehouseName: "Jakarta Central Fulfillment Center",
+      leadTimeDays: 7,
+      issueDate: now,
+      expectedDeliveryDate: now,
+      receivedDate: null,
+      notes: "Test inbound shipment",
+      createdAt: now,
+      updatedAt: now,
+    },
+  };
+});
+
+vi.mock("@/lib/purchase-orders-store", () => ({
+  getPurchaseOrders: vi.fn(async () => [poFixture]),
+  getPurchaseOrderById: vi.fn(async (_tenantId: string, id: string) =>
+    id === poFixture.id || id === poFixture.poNumber ? poFixture : null,
+  ),
+  createPurchaseOrder: vi.fn(async ({ items, supplierId, notes }: any) => {
+    const poItems = items.map((item: any) => ({
+      ...item,
+      totalCost: item.quantity * item.unitCost,
+    }));
+    return {
+      ...poFixture,
+      id: "po-test-new",
+      poNumber: "PO-2026-0003",
+      supplierId,
+      notes,
+      items: poItems,
+      totalAmount: poItems.reduce((sum: number, item: any) => sum + item.totalCost, 0),
+    };
+  }),
+  updatePurchaseOrderStatus: vi.fn(async (_tenantId: string, _id: string, status: string) => ({
+    ...poFixture,
+    status,
+    receivedDate: status === "RECEIVED" ? new Date().toISOString() : null,
+  })),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     product: {
+      findFirst: vi.fn(async ({ where }: any) => ({ id: where?.id ?? "prod-test-1" })),
       findMany: vi.fn(async () => [
         {
           id: "prod-test-1",

@@ -29,6 +29,11 @@ export const ADMIN_MANAGED_ROLES: Role[] = [
   "CLIENT_ENTERPRISE",
 ];
 
+/** Runtime guard for role values crossing the API or UI boundary. */
+export function isRole(value: unknown): value is Role {
+  return typeof value === "string" && (ALL_ROLES as string[]).includes(value);
+}
+
 /**
  * Legacy alias: SUPER_ADMIN was merged into ADMIN (one all-access workspace
  * role). Accept the old string at the auth/permission boundary and treat it

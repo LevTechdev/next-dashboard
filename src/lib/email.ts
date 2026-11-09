@@ -4,6 +4,7 @@ import VerifyEmail from "@/emails/VerifyEmail";
 import ResetPasswordEmail from "@/emails/ResetPasswordEmail";
 import AccountRecoveryEmail from "@/emails/AccountRecoveryEmail";
 import SecurityAlertEmail from "@/emails/SecurityAlertEmail";
+import LeafOrphansDigestEmail from "@/emails/LeafOrphansDigestEmail";
 import WelcomeEmail from "@/emails/WelcomeEmail";
 import InvoiceEmail from "@/emails/InvoiceEmail";
 import * as React from "react";
@@ -412,6 +413,13 @@ const SECURITY_ALERT_SUBJECTS: Record<string, string> = {
   ja: "二段階認証が無効になりました",
 };
 
+const ORPHAN_DIGEST_SUBJECTS: Record<string, string> = {
+  en: "Leaf-sync orphans need reconciliation",
+  id: "Orphan leaf-sync perlu rekonsiliasi",
+  zh: "leaf-sync 孤儿行需要对账",
+  ja: "leaf-sync の orphan の整理が必要です",
+};
+
 function subjectFor(locale: string | undefined, subjects: Record<string, string>): string {
   return subjects[locale ?? "en"] ?? subjects.en;
 }
@@ -422,7 +430,13 @@ function subjectFor(locale: string | undefined, subjects: Record<string, string>
  * body — a one-time code must never sit in a table.
  */
 export type EmailTemplate =
-  "verify_email" | "welcome" | "password_reset" | "account_recovery" | "security_alert" | "invoice";
+  | "verify_email"
+  | "welcome"
+  | "password_reset"
+  | "account_recovery"
+  | "security_alert"
+  | "invoice"
+  | "leaf_orphans_digest";
 
 /** Render a template into subject/html/text. */
 async function renderTemplate(
@@ -492,6 +506,20 @@ async function renderTemplate(
         subject: `Payment Receipt (${props.invoiceNumber})`,
         html: await render(React.createElement(InvoiceEmail, props)),
         text: await render(React.createElement(InvoiceEmail, props), { plainText: true }),
+      };
+    }
+    case "leaf_orphans_digest": {
+      const props = {
+        total: typeof params.total === "number" ? params.total : 0,
+        tables: Array.isArray(params.tables) ? (params.tables as string[]) : [],
+        samples: Array.isArray(params.samples) ? (params.samples as string[]) : [],
+        dashboardUrl: optional("dashboardUrl") ?? "https://example.com/admin",
+        locale,
+      };
+      return {
+        subject: subjectFor(locale, ORPHAN_DIGEST_SUBJECTS),
+        html: await render(React.createElement(LeafOrphansDigestEmail, props)),
+        text: await render(React.createElement(LeafOrphansDigestEmail, props), { plainText: true }),
       };
     }
   }

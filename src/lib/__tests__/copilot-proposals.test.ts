@@ -23,6 +23,21 @@ vi.mock("@/lib/db", () => ({
     activityLog: {
       create: vi.fn().mockResolvedValue({ id: "log-1" }),
     },
+    purchaseOrder: {
+      count: vi.fn().mockResolvedValue(0),
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation(({ data }) =>
+        Promise.resolve({
+          ...data,
+          id: "po-test-123",
+          items: data.items.create.map((item: Record<string, unknown>, index: number) => ({
+            id: `po-item-${index}`,
+            orderId: "po-test-123",
+            ...item,
+          })),
+        }),
+      ),
+    },
   },
 }));
 

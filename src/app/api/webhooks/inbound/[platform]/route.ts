@@ -5,6 +5,31 @@ import { enqueueDlq } from "@/lib/webhook-dlq-store";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Resolve the workspace an inbound webhook belongs to:
+ *   1. `?tenant=<slug>` or `X-Tenant-Slug` when the platform integration
+ *      carries a per-workspace endpoint,
+ *   2. otherwise the default (first-created) workspace, matching the legacy
+ *      single-workspace behavior.
+ */
+async function resolveInboundTenantId(req: Request): Promise<string> {
+  try {
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get("tenant") ?? req.headers.get("x-tenant-slug");
+    if (slug) {
+      const tenant = await prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+      if (tenant) return tenant.id;
+    }
+    const fallback = await prisma.tenant.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    return fallback?.id ?? "default";
+  } catch {
+    return "default";
+  }
+}
+
 export async function POST(req: Request, props: { params: Promise<{ platform: string }> }) {
   const { platform } = await props.params;
   const plat = platform.toLowerCase();
@@ -14,19 +39,24 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
     return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
   }
 
+  const tenantId = await resolveInboundTenantId(req);
+
   let rawBody = "";
   let payload: any = {};
   try {
     rawBody = await req.text();
     payload = JSON.parse(rawBody || "{}");
   } catch {
-    const dlq = enqueueDlq({
-      platform: plat as any,
-      event: "order.inbound",
-      headers: Object.fromEntries(req.headers.entries()),
-      payload: { raw: rawBody },
-      errorMessage: "Malformed JSON body in incoming webhook request",
-    });
+    const dlq = await enqueueDlq(
+      {
+        platform: plat as any,
+        event: "order.inbound",
+        headers: Object.fromEntries(req.headers.entries()),
+        payload: { raw: rawBody },
+        errorMessage: "Malformed JSON body in incoming webhook request",
+      },
+      tenantId,
+    );
     return NextResponse.json({ error: "Malformed JSON payload", dlqId: dlq.id }, { status: 400 });
   }
 
@@ -35,13 +65,16 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
 
   // If signature is invalid, isolate into Dead-Letter Queue
   if (!isSignatureValid) {
-    const dlq = enqueueDlq({
-      platform: plat as any,
-      event: "order.inbound",
-      headers: Object.fromEntries(req.headers.entries()),
-      payload,
-      errorMessage: `Cryptographic HMAC SHA-256 signature verification failed for ${platform}`,
-    });
+    const dlq = await enqueueDlq(
+      {
+        platform: plat as any,
+        event: "order.inbound",
+        headers: Object.fromEntries(req.headers.entries()),
+        payload,
+        errorMessage: `Cryptographic HMAC SHA-256 signature verification failed for ${platform}`,
+      },
+      tenantId,
+    );
 
     return NextResponse.json(
       {
@@ -58,7 +91,7 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
   try {
     const normalized = normalizeInboundOrder(plat, payload);
 
-    // Resolve or create channel
+    // Resolve or create channel within this workspace
     let channel = await prisma.salesChannel.findFirst({
       where: { name: { contains: plat, mode: "insensitive" } },
     });
@@ -66,9 +99,9 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
       channel = await prisma.salesChannel.findFirst();
     }
 
-    // Resolve or create customer
+    // Resolve or create customer within this workspace
     let customer = await prisma.customer.findFirst({
-      where: { name: normalized.customerName },
+      where: { tenantId, name: normalized.customerName },
     });
     if (!customer) {
       customer = await prisma.customer.create({
@@ -77,7 +110,7 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
           email: normalized.customerEmail,
           city: normalized.customerCity || "Jakarta",
           totalSpent: normalized.totalAmount,
-          tenantId: "default",
+          tenantId,
         },
       });
     } else {
@@ -107,7 +140,7 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
         grandTotal: normalized.totalAmount,
         customerId: customer.id,
         channelId: channel?.id || null,
-        tenantId: "default",
+        tenantId,
       },
     });
 
@@ -131,7 +164,7 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
         entity: "Order",
         entityId: order.id,
         details: `Ingested ${plat.toUpperCase()} order ${order.orderNumber} for ${normalized.customerName} (${normalized.totalAmount} ${normalized.currency})`,
-        tenantId: "default",
+        tenantId,
       },
     });
 
@@ -146,16 +179,19 @@ export async function POST(req: Request, props: { params: Promise<{ platform: st
     });
   } catch (err: any) {
     console.error("[Inbound Webhook Ingestion Error]", err);
-    const dlq = enqueueDlq({
-      platform: plat as any,
-      event: "order.inbound",
-      headers: Object.fromEntries(req.headers.entries()),
-      payload,
-      errorMessage: err?.message || "Internal database ingestion error",
-      // DB failures are transient — the delivery-health scheduler will
-      // re-dispatch with exponential backoff automatically.
-      transient: true,
-    });
+    const dlq = await enqueueDlq(
+      {
+        platform: plat as any,
+        event: "order.inbound",
+        headers: Object.fromEntries(req.headers.entries()),
+        payload,
+        errorMessage: err?.message || "Internal database ingestion error",
+        // DB failures are transient — the delivery-health scheduler will
+        // re-dispatch with exponential backoff automatically.
+        transient: true,
+      },
+      tenantId,
+    );
 
     return NextResponse.json(
       {

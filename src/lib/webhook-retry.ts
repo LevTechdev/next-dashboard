@@ -33,7 +33,7 @@ export async function processDueRetries(
   dispatch: (entry: WebhookDlqEntry) => Promise<boolean>,
   now: Date = new Date(),
 ): Promise<{ attempted: number; resolved: number; failed: number }> {
-  const entries = getDlqEntries();
+  const entries = await getDlqEntries();
   const result = { attempted: 0, resolved: 0, failed: 0 };
 
   for (const entry of entries) {
@@ -62,7 +62,7 @@ export async function processDueRetries(
     }
   }
 
-  saveDlqEntries(entries);
+  await saveDlqEntries(entries);
   return result;
 }
 
@@ -71,18 +71,21 @@ export async function processDueRetries(
  * "Replay" action: moves the entry into RETRYING with an immediate
  * nextRetryAt so the next sweep picks it up.
  */
-export function scheduleRetry(id: string): {
+export async function scheduleRetry(
+  id: string,
+  tenantId?: string | null,
+): Promise<{
   success: boolean;
   message: string;
   entry?: WebhookDlqEntry;
-} {
-  const entries = getDlqEntries();
+}> {
+  const entries = await getDlqEntries(tenantId);
   const item = entries.find((e) => e.id === id);
   if (!item) return { success: false, message: "DLQ entry not found" };
 
   item.status = "RETRYING";
   item.nextRetryAt = new Date().toISOString();
-  saveDlqEntries(entries);
+  await saveDlqEntries([item]);
   return { success: true, message: `Scheduled retry for DLQ entry ${id}`, entry: item };
 }
 

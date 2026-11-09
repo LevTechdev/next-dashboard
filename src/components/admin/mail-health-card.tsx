@@ -85,7 +85,10 @@ export function MailHealthCard() {
 
   useEffect(() => {
     fetchHealth(); // eslint-disable-line react-hooks/set-state-in-effect -- async; setstates land after the await
-    const timer = setInterval(fetchHealth, 60_000);
+    // Two minutes: an outbox row flushed right after a "send test digest"
+    // click (delivery follows the enqueue within seconds) must appear here
+    // without a manual refresh, while the cadence stays light on the DB.
+    const timer = setInterval(fetchHealth, 120_000);
     return () => clearInterval(timer);
   }, [fetchHealth]);
 
@@ -134,16 +137,21 @@ export function MailHealthCard() {
             </CardTitle>
             <CardDescription>{t("mailHealthDesc")}</CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchHealth}
-            aria-label={t("auditHealthRefresh")}
-            className="gap-2"
-          >
-            <RefreshCwIcon size={14} className={cn(loading && "animate-spin")} />
-            {t("auditHealthRefresh")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs text-zinc-500 sm:inline">
+              {t("mailHealthAutoRefreshing")}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchHealth}
+              aria-label={t("auditHealthRefresh")}
+              className="gap-2"
+            >
+              <RefreshCwIcon size={14} className={cn(loading && "animate-spin")} />
+              {t("auditHealthRefresh")}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-4 space-y-4">

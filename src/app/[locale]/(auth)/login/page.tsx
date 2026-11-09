@@ -7,6 +7,7 @@ import { LoaderCircleIcon } from "lucide-animated";
 import {
   Fingerprint,
   Building2,
+  Loader2,
   Eye,
   EyeOff,
   Timer,
@@ -32,6 +33,7 @@ import {
 } from "@/components/security/use-resend-cooldown";
 import { useAuth } from "@/hooks/use-auth";
 import { backupCodeStatus } from "@/lib/backup-code-status";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { toast } from "sonner";
 
 import { useTranslations } from "next-intl";
@@ -102,6 +104,13 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Enterprise SSO shares the email field above; the request itself navigates
+  // away, so the button owns its own pending/error state instead of isLoading.
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [ssoError, setSsoError] = useState<string | null>(null);
+  // Which chooser option owns the in-flight request. A single shared flag made
+  // BOTH the email-code and passkey cards spin whichever one the user picked.
+  const [chooserPending, setChooserPending] = useState<null | "email_otp" | "passkey">(null);
   const [totpRequired, setTotpRequired] = useState(false);
   const [view, setView] = useState("login");
   const [mounted, setMounted] = useState(false);
@@ -159,7 +168,7 @@ function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || `/${locale}/dashboard`;
+  const redirect = safeRedirectPath(searchParams.get("redirect"), `/${locale}/dashboard`);
   const sessionNotice = searchParams.get("reason");
 
   // A dead session force-closes the dashboard onto this form with
@@ -217,6 +226,40 @@ function LoginForm() {
   const { cooldownLeft, startCooldown } = useResendCooldown({
     storageKey: FORGOT_PASSWORD_COOLDOWN_KEY,
   });
+
+  const handleSsoLogin = async () => {
+    const address = email.trim();
+    if (!address) {
+      setSsoError(t("ssoEmailRequired"));
+      return;
+    }
+
+    setSsoLoading(true);
+    setSsoError(null);
+    try {
+      const res = await fetch(`/api/auth/saml/login?email=${encodeURIComponent(address)}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (res.status === 404) {
+        setSsoError(t("ssoNotConfigured"));
+        return;
+      }
+      if (!res.ok) {
+        setSsoError(t("ssoFailed"));
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as { redirectUrl?: string } | null;
+      if (!data?.redirectUrl) {
+        setSsoError(t("ssoFailed"));
+        return;
+      }
+      window.location.assign(data.redirectUrl);
+    } catch {
+      setSsoError(t("ssoFailed"));
+    } finally {
+      setSsoLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,6 +343,7 @@ function LoginForm() {
 
   /** Send (or re-send) the email login challenge and switch to its entry step. */
   const requestEmailOtp = async () => {
+    setChooserPending("email_otp");
     setIsLoading(true);
     try {
       const result = await login(savedEmail, savedPassword, undefined, undefined, true);
@@ -324,6 +368,7 @@ function LoginForm() {
       toast.error(t("errorGeneric"));
     } finally {
       setIsLoading(false);
+      setChooserPending(null);
     }
   };
 
@@ -484,6 +529,7 @@ function LoginForm() {
   const handlePasskeySecondFactor = async () => {
     if (secondFactorLocked()) return;
     totpSubmittingRef.current = true;
+    setChooserPending("passkey");
     setIsLoading(true);
     try {
       const optionsRes = await fetch("/api/auth/webauthn/authenticate/options", {
@@ -530,6 +576,7 @@ function LoginForm() {
     } catch {
       // User dismissed the browser's passkey prompt — not a failure toast.
     } finally {
+      setChooserPending(null);
       if (!secondFactorSettledRef.current) {
         totpSubmittingRef.current = false;
         setIsLoading(false);
@@ -702,12 +749,13 @@ function LoginForm() {
                       {/* Emailed code — same account, different channel */}
                       <button
                         type="button"
-                        disabled={isLoading}
+                        disabled={chooserPending !== null}
+                        aria-busy={chooserPending === "email_otp"}
                         onClick={() => void requestEmailOtp()}
                         className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
                       >
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          {isLoading ? (
+                          {chooserPending === "email_otp" ? (
                             <LoaderCircleIcon className="h-5 w-5 shrink-0 animate-spin" />
                           ) : (
                             <MailIcon className="h-5 w-5" />
@@ -717,8 +765,13 @@ function LoginForm() {
                           <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
                             {t("useEmailCode")}
                           </span>
-                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            {t("useEmailCodeDesc")}
+                          <span
+                            className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
+                            aria-live="polite"
+                          >
+                            {chooserPending === "email_otp"
+                              ? t("sendingCode")
+                              : t("useEmailCodeDesc")}
                           </span>
                         </span>
                         <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
@@ -728,7 +781,7 @@ function LoginForm() {
                           device (and its app) is gone for good. */}
                       <button
                         type="button"
-                        disabled={isLoading}
+                        disabled={chooserPending !== null}
                         onClick={() => {
                           setVerifyMethod("backup_code");
                           setBackupCodeInput("");
@@ -757,12 +810,13 @@ function LoginForm() {
                       {hasPasskeys && (
                         <button
                           type="button"
-                          disabled={isLoading}
+                          disabled={chooserPending !== null}
+                          aria-busy={chooserPending === "passkey"}
                           onClick={() => void handlePasskeySecondFactor()}
                           className="w-full flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer group disabled:opacity-60 disabled:pointer-events-none"
                         >
                           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                            {isLoading ? (
+                            {chooserPending === "passkey" ? (
                               <LoaderCircleIcon className="h-5 w-5 shrink-0 animate-spin" />
                             ) : (
                               <Fingerprint className="h-5 w-5" />
@@ -772,8 +826,13 @@ function LoginForm() {
                             <span className="block text-sm font-semibold text-zinc-900 dark:text-white">
                               {t("usePasskey")}
                             </span>
-                            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              {t("usePasskeyDesc")}
+                            <span
+                              className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
+                              aria-live="polite"
+                            >
+                              {chooserPending === "passkey"
+                                ? t("waitingForPasskey")
+                                : t("usePasskeyDesc")}
                             </span>
                           </span>
                           <ChevronRightIcon className="h-4 w-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
@@ -1336,6 +1395,12 @@ function LoginForm() {
                       placeholder={t("emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      // Keep the controlled fields inert until React has hydrated.
+                      // A keystroke accepted by the browser before hydration updates
+                      // the DOM but not React state, leaving the visible text and the
+                      // submit button out of sync (it stays disabled). Disabling the
+                      // fields until mount makes that race impossible.
+                      disabled={!mounted}
                       className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl"
                       required
                     />
@@ -1358,6 +1423,8 @@ function LoginForm() {
                         placeholder={t("passwordPlaceholder")}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        // See the email field above: no pre-hydration input.
+                        disabled={!mounted}
                         className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:border-primary focus:ring-primary/40 rounded-xl pr-10"
                         required
                       />
@@ -1386,7 +1453,7 @@ function LoginForm() {
                   <Button
                     type="submit"
                     className="w-full h-12 text-sm font-medium text-primary-foreground bg-accent-gradient rounded-xl shadow-lg shadow-primary/20 mt-2"
-                    disabled={!email || !password || isLoading}
+                    disabled={!mounted || !email || !password || isLoading}
                   >
                     {isLoading ? (
                       <>
@@ -1448,12 +1515,32 @@ function LoginForm() {
                     </button>
                   )}
                   <button
+                    onClick={() => void handleSsoLogin()}
                     type="button"
-                    className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                    disabled={ssoLoading}
+                    aria-busy={ssoLoading}
+                    aria-label={t("ssoSignIn")}
+                    title={t("ssoSignIn")}
+                    className="flex-1 h-12 border border-zinc-200 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Building2 className="h-5 w-5 text-zinc-700" />
+                    {ssoLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+                    ) : (
+                      <Building2 className="h-5 w-5 text-zinc-700" />
+                    )}
                   </button>
                 </div>
+
+                {ssoLoading && (
+                  <p role="status" className="mt-3 text-center text-xs text-zinc-500">
+                    {t("ssoRedirecting")}
+                  </p>
+                )}
+                {ssoError && (
+                  <p role="alert" className="mt-3 text-center text-xs font-medium text-red-600">
+                    {ssoError}
+                  </p>
+                )}
 
                 <p className="mt-8 text-center text-sm text-zinc-500 font-medium">
                   {t("noAccount")}{" "}
@@ -1465,9 +1552,11 @@ function LoginForm() {
                   </Link>
                 </p>
 
-                <p className="mt-2 text-center text-xs text-zinc-400">
-                  Demo: nextdashboards@gmail.com / admin123
-                </p>
+                {process.env.NODE_ENV !== "production" && (
+                  <p className="mt-2 text-center text-xs text-zinc-400">
+                    Demo: nextdashboards@gmail.com / admin123
+                  </p>
+                )}
               </>
             )}
           </div>

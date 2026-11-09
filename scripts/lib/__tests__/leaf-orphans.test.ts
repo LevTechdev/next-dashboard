@@ -16,6 +16,7 @@ import {
   isRefAcknowledged,
   normalizeAckEntries,
   sampleRef,
+  stragglerAckRefs,
 } from "../leaf-orphans.mjs";
 
 const REPORT = {
@@ -104,6 +105,56 @@ describe("applyAckLedger", () => {
   it("tolerates a hand-edited report (missing samples field)", () => {
     const out = applyAckLedger({ Session: { count: 94 } }, ["cmuWhatever"]);
     expect(out).toEqual({ Session: { count: 94 } });
+  });
+});
+
+describe("stragglerAckRefs", () => {
+  it("marks exactly the tables whose count survives with no unacknowledged samples", () => {
+    // SecurityEvent still names rows → NOT a straggler. Session's only sample
+    // is acked → straggler. FxRateSnapshot was never sampled → straggler.
+    const report = applyAckLedger(REPORT, ["cmuSession1"]);
+    expect(report).toEqual({
+      SecurityEvent: {
+        count: 2837,
+        samples: REPORT.SecurityEvent.samples,
+      },
+      Session: { count: 93 }, // the one named sample retired from the tally
+      FxRateSnapshot: { count: 10 },
+    });
+    expect(stragglerAckRefs(report)).toEqual(["table:Session", "table:FxRateSnapshot"]);
+  });
+
+  it("returns nothing for a clean report and tolerates junk entries", () => {
+    expect(stragglerAckRefs({})).toEqual([]);
+    expect(stragglerAckRefs(undefined)).toEqual([]);
+    expect(stragglerAckRefs({ Session: null, Junk: "nope" })).toEqual([]);
+  });
+});
+
+describe("table-scoped acks in applyAckLedger", () => {
+  it("retires a table's whole remaining entry", () => {
+    const out = applyAckLedger(
+      { Session: { count: 94 }, FxRateSnapshot: { count: 10 }, SecurityEvent: { count: 3 } },
+      ["table:Session"],
+    );
+    expect(out).toEqual({ FxRateSnapshot: { count: 10 }, SecurityEvent: { count: 3 } });
+  });
+
+  it("never matches a row subject (the prefix is cuid-hostile)", () => {
+    // A table-scoped ref for a table the report does not contain retires
+    // nothing — and no row subject can ever look like `table:…`.
+    expect(applyAckLedger(REPORT, ["table:NoSuchTable"])).toEqual(REPORT);
+  });
+
+  it("round-trips: straggler refs derived from a projected report retire it fully", () => {
+    const projected = applyAckLedger(REPORT, [
+      "cmuSession1",
+      "cmuEvent1",
+      "cmuEvent2",
+      "cmuEvent3",
+    ]);
+    const out = applyAckLedger(projected, stragglerAckRefs(projected));
+    expect(out).toEqual({});
   });
 });
 

@@ -276,6 +276,7 @@ beforeEach(() => {
         name: "Test User",
         email: "test@example.com",
         role: "ADMIN",
+        tenantId: "tenant-1",
       },
     },
     response: null,
@@ -358,7 +359,7 @@ describe("Dashboard API (public, no auth)", () => {
 
 describe("Categories API (public, no auth)", () => {
   it("returns product categories with product counts", async () => {
-    const res = await categoriesRoutes.GET();
+    const res = await categoriesRoutes.GET(new Request("http://localhost/api/categories"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toHaveLength(1);

@@ -12,6 +12,14 @@ const { mockRequireAuth, mockRequirePermission, mockPrisma, mockSendEmail } = vi
       campaign: {
         findMany: vi.fn(),
       },
+      tenant: {
+        findFirst: vi.fn(async () => ({ id: "tenant-1" })),
+      },
+      reportSchedule: {
+        findUnique: vi.fn(async () => null),
+        findMany: vi.fn(async () => []),
+        upsert: vi.fn(async () => ({})),
+      },
     },
     mockSendEmail: vi.fn(),
   };

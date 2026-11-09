@@ -283,7 +283,9 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden overflow-hidden bg-background/95 backdrop-blur-xl border-b border-border"
           >
-            <div className="p-4 flex flex-col gap-2">
+            {/* Compact link rows: the 480px-tall dropdown must fit all six
+                nav links plus both auth CTAs without scrolling. */}
+            <div className="p-3 flex flex-col gap-2">
               {/* Mobile hamburger links carry the same active treatment as the
                   desktop nav (bg-primary/10 + primary text + aria-current), so
                   the current page is obvious at tablet/mobile widths too. */}
@@ -291,7 +293,7 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 href={`/${locale}/features`}
                 aria-current={isLinkActive("/features") ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2 p-3 rounded-lg font-medium transition-colors",
+                  "flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors",
                   isLinkActive("/features")
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -308,7 +310,7 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                     href={`/${locale}${link.href}`}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-2 p-3 rounded-lg font-medium transition-colors",
+                      "flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors",
                       active
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -324,13 +326,13 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
                   <Link
                     href={`/${locale}/login`}
-                    className="flex items-center justify-center p-3 rounded-lg bg-muted text-foreground font-medium"
+                    className="flex items-center justify-center px-3 py-2 rounded-lg bg-muted text-foreground font-medium"
                   >
                     {t("signIn")}
                   </Link>
                   <Link
                     href={`/${locale}/register`}
-                    className="flex items-center justify-center p-3 rounded-lg bg-primary text-primary-foreground font-medium"
+                    className="flex items-center justify-center px-3 py-2 rounded-lg bg-primary text-primary-foreground font-medium"
                   >
                     {t("signUp")}
                   </Link>
@@ -340,7 +342,7 @@ export function MarketingHeader({ scrolled }: { scrolled: boolean }) {
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
                   <Link
                     href={`/${locale}/dashboard`}
-                    className="flex items-center justify-center p-3 rounded-lg bg-primary text-primary-foreground font-medium"
+                    className="flex items-center justify-center px-3 py-2 rounded-lg bg-primary text-primary-foreground font-medium"
                   >
                     {t("myAccount")}
                   </Link>

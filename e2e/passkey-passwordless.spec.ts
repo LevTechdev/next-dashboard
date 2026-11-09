@@ -89,9 +89,12 @@ test.describe("Passwordless passkey sign-in", () => {
 
   test("stays on the login page when no credential answers", async ({ page }) => {
     test.setTimeout(120_000);
-    // No virtual authenticator attached: PublicKeyCredential exists (so the
-    // button renders) but the ceremony cannot complete. The user must land
-    // back on the form with an error toast, never a broken half-login.
+    // Attach an EMPTY virtual authenticator. PublicKeyCredential exists (so
+    // the button renders), but the authenticator has no discoverable
+    // credentials, so the ceremony rejects immediately. Without this, headed
+    // Chromium opens a native passkey picker that never resolves under CDP and
+    // the rejection toast is never reached.
+    await addVirtualAuthenticator(page);
     await page.goto("/en/login");
     const fingerprint = page.getByRole("button", { name: "Sign in with a passkey" });
     await expect(fingerprint).toBeVisible();

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, requirePermission } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
 import {
   readReportSchedule,
   writeReportSchedule,
@@ -18,10 +19,14 @@ export async function GET(req: Request) {
   try {
     const { session, response } = await requireAuth(req);
     if (response) return response;
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
-      schedule: readReportSchedule(),
+      schedule: await readReportSchedule(tenantId),
     });
   } catch (error) {
     console.error("GET scheduled reports error:", error);
@@ -37,6 +42,11 @@ export async function POST(req: Request) {
   try {
     const { session, response } = await requirePermission("update", "reports", req);
     if (response) return response;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
 
     const body = await req.json();
     const { frequency, recipients, metrics, isActive, timeOfDay } = body;
@@ -49,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "At least one recipient email required" }, { status: 400 });
     }
 
-    const current = readReportSchedule();
+    const current = await readReportSchedule(tenantId);
     const next: ReportScheduleConfig = {
       ...current,
       frequency: frequency || current.frequency,
@@ -58,7 +68,7 @@ export async function POST(req: Request) {
       isActive: isActive !== undefined ? Boolean(isActive) : current.isActive,
       timeOfDay: timeOfDay || current.timeOfDay,
     };
-    writeReportSchedule(next);
+    await writeReportSchedule(tenantId, next);
 
     return NextResponse.json({
       success: true,

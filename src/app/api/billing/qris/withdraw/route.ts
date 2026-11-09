@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { qrisLedger } from "@/lib/qris-engine";
+import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
+import { loadQrisLedger } from "@/lib/qris-ledger-store";
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await requireAuth(req);
+    if (response) return response;
+    const tenantId = await effectiveTenantId(session);
+    if (!tenantId) {
+      return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+    }
+
     const body = await req.json();
     const { method, destinationName, destinationAccount, amount, bankCode, cardType, notes } = body;
 
@@ -21,7 +30,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const disbursement = qrisLedger.withdraw({
+    const ledger = await loadQrisLedger(tenantId);
+    const disbursement = ledger.withdraw({
       method,
       destinationName,
       destinationAccount,
@@ -31,7 +41,7 @@ export async function POST(req: Request) {
       notes,
     });
 
-    const updatedState = qrisLedger.getState();
+    const updatedState = ledger.getState();
 
     return NextResponse.json({
       success: true,

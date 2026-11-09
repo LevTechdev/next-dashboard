@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDlqEntries, retryDlqEntry, purgeDlqEntry, enqueueDlq } from "@/lib/webhook-dlq-store";
 import { processDueRetries, scheduleRetry, isExhausted } from "@/lib/webhook-retry";
 import { requireAuth } from "@/lib/api-guard";
+import { effectiveTenantId } from "@/lib/tenancy";
 import crypto from "crypto";
 import { PLATFORM_SECRETS } from "@/lib/inbound-webhooks";
 
@@ -39,8 +40,12 @@ async function redispatch(
 }
 
 export async function GET(req: Request) {
-  const { response } = await requireAuth(req);
+  const { session, response } = await requireAuth(req);
   if (response) return response;
+  const tenantId = await effectiveTenantId(session);
+  if (!tenantId) {
+    return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+  }
 
   // Opportunistic delivery-health sweep: due RETRYING entries get
   // re-dispatched before the dashboard reads the queue (throttled).
@@ -55,7 +60,7 @@ export async function GET(req: Request) {
     }
   }
 
-  const entries = getDlqEntries();
+  const entries = await getDlqEntries(tenantId);
   const summary = {
     totalFailed: entries.filter((e) => e.status === "FAILED").length,
     totalRetrying: entries.filter((e) => e.status === "RETRYING").length,
@@ -73,8 +78,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { response } = await requireAuth(req);
+  const { session, response } = await requireAuth(req);
   if (response) return response;
+  const tenantId = await effectiveTenantId(session);
+  if (!tenantId) {
+    return NextResponse.json({ error: "No workspace for this account" }, { status: 400 });
+  }
 
   try {
     const body = await req.json();
@@ -85,28 +94,28 @@ export async function POST(req: Request) {
       // resolve on success; on failure leave the entry in the RETRYING
       // rotation with the next backoff (or terminal FAILED when exhausted).
       if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
-      const scheduled = scheduleRetry(id);
+      const scheduled = await scheduleRetry(id, tenantId);
       if (!scheduled.success || !scheduled.entry) {
         return NextResponse.json({ ok: false, message: scheduled.message }, { status: 404 });
       }
       const origin = new URL(req.url).origin;
       const ok = await redispatch(scheduled.entry, origin);
       if (ok) {
-        retryDlqEntry(id);
+        await retryDlqEntry(id, tenantId);
       }
       return NextResponse.json({
         ok,
         message: ok
           ? "Replayed successfully — entry resolved"
           : "Replay failed again — left in the retry rotation",
-        entry: getDlqEntries().find((e) => e.id === id),
+        entry: (await getDlqEntries(tenantId)).find((e) => e.id === id),
       });
     }
 
     if (action === "discard") {
       // Alias of purge with clearer semantics for the UI (remove permanently).
       if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
-      const success = purgeDlqEntry(id);
+      const success = await purgeDlqEntry(id, tenantId);
       return NextResponse.json({
         ok: success,
         message: success ? "Delivery discarded" : "Entry not found",
@@ -123,7 +132,7 @@ export async function POST(req: Request) {
 
     if (action === "retry") {
       if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
-      const result = retryDlqEntry(id);
+      const result = await retryDlqEntry(id, tenantId);
       return NextResponse.json({
         ok: result.success,
         message: result.message,
@@ -133,7 +142,7 @@ export async function POST(req: Request) {
 
     if (action === "purge") {
       if (!id) return NextResponse.json({ error: "Missing DLQ entry ID" }, { status: 400 });
-      const success = purgeDlqEntry(id);
+      const success = await purgeDlqEntry(id, tenantId);
       return NextResponse.json({
         ok: success,
         message: success ? "DLQ entry removed" : "Entry not found",
@@ -205,13 +214,16 @@ export async function POST(req: Request) {
 
       if (simulateFailure) {
         // Enqueue directly to DLQ
-        const dlq = enqueueDlq({
-          platform: plat as any,
-          event: "order.inbound",
-          headers: { "x-signature-status": "tampered" },
-          payload,
-          errorMessage: `Simulated cryptographic verification failure for ${plat.toUpperCase()} test dispatch`,
-        });
+        const dlq = await enqueueDlq(
+          {
+            platform: plat as any,
+            event: "order.inbound",
+            headers: { "x-signature-status": "tampered" },
+            payload,
+            errorMessage: `Simulated cryptographic verification failure for ${plat.toUpperCase()} test dispatch`,
+          },
+          tenantId,
+        );
 
         return NextResponse.json({
           ok: false,

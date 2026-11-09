@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import crypto from "crypto";
 import {
   verifyShopifySignature,
@@ -16,6 +16,66 @@ import {
   MAX_ATTEMPTS,
   backoffDelay,
 } from "@/lib/webhook-retry";
+
+// In-memory stand-in for the WebhookDlqEntry table so this stays a store test
+// without requiring a database.
+const { dlqRows } = vi.hoisted(() => ({ dlqRows: new Map<string, any>() }));
+
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    webhookDlqEntry: {
+      create: async ({ data }: any) => {
+        const row = { ...data };
+        dlqRows.set(row.id, row);
+        return row;
+      },
+      findMany: async ({ where }: any = {}) =>
+        [...dlqRows.values()]
+          .filter((row) => !where?.tenantId || row.tenantId === where.tenantId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      findUnique: async ({ where }: any) => dlqRows.get(where.id) ?? null,
+      findFirst: async ({ where }: any) => {
+        const row = dlqRows.get(where.id);
+        if (!row) return null;
+        if (where.tenantId && row.tenantId !== where.tenantId) return null;
+        return row;
+      },
+      update: async ({ where, data }: any) => {
+        const row = dlqRows.get(where.id);
+        if (!row) throw new Error("DLQ entry not found");
+        for (const [key, value] of Object.entries(data)) {
+          if (value && typeof value === "object" && "increment" in (value as any)) {
+            row[key] += (value as any).increment;
+          } else {
+            row[key] = value;
+          }
+        }
+        return row;
+      },
+      deleteMany: async ({ where }: any) => {
+        let count = 0;
+        for (const [id, row] of dlqRows) {
+          if (where.id && id !== where.id) continue;
+          if (where.tenantId && row.tenantId !== where.tenantId) continue;
+          dlqRows.delete(id);
+          count += 1;
+        }
+        return { count };
+      },
+      upsert: async ({ where, create, update }: any) => {
+        const existing = dlqRows.get(where.id);
+        if (existing) {
+          Object.assign(existing, update);
+          return existing;
+        }
+        const row = { ...create };
+        dlqRows.set(row.id, row);
+        return row;
+      },
+    },
+    $transaction: async (ops: Promise<unknown>[]) => Promise.all(ops),
+  },
+}));
 
 describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
   it("verifies valid and rejects invalid Shopify HMAC-SHA256 signatures", () => {
@@ -82,8 +142,8 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
     expect(tiktokOrder.totalAmount).toBe(195000);
   });
 
-  it("enqueues, retries, and purges failed webhooks in DLQ store", () => {
-    const entry = enqueueDlq({
+  it("enqueues, retries, and purges failed webhooks in DLQ store", async () => {
+    const entry = await enqueueDlq({
       platform: "tiktok",
       event: "order.paid",
       headers: { "x-sig": "bad" },
@@ -94,19 +154,21 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
     expect(entry.id).toBeDefined();
     expect(entry.status).toBe("FAILED");
 
-    const retryRes = retryDlqEntry(entry.id);
+    const retryRes = await retryDlqEntry(entry.id);
     expect(retryRes.success).toBe(true);
     expect(retryRes.entry?.status).toBe("RESOLVED");
 
-    const purged = purgeDlqEntry(entry.id);
+    const purged = await purgeDlqEntry(entry.id);
     expect(purged).toBe(true);
   });
 
   describe("delivery health: automatic retry scheduling", () => {
-    const cleanup = (id: string) => purgeDlqEntry(id);
+    const cleanup = async (id: string) => {
+      await purgeDlqEntry(id);
+    };
 
-    it("marks transient failures RETRYING and permanent ones FAILED", () => {
-      const transient = enqueueDlq({
+    it("marks transient failures RETRYING and permanent ones FAILED", async () => {
+      const transient = await enqueueDlq({
         platform: "shopify",
         event: "order.inbound",
         headers: {},
@@ -116,9 +178,9 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
       });
       expect(transient.status).toBe("RETRYING");
       expect(transient.nextRetryAt).toBeDefined();
-      cleanup(transient.id);
+      await cleanup(transient.id);
 
-      const permanent = enqueueDlq({
+      const permanent = await enqueueDlq({
         platform: "shopify",
         event: "order.inbound",
         headers: {},
@@ -126,11 +188,11 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
         errorMessage: "Bad HMAC signature",
       });
       expect(permanent.status).toBe("FAILED");
-      cleanup(permanent.id);
+      await cleanup(permanent.id);
     });
 
     it("resolves due entries when the dispatcher succeeds", async () => {
-      const entry = enqueueDlq({
+      const entry = await enqueueDlq({
         platform: "shopee",
         event: "order.inbound",
         headers: {},
@@ -141,17 +203,17 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
       // Force due: nextRetryAt in the past.
       const due = new Date(Date.now() - 1000);
       const { saveDlqEntries } = await import("@/lib/webhook-dlq-store");
-      saveDlqEntries(
-        getDlqEntries().map((e) =>
+      await saveDlqEntries(
+        (await getDlqEntries()).map((e) =>
           e.id === entry.id ? { ...e, nextRetryAt: due.toISOString() } : e,
         ),
       );
 
       const result = await processDueRetries(async () => true);
-      const after = getDlqEntries().find((e) => e.id === entry.id);
+      const after = (await getDlqEntries()).find((e) => e.id === entry.id);
       expect(result.attempted).toBeGreaterThanOrEqual(1);
       expect(after?.status).toBe("RESOLVED");
-      cleanup(entry.id);
+      await cleanup(entry.id);
     });
 
     it("schedules capped exponential backoff and promotes to terminal FAILED after MAX_ATTEMPTS", async () => {
@@ -159,7 +221,7 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
       expect(backoffDelay(2)).toBe(10 * 60_000);
       expect(backoffDelay(9)).toBe(30 * 60_000); // capped
 
-      const entry = enqueueDlq({
+      const entry = await enqueueDlq({
         platform: "woocommerce",
         event: "order.inbound",
         headers: {},
@@ -169,8 +231,8 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
       });
       const { saveDlqEntries } = await import("@/lib/webhook-dlq-store");
       // Fast-forward: retryCount already at the last attempt and due now.
-      saveDlqEntries(
-        getDlqEntries().map((e) =>
+      await saveDlqEntries(
+        (await getDlqEntries()).map((e) =>
           e.id === entry.id
             ? {
                 ...e,
@@ -182,30 +244,30 @@ describe("Omnichannel Inbound Webhooks Verification & Normalization", () => {
       );
 
       await processDueRetries(async () => false);
-      const after = getDlqEntries().find((e) => e.id === entry.id);
+      const after = (await getDlqEntries()).find((e) => e.id === entry.id);
       expect(after?.retryCount).toBe(MAX_ATTEMPTS);
       expect(after?.status).toBe("FAILED");
       expect(isExhausted(after!)).toBe(true);
       expect(after?.nextRetryAt).toBeUndefined();
-      cleanup(entry.id);
+      await cleanup(entry.id);
     });
 
     it("scheduleRetry re-arms a FAILED entry for the next sweep", async () => {
-      const entry = enqueueDlq({
+      const entry = await enqueueDlq({
         platform: "tiktok",
         event: "order.inbound",
         headers: {},
         payload: { rearm: true },
         errorMessage: "Wants a manual replay",
       });
-      const result = scheduleRetry(entry.id);
+      const result = await scheduleRetry(entry.id);
       expect(result.success).toBe(true);
       expect(result.entry?.status).toBe("RETRYING");
       // Due immediately — a sweep dispatches it right away.
       expect(new Date(result.entry!.nextRetryAt!).getTime()).toBeLessThanOrEqual(Date.now());
-      cleanup(entry.id);
+      await cleanup(entry.id);
 
-      expect(scheduleRetry("missing-id").success).toBe(false);
+      expect((await scheduleRetry("missing-id")).success).toBe(false);
     });
   });
 });

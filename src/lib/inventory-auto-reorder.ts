@@ -136,7 +136,9 @@ export async function runAutoReorder(
     }
 
     const qty = calculateSuggestedReorderQty(prod.stock, reorderPoint, supplier.moq, 1.5);
-    const bucket = draftsBySupplier.get(supplier.id) ?? [];
+    // One draft PO per supplier *per workspace* so tenants never share orders.
+    const draftKey = `${prod.tenantId ?? "default"}::${supplier.id}`;
+    const bucket = draftsBySupplier.get(draftKey) ?? [];
     bucket.push({
       productId: prod.id,
       productName: prod.name,
@@ -145,11 +147,13 @@ export async function runAutoReorder(
       unitCost: prod.costPrice || Math.round(prod.price * 0.6),
       risk: stockoutRisk,
     });
-    draftsBySupplier.set(supplier.id, bucket);
+    draftsBySupplier.set(draftKey, bucket);
   });
 
-  for (const [supplierId, items] of draftsBySupplier) {
-    const po = createPurchaseOrder({
+  for (const [draftKey, items] of draftsBySupplier) {
+    const [tenantId, supplierId] = draftKey.split("::");
+    const po = await createPurchaseOrder({
+      tenantId,
       supplierId,
       items: items.map(({ risk: _risk, ...item }) => item),
       notes: `Auto-drafted by inventory auto-reorder (reorder point reached).`,

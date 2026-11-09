@@ -85,6 +85,9 @@ model Tenant {
   securityEvents SecurityEvent[]
   activityLogs   ActivityLog[]
   auditLogs      AuditLog[]
+  fleetShipments FleetShipment[]
+  taxJurisdictions TaxJurisdiction[]
+  taxFilings     TaxFiling[]
 
   @@index([slug])
 }
@@ -552,6 +555,96 @@ model AuditLog {
   @@index([tenantId])
 }
 
+/// Tenant-scoped shipment and checkpoint data for the logistics fleet view.
+model FleetShipment {
+  id                 String          @id @default(cuid())
+  tenantId           String
+  trackingNumber     String
+  orderNumber        String
+  carrier            String
+  carrierLogoKey     String
+  recipientName      String
+  destinationCity    String
+  destinationCountry String
+  status             String          @default("IN_TRANSIT")
+  progressPct        Int             @default(0)
+  modality           String
+  distanceKm         Int             @default(0)
+  co2Grams           Int             @default(0)
+  isCarbonNeutral    Boolean        @default(false)
+  estimatedDelivery  DateTime
+  deliveredAt        DateTime?
+  exceptionReason    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  tenant             Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  waypoints          FleetWaypoint[]
+
+  @@unique([tenantId, trackingNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+}
+
+model FleetWaypoint {
+  id          String        @id @default(cuid())
+  shipmentId  String
+  sortOrder   Int           @default(0)
+  location    String
+  timestamp   String
+  status      String
+  lat         Float
+  lng         Float
+  completed   Boolean       @default(false)
+  shipment    FleetShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, sortOrder])
+}
+
+/// Tenant-scoped economic-nexus thresholds and quarterly filing history.
+model TaxJurisdiction {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  key                   String
+  region                String
+  name                  String
+  flag                  String
+  currency              String
+  thresholdAmount       Float
+  currentAmount         Float
+  thresholdTransactions Int?
+  currentTransactions   Int?
+  standardTaxRate       Float
+  status                String   @default("SAFE")
+  hasRegistration       Boolean  @default(false)
+  registrationNumber    String?
+  daysRemainingToFiling Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId, status])
+}
+
+model TaxFiling {
+  id                String   @id @default(cuid())
+  tenantId          String
+  quarter           String
+  period            String
+  grossRevenue      Float
+  taxCollected      Float
+  currency          String   @default("USD")
+  jurisdictionCount Int
+  filingDeadline    String
+  status            String   @default("DRAFT")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, quarter])
+  @@index([tenantId, status])
+}
+
 model RoleSetting {
   id        String   @id @default(cuid())
   role      String // ADMIN, MANAGER, STAFF
@@ -865,19 +958,23 @@ model GeneratedContent {
 // in data/. All writes go through Prisma transactions (see src/lib/*-store.ts)
 // so ledger mutations are atomic and concurrent-safe across server instances.
 
-/// Singleton row holding the QRIS ledger balance aggregates.
+/// Per-workspace row holding the QRIS ledger balance aggregates.
 model QrisLedgerBalance {
-  id               String   @id @default(cuid()) // "singleton"
+  id               String   @id @default(cuid())
+  tenantId         String?  @unique
   availableBalance Float    @default(0)
   pendingBalance   Float    @default(0)
   totalWithdrawn   Float    @default(0)
   totalInbound     Float    @default(0)
   updatedAt        DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 /// One QRIS payment transaction (ASPI QRIS Merchant-Presented Mode).
 model QrisTransaction {
   id            String    @id
+  tenantId      String?
   invoiceNumber String
   amount        Float
   currency      String    @default("IDR")
@@ -892,11 +989,13 @@ model QrisTransaction {
 
   @@index([createdAt])
   @@index([status])
+  @@index([tenantId])
 }
 
 /// One income payout / withdrawal disbursement.
 model QrisDisbursement {
   id                  String   @id
+  tenantId            String?
   disbursementNumber  String   @unique
   method              String // dana, bank_transfer, card_oct, alipay, linkaja
   destinationName     String
@@ -916,12 +1015,14 @@ model QrisDisbursement {
   seq                 Int      @unique @default(autoincrement())
 
   @@index([timestamp])
+  @@index([tenantId])
 }
 
 /// Supplier purchase order with its line items.
 model PurchaseOrder {
   id                   String              @id
-  poNumber             String              @unique
+  tenantId             String?
+  poNumber             String
   supplierId           String
   supplierName         String
   supplierEmail        String
@@ -940,6 +1041,8 @@ model PurchaseOrder {
   seq                  Int                 @unique @default(autoincrement())
 
   @@index([status])
+  @@index([tenantId])
+  @@unique([tenantId, poNumber])
 }
 
 model PurchaseOrderItem {
@@ -979,15 +1082,20 @@ model TenantBranding {
 /// Daily inventory valuation snapshot, deduplicated by calendar date.
 model InventorySnapshot {
   id        String   @id @default(cuid())
-  date      String   @unique // YYYY-MM-DD
+  tenantId  String?
+  date      String // YYYY-MM-DD
   value     Float
   createdAt DateTime @default(now())
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
 }
 
 /// Disbursement beneficiary directory with usage tracking.
 model Beneficiary {
   id             String   @id
-  accountNumber  String   @unique
+  tenantId       String?
+  accountNumber  String
   maskedAccount  String
   accountName    String
   channel        String // dana, bank_transfer, card_oct, alipay, linkaja
@@ -1000,11 +1108,15 @@ model Beneficiary {
   lastUsedAt     DateTime
   totalDisbursed Float    @default(0)
   createdAt      DateTime @default(now())
+
+  @@unique([tenantId, accountNumber])
+  @@index([tenantId])
 }
 
 /// Dead-letter queue for inbound platform webhooks that failed processing.
 model WebhookDlqEntry {
   id            String    @id
+  tenantId      String?
   platform      String // shopify, tiktok, shopee, woocommerce
   event         String
   headers       Json      @default("{}")
@@ -1013,15 +1125,19 @@ model WebhookDlqEntry {
   retryCount    Int       @default(0)
   maxRetries    Int       @default(5)
   status        String    @default("FAILED") // FAILED, RETRYING, RESOLVED
+  transient     Boolean   @default(false)
   createdAt     DateTime
   lastAttemptAt DateTime
   nextRetryAt   DateTime?
   seq           Int       @unique @default(autoincrement())
+
+  @@index([tenantId, status])
 }
 
 /// Chat-ops alert channel configuration (Slack / Discord webhooks).
 model ChatChannel {
   id            String    @id
+  tenantId      String?
   name          String
   platform      String // slack, discord, telegram
   webhookUrl    String
@@ -1033,11 +1149,14 @@ model ChatChannel {
   lastStatus    String?
   createdAt     DateTime
   updatedAt     DateTime
+
+  @@index([tenantId])
 }
 
-/// Singleton row with the chat-alert trigger rule thresholds.
+/// One row of chat-alert trigger rule thresholds per workspace.
 model ChatAlertRule {
-  id                   String   @id @default(cuid()) // "singleton"
+  id                   String   @id @default(cuid())
+  tenantId             String?  @unique
   stockoutDoiThreshold Int      @default(7)
   vipOrderMinAmount    Float    @default(500)
   paymentAlertsEnabled Boolean  @default(true)
@@ -1049,6 +1168,7 @@ model ChatAlertRule {
 /// Delivery log for chat-ops alert dispatches (latest 25 kept).
 model ChatDeliveryLog {
   id             String   @id
+  tenantId       String?
   channelId      String
   platform       String
   event          String
@@ -1061,6 +1181,19 @@ model ChatDeliveryLog {
   seq            Int      @unique @default(autoincrement())
 
   @@index([createdAt])
+  @@index([tenantId, createdAt])
+}
+
+/// Per-workspace scheduled executive-report configuration.
+model ReportSchedule {
+  tenantId    String    @id
+  frequency   String    @default("WEEKLY") // DAILY, WEEKLY, MONTHLY
+  recipients  String[]
+  metrics     Json      @default("{}")
+  isActive    Boolean   @default(false)
+  lastSentAt  DateTime?
+  timeOfDay   String    @default("08:00")
+  updatedAt   DateTime  @updatedAt
 }
 
 /// Durable outbound-email queue.

@@ -1,4 +1,5 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 
 /**
  * One-time suite setup, run BEFORE any worker starts (Playwright runs
@@ -118,8 +119,17 @@ export default async function globalSetup() {
     console.log("⏩ SKIP_SEED=1: Skipping global DB re-seeding.");
     return;
   }
-  execSync("npm run db:seed", { stdio: "inherit" });
-  execSync("npm run repair:audit-chain", { stdio: "inherit" });
+  // Run the TypeScript scripts directly instead of through npm/npx. On
+  // Windows the npm launcher intermittently dies before spawning the script
+  // (`Segmentation fault` / `Access is denied`), which made an otherwise
+  // healthy E2E app fail during setup.
+  const tsxCli = path.join(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
+  execFileSync(process.execPath, [tsxCli, "prisma/seed.ts"], { stdio: "inherit" });
+  execFileSync(
+    process.execPath,
+    [tsxCli, "--tsconfig", "scripts/tsconfig.e2e.json", "scripts/repair-audit-chain.ts"],
+    { stdio: "inherit" },
+  );
   // Compiles must finish before the first timed test runs — that is the
   // whole point of warming.
   await warmRoutes();

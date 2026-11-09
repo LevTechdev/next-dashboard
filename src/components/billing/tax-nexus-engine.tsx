@@ -36,8 +36,6 @@ import {
   TaxJurisdiction,
   QuarterlyFiling,
   TaxCalculationResult,
-  MOCK_JURISDICTIONS,
-  MOCK_QUARTERLY_FILINGS,
   calculateTaxRate,
 } from "@/lib/tax-nexus";
 
@@ -46,8 +44,9 @@ export function TaxNexusEngine() {
   const { formatMoney } = useCurrency();
 
   const [activeSubTab, setActiveSubTab] = useState<"nexus" | "calculator" | "filings">("nexus");
-  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>(MOCK_JURISDICTIONS);
-  const [filings, setFilings] = useState<QuarterlyFiling[]>(MOCK_QUARTERLY_FILINGS);
+  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>([]);
+  const [filings, setFilings] = useState<QuarterlyFiling[]>([]);
+  const [estimatedLiability, setEstimatedLiability] = useState(0);
 
   // Simulator Form State
   const [simCountry, setSimCountry] = useState("US");
@@ -61,14 +60,17 @@ export function TaxNexusEngine() {
   );
 
   useEffect(() => {
-    fetch("/api/billing/tax/nexus")
+    fetch("/api/billing/tax/nexus", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.jurisdictions) setJurisdictions(data.jurisdictions);
+        if (Array.isArray(data?.jurisdictions)) setJurisdictions(data.jurisdictions);
+        if (typeof data?.summary?.estimatedQuarterlyLiabilityUsd === "number") {
+          setEstimatedLiability(data.summary.estimatedQuarterlyLiabilityUsd);
+        }
       })
       .catch(() => {});
 
-    fetch("/api/billing/tax/filings")
+    fetch("/api/billing/tax/filings", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && Array.isArray(data)) setFilings(data);
@@ -144,9 +146,9 @@ export function TaxNexusEngine() {
             </div>
             <div
               className="text-2xl font-bold tracking-tight text-primary mt-2 font-mono"
-              title={formatMoney(89400)}
+              title={formatMoney(estimatedLiability)}
             >
-              {formatMoney(89400)}
+              {formatMoney(estimatedLiability)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">{t("kpiLiabilitySub")}</p>
           </CardContent>

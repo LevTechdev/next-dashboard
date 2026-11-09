@@ -27,6 +27,7 @@
     "test:api": "vitest run --config vitest.api.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:journey": "playwright test e2e/comprehensive-journey.spec.ts",
+    "test:e2e:wsl": "node scripts/e2e-wsl.mjs",
     "test:e2e:local": "node scripts/e2e-local.mjs test",
     "db:provision:local": "node scripts/e2e-local.mjs db",
     "dev:local": "node scripts/e2e-local.mjs dev",
@@ -61,7 +62,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "check:null-coercion": "node scripts/audit-null-coercion.mjs",
-    "verify:mail": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/verify-mail.ts"
+    "verify:mail": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/verify-mail.ts",
+    "fire:orphan-digest": "npx tsx --tsconfig scripts/tsconfig.e2e.json scripts/fire-leaf-orphans-digest.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.16",
@@ -145,15 +147,15 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "node ./node_modules/eslint/bin/eslint.js --fix",
+      "node ./node_modules/prettier/bin/prettier.cjs --write"
     ],
     "*.{mjs,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "node ./node_modules/eslint/bin/eslint.js --fix",
+      "node ./node_modules/prettier/bin/prettier.cjs --write"
     ],
     "*.css": [
-      "prettier --write"
+      "node ./node_modules/prettier/bin/prettier.cjs --write"
     ]
   },
   "devDependencies": {

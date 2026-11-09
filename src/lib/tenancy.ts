@@ -74,11 +74,20 @@ export async function resolveUserTenantId(
 export async function effectiveTenantId(session: SessionLike): Promise<string | null> {
   const claimed = getTenantId(session);
   if (claimed) return claimed;
-  const fallback = await prisma.tenant.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-  return fallback?.id ?? null;
+  return defaultTenantId();
+}
+
+/** The default (first-created) workspace — used by background jobs and seeds. */
+export async function defaultTenantId(): Promise<string | null> {
+  try {
+    const fallback = await prisma.tenant.findFirst({
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    return fallback?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

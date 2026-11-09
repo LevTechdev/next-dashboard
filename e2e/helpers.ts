@@ -687,12 +687,12 @@ export async function expectThinVerticalScrollbar(
   expect(m.scrollbarWidth, `${label}: scrollbar-width`).toBe("thin");
   expect(m.webkitWidth, `${label}: ::-webkit-scrollbar width`).toBe("4px");
   if (m.gutter > 0) {
-    // Where the bar reserves layout space it must be at most the 4px thin
-    // bar, never the ~15px default (which would make the gutter ≥ 15). The
-    // exact figure varies by element: block containers reserve the full 4px,
-    // while bordered elements (e.g. a textarea's 1px borders add to the
-    // delta) and native thin textarea scrollbars can report less — all ≤ 4.
-    expect(m.gutter, `${label}: scrollbar gutter width`).toBeLessThanOrEqual(4);
+    // Chromium 121+ honours the standard `scrollbar-width: thin` for layout,
+    // reserving ~10-11px even when ::-webkit-scrollbar declares 4px. That is
+    // still the platform's thin bar, not the ~15-17px default. Bordered
+    // elements (a textarea) add their 2px border to offsetWidth-clientWidth,
+    // so allow 12. The WebKit 4px width is still asserted above.
+    expect(m.gutter, `${label}: scrollbar gutter width`).toBeLessThanOrEqual(12);
   }
 }
 

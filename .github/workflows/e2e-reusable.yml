@@ -91,19 +91,15 @@ jobs:
           node-version: ${{ inputs.node-version }}
           cache: "npm"
       - run: npm ci
-      - name: Verify E2E suite stays at 243 tests
+      - name: Verify E2E suite stays at 250 tests
         # Pins the suite size so adding/removing a spec (or a test inside one)
         # is a conscious change: this step fails until the count below is
         # updated in the same PR. Runs via `playwright test --list`, which
         # only collects tests — no dev server, no browser, no DB — so it
         # fails fast, before the Postgres service is even needed. It fires
         # for BOTH callers (e2e.yml on every branch + ci.yml's release gate).
-        # 243 = 76 spec files, single chromium project (233 from the
-        # security-and-pricing cycle + 3 plan-change journeys + 2 mail-health
-        # panel specs + 1 audit-health card assertion + 4 profile-security-
-        # surface specs: the three security cards + the no-mailer OTP trace,
-        # + 1 admin leaf-orphans coherence spec + 2 session-expiry deflake
-        # renames that kept the count stable).
+        # 250 = the current suite in the single chromium project. Update this
+        # count whenever tests are intentionally added or removed.
         run: |
           output=$(npx playwright test --list 2>&1)
           count=$(echo "$output" | grep -oE 'Total: [0-9]+ tests' | grep -oE '[0-9]+')
@@ -113,8 +109,8 @@ jobs:
             exit 1
           fi
           echo "E2E suite count: $count"
-          if [ "$count" != "243" ]; then
-            echo "::error::E2E suite count drifted from 243 to $count. If the change is intentional, update the pinned count in this workflow in the same PR."
+          if [ "$count" != "250" ]; then
+            echo "::error::E2E suite count drifted from 250 to $count. If the change is intentional, update the pinned count in this workflow in the same PR."
             exit 1
           fi
       - name: Create database schema
@@ -157,6 +153,9 @@ jobs:
           NEXTAUTH_URL: ${{ inputs.nextauth-url }}
           GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
           GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
+          # Local-only signing key for the payment webhook simulator spec.
+          # This is a CI placeholder, never a production credential.
+          WEBHOOK_SIMULATE_SECRET: ci-e2e-webhook-simulator-secret
           # No OpenAI key is provisioned for CI, so force the AI copilot's
           # dev-mode mock reply (AI_MOCK=1). The Playwright-spawned dev
           # server inherits this env from the test process, keeping the

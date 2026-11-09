@@ -57,6 +57,7 @@ npm run dev        # → http://localhost:3010
 | `npm run test:all` | All tests (sequential) |
 | `npm run test:e2e` | Playwright E2E tests (uses `.env.local` DATABASE_URL) |
 | `npm run test:e2e:local` | Playwright E2E tests against a local Postgres mirror (recommended) |
+| `npm run test:e2e:wsl` | Windows + WSL one-command live E2E run with a disposable Postgres cluster |
 | `npm run db:provision:local` | Create/schema the local E2E Postgres mirror (idempotent) |
 | `npm run coverage:all` | All tests with merged coverage report |
 | `npm run storybook` | Storybook dev server (port 6006) |

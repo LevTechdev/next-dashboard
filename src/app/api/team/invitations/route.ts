@@ -3,13 +3,14 @@ import { requirePermission } from "@/lib/api-guard";
 import { sendEmail } from "@/lib/email";
 import { prisma } from "@/lib/db";
 import { getTierFeaturesForUser } from "@/lib/plan-tiers";
+import { isRole, type Role } from "@/lib/permissions";
 import crypto from "crypto";
 
 // In-memory persistent invitations store for workspace team members
 interface TeamInvitationRecord {
   id: string;
   email: string;
-  role: "OWNER" | "ADMIN" | "MANAGER" | "STAFF" | "VIEWER";
+  role: Role;
   allowedChannels: string[];
   invitedBy: string;
   token: string;
@@ -44,7 +45,7 @@ let invitationsStore: TeamInvitationRecord[] = [
   {
     id: "inv-903",
     email: "sam.analytics@consulting.co",
-    role: "VIEWER",
+    role: "AUDITOR",
     allowedChannels: ["Online Store", "Shopify", "Facebook"],
     invitedBy: "Sarah Johnson",
     token: "tok_903_gamma",
@@ -78,6 +79,14 @@ export async function POST(req: Request) {
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email address is required" }, { status: 400 });
+    }
+
+    let invitationRole: Role = "STAFF";
+    if (role != null) {
+      if (!isRole(role)) {
+        return NextResponse.json({ error: "Unknown role" }, { status: 400 });
+      }
+      invitationRole = role;
     }
 
     // Team-seat quota: pending invitations + existing members + accepted seats
@@ -114,7 +123,7 @@ export async function POST(req: Request) {
     const newInvitation: TeamInvitationRecord = {
       id: `inv-${Date.now()}`,
       email: email.toLowerCase().trim(),
-      role: role || "STAFF",
+      role: invitationRole,
       allowedChannels:
         Array.isArray(allowedChannels) && allowedChannels.length > 0
           ? allowedChannels
@@ -205,9 +214,17 @@ export async function PATCH(req: Request) {
     }
 
     const current = invitationsStore[index];
+    let nextRole = current.role;
+    if (role != null) {
+      if (!isRole(role)) {
+        return NextResponse.json({ error: "Unknown role" }, { status: 400 });
+      }
+      nextRole = role;
+    }
+
     const updated: TeamInvitationRecord = {
       ...current,
-      role: role || current.role,
+      role: nextRole,
       allowedChannels:
         Array.isArray(allowedChannels) && allowedChannels.length > 0
           ? allowedChannels

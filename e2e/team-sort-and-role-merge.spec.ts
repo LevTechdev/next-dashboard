@@ -84,7 +84,9 @@ test.describe("Team page — merged role matrix", () => {
     });
     await expect(matrix).toBeVisible(FETCH_GATED);
 
-    const headers = await matrix.locator("thead th").allTextContents();
+    const headers = (await matrix.locator("thead th").allTextContents()).map((header) =>
+      header.trim().toUpperCase(),
+    );
     expect(headers).toContain("ADMIN");
     expect(headers).not.toContain("SUPER_ADMIN");
 

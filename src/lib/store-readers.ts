@@ -28,7 +28,7 @@ export async function loadQrisLedgerSnapshot(): Promise<{
 } | null> {
   try {
     const [balances, txRows, disbRows] = await Promise.all([
-      prisma.qrisLedgerBalance.findUnique({ where: { id: "singleton" } }),
+      prisma.qrisLedgerBalance.findFirst({ orderBy: { updatedAt: "asc" } }),
       prisma.qrisTransaction.findMany({ orderBy: { seq: "desc" } }),
       prisma.qrisDisbursement.findMany({ orderBy: { seq: "desc" } }),
     ]);
@@ -201,6 +201,7 @@ export async function loadDlqEntries(): Promise<Record<string, unknown>[]> {
     const rows = await prisma.webhookDlqEntry.findMany({ orderBy: { seq: "desc" } });
     return rows.map((d) => ({
       id: d.id,
+      tenantId: d.tenantId,
       platform: d.platform,
       event: d.event,
       headers: asJsonObject(d.headers),
@@ -209,6 +210,7 @@ export async function loadDlqEntries(): Promise<Record<string, unknown>[]> {
       retryCount: d.retryCount,
       maxRetries: d.maxRetries,
       status: d.status,
+      transient: d.transient,
       createdAt: d.createdAt.toISOString(),
       lastAttemptAt: d.lastAttemptAt.toISOString(),
       nextRetryAt: iso(d.nextRetryAt),
@@ -230,7 +232,7 @@ export async function loadChatConfig(): Promise<ChatConfigShape | null> {
   try {
     const [channelRows, rulesRow, deliveryRows] = await Promise.all([
       prisma.chatChannel.findMany({ orderBy: { createdAt: "asc" } }),
-      prisma.chatAlertRule.findUnique({ where: { id: "singleton" } }),
+      prisma.chatAlertRule.findFirst(),
       prisma.chatDeliveryLog.findMany({ orderBy: { seq: "desc" } }),
     ]);
     return {
