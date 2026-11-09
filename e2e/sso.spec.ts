@@ -27,9 +27,11 @@ test.describe("SSO / Enterprise settings", () => {
 
     await page.getByRole("button", { name: /Sign in with enterprise SSO/i }).click();
 
-    await expect(page.getByRole("alert")).toContainText(
-      "No SSO connection is configured for this email.",
-    );
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "No SSO connection is configured for this email." }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/en\/login/);
   });
 
