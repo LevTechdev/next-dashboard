@@ -2081,6 +2081,23 @@ describe("SAML Login", () => {
       expect(location).toContain("idp.example.com");
     });
 
+    it("returns a JSON redirect for the login page's JSON request", async () => {
+      mockResolveConnectionByEmail.mockResolvedValueOnce({
+        id: "conn-1",
+        entryPoint: "https://idp.example.com/sso",
+      });
+      const req = {
+        url: "http://localhost:3000/api/auth/saml/login?email=user@test.com",
+        headers: {
+          get: (name: string) => (name.toLowerCase() === "accept" ? "application/json" : null),
+        },
+      } as unknown as Request;
+      const res = await samlLoginRoutes.GET(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.redirectUrl).toContain("idp.example.com");
+    });
+
     it("resolves connection by tenant slug", async () => {
       mockResolveConnectionByTenantSlug.mockResolvedValueOnce({
         id: "conn-1",

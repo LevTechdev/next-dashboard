@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loginAs } from "./helpers";
+import { loginAs, signInEmailField } from "./helpers";
 
 /**
  * SSO / Enterprise settings E2E (src/components/sso/sso-settings.tsx).
@@ -16,6 +16,50 @@ test.describe("SSO / Enterprise settings", () => {
   test("redirects unauthenticated visitors to the login page", async ({ page }) => {
     await page.goto("/en/sso");
     await expect(page).toHaveURL(/\/en\/login/);
+  });
+
+  test("shows an inline SSO error when no connection matches the email", async ({ page }) => {
+    await page.goto("/en/login");
+    await page.waitForLoadState("networkidle");
+    const email = signInEmailField(page);
+    await expect(email).toBeEditable();
+    await email.fill("no-sso@example.invalid");
+
+    await page.getByRole("button", { name: /Sign in with enterprise SSO/i }).click();
+
+    await expect(page.getByRole("alert")).toContainText(
+      "No SSO connection is configured for this email.",
+    );
+    await expect(page).toHaveURL(/\/en\/login/);
+  });
+
+  test("hands the browser to the identity provider on a successful SSO start", async ({ page }) => {
+    await page.route(/\/api\/auth\/saml\/login\?/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ redirectUrl: "https://idp.sso-login.test/auth" }),
+      }),
+    );
+    await page.route("https://idp.sso-login.test/**", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "<title>IdP</title>" }),
+    );
+
+    await page.goto("/en/login");
+    await page.waitForLoadState("networkidle");
+    const email = signInEmailField(page);
+    await expect(email).toBeEditable();
+    await email.fill("sso-user@acme.example");
+
+    const requestPromise = page.waitForRequest((request) =>
+      request.url().includes("/api/auth/saml/login?email="),
+    );
+    await page.getByRole("button", { name: /Sign in with enterprise SSO/i }).click();
+
+    const request = await requestPromise;
+    expect(request.url()).toContain("email=sso-user%40acme.example");
+    expect(request.headers()["accept"]).toContain("application/json");
+    await expect(page).toHaveURL(/https:\/\/idp\.sso-login\.test\/auth/);
   });
 
   test.describe("authenticated", () => {
