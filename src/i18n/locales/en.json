@@ -2532,6 +2532,11 @@
     "testimonialNext": "Next review",
     "testimonialGoTo": "Show review {index}",
     "testimonialPosition": "Review {current} of {total}",
+    "testimonialBadge1": "Finance teams",
+    "testimonialBadge2": "Reconciliation",
+    "testimonialQuote": "We close the month 35% faster after moving revenue, payouts and reconciliation into one dashboard. The live numbers ended the spreadsheet chase.",
+    "testimonialName": "Sara Bright",
+    "testimonialRole": "Finance Lead, Bright Studio",
     "testimonials": [
       {
         "quote": "We close the month 35% faster after moving revenue, payouts and reconciliation into one dashboard. The live numbers ended the spreadsheet chase.",

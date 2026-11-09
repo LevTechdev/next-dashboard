@@ -2450,6 +2450,11 @@
     "testimonialNext": "下一条评价",
     "testimonialGoTo": "显示第 {index} 条评价",
     "testimonialPosition": "第 {current} 条，共 {total} 条",
+    "testimonialBadge1": "财务团队",
+    "testimonialBadge2": "对账",
+    "testimonialQuote": "把收入、付款与对账集中到一个仪表盘后，我们月末结账速度提升了 35%。实时数据让我们不再追着表格跑。",
+    "testimonialName": "萨拉·布赖特",
+    "testimonialRole": "财务负责人，Bright Studio",
     "testimonials": [
       {
         "quote": "把收入、付款与对账集中到一个仪表盘后，我们月末结账速度提升了 35%。实时数据让我们不再追着表格跑。",

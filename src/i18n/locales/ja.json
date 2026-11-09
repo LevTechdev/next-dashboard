@@ -2450,6 +2450,11 @@
     "testimonialNext": "次のレビュー",
     "testimonialGoTo": "レビュー{index}を表示",
     "testimonialPosition": "レビュー{current}/{total}",
+    "testimonialBadge1": "財務チーム",
+    "testimonialBadge2": "照合",
+    "testimonialQuote": "収益・支払い・照合を1つのダッシュボードにまとめ、月次決算が35%速くなりました。リアルタイムの数字で表計算を追う作業から解放されました。",
+    "testimonialName": "サラ・ブライト",
+    "testimonialRole": "財務リード、Bright Studio",
     "testimonials": [
       {
         "quote": "収益・支払い・照合を1つのダッシュボードにまとめ、月次決算が35%速くなりました。リアルタイムの数字で表計算を追う作業から解放されました。",

@@ -2532,6 +2532,11 @@
     "testimonialNext": "Ulasan berikutnya",
     "testimonialGoTo": "Tampilkan ulasan {index}",
     "testimonialPosition": "Ulasan {current} dari {total}",
+    "testimonialBadge1": "Tim keuangan",
+    "testimonialBadge2": "Rekonsiliasi",
+    "testimonialQuote": "Kami menutup buku bulanan 35% lebih cepat setelah memindahkan pendapatan, pembayaran, dan rekonsiliasi ke satu dasbor. Angka real-time mengakhiri perburuan spreadsheet.",
+    "testimonialName": "Sara Bright",
+    "testimonialRole": "Lead Keuangan, Bright Studio",
     "testimonials": [
       {
         "quote": "Kami menutup buku bulanan 35% lebih cepat setelah memindahkan pendapatan, pembayaran, dan rekonsiliasi ke satu dasbor. Angka real-time mengakhiri perburuan spreadsheet.",
