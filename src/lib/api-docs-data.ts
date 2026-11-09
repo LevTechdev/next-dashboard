@@ -204,7 +204,10 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     path: "/api/team",
     description: "Invite a new team member",
     group: "Team",
-    requestBody: { email: "Invitee email", role: "Role (ADMIN, MANAGER, STAFF, VIEWER)" },
+    requestBody: {
+      email: "Invitee email",
+      role: "Role (ADMIN, MANAGER, STAFF, AUDITOR, CLIENT, CLIENT_ENTERPRISE)",
+    },
     requiresAuth: true,
   },
   // Billing

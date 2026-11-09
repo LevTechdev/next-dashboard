@@ -86,7 +86,7 @@ describe("Team Invitations Route (/api/team/invitations)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "charlie@company.com",
-        role: "Manager",
+        role: "MANAGER",
         allowedChannels: ["Online Store", "TikTok Shop"],
         expiresInDays: 30,
       }),
@@ -96,7 +96,7 @@ describe("Team Invitations Route (/api/team/invitations)", () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.invitation.email).toBe("charlie@company.com");
-    expect(data.invitation.role).toBe("Manager");
+    expect(data.invitation.role).toBe("MANAGER");
     expect(data.invitation.allowedChannels).toEqual(["Online Store", "TikTok Shop"]);
   });
 
@@ -105,11 +105,22 @@ describe("Team Invitations Route (/api/team/invitations)", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        role: "Manager",
+        role: "MANAGER",
       }),
     });
     const res = await invitationsRoute.POST(req);
     expect(res.status).toBe(400);
+  });
+
+  it("POST rejects roles outside the canonical Role model", async () => {
+    const req = new Request("http://localhost:3010/api/team/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "legacy@company.com", role: "OWNER" }),
+    });
+    const res = await invitationsRoute.POST(req);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Unknown role" });
   });
 
   it("POST returns 402 with upgrade hints when the plan seat limit is reached", async () => {
@@ -149,7 +160,7 @@ describe("Team Invitations Route (/api/team/invitations)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: "revoke.me@company.com",
-        role: "Staff",
+        role: "STAFF",
       }),
     });
     const createRes = await invitationsRoute.POST(createReq);
@@ -196,6 +207,25 @@ describe("Team Invitations Route (/api/team/invitations)", () => {
     expect(patchData.success).toBe(true);
     expect(patchData.invitation.role).toBe("MANAGER");
     expect(patchData.invitation.allowedChannels).toEqual(["Online Store", "Shopify"]);
+  });
+
+  it("PATCH rejects roles outside the canonical Role model", async () => {
+    const createReq = new Request("http://localhost:3010/api/team/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "legacy-edit@company.com", role: "STAFF" }),
+    });
+    const createRes = await invitationsRoute.POST(createReq);
+    const created = await createRes.json();
+
+    const patchReq = new Request("http://localhost:3010/api/team/invitations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: created.invitation.id, role: "VIEWER" }),
+    });
+    const res = await invitationsRoute.PATCH(patchReq);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Unknown role" });
   });
 });
 

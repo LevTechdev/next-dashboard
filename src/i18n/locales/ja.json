@@ -258,7 +258,7 @@
         "description": "新しいチームメンバーを招待",
         "fields": {
           "email": "招待先のメール",
-          "role": "ロール（ADMIN、MANAGER、STAFF、VIEWER）"
+          "role": "ロール（ADMIN、MANAGER、STAFF、AUDITOR、CLIENT、CLIENT_ENTERPRISE）"
         }
       },
       "billing-get": {
@@ -1079,8 +1079,6 @@
     "invitationExpiry": "招待の有効期限",
     "channelAccess": "チャネルアクセス",
     "allChannels": "全チャネル",
-    "roleOwner": "オーナー (フルアクセス)",
-    "roleViewer": "閲覧者 (読み取り専用)",
     "daysExpiry": "{days} 日間",
     "editInviteBtn": "編集",
     "editInvitation": "招待の編集",

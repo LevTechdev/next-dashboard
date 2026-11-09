@@ -40,7 +40,15 @@ import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { can, type ClientLevel } from "@/lib/permissions";
+import {
+  ALL_ROLES,
+  can,
+  canAccessPage,
+  isRole,
+  ROLES,
+  type ClientLevel,
+  type Role,
+} from "@/lib/permissions";
 import { SalesChannelIcon } from "@/components/ui/brand-icons";
 import { useShowUpgrade } from "@/components/billing/tier-gate";
 import { Sparkles } from "lucide-react";
@@ -57,44 +65,32 @@ interface TeamActivityItem {
   formattedDate: string;
 }
 
-// Permission matrix data — SUPER_ADMIN merged into ADMIN (single all-access role)
-const PERMISSIONS_MATRIX = [
-  {
-    resource: "Dashboard",
-    roles: { ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
-  },
-  {
-    resource: "Orders",
-    roles: { ADMIN: true, MANAGER: true, STAFF: true, AUDITOR: true },
-  },
-  {
-    resource: "Products",
-    roles: { ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
-  },
-  {
-    resource: "Customers",
-    roles: { ADMIN: true, MANAGER: true, STAFF: false, AUDITOR: true },
-  },
-  {
-    resource: "Team",
-    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
-  },
-  {
-    resource: "Settings",
-    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
-  },
-  {
-    resource: "Billing",
-    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: false },
-  },
-  {
-    resource: "Audit Log",
-    roles: { ADMIN: true, MANAGER: false, STAFF: false, AUDITOR: true },
-  },
-];
+const ROLE_LABEL_KEYS = {
+  ADMIN: "admin",
+  MANAGER: "manager",
+  STAFF: "staff",
+  AUDITOR: "auditor",
+  CLIENT: "client",
+  CLIENT_ENTERPRISE: "clientEnterprise",
+} as const satisfies Record<Role, string>;
+
+// The matrix is calculated from the same page-access rules that gate routes.
+// Keeping one source of truth prevents the UI from claiming, for example, that
+// a manager cannot open Billing when the route guard actually allows it.
+const PERMISSION_MATRIX_PAGES = [
+  { page: "dashboard", labelKey: "dashboard" },
+  { page: "orders", labelKey: "orders" },
+  { page: "products", labelKey: "products" },
+  { page: "customers", labelKey: "customers" },
+  { page: "team", labelKey: "team" },
+  { page: "settings", labelKey: "settings" },
+  { page: "billing", labelKey: "billing" },
+  { page: "audit-log", labelKey: "auditLog" },
+] as const;
 
 export default function TeamPage() {
   const tteam = useTranslations("team");
+  const tnav = useTranslations("nav");
   const tcommon = useTranslations("common");
   const { user, tierFeatures } = useAuth();
   const role = (user as any)?.role;
@@ -113,13 +109,18 @@ export default function TeamPage() {
     name: "",
     email: "",
     password: "",
-    role: "STAFF",
+    role: ROLES.STAFF as Role,
     position: "",
   });
-  const [inviteForm, setInviteForm] = useState({
+  const [inviteForm, setInviteForm] = useState<{
+    email: string;
+    role: Role;
+    allowedChannels: string[];
+    expiresInDays: number;
+  }>({
     email: "",
-    role: "STAFF",
-    allowedChannels: ["Online Store", "Instagram"] as string[],
+    role: ROLES.STAFF,
+    allowedChannels: ["Online Store", "Instagram"],
     expiresInDays: 7,
   });
   const [invitations, setInvitations] = useState<any[]>([]);
@@ -130,7 +131,7 @@ export default function TeamPage() {
   const [editInviteForm, setEditInviteForm] = useState<{
     id: string;
     email: string;
-    role: string;
+    role: Role;
     allowedChannels: string[];
     expiresInDays: number;
   } | null>(null);
@@ -204,7 +205,7 @@ export default function TeamPage() {
     toast.success(editMember ? tteam("memberUpdated") : tteam("memberAdded"));
     setDialogOpen(false);
     setEditMember(null);
-    setForm({ name: "", email: "", password: "", role: "STAFF", position: "" });
+    setForm({ name: "", email: "", password: "", role: ROLES.STAFF, position: "" });
     loadData();
   };
 
@@ -249,7 +250,7 @@ export default function TeamPage() {
         setInviteDialogOpen(false);
         setInviteForm({
           email: "",
-          role: "STAFF",
+          role: ROLES.STAFF,
           allowedChannels: ["Online Store", "Instagram"],
           expiresInDays: 7,
         });
@@ -272,7 +273,7 @@ export default function TeamPage() {
     setEditInviteForm({
       id: inv.id,
       email: inv.email,
-      role: inv.role,
+      role: isRole(inv.role) ? inv.role : ROLES.STAFF,
       allowedChannels: Array.isArray(inv.allowedChannels) ? [...inv.allowedChannels] : [],
       expiresInDays: 7,
     });
@@ -370,7 +371,13 @@ export default function TeamPage() {
                   <Button
                     onClick={() => {
                       setEditMember(null);
-                      setForm({ name: "", email: "", password: "", role: "STAFF", position: "" });
+                      setForm({
+                        name: "",
+                        email: "",
+                        password: "",
+                        role: ROLES.STAFF,
+                        position: "",
+                      });
                     }}
                   >
                     <PlusIcon size={16} className="h-4 w-4 mr-2" /> {tteam("addMember")}
@@ -401,19 +408,21 @@ export default function TeamPage() {
                       value={form.position}
                       onChange={(e) => setForm({ ...form, position: e.target.value })}
                     />
-                    <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                    <Select
+                      value={form.role}
+                      onValueChange={(value) => {
+                        if (isRole(value)) setForm({ ...form, role: value });
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
-                        <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
-                        <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
-                        <SelectItem value="AUDITOR">{tteam("auditor")}</SelectItem>
-                        <SelectItem value="CLIENT">{tteam("client")}</SelectItem>
-                        <SelectItem value="CLIENT_ENTERPRISE">
-                          {tteam("clientEnterprise")}
-                        </SelectItem>
+                        {ALL_ROLES.map((memberRole) => (
+                          <SelectItem key={memberRole} value={memberRole}>
+                            {tteam(ROLE_LABEL_KEYS[memberRole])}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {!editMember && (
@@ -456,17 +465,19 @@ export default function TeamPage() {
               <label className="text-xs font-semibold text-foreground">Workspace Role</label>
               <Select
                 value={inviteForm.role}
-                onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}
+                onValueChange={(value) => {
+                  if (isRole(value)) setInviteForm({ ...inviteForm, role: value });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={tteam("inviteRole")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OWNER">{tteam("roleOwner")}</SelectItem>
-                  <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
-                  <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
-                  <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
-                  <SelectItem value="VIEWER">{tteam("roleViewer")}</SelectItem>
+                  {ALL_ROLES.map((inviteRole) => (
+                    <SelectItem key={inviteRole} value={inviteRole}>
+                      {tteam(ROLE_LABEL_KEYS[inviteRole])}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -570,16 +581,19 @@ export default function TeamPage() {
                 </label>
                 <Select
                   value={editInviteForm.role}
-                  onValueChange={(v) => setEditInviteForm({ ...editInviteForm, role: v })}
+                  onValueChange={(value) => {
+                    if (isRole(value)) setEditInviteForm({ ...editInviteForm, role: value });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">{tteam("admin")}</SelectItem>
-                    <SelectItem value="MANAGER">{tteam("manager")}</SelectItem>
-                    <SelectItem value="STAFF">{tteam("staff")}</SelectItem>
-                    <SelectItem value="VIEWER">{tteam("roleViewer")}</SelectItem>
+                    {ALL_ROLES.map((inviteRole) => (
+                      <SelectItem key={inviteRole} value={inviteRole}>
+                        {tteam(ROLE_LABEL_KEYS[inviteRole])}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -996,26 +1010,40 @@ export default function TeamPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{tteam("permissions")}</TableHead>
-                      {["ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
-                        <TableHead key={r} className="text-center text-xs">
-                          {r.replace("_", " ")}
+                      {ALL_ROLES.map((matrixRole) => (
+                        <TableHead key={matrixRole} className="text-center text-xs">
+                          {tteam(ROLE_LABEL_KEYS[matrixRole])}
                         </TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {PERMISSIONS_MATRIX.map((row) => (
-                      <TableRow key={row.resource}>
-                        <TableCell className="text-sm font-medium">{row.resource}</TableCell>
-                        {["ADMIN", "MANAGER", "STAFF", "AUDITOR"].map((r) => (
-                          <TableCell key={r} className="text-center">
-                            {row.roles[r as keyof typeof row.roles] ? (
-                              <Check size={16} className="h-4 w-4 text-emerald-500 mx-auto" />
-                            ) : (
-                              <span className="text-gray-300 dark:text-gray-600">â€”</span>
-                            )}
-                          </TableCell>
-                        ))}
+                    {PERMISSION_MATRIX_PAGES.map((row) => (
+                      <TableRow key={row.page}>
+                        <TableCell className="text-sm font-medium">{tnav(row.labelKey)}</TableCell>
+                        {ALL_ROLES.map((matrixRole) => {
+                          const allowed = canAccessPage(row.page, matrixRole);
+                          return (
+                            <TableCell
+                              key={matrixRole}
+                              className="text-center"
+                              data-testid={`permission-${row.page}-${matrixRole}`}
+                              data-allowed={allowed ? "true" : "false"}
+                            >
+                              {allowed ? (
+                                <Check
+                                  size={16}
+                                  aria-hidden
+                                  className="h-4 w-4 text-emerald-500 mx-auto"
+                                />
+                              ) : (
+                                <span aria-hidden className="text-gray-300 dark:text-gray-600">
+                                  —
+                                </span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>

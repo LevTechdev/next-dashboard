@@ -258,7 +258,7 @@
         "description": "Mengundang anggota tim baru",
         "fields": {
           "email": "Email penerima undangan",
-          "role": "Peran (ADMIN, MANAGER, STAFF, VIEWER)"
+          "role": "Peran (ADMIN, MANAGER, STAFF, AUDITOR, CLIENT, CLIENT_ENTERPRISE)"
         }
       },
       "billing-get": {
@@ -1079,8 +1079,6 @@
     "invitationExpiry": "Masa Berlaku Undangan",
     "channelAccess": "Akses Saluran",
     "allChannels": "Semua Saluran",
-    "roleOwner": "Pemilik (Akses Penuh)",
-    "roleViewer": "Penampil (Hanya Baca)",
     "daysExpiry": "{days} Hari",
     "editInviteBtn": "Ubah",
     "editInvitation": "Ubah Undangan",

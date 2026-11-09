@@ -258,7 +258,7 @@
         "description": "Invite a new team member",
         "fields": {
           "email": "Invitee email",
-          "role": "Role (ADMIN, MANAGER, STAFF, VIEWER)"
+          "role": "Role (ADMIN, MANAGER, STAFF, AUDITOR, CLIENT, CLIENT_ENTERPRISE)"
         }
       },
       "billing-get": {
@@ -1079,8 +1079,6 @@
     "invitationExpiry": "Invitation Expiry",
     "channelAccess": "Channel Access",
     "allChannels": "All Channels",
-    "roleOwner": "Owner (Full Access)",
-    "roleViewer": "Viewer (Read-only)",
     "daysExpiry": "{days} Days",
     "editInviteBtn": "Edit",
     "editInvitation": "Edit Invitation",

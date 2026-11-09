@@ -5,6 +5,7 @@ import {
   canPerformGranularAction,
   filterNavItemsByRole,
   getRole,
+  isRole,
   normalizeRole,
   ROLES,
   type Role,
@@ -24,6 +25,20 @@ describe("ROLES constant", () => {
     expect(values).toContain("ADMIN");
     expect(values).toContain("MANAGER");
     expect(values).toContain("STAFF");
+  });
+});
+
+describe("isRole()", () => {
+  it("accepts every canonical role", () => {
+    for (const role of Object.values(ROLES)) expect(isRole(role)).toBe(true);
+  });
+
+  it("rejects role names that are not in the canonical model", () => {
+    expect(isRole("OWNER")).toBe(false);
+    expect(isRole("VIEWER")).toBe(false);
+    expect(isRole("SUPER_ADMIN")).toBe(false);
+    expect(isRole("admin")).toBe(false);
+    expect(isRole(null)).toBe(false);
   });
 });
 

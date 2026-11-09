@@ -258,7 +258,7 @@
         "description": "邀请新的团队成员",
         "fields": {
           "email": "被邀请人邮箱",
-          "role": "角色（ADMIN、MANAGER、STAFF、VIEWER）"
+          "role": "角色（ADMIN、MANAGER、STAFF、AUDITOR、CLIENT、CLIENT_ENTERPRISE）"
         }
       },
       "billing-get": {
@@ -1079,8 +1079,6 @@
     "invitationExpiry": "邀请有效期",
     "channelAccess": "渠道权限",
     "allChannels": "所有渠道",
-    "roleOwner": "所有者 (完全权限)",
-    "roleViewer": "查看者 (只读)",
     "daysExpiry": "{days} 天",
     "editInviteBtn": "编辑",
     "editInvitation": "编辑邀请",
